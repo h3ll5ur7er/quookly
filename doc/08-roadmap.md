@@ -35,7 +35,8 @@ components authored for the desktop is a rewrite, not an adjustment — the same
 **Goal:** structured recipes exist and can be read the way the product promises.
 
 - Domain model for recipe, ingredient line, step, technique reference
-- Ingredient registry with locale-aware names, seeded from USDA FoodData Central
+- Ingredient registry with locale-aware names, seeded from USDA FoodData Central, with the Swiss
+  and UK overlays for the target locales
   ([ADR-007](07-decisions.md#adr-007-nutrition-data-usda-fooddata-central-as-the-base))
 - `RecipeAccess`, `IngredientAccess`, `EaterAccess`
 - `MeasureEngine`: conversion, density, yield scaling (V4)
@@ -183,7 +184,7 @@ whose absence costs the product least.
 | Risk | Mitigation |
 | --- | --- |
 | Interpretation quality (V2) is the product, and is hard | Phase 3 is deliberately early; build a fixture corpus of real messy pages and measure against it |
-| Swiss-specific nutrient values unavailable under clear terms | Base set is CC0 USDA ([ADR-007](07-decisions.md#adr-007-nutrition-data-usda-fooddata-central-as-the-base)); if Swiss values prove necessary, seek written permission from the FSVO rather than vendoring ambiguous data |
+| Overlay datasets carry mandatory attribution, which is easy to omit | FR-20 stores source and licence per nutrient profile, so attribution is generated from the data actually used rather than remembered by hand |
 | Ingredient registry needs curation a self-hoster cannot provide | Ship a base registry, allow local additions; decide ownership in [open questions](06-domain-model.md#open-questions) |
 | Local models may be too weak for reliable structured extraction | Support hosted providers from Phase 3; treat structured-output failure as a normal, reported outcome |
 | Scope: the feature list is very large | Phases 0–4 are the product; 5–8 are extension |

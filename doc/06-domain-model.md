@@ -162,8 +162,8 @@ would misrepresent both. Nutrition is decision support, not medical advice
 ([Non-goals](01-vision.md#non-goals)).
 
 It also carries its **source and licence** (FR-20). The base dataset is USDA FoodData Central, which
-is CC0 and demands nothing, but regional overlays are not: OGL and Licence Ouverte both require
-attribution. Recording provenance per profile is what lets an instance credit exactly the sources it
+is CC0 and demands nothing, but the regional overlays are not: the Swiss Food Composition Database,
+CoFID, and Ciqual all require attribution. Recording provenance per profile is what lets an instance credit exactly the sources it
 actually uses, and what makes swapping or layering datasets a data change rather than a code change.
 See [ADR-007](07-decisions.md#adr-007-nutrition-data-usda-fooddata-central-as-the-base).
 
@@ -220,8 +220,8 @@ Recorded rather than guessed at; each affects the schema and should be settled b
 
 1. ~~**Nutrition source.**~~ *Settled* by
    [ADR-007](07-decisions.md#adr-007-nutrition-data-usda-fooddata-central-as-the-base): USDA
-   FoodData Central (CC0) as the base, with optional clearly-licensed regional overlays. Still open
-   is whether Swiss-specific values matter enough to seek written permission from the FSVO.
+   FoodData Central (CC0) as the base, with the Swiss Food Composition Database overlaying `de_CH`
+   and `fr_CH`, and CoFID overlaying `en_GB`. All three verified; both overlays require attribution.
 2. **Recipe versioning.** Is edit history retained, and do plans reference a version or the current
    state? Affects whether a cooked meal can be reproduced exactly.
 3. **Ingredient registry ownership.** *Partly settled* by

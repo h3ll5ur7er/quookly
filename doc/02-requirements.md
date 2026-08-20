@@ -163,7 +163,7 @@ UC-8.4 is **Built** — `/api/v1/status` exists and the CLI can query it.
 | FR-17 | A fresh instance ships a locale-appropriate ingredient registry and starter recipes, marked as seeded, and upgradable without overwriting user edits. |
 | FR-18 | Each eater carries an appetite multiplier applied when portions are computed. |
 | FR-19 | Completing a cooking session consumes reserved stock; abandoning one releases it. |
-| FR-20 | Every nutrient profile records its data source and licence, and the application surfaces the attribution those licences require. |
+| FR-20 | Every nutrient profile records its data source and licence. The application displays the attribution required by the sources actually in use — mandatory for the Swiss, UK, and French overlays. |
 
 FR-11 matters more than it looks: it is the guarantee that self-hosters are not trapped, and it
 makes the import path (UC-1.2) and the export path the same contract.

@@ -165,7 +165,7 @@ terms are ambiguous.
 | [UK CoFID](https://www.gov.uk/government/publications/composition-of-foods-integrated-dataset-cofid) | Open Government Licence v3.0 | Attribution | Optional overlay for `en_GB` |
 | [Ciqual (ANSES)](https://www.anses.fr/en/content/ciqual-nutritional-composition-table) | Licence Ouverte (Etalab) | Attribution | Optional overlay for `fr_CH` |
 | [Open Food Facts](https://world.openfoodfacts.org/terms-of-use) | ODbL | Attribution **and share-alike** | Rejected |
-| [Swiss Food Composition Database](https://naehrwertdaten.ch/en/legal-information/) | Unclear — see below | Unknown | Not vendored |
+| [Swiss Food Composition Database](https://opendata.swiss/en/dataset/naehrwerte_lebensmittel) | opendata.swiss "Open use. Must provide the source." | Attribution | Overlay for `de_CH` and `fr_CH` |
 
 **Rationale.** CC0 is the only status with genuinely zero obligations: no attribution requirement, no
 share-alike, no restriction on redistribution inside an image. Every self-hoster inherits those
@@ -182,17 +182,28 @@ would plausibly trigger that. The obligation is survivable but it is an obligati
 inherited by everyone running an instance. It is also the wrong shape — barcode-level packaged
 products rather than the generic ingredients recipes are written from.
 
-**Why the Swiss database is not vendored, despite two Swiss target locales.** Its terms conflict.
-The download page states the data may be used commercially with acknowledgement of source, while the
-[legal information page](https://naehrwertdaten.ch/en/legal-information/) states that *"written
-permission must be obtained in advance from the copyright holder before any material is reproduced"*
-and grants no open licence. A third-party packaging of it warns that some underlying data comes from
-sources whose publishing rights are unclear. The `opendata.swiss` listing could not be checked — it
-returns 403 to automated fetches.
+**On the Swiss database.** An earlier revision of this record excluded it as ambiguous. That was
+wrong, and the correction matters because two of the three target locales are Swiss.
 
-That ambiguity is precisely what this decision exists to avoid. **If Swiss-specific values turn out
-to matter, the action is to ask the FSVO for written confirmation** — not to vendor it and hope. Until
-then, generic values from a CC0 source are the safer default.
+The apparent conflict was between the FSVO's generic federal-website copyright boilerplate — *"written
+permission must be obtained in advance from the copyright holder before any material is reproduced"* —
+and the dataset's own download page. The boilerplate governs website content generally; the dataset
+carries its own published terms, and those govern.
+
+Those terms are explicit on two independent pages:
+
+- The [download page](https://naehrwertdaten.ch/en/downloads/) states the data *"may also be used for
+  commercial purposes (e.g. integration into food composition calculation software or nutrition diary
+  app) and scientific purposes, subject to acknowledgment of the source"* — naming almost exactly this
+  application.
+- The dataset's record on the federal open data portal declares its terms as
+  [**"Open use. Must provide the source."**](https://opendata.swiss/en/terms-of-use), which in the
+  opendata.swiss taxonomy means non-commercial use permitted, **commercial use permitted**, and
+  attribution mandatory.
+
+That is a permissive open-data grant, and it makes the Swiss database the preferred overlay for
+`de_CH` and `fr_CH`. Attribution is *mandatory* rather than requested here, which is why FR-20 exists
+and why the attribution surface is a requirement rather than a courtesy.
 
 **Consequences for the design.**
 
@@ -204,9 +215,15 @@ then, generic values from a CC0 source are the safer default.
 - Attribution for USDA is not legally required, but Quookly credits it anyway. It costs a line and
   the request is reasonable.
 
-**Cost.** Some ingredients common in Swiss and British kitchens will be absent or approximate in a US
-dataset, and closing those gaps means either an overlay or manual registry additions — which
-[ADR-016](#adr-016-ship-seed-content-marked-and-upgradable) already supports.
+**Why USDA remains the base rather than the Swiss set.** Coverage. FoodData Central carries orders of
+magnitude more entries and answers for any locale, including ones Quookly does not target yet. The
+Swiss and UK sets are better *where they apply*, which is what an overlay is for: match on the
+locale, fall back to the base.
+
+**Cost.** Overlays carry mandatory attribution, so the source and licence of every profile must be
+tracked and displayed (FR-20) rather than the whole application carrying one blanket credit. That is
+a small amount of plumbing, and it is the price of using data that is better for the locales this
+product actually targets.
 
 ## ADR-008 Enforce the call rules with import-linter
 
