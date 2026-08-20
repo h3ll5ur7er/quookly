@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException, Response, status
 
-from quookly.contracts.eater import EaterInput, EaterView
+from quookly.contracts.eater import EaterInput, EaterView, HouseholdSummary
 from quookly.managers import eater as eater_manager
 from quookly.routes.dependencies import CurrentCook
 
@@ -23,6 +23,13 @@ async def list_eaters(cook: CurrentCook) -> list[EaterView]:
 async def create_eater(submitted: EaterInput, cook: CurrentCook) -> EaterView:
     """Record somebody new (UC-6.3, UC-6.4)."""
     return await eater_manager.add(submitted, cook.cook_id)
+
+
+# Declared before `/eaters/{eater_id}`: they share a prefix, and the first match wins.
+@router.get("/eaters/summary", response_model=HouseholdSummary)
+async def get_household_summary(cook: CurrentCook) -> HouseholdSummary:
+    """How many people, and how many servings that comes to."""
+    return await eater_manager.summarise(cook.cook_id)
 
 
 @router.get("/eaters/{eater_id}", response_model=EaterView)

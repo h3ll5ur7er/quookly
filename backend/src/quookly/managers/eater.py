@@ -17,7 +17,9 @@ from quookly.contracts.eater import (
     Eater,
     EaterInput,
     EaterView,
+    HouseholdSummary,
 )
+from quookly.engines import measure
 
 
 def _view(eater: Eater) -> EaterView:
@@ -62,6 +64,20 @@ def _constraints(submitted: EaterInput) -> list[Constraint]:
 async def list_for(cook_id: int) -> list[EaterView]:
     """This cook's household."""
     return [_view(eater) for eater in await eater_access.list_for_cook(cook_id)]
+
+
+async def summarise(cook_id: int) -> HouseholdSummary:
+    """How many people this cook cooks for, and the yield that takes (UC-6.5, FR-18).
+
+    An empty household needs nothing, which `MeasureEngine` refuses to compute — cooking
+    for nobody is a mistake there, and a legitimate starting state here.
+    """
+    household = await eater_access.list_for_cook(cook_id)
+    if not household:
+        return HouseholdSummary(people=0, servings="0")
+    return HouseholdSummary(
+        people=len(household), servings=_tidy(measure.required_yield(household).magnitude)
+    )
 
 
 async def add(submitted: EaterInput, cook_id: int) -> EaterView:

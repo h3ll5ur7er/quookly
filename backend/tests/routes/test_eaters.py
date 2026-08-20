@@ -243,3 +243,40 @@ class TestWhatIsRefused:
     async def test_an_unknown_age_band(self, client: AsyncClient, cook: dict[str, str]) -> None:
         response = await client.post(EATERS, json=eater(age_band="teenager"), headers=cook)
         assert response.status_code == 422
+
+
+class TestSummary:
+    async def test_an_empty_household_needs_nothing(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        response = await client.get(f"{EATERS}/summary", headers=cook)
+        assert response.status_code == 200
+        assert response.json() == {"people": 0, "servings": "0"}
+
+    async def test_the_servings_are_summed_not_counted(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        """Four people where one eats half is 3.5 servings, not 4 (FR-18)."""
+        for name, appetite in (("Ana", "1"), ("Jonas", "1"), ("Nonna", "1"), ("Mira", "0.5")):
+            await client.post(
+                EATERS, json=eater(name=name, age_band="adult", appetite=appetite), headers=cook
+            )
+        response = await client.get(f"{EATERS}/summary", headers=cook)
+        assert response.json() == {"people": 4, "servings": "3.5"}
+
+    async def test_the_sum_does_not_drift(self, client: AsyncClient, cook: dict[str, str]) -> None:
+        """0.3 + 1.4 + 0.6 reads as 2.3, which it would not through a JSON number."""
+        for name, appetite in (("Toddler", "0.3"), ("Teen", "1.4"), ("Nonna", "0.6")):
+            await client.post(
+                EATERS, json=eater(name=name, age_band="adult", appetite=appetite), headers=cook
+            )
+        assert (await client.get(f"{EATERS}/summary", headers=cook)).json()["servings"] == "2.3"
+
+    async def test_another_household_is_not_counted(
+        self, client: AsyncClient, cook: dict[str, str], neighbour: dict[str, str]
+    ) -> None:
+        await client.post(EATERS, json=eater(), headers=cook)
+        assert (await client.get(f"{EATERS}/summary", headers=neighbour)).json()["people"] == 0
+
+    async def test_the_summary_needs_an_account(self, client: AsyncClient) -> None:
+        assert (await client.get(f"{EATERS}/summary")).status_code == 401

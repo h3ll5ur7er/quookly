@@ -487,6 +487,28 @@
         }
       }
     },
+    "/api/v1/eaters/summary": {
+      "get": {
+        "tags": [
+          "eaters"
+        ],
+        "summary": "Get Household Summary",
+        "description": "How many people, and how many servings that comes to.",
+        "operationId": "getHouseholdSummary",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/eaters/{eater_id}": {
       "get": {
         "tags": [
@@ -1105,6 +1127,25 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HouseholdSummary": {
+        "properties": {
+          "people": {
+            "type": "integer",
+            "title": "People"
+          },
+          "servings": {
+            "type": "string",
+            "title": "Servings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "people",
+          "servings"
+        ],
+        "title": "HouseholdSummary",
+        "description": "How many people are cooked for, and how much food that is.\n\nTwo different numbers on purpose: four people is not four servings once anybody eats\nmore or less than a standard portion (FR-18). Computed by `MeasureEngine` rather than\nin the browser, so planning, shopping, and this screen cannot come to disagree."
       },
       "ImportOutcome": {
         "properties": {

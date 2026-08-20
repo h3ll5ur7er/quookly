@@ -138,6 +138,20 @@ class EaterView(BaseModel):
     constraints: list[ConstraintView]
 
 
+class HouseholdSummary(BaseModel):
+    """How many people are cooked for, and how much food that is.
+
+    Two different numbers on purpose: four people is not four servings once anybody eats
+    more or less than a standard portion (FR-18). Computed by `MeasureEngine` rather than
+    in the browser, so planning, shopping, and this screen cannot come to disagree.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    people: int
+    servings: str
+
+
 class EaterInput(BaseModel):
     """An eater being recorded or corrected (UC-6.3, UC-6.4, UC-6.5).
 
