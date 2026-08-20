@@ -34,6 +34,7 @@ _IN_BASE_UNITS: dict[Unit, Decimal] = {
     Unit.FLUID_OUNCE_IMPERIAL: Decimal("28.4130625"),
     # Count, base piece
     Unit.PIECE: Decimal("1"),
+    Unit.SERVING: Decimal("1"),
 }
 
 _BRIDGEABLE = frozenset({Dimension.MASS, Dimension.VOLUME})

@@ -54,6 +54,7 @@ class Unit(Enum):
 
     # Count
     PIECE = ("piece", Dimension.COUNT)
+    SERVING = ("serving", Dimension.COUNT)
 
     def __init__(self, symbol: str, dimension: Dimension) -> None:
         self.symbol = symbol

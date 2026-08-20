@@ -15,10 +15,14 @@ of it. Concretely, a recipe is:
 | --- | --- |
 | **Yield** | What the quantities produce — servings, or a mass or volume. Every quantity is relative to this. |
 | **Ingredient lines** | An ordered set of (ingredient, quantity, unit, preparation note, optionality). |
-| **Steps** | An ordered set of actions, each referencing the ingredient lines it consumes, with timings, temperatures, and equipment. |
-| **Technique references** | Links from steps into the Academy, so an unfamiliar term is one click from its definition. |
+| **Steps** | An ordered set of actions, with timings, temperatures, and equipment. *Built.* References to the ingredient lines a step consumes arrive with cooking mode, which is what needs them. |
+| **Technique references** | Links from steps into the Academy, so an unfamiliar term is one click from its definition. *Planned with the Academy.* |
 | **Provenance** | How this recipe came to exist: authored, imported from JSON, scraped from a URL, generated, or derived. |
 | **Visibility** | Private by default; explicitly published. |
+
+Duration and temperature are **fields on a step**, not numbers inside its instruction. That is what
+lets cooking mode offer a timer without parsing prose, and it is the same argument as structured
+ingredient lines applied one level down.
 
 What a recipe is **not**: a title, a body of text, and a photograph. That shape cannot be scaled,
 converted, adapted, or planned against, and reproducing it is the failure mode the product exists

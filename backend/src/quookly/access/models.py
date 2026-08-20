@@ -11,6 +11,8 @@ from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 from quookly.contracts.ingredient import IngredientKind, Origin
+from quookly.contracts.measure import Unit
+from quookly.contracts.recipe import Provenance, Visibility
 
 
 def _now() -> datetime:
@@ -60,3 +62,52 @@ class IngredientNameRow(SQLModel, table=True):
     name: str
     normalised: str = Field(index=True)
     is_canonical: bool = Field(default=False)
+
+
+class RecipeRow(SQLModel, table=True):
+    """A recipe's identity and yield. Its contents are lines and steps."""
+
+    __tablename__ = "recipe"
+
+    id: int | None = Field(default=None, primary_key=True)
+    cook_id: int = Field(foreign_key="cook.id", index=True)
+    title: str
+    summary: str | None = Field(default=None)
+    yield_magnitude: Decimal = Field(max_digits=12, decimal_places=4)
+    yield_unit: Unit
+    provenance: Provenance
+    visibility: Visibility = Field(default=Visibility.PRIVATE)
+    origin: Origin = Field(default=Origin.USER)
+    created_at: datetime = Field(default_factory=_now)
+
+
+class IngredientLineRow(SQLModel, table=True):
+    """One ingredient as used in one recipe. `position` is the order it is written in."""
+
+    __tablename__ = "ingredient_line"
+
+    id: int | None = Field(default=None, primary_key=True)
+    recipe_id: int = Field(foreign_key="recipe.id", index=True)
+    position: int
+    ingredient_id: int = Field(foreign_key="ingredient.id", index=True)
+    magnitude: Decimal = Field(max_digits=12, decimal_places=4)
+    unit: Unit
+    preparation: str | None = Field(default=None)
+    optional: bool = Field(default=False)
+
+
+class StepRow(SQLModel, table=True):
+    """One action, in order.
+
+    Duration and temperature are columns rather than numbers inside the instruction, so a
+    timer can be offered without parsing prose.
+    """
+
+    __tablename__ = "step"
+
+    id: int | None = Field(default=None, primary_key=True)
+    recipe_id: int = Field(foreign_key="recipe.id", index=True)
+    position: int
+    instruction: str
+    duration_seconds: int | None = Field(default=None)
+    temperature_celsius: int | None = Field(default=None)

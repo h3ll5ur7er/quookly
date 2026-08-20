@@ -50,11 +50,12 @@ components authored for the desktop is a rewrite, not an adjustment — the same
 
 **Goal:** structured recipes exist and can be read the way the product promises.
 
-- Domain model for recipe, ingredient line, step, technique reference
+- ~~Domain model for recipe, ingredient line, step~~ **Built** — technique references arrive with
+  the Academy (Phase 7); step-to-line references with cooking mode (Phase 5)
 - ~~Ingredient registry with locale-aware names~~ **Built** — seeding from USDA FoodData Central,
   with the Swiss and UK overlays, follows with the seed content
   ([ADR-007](07-decisions.md#adr-007-nutrition-data-usda-fooddata-central-as-the-base))
-- `RecipeAccess`, `IngredientAccess`, `EaterAccess`
+- ~~`RecipeAccess`, `IngredientAccess`~~ **Built**; `EaterAccess` arrives with eaters (Phase 2)
 - ~~`MeasureEngine`: conversion, density, yield scaling (V4)~~ **Built**
 - Unit preferences per ingredient kind (UC-6.2)
 - Hand-authored recipes (UC-1.1); JSON import and export (UC-1.2, FR-11)

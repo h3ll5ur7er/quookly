@@ -100,14 +100,17 @@ async def resolve(name: str, locale: str) -> Ingredient | None:
         if row is None:
             return None
 
-        display = await _canonical_name(active, matched.ingredient_id, locale, matched.name)
+        display = await name_for(active, matched.ingredient_id, locale, matched.name)
         return _to_contract(row, display)
 
 
-async def _canonical_name(
+async def name_for(
     active: AsyncSession, ingredient_id: int, locale: str, fallback: str
 ) -> str:
-    """What to call this ingredient here — the canonical name, not the alias typed."""
+    """What to call this ingredient in `locale` — the canonical name, not an alias.
+
+    Shared with `recipe` access, which resolves a line's ingredient the same way.
+    """
     for candidate_locale in (locale, SOURCE_LOCALE):
         canonical = (
             await active.exec(
