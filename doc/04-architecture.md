@@ -471,6 +471,11 @@ The Angular application mirrors the same discipline, one layer down:
 | Pure functions and computed signals | Engine |
 | Generated API services (`@api`) | Resource Access |
 
+Auth state lives in `core/auth/`: a signal-based `AuthStore` holding the session, an
+`HttpInterceptorFn` attaching the bearer token, and route guards. The store persists to
+`localStorage` defensively — private browsing, a disabled store, or a half-written value from an
+older version must mean "nobody is signed in", never a blank screen.
+
 The generated client is the *only* thing that talks to the backend. No component issues an HTTP
 call directly, and no hand-written DTOs exist. Shared cross-feature components live in `core/`;
 feature areas live in `features/` and are lazy-loaded.

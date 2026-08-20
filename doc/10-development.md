@@ -206,6 +206,11 @@ environment renders migrations in batch mode, which rewrites the table instead.
 | CLI | pytest, `asyncio_mode = "auto"` | `cli/tests/` |
 | Frontend | Vitest via `@angular/build:unit-test` | alongside sources as `*.spec.ts` |
 
+Frontend specs use `provideHttpClientTesting` and assert against `HttpTestingController` rather than
+a mocked service, so the generated client is exercised rather than bypassed. Where a component
+navigates, stub `Router.navigateByUrl` in setup — a real router with no routes registered rejects,
+and the rejection surfaces as an unhandled error in a later test rather than the one that caused it.
+
 Async tests need no `@pytest.mark.asyncio` — auto mode is configured.
 
 Tests are written **before** the implementation

@@ -1,0 +1,32 @@
+<main class="auth">
+  <h1>Welcome to Quookly</h1>
+  <p>This instance has no accounts yet. Create the first one to become its administrator.</p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <label for="display_name">Your name</label>
+    <input id="display_name" type="text" formControlName="display_name" autocomplete="name" required />
+
+    <label for="email">Email</label>
+    <input id="email" type="email" formControlName="email" autocomplete="email" required />
+
+    <label for="password">Password</label>
+    <input
+      id="password"
+      type="password"
+      formControlName="password"
+      autocomplete="new-password"
+      [attr.minlength]="minimumPasswordLength"
+      aria-describedby="password-hint"
+      required
+    />
+    <p id="password-hint">At least {{ minimumPasswordLength }} characters.</p>
+
+    @if (error(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+
+    <button type="submit" [disabled]="form.invalid || submitting()">
+      {{ submitting() ? 'Creating…' : 'Create administrator' }}
+    </button>
+  </form>
+</main>
