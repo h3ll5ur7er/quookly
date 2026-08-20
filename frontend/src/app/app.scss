@@ -25,24 +25,18 @@
 }
 
 /* Sticky, because a phone list is long and the way out of it should not require
-   scrolling to the end of it. Content passes underneath rather than being cut short. */
-.shell__footer {
+   scrolling to the end of it. It carries navigation and nothing else: it is the one
+   piece of chrome present on every screen, so it stays one row tall. */
+.shell__nav {
   position: sticky;
   bottom: 0;
   z-index: 5;
   display: flex;
   justify-content: center;
-  align-items: center;
-  gap: var(--space-2) var(--space-5);
-  flex-wrap: wrap;
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-4);
   border-top: 1px solid var(--border);
   background: var(--surface);
-}
-
-.shell__nav {
-  display: flex;
-  gap: var(--space-2);
 }
 
 /* Full-height targets rather than padded text: the bar is the tap area on a phone. */
@@ -72,9 +66,14 @@
   color: var(--on-surface);
 }
 
+/* In the flow at the end of the page rather than in the sticky bar: chosen once and
+   then left alone, and not worth a permanent share of a phone screen. */
 .shell__settings {
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: var(--space-3) var(--space-4);
+  gap: var(--space-3) var(--space-5);
   flex-wrap: wrap;
+  padding: var(--space-5) var(--space-4);
+  color: var(--on-surface-muted);
 }

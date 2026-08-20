@@ -27,6 +27,25 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/recipes/recipe-detail.component').then((m) => m.RecipeDetailComponent),
   },
+  {
+    path: 'household',
+    canActivate: [requireSignedIn],
+    loadComponent: () =>
+      import('./features/household/household.component').then((m) => m.HouseholdComponent),
+  },
+  {
+    // `new` before `:id`: they share a shape, and the first match wins.
+    path: 'household/new',
+    canActivate: [requireSignedIn],
+    loadComponent: () =>
+      import('./features/household/eater-form.component').then((m) => m.EaterFormComponent),
+  },
+  {
+    path: 'household/:id',
+    canActivate: [requireSignedIn],
+    loadComponent: () =>
+      import('./features/household/eater-form.component').then((m) => m.EaterFormComponent),
+  },
   { path: '', redirectTo: 'recipes', pathMatch: 'full' },
   { path: '**', redirectTo: 'recipes' },
 ];

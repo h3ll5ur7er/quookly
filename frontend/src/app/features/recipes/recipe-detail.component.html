@@ -1,11 +1,11 @@
 @if (missing()) {
-  <main class="recipe">
+  <main class="page recipe">
     <p class="notice notice--danger" role="alert" i18n="@@recipeMissing">
       That recipe could not be found.
     </p>
   </main>
 } @else if (recipe(); as shown) {
-  <main class="recipe">
+  <main class="page recipe">
     <header class="recipe__header">
       <h1>{{ shown.title }}</h1>
       @if (shown.summary) {
@@ -80,7 +80,7 @@
     </section>
   </main>
 } @else {
-  <main class="recipe">
+  <main class="page recipe">
     <p i18n="@@recipeLoading">Loading…</p>
   </main>
 }

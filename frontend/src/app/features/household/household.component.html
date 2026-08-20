@@ -1,0 +1,55 @@
+<main class="page">
+  <h1 i18n="@@householdHeading">Household</h1>
+
+  @if (cookingFor(); as sentence) {
+    <p class="household__total">
+      <span>{{ sentence }}</span>
+      <span aria-hidden="true">·</span>
+      <span class="numeric">{{ summary()!.servings }}</span>
+      <span i18n="@@householdServings">servings</span>
+    </p>
+  }
+
+  @if (failed()) {
+    <p class="notice notice--danger" role="alert" i18n="@@householdFailed">
+      Could not load your household. Please try again.
+    </p>
+  } @else if (household(); as people) {
+    @if (people.length === 0) {
+      <p class="household__empty" i18n="@@householdEmpty">
+        Nobody here yet. Add the people you cook for, and Quookly can tell you whether a recipe
+        suits them.
+      </p>
+    } @else {
+      <ul class="household__list">
+        @for (person of people; track person.id) {
+          <li>
+            <a class="household__row" [routerLink]="['/household', person.id]">
+              <span class="household__name">{{ person.name }}</span>
+              <span class="household__meta">
+                {{ ageBandLabel(person.age_band) }}
+                <span aria-hidden="true">·</span>
+                <span class="numeric">{{ person.appetite }}</span>
+                <span i18n="@@householdPortions">portions</span>
+              </span>
+              @if (person.constraints.length > 0) {
+                <span class="household__avoids">
+                  @for (constraint of person.constraints; track $index) {
+                    <span class="chip chip--{{ constraint.severity }}">
+                      {{ constraintLabel(constraint) }}
+                      <span class="chip__mark">{{ severityMark(constraint.severity) }}</span>
+                    </span>
+                  }
+                </span>
+              }
+            </a>
+          </li>
+        }
+      </ul>
+    }
+  } @else {
+    <p class="household__loading" i18n="@@householdLoading">Loading…</p>
+  }
+
+  <a class="action" routerLink="/household/new" i18n="@@householdAdd">Add someone</a>
+</main>

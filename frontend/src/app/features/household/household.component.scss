@@ -1,0 +1,60 @@
+@use '../../../styles/page';
+@use '../../../styles/chips';
+
+.household__total {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em;
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
+.household__list {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.household__row {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color var(--motion-fast) var(--ease-standard);
+
+  &:hover {
+    border-color: var(--border-strong);
+  }
+}
+
+.household__name {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.household__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em;
+  color: var(--on-surface-subtle);
+  font-size: var(--text-sm);
+}
+
+.household__avoids {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.household__empty,
+.household__loading {
+  color: var(--on-surface-muted);
+}

@@ -4,8 +4,7 @@
   width: 100%;
 }
 
-.recipes,
-.recipe {
+.page {
   width: min(100% - var(--space-6), 44rem);
   margin-inline: auto;
   padding-block: var(--space-6) var(--space-7);
@@ -38,4 +37,24 @@
   border-inline-start: 4px solid var(--danger);
   background: var(--danger-surface);
   color: var(--on-danger-surface);
+}
+
+/* A link that is the screen's primary action. Sized for a thumb, and low on the page
+   rather than in a top bar (NFR-11). */
+.action {
+  display: grid;
+  place-items: center;
+  min-height: 48px;
+  margin-top: var(--space-6);
+  padding-inline: var(--space-5);
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background var(--motion-fast) var(--ease-standard);
+
+  &:hover {
+    background: var(--primary-hover);
+  }
 }

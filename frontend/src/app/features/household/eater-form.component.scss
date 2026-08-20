@@ -1,0 +1,161 @@
+@use '../../../styles/page';
+@use '../../../styles/chips';
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
+
+label,
+legend {
+  margin-top: var(--space-3);
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+input,
+select {
+  min-height: 44px;
+  padding: var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--on-surface);
+  transition: border-color var(--motion-fast) var(--ease-standard);
+
+  &:focus-visible {
+    border-color: var(--primary);
+  }
+}
+
+.hint {
+  margin: var(--space-1) 0 0;
+  color: var(--on-surface-subtle);
+  font-size: var(--text-sm);
+}
+
+.avoids {
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.avoids__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A 44px target inside a chip that is smaller than that: the hit area extends past the
+   glyph rather than the chip growing to fit it. */
+.chip__remove {
+  position: relative;
+  min-width: 1.5rem;
+  border: none;
+  background: none;
+  color: var(--on-surface-muted);
+  font-size: var(--text-md);
+  line-height: 1;
+  cursor: pointer;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -0.7rem;
+  }
+
+  &:hover {
+    color: var(--on-surface);
+  }
+}
+
+.avoids__add {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+button {
+  min-height: 48px;
+  margin-top: var(--space-4);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-standard);
+
+  &:hover:not(:disabled) {
+    background: var(--primary-hover);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+/* One filled element per screen is the primary action. Adding a constraint is a step
+   within the form, not the point of it. */
+.secondary {
+  margin-top: var(--space-3);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--on-surface);
+
+  &:hover:not(:disabled) {
+    background: var(--surface-sunken);
+  }
+}
+
+/* Destructive and quiet: it should be findable, never the thing a thumb lands on. */
+.destructive {
+  background: none;
+  color: var(--danger);
+  font-weight: 600;
+
+  &:hover:not(:disabled) {
+    background: var(--danger-surface);
+    color: var(--on-danger-surface);
+  }
+}
+
+/* Tinted rather than filled, so it does not shout in the same red as the action it is
+   telling you to retry. */
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border-inline-start: 4px solid var(--danger);
+  background: var(--danger-surface);
+  color: var(--on-danger-surface);
+  font-size: var(--text-sm);
+
+  /* Never colour alone: the mark carries the meaning where hue cannot. */
+  &::before {
+    content: '!';
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid currentcolor;
+    border-radius: var(--radius-full);
+    font-weight: 700;
+    line-height: 1;
+  }
+}

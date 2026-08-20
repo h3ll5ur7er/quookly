@@ -5,33 +5,34 @@
     <router-outlet />
   </div>
 
+  <!-- Settings are set once and then left alone, so they sit at the end of the page
+       rather than in the bar that follows the cook around. The page's contentinfo, so
+       the controls are inside a landmark rather than loose at the end of the document. -->
+  <footer class="shell__settings">
+    <app-locale-picker />
+    <app-theme-picker />
+  </footer>
+
   <!-- Low, within thumb reach, and the same bar on every screen. Navigation is available
        rather than present: two words, no icons competing with the content above them. -->
-  <footer class="shell__footer">
-    @if (signedIn()) {
-      <nav class="shell__nav" aria-label="Sections" i18n-aria-label="@@navLabel">
-        <a
-          class="shell__link"
-          routerLink="/recipes"
-          routerLinkActive="shell__link--current"
-          ariaCurrentWhenActive="page"
-          i18n="@@navRecipes"
-          >Recipes</a
-        >
-        <a
-          class="shell__link"
-          routerLink="/household"
-          routerLinkActive="shell__link--current"
-          ariaCurrentWhenActive="page"
-          i18n="@@navHousehold"
-          >Household</a
-        >
-      </nav>
-    }
-
-    <div class="shell__settings">
-      <app-locale-picker />
-      <app-theme-picker />
-    </div>
-  </footer>
+  @if (signedIn()) {
+    <nav class="shell__nav" aria-label="Sections" i18n-aria-label="@@navLabel">
+      <a
+        class="shell__link"
+        routerLink="/recipes"
+        routerLinkActive="shell__link--current"
+        ariaCurrentWhenActive="page"
+        i18n="@@navRecipes"
+        >Recipes</a
+      >
+      <a
+        class="shell__link"
+        routerLink="/household"
+        routerLinkActive="shell__link--current"
+        ariaCurrentWhenActive="page"
+        i18n="@@navHousehold"
+        >Household</a
+      >
+    </nav>
+  }
 </div>

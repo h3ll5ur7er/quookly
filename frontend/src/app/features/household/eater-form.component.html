@@ -1,0 +1,134 @@
+<main class="page">
+  @if (missing()) {
+    <p class="notice notice--danger" role="alert" i18n="@@eaterMissing">
+      That person is not in your household.
+    </p>
+  } @else {
+    <h1>{{ heading() }}</h1>
+
+    <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <label for="name" i18n="@@fieldEaterName">Name</label>
+      <input id="name" type="text" formControlName="name" autocomplete="off" required />
+
+      <label for="ageBand" i18n="@@fieldAgeBand">Age</label>
+      <select id="ageBand" formControlName="age_band">
+        @for (band of ageBands; track band) {
+          <option [value]="band">{{ ageBandLabel(band) }}</option>
+        }
+      </select>
+      <p class="hint" i18n="@@ageBandHint">
+        Used for what is safe to serve — honey to an infant, for instance — not for portion size.
+      </p>
+
+      <label for="appetite" i18n="@@fieldAppetite">Portion size</label>
+      <input
+        id="appetite"
+        class="numeric"
+        type="number"
+        inputmode="decimal"
+        min="0.1"
+        max="10"
+        step="0.1"
+        formControlName="appetite"
+      />
+      <p class="hint" i18n="@@appetiteHint">
+        1 is a standard portion. A teenager might be 1.4, a toddler 0.3. A recipe is scaled to the
+        total, not to the head count.
+      </p>
+
+      <fieldset class="avoids">
+        <legend i18n="@@constraintsLegend">Avoids</legend>
+
+        @if (constraints().length === 0) {
+          <p class="hint" i18n="@@constraintsNone">Nothing recorded.</p>
+        } @else {
+          <ul class="avoids__list">
+            @for (constraint of constraints(); track $index) {
+              <li class="chip chip--{{ constraint.severity }}">
+                {{ constraintLabel(constraint) }}
+                <span class="chip__mark">{{ severityMark(constraint.severity) }}</span>
+                <button
+                  type="button"
+                  class="chip__remove"
+                  (click)="removeConstraint($index)"
+                  [attr.aria-label]="'Remove ' + constraintLabel(constraint)"
+                  i18n-aria-label="@@constraintRemove"
+                >
+                  ×
+                </button>
+              </li>
+            }
+          </ul>
+        }
+
+        <div class="avoids__add" [formGroup]="addition">
+          <label for="avoids" i18n="@@fieldAvoidsWhat">What</label>
+          <select
+            id="avoids"
+            formControlName="avoids"
+            (change)="onAvoidsChange($any($event.target).value)"
+          >
+            @for (allergen of allergens; track allergen) {
+              <option [value]="allergen">{{ allergenLabel(allergen) }}</option>
+            }
+            <option [value]="somethingElse" i18n="@@avoidsIngredient">
+              A particular ingredient…
+            </option>
+          </select>
+
+          @if (namingAnIngredient()) {
+            <label for="ingredient" i18n="@@fieldIngredient">Ingredient</label>
+            <input
+              id="ingredient"
+              type="text"
+              list="ingredientMatches"
+              formControlName="ingredient"
+              autocomplete="off"
+              (input)="onIngredientInput($event)"
+            />
+            <datalist id="ingredientMatches">
+              @for (match of matches(); track match.id) {
+                <option [value]="match.name"></option>
+              }
+            </datalist>
+            @if (unmatched()) {
+              <p class="error" role="alert" i18n="@@ingredientUnmatched">
+                Pick one from the list. A name Quookly does not know would never be matched against
+                a recipe.
+              </p>
+            }
+          }
+
+          <label for="severity" i18n="@@fieldSeverity">How serious</label>
+          <select id="severity" formControlName="severity">
+            @for (severity of severities; track severity) {
+              <option [value]="severity">{{ severityLabel(severity) }}</option>
+            }
+          </select>
+
+          <button type="button" class="secondary" (click)="addConstraint()" i18n="@@constraintAdd">
+            Add
+          </button>
+        </div>
+      </fieldset>
+
+      @if (failed()) {
+        <p class="error" role="alert" i18n="@@eaterSaveFailed">Could not save. Please try again.</p>
+      }
+
+      <button type="submit" [disabled]="form.invalid || saving()">
+        @if (saving()) {
+          <span i18n="@@eaterSaving">Saving…</span>
+        } @else {
+          <span i18n="@@eaterSave">Save</span>
+        }
+      </button>
+
+      @if (eaterId !== null && loaded()) {
+        <button type="button" class="destructive" (click)="remove()" i18n="@@eaterRemove">
+          Remove from household
+        </button>
+      }
+    </form>
+  }
+</main>

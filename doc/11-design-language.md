@@ -65,6 +65,9 @@ ever add width.
 Rules that follow:
 
 - **Primary actions sit low**, within thumb reach, not in a top bar.
+- **One row of permanent chrome.** The sticky bar carries navigation and nothing else.
+  Anything chosen once and then left alone — language, theme — sits at the end of the page
+  instead, where it costs no screen on every other visit.
 - **Touch targets are at least 44px**, with at least 8px between them.
 - **One column until the content genuinely needs two.** A second column that exists to fill space
   costs scanning speed.
