@@ -421,6 +421,200 @@
         }
       }
     },
+    "/api/v1/eaters": {
+      "get": {
+        "tags": [
+          "eaters"
+        ],
+        "summary": "List Eaters",
+        "description": "Everyone this cook cooks for.",
+        "operationId": "listEaters",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EaterView"
+                  },
+                  "type": "array",
+                  "title": "Response Listeaters"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "eaters"
+        ],
+        "summary": "Create Eater",
+        "description": "Record somebody new (UC-6.3, UC-6.4).",
+        "operationId": "createEater",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EaterInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EaterView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/eaters/{eater_id}": {
+      "get": {
+        "tags": [
+          "eaters"
+        ],
+        "summary": "Get Eater",
+        "description": "One eater, whole.",
+        "operationId": "getEater",
+        "parameters": [
+          {
+            "name": "eater_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Eater Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EaterView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "eaters"
+        ],
+        "summary": "Replace Eater",
+        "description": "Rewrite an eater, constraints included.\n\nA whole-person replacement rather than a patch, so removing a constraint in the form\nremoves it here \u2014 there is no shape of request that leaves a deleted allergy behind.",
+        "operationId": "replaceEater",
+        "parameters": [
+          {
+            "name": "eater_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Eater Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EaterInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EaterView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "eaters"
+        ],
+        "summary": "Delete Eater",
+        "description": "Forget somebody.",
+        "operationId": "deleteEater",
+        "parameters": [
+          {
+            "name": "eater_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Eater Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Read Root",
@@ -440,6 +634,17 @@
   },
   "components": {
     "schemas": {
+      "AgeBand": {
+        "type": "string",
+        "enum": [
+          "infant",
+          "child",
+          "adult",
+          "elderly"
+        ],
+        "title": "AgeBand",
+        "description": "Drives *suitability* \u2014 honey for infants, texture, portion appropriateness.\n\nDeliberately separate from appetite: two adults of the same age eat different amounts,\nand folding the two together would mean misjudging either portions or safety."
+      },
       "Allergen": {
         "type": "string",
         "enum": [
@@ -492,6 +697,42 @@
         ],
         "title": "BootstrapState",
         "description": "Whether the instance still needs its first admin."
+      },
+      "ConstraintView": {
+        "properties": {
+          "allergen": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Allergen"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ingredient_slug": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingredient Slug"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "severity"
+        ],
+        "title": "ConstraintView",
+        "description": "One thing an eater avoids, as a client reads and writes it.\n\nThe same shape in both directions, so an interface can read a household, edit it, and\nsend it back without translating between two nearly-identical types."
       },
       "Cook": {
         "properties": {
@@ -546,6 +787,85 @@
         ],
         "title": "Credentials",
         "description": "A request to sign in. No length rule \u2014 an old password is still the password."
+      },
+      "EaterInput": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "age_band": {
+            "$ref": "#/components/schemas/AgeBand"
+          },
+          "appetite": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 10.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Appetite",
+            "default": "1"
+          },
+          "constraints": {
+            "items": {
+              "$ref": "#/components/schemas/ConstraintView"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Constraints"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "age_band"
+        ],
+        "title": "EaterInput",
+        "description": "An eater being recorded or corrected (UC-6.3, UC-6.4, UC-6.5).\n\nCarries the whole person, constraints included, because that is what an editing form\nholds. A partial update would need a way to say \"and remove this allergy\", and the\nversion that forgets to is the one that quietly keeps it."
+      },
+      "EaterView": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "age_band": {
+            "$ref": "#/components/schemas/AgeBand"
+          },
+          "appetite": {
+            "type": "string",
+            "title": "Appetite"
+          },
+          "constraints": {
+            "items": {
+              "$ref": "#/components/schemas/ConstraintView"
+            },
+            "type": "array",
+            "title": "Constraints"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "age_band",
+          "appetite",
+          "constraints"
+        ],
+        "title": "EaterView",
+        "description": "Somebody at the table, as a client reads them.\n\n`appetite` is a string for the same reason a quantity's magnitude is: JSON numbers\nare binary floats in a browser, and these are summed to decide how much food to cook."
       },
       "ExchangeDocument": {
         "properties": {
@@ -1192,6 +1512,17 @@
         ],
         "title": "Registration",
         "description": "A request to create an account.\n\nThe password rule lives here rather than in the manager: it constrains the shape of\nthe input, so it is the contract's business, and stating it here means the API\nrejects a short password before any work is done."
+      },
+      "Severity": {
+        "type": "string",
+        "enum": [
+          "medical",
+          "ethical",
+          "intolerance",
+          "preference"
+        ],
+        "title": "Severity",
+        "description": "How seriously a constraint is meant, which is what decides behaviour.\n\nWithout this every constraint is treated alike, and either a disliked ingredient bars a\nmenu or a life-threatening allergen appears as a suggestion. Both are wrong."
       },
       "StatusResponse": {
         "properties": {

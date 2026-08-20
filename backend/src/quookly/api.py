@@ -14,6 +14,7 @@ from .access.database import dispose_engine
 from .managers.seed import stock_registry
 from .routes import (
     accounts_router,
+    eaters_router,
     ingredients_router,
     recipes_router,
     status_router,
@@ -98,6 +99,7 @@ app.include_router(status_router, prefix=API_PREFIX, tags=["status"])
 app.include_router(accounts_router, prefix=API_PREFIX, tags=["accounts"])
 app.include_router(recipes_router, prefix=API_PREFIX, tags=["recipes"])
 app.include_router(ingredients_router, prefix=API_PREFIX, tags=["ingredients"])
+app.include_router(eaters_router, prefix=API_PREFIX, tags=["eaters"])
 
 
 @app.get("/")
