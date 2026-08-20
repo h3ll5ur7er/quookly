@@ -67,9 +67,7 @@ def pancakes(pantry: dict[str, int]) -> RecipeInput:
             IngredientLineInput(
                 ingredient_id=pantry["plain-flour"], magnitude=Decimal("225"), unit="g"
             ),
-            IngredientLineInput(
-                ingredient_id=pantry["egg"], magnitude=Decimal("2"), unit="piece"
-            ),
+            IngredientLineInput(ingredient_id=pantry["egg"], magnitude=Decimal("2"), unit="piece"),
         ],
         steps=[StepInput(instruction="Whisk."), StepInput(instruction="Fry.")],
     )

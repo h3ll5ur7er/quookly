@@ -129,9 +129,7 @@ async def resolve(name: str, locale: str) -> Ingredient | None:
         return _to_contract(row, display, frozenset(entry.allergen for entry in carried))
 
 
-async def name_for(
-    active: AsyncSession, ingredient_id: int, locale: str, fallback: str
-) -> str:
+async def name_for(active: AsyncSession, ingredient_id: int, locale: str, fallback: str) -> str:
     """What to call this ingredient in `locale` — the canonical name, not an alias.
 
     Shared with `recipe` access, which resolves a line's ingredient the same way.

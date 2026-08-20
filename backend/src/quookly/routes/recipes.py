@@ -54,9 +54,7 @@ async def export_recipes(cook: CurrentCook) -> ExchangeDocument:
     return await recipe_manager.export_for(cook.cook_id, DEFAULT_LOCALE)
 
 
-@router.post(
-    "/recipes/import", response_model=ImportOutcome, status_code=status.HTTP_201_CREATED
-)
+@router.post("/recipes/import", response_model=ImportOutcome, status_code=status.HTTP_201_CREATED)
 async def import_recipes(document: dict[str, Any], cook: CurrentCook) -> ImportOutcome:
     """Read an exported document into this instance (UC-1.2)."""
     try:

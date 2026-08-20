@@ -92,8 +92,7 @@ def _outcome(findings: list[Finding]) -> Outcome:
     if any(finding.unknown and not finding.avoidable for finding in findings):
         return Outcome.UNKNOWN
     if any(
-        finding.severity is Severity.INTOLERANCE and not finding.avoidable
-        for finding in findings
+        finding.severity is Severity.INTOLERANCE and not finding.avoidable for finding in findings
     ):
         return Outcome.CAUTION
     return Outcome.SUITABLE

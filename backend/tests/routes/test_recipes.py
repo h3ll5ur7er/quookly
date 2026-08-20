@@ -285,18 +285,14 @@ class TestExchange:
         exported = (await client.get("/api/v1/recipes/export", headers=mine)).json()
 
         theirs = await sign_up(client, "other@example.com")
-        response = await client.post(
-            "/api/v1/recipes/import", json=exported, headers=theirs
-        )
+        response = await client.post("/api/v1/recipes/import", json=exported, headers=theirs)
         assert response.status_code == 201
         assert response.json() == {"recipes_added": 1, "ingredients_added": 0}
 
         listed = await client.get("/api/v1/recipes", headers=theirs)
         assert [item["title"] for item in listed.json()] == ["Pancakes"]
 
-    async def test_a_document_this_build_cannot_read_is_refused(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_a_document_this_build_cannot_read_is_refused(self, client: AsyncClient) -> None:
         headers = await sign_up(client, "chef@example.com")
         response = await client.post(
             "/api/v1/recipes/import", json={"quookly": 99, "recipes": []}, headers=headers

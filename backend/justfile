@@ -22,6 +22,11 @@ lint:
 format:
     uv run ruff format .
 
+# Formatting is a gate, not a suggestion. Without this in `check`, drift accumulates
+# quietly and the next `just format` produces a diff belonging to nobody's change.
+format-check:
+    uv run ruff format --check .
+
 typecheck:
     uv run mypy .
 
@@ -51,6 +56,7 @@ makemigration *message:
     uv run ruff check --fix alembic/versions
 
 check:
+    just format-check
     just lint
     just typecheck
     just architecture

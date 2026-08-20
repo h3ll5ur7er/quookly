@@ -70,8 +70,7 @@ def convert(quantity: Quantity, target: Unit, density: Decimal | None = None) ->
 
     if density is None or density <= 0:
         raise DensityRequired(
-            f"converting {quantity.unit.symbol} to {target.symbol} needs a density; "
-            f"got {density!r}"
+            f"converting {quantity.unit.symbol} to {target.symbol} needs a density; got {density!r}"
         )
 
     millilitres_or_grams = quantity.magnitude * _IN_BASE_UNITS[quantity.unit]

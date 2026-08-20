@@ -67,9 +67,7 @@ class TestBootstrap:
         state = await client.get("/api/v1/accounts/bootstrap")
         assert state.json() == {"required": False}
 
-    async def test_bootstrapping_twice_is_a_conflict_not_a_crash(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_bootstrapping_twice_is_a_conflict_not_a_crash(self, client: AsyncClient) -> None:
         await client.post("/api/v1/accounts/bootstrap", json=REGISTRATION)
         second = await client.post(
             "/api/v1/accounts/bootstrap", json={**REGISTRATION, "email": "other@example.com"}
@@ -88,9 +86,7 @@ class TestRegistration:
         second = await client.post("/api/v1/accounts", json=REGISTRATION)
         assert second.status_code == 409
 
-    async def test_a_short_password_is_rejected_before_any_work(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_a_short_password_is_rejected_before_any_work(self, client: AsyncClient) -> None:
         response = await client.post("/api/v1/accounts", json={**REGISTRATION, "password": "short"})
         assert response.status_code == 422
 

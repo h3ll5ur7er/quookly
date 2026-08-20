@@ -163,7 +163,7 @@ Root recipes fan out to all three projects:
 | `just typecheck` | mypy (backend, cli) + ngc (frontend, templates included) |
 | `just format` | ruff format + prettier |
 | `just test` | pytest + vitest |
-| `just check` | lint + typecheck + contrast + translations + test across all three |
+| `just check` | format, lint, typecheck, contrast, translations, and test across all three |
 | `just build` | install, codegen, lint, typecheck, test, frontend build |
 | `just clean` | Remove caches and build output |
 

@@ -80,9 +80,7 @@ class TestTokens:
         token = issue_token(cook_id=7, is_admin=False, lifetime=timedelta(seconds=-1))
         assert read_token(token) is None
 
-    def test_a_token_signed_with_another_key_is_rejected(
-        self, monkeypatch: MonkeyPatch
-    ) -> None:
+    def test_a_token_signed_with_another_key_is_rejected(self, monkeypatch: MonkeyPatch) -> None:
         """Tokens from another instance, or from before a key rotation, are not ours."""
         token = issue_token(cook_id=7, is_admin=False)
         monkeypatch.setenv("QUOOKLY_SECRET_KEY", "a-different-key-that-is-also-long-enough-xxxx")
@@ -92,9 +90,11 @@ class TestTokens:
     def test_a_tampered_payload_is_rejected(self) -> None:
         token = issue_token(cook_id=7, is_admin=False)
         header, payload, signature = token.split(".")
-        forged = base64.urlsafe_b64encode(
-            json.dumps({"sub": "7", "admin": True}).encode()
-        ).rstrip(b"=").decode()
+        forged = (
+            base64.urlsafe_b64encode(json.dumps({"sub": "7", "admin": True}).encode())
+            .rstrip(b"=")
+            .decode()
+        )
         assert read_token(f"{header}.{forged}.{signature}") is None
 
     def test_an_unsigned_token_is_rejected(self) -> None:

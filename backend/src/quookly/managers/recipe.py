@@ -116,9 +116,7 @@ async def present(
 async def _present(
     recipe: Recipe, preferences: UnitPreferences, servings: Decimal | None
 ) -> PresentedRecipe:
-    factor = (
-        Decimal(1) if servings is None else servings / recipe.yield_quantity.magnitude
-    )
+    factor = Decimal(1) if servings is None else servings / recipe.yield_quantity.magnitude
     scaled_yield = measure.scale(recipe.yield_quantity, factor)
 
     lines = []

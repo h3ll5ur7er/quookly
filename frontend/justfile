@@ -53,6 +53,7 @@ e2e:
     just _nvm "npm run e2e"
 
 check:
+    just format-check
     just lint
     just typecheck
     just contrast

@@ -165,9 +165,7 @@ class TestRoundTrip:
         assert [line.slug for line in read.lines] == [
             line.ingredient.slug for line in original.lines
         ]
-        assert [line.quantity for line in read.lines] == [
-            line.quantity for line in original.lines
-        ]
+        assert [line.quantity for line in read.lines] == [line.quantity for line in original.lines]
         assert [line.preparation for line in read.lines] == ["sifted", None]
         assert [line.optional for line in read.lines] == [False, True]
         assert [(s.instruction, s.duration_seconds) for s in read.steps] == [

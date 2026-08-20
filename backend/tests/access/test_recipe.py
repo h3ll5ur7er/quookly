@@ -228,9 +228,7 @@ class TestUnregisteredIngredients:
             yield_quantity=Quantity(Decimal("1"), Unit.PIECE),
             provenance=Provenance.AUTHORED,
             lines=[
-                IngredientLineDraft(
-                    ingredient_id=9999, quantity=Quantity(Decimal("1"), Unit.GRAM)
-                )
+                IngredientLineDraft(ingredient_id=9999, quantity=Quantity(Decimal("1"), Unit.GRAM))
             ],
             steps=[StepDraft(instruction="Do it.")],
         )
