@@ -28,8 +28,19 @@ lint:
 format:
     just _nvm "npm run format"
 
+format-check:
+    just _nvm "npm run format:check"
+
+typecheck:
+    just _nvm "npm run typecheck"
+
+check:
+    just lint
+    just typecheck
+    just test
+
 generate-openapi-client:
     just _nvm "npm run generate-openapi"
-    
+
 clean:
     rm -rf .angular

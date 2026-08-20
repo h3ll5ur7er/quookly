@@ -24,7 +24,21 @@ lint:
     @just backend lint
     @just cli lint
     @just frontend lint
-    
+
+typecheck:
+    @just backend typecheck
+    @just cli typecheck
+    @just frontend typecheck
+
+format:
+    @just backend format
+    @just cli format
+    @just frontend format
+
+check:
+    @just backend check
+    @just cli check
+    @just frontend check
 
 clean:
     @just backend clean
@@ -35,12 +49,11 @@ build:
     @just install
     @just openapi
     @just lint
+    @just typecheck
     @just test
     @just frontend build
 
-    
 openapi:
     @just backend export-openapi
     @just cli generate-openapi-client
     @just frontend generate-openapi-client
-    

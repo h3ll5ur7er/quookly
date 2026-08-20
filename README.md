@@ -1,8 +1,11 @@
-# Fullstack webapp template
+# Quookly
+
+A fullstack cooking app: a FastAPI backend, a Typer management CLI and an Angular 21 frontend,
+wired together automatically through OpenAPI codegen.
 
 ## Tools
 
-- management cli via 
+- management CLI built with Typer
 - fully automated wiring of backend, frontend and cli via openapi and codegen
 - justfiles that encapsulate all important commands for development
 
@@ -13,19 +16,21 @@
 - nvm
 - openjdk-jre (only for codegen, not required for development or running the app)
 
-## Developemnt
+## Development
 
 ### getting started
 
 - install prerequisites
 - install dependencies: `just install`
+- generate the API clients: `just openapi` (required — both clients are gitignored)
 - start the backend: `just backend run`
+- for frontend work, start the dev server too: `just frontend serve`
 
 ### uv
 
-The python projects are managed by uv, therefor the usage of "pip install", "uv pip install", "python -m pip install" are prohibited.
+The python projects are managed by uv, therefore the usage of "pip install", "uv pip install", "python -m pip install" is prohibited.
 
-To install dependecies use `uv add <dep>`
+To install dependencies use `uv add <dep>` (or `uv add --dev <dep>`)
 To run things use `uv run <thing>`
 
 ### just commands
@@ -35,13 +40,17 @@ All tools and entrypoints you might need commonly are encapsulated in justfiles:
 #### `just <cmd>`
 
 - `just`: list available commands
-- `just backed <cmd>`: backend related commands
+- `just backend <cmd>`: backend related commands
 - `just cli <cmd>`: cli related commands
 - `just frontend <cmd>`: frontend related commands
-- `just test`: run all test
+- `just test`: run all tests
 - `just lint`: lint all projects
-- `just openapi`: generate openapi client for all projects
-- `just build`: codegen, typecheck, lint, test and build all projects
+- `just typecheck`: typecheck all projects
+- `just format`: format all projects
+- `just check`: lint, typecheck and test all projects
+- `just openapi`: regenerate the openapi schema and both clients
+- `just build`: install, codegen, lint, typecheck, test and build all projects
+- `just clean`: remove caches and build output in all projects
 
 #### `just backend <cmd>`
 
@@ -75,8 +84,28 @@ All tools and entrypoints you might need commonly are encapsulated in justfiles:
 - `just frontend test`: run frontend tests
 - `just frontend lint`: lints frontend code
 - `just frontend format`: formats frontend code
+- `just frontend typecheck`: typechecks frontend code (including Angular templates)
+- `just frontend format-check`: checks formatting without writing
 - `just frontend check`: checks frontend code (lint, typecheck, run tests)
 - `just frontend generate-openapi-client`: generate openapi client
+
+### The OpenAPI contract
+
+The backend is the single source of truth for the API. Both clients are **generated** — never
+hand-write HTTP calls or DTOs in the cli or the frontend, and never edit generated code.
+
+```
+backend routes + pydantic models
+  └─ just backend export-openapi   →  openapi.json
+       ├─ just cli generate-openapi-client       → cli/src/quookly_cli/api_client/
+       └─ just frontend generate-openapi-client  → frontend/src/api/
+```
+
+Run `just openapi` after every backend API change. Both generated directories are gitignored, so a
+fresh clone needs `just install && just openapi` before the frontend will compile.
+
+A route's **function name** determines the generated client method name (`get_status` → `getStatus`),
+and must be unique within its tag.
 
 ### Architecture
 

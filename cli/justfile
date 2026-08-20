@@ -5,7 +5,7 @@ install:
     uv sync
 
 run *args:
-    uv run my_fullstack_template {{args}}
+    uv run quookly-cli {{args}}
 
 test:
     uv run pytest
@@ -25,7 +25,7 @@ check:
     just test
 
 generate-openapi-client:
-    uv run my_fullstack_template codegen openapi generate --path ../openapi.json --output-path src/my_fullstack_template/api_client/ --meta none --overwrite 
+    uv run quookly-cli codegen openapi generate --path ../openapi.json --output-path src/quookly_cli/api_client/ --meta none --overwrite 
     
 clean:
     # pycache

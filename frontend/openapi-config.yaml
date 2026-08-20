@@ -1,7 +1,7 @@
 generatorName: typescript-angular
 outputDir: ./src/api
 additionalProperties:
-  npmName: "@my-fullstack-template/api"
+  npmName: '@quookly/api'
   fileNaming: kebab-case
   withoutPrefixEnums: true
   stringEnums: true

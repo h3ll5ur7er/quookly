@@ -13,9 +13,7 @@ module.exports = defineConfig([
       tseslint.configs.stylistic,
       angular.configs.tsRecommended,
     ],
-    ignores: [
-      'src/api/**/*'
-    ],
+    ignores: ['src/api/**/*'],
     processor: angular.processInlineTemplates,
     rules: {
       '@angular-eslint/directive-selector': [

@@ -17,7 +17,7 @@
     "module": "preserve",
     "paths": {
       "@api/*": ["api/*"],
-      "@api": ["api/index.ts"],
+      "@api": ["api/index.ts"]
     }
   },
   "angularCompilerOptions": {

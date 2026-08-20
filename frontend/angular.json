@@ -8,7 +8,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "my-fullstack-template": {
+    "quookly": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -32,7 +32,7 @@
               }
             ],
             "styles": ["src/styles.scss"],
-            "outputPath": "../backend/src/my_fullstack_template/app/"
+            "outputPath": "../backend/src/quookly/app/"
           },
           "configurations": {
             "production": {
@@ -62,10 +62,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "my-fullstack-template:build:production"
+              "buildTarget": "quookly:build:production"
             },
             "development": {
-              "buildTarget": "my-fullstack-template:build:development"
+              "buildTarget": "quookly:build:development"
             }
           },
           "defaultConfiguration": "development"

@@ -5,10 +5,10 @@ install:
     uv sync
 
 run *args:
-    uv run my_fullstack_template {{args}}
+    uv run quookly {{args}}
 
 serve:
-    uv run my_fullstack_template
+    uv run quookly
 
 export-openapi:
     uv run export_openapi > ../openapi.json

@@ -7,9 +7,11 @@ import { StatusService } from '@api';
   selector: 'app-status',
   imports: [AsyncPipe],
   templateUrl: './status.component.html',
-  styleUrls: ['./status.component.scss']
+  styleUrls: ['./status.component.scss'],
 })
 export class StatusComponent {
-  protected readonly title = signal('MyFullstackTemplate Status');
-  protected readonly status = inject(StatusService).getStatus().pipe(map(status => status.status));
+  protected readonly title = signal('Quookly Status');
+  protected readonly status = inject(StatusService)
+    .getStatus()
+    .pipe(map((status) => status.status));
 }

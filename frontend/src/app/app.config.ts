@@ -8,6 +8,6 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideApi(window.location.origin),
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes)
-  ]
+    provideRouter(routes),
+  ],
 };

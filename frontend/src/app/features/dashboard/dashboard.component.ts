@@ -5,8 +5,8 @@ import { StatusComponent } from '../../core/status/status.component';
   selector: 'app-dashboard',
   imports: [StatusComponent],
   templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.scss']
+  styleUrls: ['./dashboard.component.scss'],
 })
 export class DashboardComponent {
-  protected readonly title = signal('MyFullstackTemplate Dashboard');
+  protected readonly title = signal('Quookly Dashboard');
 }

@@ -1,5 +1,5 @@
 [project]
-name = "my_fullstack_template"
+name = "quookly"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -16,9 +16,26 @@ dev = [
     "ruff>=0.15.15",
 ]
 [project.scripts]
-my_fullstack_template = "my_fullstack_template.api:main"
-export_openapi = "my_fullstack_template.api:export_openapi"
+quookly = "quookly.api:main"
+export_openapi = "quookly.api:export_openapi"
 
 [build-system]
 requires = ["uv_build>=0.11.14"]
 build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["src/quookly/app"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src", "tests"]
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
