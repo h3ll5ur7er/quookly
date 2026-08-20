@@ -433,6 +433,10 @@ so a document cannot forge a seeded row that an upgrade would later feel free to
 A document declaring a format version this build does not know is refused rather than partially
 read: honouring the parts we recognise would silently drop whatever the newer format added.
 
+**Adding an optional field does not bump the version.** Allergen classification arrived that way: an
+absent `allergens` field means unexamined, which is exactly what a document written before it existed
+knows. Removing or changing the meaning of a field would bump it.
+
 ---
 
 ## ADR-013 Cooking sessions are server-side state; timers store instants

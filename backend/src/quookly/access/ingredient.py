@@ -8,9 +8,9 @@ from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from quookly.access.database import session
-from quookly.access.models import IngredientNameRow, IngredientRow
+from quookly.access.models import IngredientAllergenRow, IngredientNameRow, IngredientRow
 from quookly.contracts.errors import IngredientAlreadyRegistered
-from quookly.contracts.ingredient import Ingredient, IngredientKind, Origin
+from quookly.contracts.ingredient import Allergen, Ingredient, IngredientKind, Origin
 
 # The registry is seeded in English, so a Swiss instance must still resolve a seeded name
 # until a translation for it exists. The fallback is to this one locale only: matching
@@ -25,7 +25,9 @@ def normalise(name: str) -> str:
     return _WHITESPACE.sub(" ", name.strip().lower())
 
 
-def _to_contract(row: IngredientRow, name: str) -> Ingredient:
+def _to_contract(
+    row: IngredientRow, name: str, allergens: frozenset[Allergen] = frozenset()
+) -> Ingredient:
     assert row.id is not None, "a persisted ingredient always has an id"
     return Ingredient(
         id=row.id,
@@ -34,6 +36,8 @@ def _to_contract(row: IngredientRow, name: str) -> Ingredient:
         name=name,
         density=row.density,
         origin=row.origin,
+        allergens=allergens,
+        classified=row.allergens_classified,
     )
 
 
@@ -44,9 +48,20 @@ async def register(
     density: Decimal | None,
     names: dict[str, list[str]],
     origin: Origin = Origin.USER,
+    allergens: frozenset[Allergen] | None = None,
 ) -> Ingredient:
-    """Add an entry. The first name given for a locale is that locale's canonical one."""
-    row = IngredientRow(slug=slug, kind=kind, density=density, origin=origin)
+    """Add an entry. The first name given for a locale is that locale's canonical one.
+
+    `allergens=None` means nobody has classified it — which is not the same as an empty
+    set, and is the default because adding an ingredient is not classifying it.
+    """
+    row = IngredientRow(
+        slug=slug,
+        kind=kind,
+        density=density,
+        origin=origin,
+        allergens_classified=allergens is not None,
+    )
     async with session() as active:
         active.add(row)
         try:
@@ -66,13 +81,16 @@ async def register(
                         is_canonical=position == 0,
                     )
                 )
+        for allergen in allergens or frozenset():
+            active.add(IngredientAllergenRow(ingredient_id=row.id, allergen=allergen))
+
         try:
             await active.commit()
         except IntegrityError as exc:
             raise IngredientAlreadyRegistered(slug) from exc
         await active.refresh(row)
         canonical = names.get(SOURCE_LOCALE, next(iter(names.values())))[0]
-        return _to_contract(row, canonical)
+        return _to_contract(row, canonical, allergens or frozenset())
 
 
 async def resolve(name: str, locale: str) -> Ingredient | None:
@@ -101,7 +119,14 @@ async def resolve(name: str, locale: str) -> Ingredient | None:
             return None
 
         display = await name_for(active, matched.ingredient_id, locale, matched.name)
-        return _to_contract(row, display)
+        carried = (
+            await active.exec(
+                select(IngredientAllergenRow).where(
+                    col(IngredientAllergenRow.ingredient_id) == matched.ingredient_id
+                )
+            )
+        ).all()
+        return _to_contract(row, display, frozenset(entry.allergen for entry in carried))
 
 
 async def name_for(
@@ -195,3 +220,68 @@ async def search(term: str, locale: str, limit: int = 20) -> list[Ingredient]:
             found[row.id] = _to_contract(row, display)
 
     return sorted(found.values(), key=lambda entry: entry.name)[:limit]
+
+
+async def classify(slug: str, allergens: frozenset[Allergen]) -> None:
+    """Record which allergens an ingredient contains, replacing any earlier answer.
+
+    An empty set is a real answer — "somebody looked, and it contains none" — and is what
+    separates a classified ingredient from an unexamined one.
+    """
+    async with session() as active:
+        row = (
+            await active.exec(select(IngredientRow).where(col(IngredientRow.slug) == slug))
+        ).first()
+        if row is None or row.id is None:
+            return
+
+        existing = (
+            await active.exec(
+                select(IngredientAllergenRow).where(
+                    col(IngredientAllergenRow.ingredient_id) == row.id
+                )
+            )
+        ).all()
+        for entry in existing:
+            await active.delete(entry)
+        for allergen in allergens:
+            active.add(IngredientAllergenRow(ingredient_id=row.id, allergen=allergen))
+
+        row.allergens_classified = True
+        active.add(row)
+        await active.commit()
+
+
+async def allergens_for(
+    ingredient_ids: list[int],
+) -> dict[int, tuple[frozenset[Allergen], bool]]:
+    """Allergens and classification for a whole recipe at once.
+
+    One query for a verdict rather than one per ingredient, and the boolean travels with
+    the set so a caller cannot accidentally read silence as safety.
+    """
+    if not ingredient_ids:
+        return {}
+    async with session() as active:
+        rows = (
+            await active.exec(
+                select(IngredientRow).where(col(IngredientRow.id).in_(ingredient_ids))
+            )
+        ).all()
+        carried = (
+            await active.exec(
+                select(IngredientAllergenRow).where(
+                    col(IngredientAllergenRow.ingredient_id).in_(ingredient_ids)
+                )
+            )
+        ).all()
+
+    by_ingredient: dict[int, set[Allergen]] = {}
+    for entry in carried:
+        by_ingredient.setdefault(entry.ingredient_id, set()).add(entry.allergen)
+
+    return {
+        row.id: (frozenset(by_ingredient.get(row.id, set())), row.allergens_classified)
+        for row in rows
+        if row.id is not None
+    }

@@ -440,6 +440,27 @@
   },
   "components": {
     "schemas": {
+      "Allergen": {
+        "type": "string",
+        "enum": [
+          "gluten",
+          "crustaceans",
+          "eggs",
+          "fish",
+          "peanuts",
+          "soybeans",
+          "milk",
+          "tree_nuts",
+          "celery",
+          "mustard",
+          "sesame",
+          "sulphites",
+          "lupin",
+          "molluscs"
+        ],
+        "title": "Allergen",
+        "description": "The allergen classes that must be declared on food sold in the EU and Switzerland.\n\nA fixed, externally defined list rather than free text: a constraint and an ingredient\nhave to mean the same thing by \"nuts\" for a verdict to be worth anything. Anything\noutside these fourteen is avoided by ingredient instead."
+      },
       "Authenticated": {
         "properties": {
           "token": {
@@ -595,6 +616,20 @@
             "type": "array",
             "minItems": 1,
             "title": "Names"
+          },
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Allergen"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
           }
         },
         "type": "object",

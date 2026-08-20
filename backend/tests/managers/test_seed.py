@@ -15,7 +15,7 @@ from sqlmodel import SQLModel
 from quookly.access import cook as cook_access
 from quookly.access import ingredient as registry
 from quookly.access.database import dispose_engine, get_engine
-from quookly.contracts.ingredient import IngredientKind, Origin
+from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.managers import seed
 from quookly.utilities.configuration import get_settings
 
@@ -137,3 +137,34 @@ class TestStarterRecipes:
         assert presented is not None
         assert presented.lines[0].quantity.display == "225 g"
         assert presented.lines[0].ingredient == "unsalted butter"
+
+
+class TestTheSeededClassification:
+    def test_every_seeded_ingredient_is_classified(self) -> None:
+        """An unclassified staple would make ordinary recipes read as unknown forever."""
+        unclassified = [
+            entry["slug"]
+            for entry in seed.read_seed_file()["ingredients"]
+            if entry.get("allergens") is None
+        ]
+        assert unclassified == []
+
+    def test_the_obvious_ones_are_right(self) -> None:
+        entries = {e["slug"]: e for e in seed.read_seed_file()["ingredients"]}
+        assert entries["plain-flour"]["allergens"] == ["gluten"]
+        assert entries["unsalted-butter"]["allergens"] == ["milk"]
+        assert entries["egg"]["allergens"] == ["eggs"]
+        assert entries["ground-almonds"]["allergens"] == ["tree_nuts"]
+
+    def test_something_containing_none_says_so_rather_than_staying_silent(self) -> None:
+        entries = {e["slug"]: e for e in seed.read_seed_file()["ingredients"]}
+        assert entries["caster-sugar"]["allergens"] == []
+
+    async def test_the_classification_survives_into_the_registry(self) -> None:
+        await seed.stock_registry()
+        butter = await registry.resolve("unsalted butter", ENGLISH)
+        sugar = await registry.resolve("caster sugar", ENGLISH)
+        assert butter is not None and sugar is not None
+
+        assert butter.classified and Allergen.MILK in butter.allergens
+        assert sugar.classified and sugar.allergens == frozenset()

@@ -20,7 +20,7 @@ from quookly.contracts.exchange import (
     ExchangeRecipe,
     ExchangeStep,
 )
-from quookly.contracts.ingredient import IngredientKind
+from quookly.contracts.ingredient import Allergen, IngredientKind
 from quookly.contracts.measure import Quantity, Unit
 from quookly.contracts.recipe import Provenance, Recipe
 
@@ -60,6 +60,7 @@ class ReadIngredient:
     kind: IngredientKind
     density: Decimal | None
     names: list[str]
+    allergens: frozenset[Allergen] | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,6 +87,9 @@ def to_document(recipes: list[Recipe], locale: str) -> ExchangeDocument:
                     kind=entry.kind,
                     density=entry.density,
                     names=[entry.name],
+                    allergens=sorted(entry.allergens, key=lambda a: a.value)
+                    if entry.classified
+                    else None,
                 ),
             )
 
@@ -153,7 +157,11 @@ def from_document(raw: dict[str, Any]) -> ReadDocument:
         locale=document.locale,
         ingredients=[
             ReadIngredient(
-                slug=entry.slug, kind=entry.kind, density=entry.density, names=list(entry.names)
+                slug=entry.slug,
+                kind=entry.kind,
+                density=entry.density,
+                names=list(entry.names),
+                allergens=None if entry.allergens is None else frozenset(entry.allergens),
             )
             for entry in document.ingredients
         ],

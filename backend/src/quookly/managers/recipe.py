@@ -209,6 +209,7 @@ async def import_document(raw: dict[str, Any], cook_id: int, locale: str) -> Imp
             kind=entry.kind,
             density=entry.density,
             names={document.locale: entry.names},
+            allergens=entry.allergens,
         )
 
     ids = await registry.ids_by_slug(sorted(referenced))

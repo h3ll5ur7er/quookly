@@ -17,7 +17,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from quookly.contracts.ingredient import IngredientKind
+from quookly.contracts.ingredient import Allergen, IngredientKind
 from quookly.contracts.recipe import Provenance
 
 
@@ -30,6 +30,9 @@ class ExchangeIngredient(BaseModel):
     kind: IngredientKind
     density: Decimal | None = None
     names: list[str] = Field(min_length=1)
+    # Absent means nobody classified it; an empty list means somebody did and it contains
+    # none. The distinction is the basis of ADR-006 and survives the journey intact.
+    allergens: list[Allergen] | None = None
 
 
 class ExchangeLine(BaseModel):

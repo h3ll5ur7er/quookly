@@ -54,6 +54,7 @@ async def stock_registry(locale: str = DEFAULT_SEED_LOCALE) -> int:
             density=entry.density,
             names={document.locale: entry.names},
             origin=Origin.SEED,
+            allergens=entry.allergens,
         )
         added += 1
 

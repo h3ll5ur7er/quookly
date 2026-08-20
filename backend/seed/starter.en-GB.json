@@ -11,6 +11,9 @@
         "plain flour",
         "all-purpose flour",
         "white flour"
+      ],
+      "allergens": [
+        "gluten"
       ]
     },
     {
@@ -20,6 +23,9 @@
       "names": [
         "wholemeal flour",
         "whole wheat flour"
+      ],
+      "allergens": [
+        "gluten"
       ]
     },
     {
@@ -29,7 +35,8 @@
       "names": [
         "cornflour",
         "cornstarch"
-      ]
+      ],
+      "allergens": []
     },
     {
       "slug": "caster-sugar",
@@ -38,7 +45,8 @@
       "names": [
         "caster sugar",
         "superfine sugar"
-      ]
+      ],
+      "allergens": []
     },
     {
       "slug": "granulated-sugar",
@@ -47,7 +55,8 @@
       "names": [
         "granulated sugar",
         "white sugar"
-      ]
+      ],
+      "allergens": []
     },
     {
       "slug": "icing-sugar",
@@ -56,7 +65,8 @@
       "names": [
         "icing sugar",
         "powdered sugar"
-      ]
+      ],
+      "allergens": []
     },
     {
       "slug": "brown-sugar",
@@ -64,7 +74,8 @@
       "density": "0.90",
       "names": [
         "brown sugar"
-      ]
+      ],
+      "allergens": []
     },
     {
       "slug": "fine-salt",
@@ -74,7 +85,8 @@
         "fine salt",
         "table salt",
         "salt"
-      ]
+      ],
+      "allergens": []
     },
     {
       "slug": "baking-powder",
@@ -82,7 +94,8 @@
       "density": "0.90",
       "names": [
         "baking powder"
-      ]
+      ],
+      "allergens": []
     },
     {
       "slug": "bicarbonate-of-soda",
@@ -91,7 +104,8 @@
       "names": [
         "bicarbonate of soda",
         "baking soda"
-      ]
+      ],
+      "allergens": []
     },
     {
       "slug": "cocoa-powder",
@@ -99,7 +113,8 @@
       "density": "0.45",
       "names": [
         "cocoa powder"
-      ]
+      ],
+      "allergens": []
     },
     {
       "slug": "ground-almonds",
@@ -108,6 +123,9 @@
       "names": [
         "ground almonds",
         "almond flour"
+      ],
+      "allergens": [
+        "tree_nuts"
       ]
     },
     {
@@ -117,6 +135,9 @@
       "names": [
         "rolled oats",
         "porridge oats"
+      ],
+      "allergens": [
+        "gluten"
       ]
     },
     {
@@ -126,7 +147,8 @@
       "names": [
         "rice",
         "long-grain rice"
-      ]
+      ],
+      "allergens": []
     },
     {
       "slug": "water",
@@ -134,7 +156,8 @@
       "density": "1.00",
       "names": [
         "water"
-      ]
+      ],
+      "allergens": []
     },
     {
       "slug": "whole-milk",
@@ -144,6 +167,9 @@
         "whole milk",
         "milk",
         "full-fat milk"
+      ],
+      "allergens": [
+        "milk"
       ]
     },
     {
@@ -153,6 +179,9 @@
       "names": [
         "double cream",
         "heavy cream"
+      ],
+      "allergens": [
+        "milk"
       ]
     },
     {
@@ -161,7 +190,8 @@
       "density": "0.91",
       "names": [
         "olive oil"
-      ]
+      ],
+      "allergens": []
     },
     {
       "slug": "vegetable-oil",
@@ -170,7 +200,8 @@
       "names": [
         "vegetable oil",
         "sunflower oil"
-      ]
+      ],
+      "allergens": []
     },
     {
       "slug": "honey",
@@ -178,7 +209,8 @@
       "density": "1.42",
       "names": [
         "honey"
-      ]
+      ],
+      "allergens": []
     },
     {
       "slug": "white-wine",
@@ -186,6 +218,9 @@
       "density": "0.99",
       "names": [
         "white wine"
+      ],
+      "allergens": [
+        "sulphites"
       ]
     },
     {
@@ -196,6 +231,9 @@
         "unsalted butter",
         "sweet butter",
         "butter"
+      ],
+      "allergens": [
+        "milk"
       ]
     },
     {
@@ -205,6 +243,9 @@
       "names": [
         "plain yoghurt",
         "natural yoghurt"
+      ],
+      "allergens": [
+        "milk"
       ]
     },
     {
@@ -214,6 +255,9 @@
       "names": [
         "egg",
         "eggs"
+      ],
+      "allergens": [
+        "eggs"
       ]
     },
     {
@@ -222,7 +266,8 @@
       "density": null,
       "names": [
         "onion"
-      ]
+      ],
+      "allergens": []
     },
     {
       "slug": "garlic-clove",
@@ -231,7 +276,8 @@
       "names": [
         "garlic clove",
         "clove of garlic"
-      ]
+      ],
+      "allergens": []
     },
     {
       "slug": "lemon",
@@ -239,7 +285,8 @@
       "density": null,
       "names": [
         "lemon"
-      ]
+      ],
+      "allergens": []
     }
   ],
   "recipes": [

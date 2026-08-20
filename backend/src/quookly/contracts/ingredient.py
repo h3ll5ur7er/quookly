@@ -70,6 +70,11 @@ class Ingredient:
     name: str
     density: Decimal | None
     origin: Origin
+    allergens: frozenset[Allergen] = frozenset()
+    # Whether anybody has ever classified this ingredient's allergens. An empty set with
+    # `classified=False` means "nobody has looked", which is a different fact from
+    # "contains none" — and treating them alike is how unknown becomes safe (ADR-006).
+    classified: bool = False
 
 
 class IngredientView(BaseModel):

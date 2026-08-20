@@ -156,6 +156,18 @@ is avoided by naming the ingredient instead.
 An **optional** ingredient never bars a recipe: it can be left out, and telling a cook to omit the
 butter is more useful than refusing them the recipe. It is still reported.
 
+### Classified, or unexamined
+
+A registry entry records both which allergens it contains **and whether anybody has ever looked**.
+Those are different facts: an ingredient classified as containing none is safe, and one nobody has
+examined is unknown. Storing only a set of allergens would flatten the two, and the flattened value
+reads as safe — which is the failure ADR-006 exists to prevent.
+
+The distinction survives export and import. In the interchange format an absent `allergens` field
+means unexamined and an empty list means examined and clear, so a recipe crossing between instances
+does not quietly become safer than it was. The field is additive and optional, so documents written
+before it existed still read — and read as unexamined, which is exactly what they know.
+
 ### Stock item and reservation
 
 A **stock item** is a quantity of an ingredient, with optional expiry and a source. A

@@ -10,7 +10,7 @@ from decimal import Decimal
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
-from quookly.contracts.ingredient import IngredientKind, Origin
+from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.contracts.measure import Unit
 from quookly.contracts.recipe import Provenance, Visibility
 
@@ -43,6 +43,9 @@ class IngredientRow(SQLModel, table=True):
     # Grams per millilitre. Absent where converting mass to volume is meaningless.
     density: Decimal | None = Field(default=None, max_digits=8, decimal_places=4)
     origin: Origin = Field(default=Origin.USER)
+    # Whether anybody has classified this ingredient's allergens. Absent rows in
+    # `ingredient_allergen` mean "contains none" only when this is true.
+    allergens_classified: bool = Field(default=False)
 
 
 class IngredientNameRow(SQLModel, table=True):
@@ -123,3 +126,14 @@ class UnitPreferenceRow(SQLModel, table=True):
     cook_id: int = Field(foreign_key="cook.id", index=True)
     kind: IngredientKind
     unit: Unit
+
+
+class IngredientAllergenRow(SQLModel, table=True):
+    """One allergen an ingredient contains."""
+
+    __tablename__ = "ingredient_allergen"
+    __table_args__ = (UniqueConstraint("ingredient_id", "allergen", name="uq_ingredient_allergen"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    ingredient_id: int = Field(foreign_key="ingredient.id", index=True)
+    allergen: Allergen

@@ -5,6 +5,7 @@ self-hoster is not trapped. The engine is pure: turning recipes into a document 
 is a transformation, and resolving what a document refers to is the manager's job.
 """
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
@@ -13,7 +14,7 @@ import pytest
 
 from quookly.contracts.errors import UnsupportedDocument
 from quookly.contracts.exchange import ExchangeDocument
-from quookly.contracts.ingredient import Ingredient, IngredientKind, Origin
+from quookly.contracts.ingredient import Allergen, Ingredient, IngredientKind, Origin
 from quookly.contracts.measure import Quantity, Unit
 from quookly.contracts.recipe import (
     IngredientLine,
@@ -31,6 +32,8 @@ FLOUR = Ingredient(
     name="plain flour",
     density=Decimal("0.53"),
     origin=Origin.SEED,
+    allergens=frozenset({Allergen.GLUTEN}),
+    classified=True,
 )
 EGG = Ingredient(
     id=2,
@@ -39,6 +42,8 @@ EGG = Ingredient(
     name="egg",
     density=None,
     origin=Origin.SEED,
+    allergens=frozenset({Allergen.EGGS}),
+    classified=True,
 )
 
 
@@ -176,6 +181,64 @@ class TestRoundTrip:
         flour = next(e for e in read.ingredients if e.slug == "plain-flour")
         assert flour.density == Decimal("0.53")
         assert flour.kind is IngredientKind.POWDER
+
+    def test_an_allergen_classification_survives(self) -> None:
+        document = exchange.to_document([pancakes()], "en-GB")
+        read = exchange.from_document(document.model_dump(mode="json"))
+        flour = next(e for e in read.ingredients if e.slug == "plain-flour")
+        assert flour.allergens == frozenset({Allergen.GLUTEN})
+
+    def test_the_difference_between_none_and_unexamined_survives(self) -> None:
+        """The basis of ADR-006 must not be flattened by a journey between instances."""
+        examined = Ingredient(
+            id=3,
+            slug="caster-sugar",
+            kind=IngredientKind.POWDER,
+            name="caster sugar",
+            density=Decimal("0.85"),
+            origin=Origin.SEED,
+            allergens=frozenset(),
+            classified=True,
+        )
+        unexamined = Ingredient(
+            id=4,
+            slug="mystery",
+            kind=IngredientKind.POWDER,
+            name="mystery",
+            density=Decimal("0.5"),
+            origin=Origin.USER,
+            allergens=frozenset(),
+            classified=False,
+        )
+        recipe = pancakes()
+        lines = [
+            IngredientLine(
+                id=n,
+                ingredient=entry,
+                quantity=Quantity(Decimal("1"), Unit.GRAM),
+                preparation=None,
+                optional=False,
+            )
+            for n, entry in enumerate([examined, unexamined], start=10)
+        ]
+        document = exchange.to_document([replace(recipe, lines=lines)], "en-GB")
+
+        as_json = document.model_dump(mode="json")
+        by_slug = {entry["slug"]: entry for entry in as_json["ingredients"]}
+        assert by_slug["caster-sugar"]["allergens"] == []
+        assert by_slug["mystery"]["allergens"] is None
+
+        read = {entry.slug: entry for entry in exchange.from_document(as_json).ingredients}
+        assert read["caster-sugar"].allergens == frozenset()
+        assert read["mystery"].allergens is None
+
+    def test_a_document_written_before_allergens_existed_still_reads(self) -> None:
+        """The field is additive and optional, so v1 documents remain v1 documents."""
+        as_json = exchange.to_document([pancakes()], "en-GB").model_dump(mode="json")
+        for entry in as_json["ingredients"]:
+            del entry["allergens"]
+        read = exchange.from_document(as_json)
+        assert all(entry.allergens is None for entry in read.ingredients)
 
     def test_a_second_round_trip_does_not_drift(self) -> None:
         """Repeated moves between instances must not erode a recipe.
