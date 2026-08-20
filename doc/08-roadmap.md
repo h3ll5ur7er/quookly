@@ -51,8 +51,8 @@ components authored for the desktop is a rewrite, not an adjustment — the same
 **Goal:** structured recipes exist and can be read the way the product promises.
 
 - Domain model for recipe, ingredient line, step, technique reference
-- Ingredient registry with locale-aware names, seeded from USDA FoodData Central, with the Swiss
-  and UK overlays for the target locales
+- ~~Ingredient registry with locale-aware names~~ **Built** — seeding from USDA FoodData Central,
+  with the Swiss and UK overlays, follows with the seed content
   ([ADR-007](07-decisions.md#adr-007-nutrition-data-usda-fooddata-central-as-the-base))
 - `RecipeAccess`, `IngredientAccess`, `EaterAccess`
 - ~~`MeasureEngine`: conversion, density, yield scaling (V4)~~ **Built**

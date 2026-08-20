@@ -35,3 +35,7 @@ class DensityRequired(QuooklyError):
     Raised rather than assuming water: a wrong assumption here silently misweighs every
     dry ingredient, and flour is roughly half the density of water.
     """
+
+
+class IngredientAlreadyRegistered(QuooklyError):
+    """That slug is already in the registry."""

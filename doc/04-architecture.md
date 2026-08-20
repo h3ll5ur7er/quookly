@@ -431,6 +431,7 @@ backend/src/quookly/
 │   └── measure.py          # units, conversion, scaling (Built)
 ├── access/
 │   ├── database.py         # async engine and session (Built)
+│   ├── ingredient.py       # the registry, in domain verbs (Built)
 │   ├── models.py           # SQLModel tables — never leave this layer (Built)
 │   └── cook.py             # cook accounts, in domain verbs (Built)
 ├── utilities/
@@ -440,6 +441,7 @@ backend/src/quookly/
 ├── contracts/
 │   ├── accounts.py         # Registration, Credentials, Authenticated (Built)
 │   ├── cook.py             # Cook, StoredCredential (Built)
+│   ├── ingredient.py       # Ingredient, IngredientKind, Origin (Built)
 │   ├── measure.py          # Dimension, Unit, Quantity (Built)
 │   ├── security.py         # Principal (Built)
 │   └── errors.py           # errors that cross layers (Built)

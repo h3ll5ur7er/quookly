@@ -38,6 +38,17 @@ aggregated across recipes (V8). Free-text ingredients would make every one of th
 An ingredient line that cannot be resolved to a registry entry is a **validation failure**, surfaced
 to the cook (FR-9). It is never silently stored as text, and never guessed at.
 
+**Identity is a slug, not a name.** `unsalted-butter` is what a recipe points at; what it is *called*
+is per locale, and there may be several names per locale because recipes say cornflour or cornstarch
+and mean one thing. Lookups match on a normalised form, so a cook typing into a form is not typing a
+database key, and what comes back is the canonical name for their locale rather than the alias they
+happened to type.
+
+The registry is seeded in English, so a name lookup falls back to `en_GB` when the asked-for locale
+has no entry — otherwise a Swiss instance could not resolve seeded ingredients until every
+translation landed. The fallback is to that one locale only: matching across languages generally
+would let *pain* resolve to bread for an English cook.
+
 ### Variants
 
 A variant is a recipe derived from another with a stated intent — dietary adaptation, substitution,
