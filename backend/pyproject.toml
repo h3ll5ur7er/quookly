@@ -118,6 +118,19 @@ forbidden_modules = ["sqlmodel", "sqlalchemy"]
 # ORM type itself.
 allow_indirect_imports = true
 
+# A client holds no business logic and owns no use case, so it has nothing to say to a
+# resource access service. The layers contract above allows skipping a layer, which is
+# why this needs stating separately -- and it is the rule most easily broken by a route
+# that only needs "one quick lookup".
+[[tool.importlinter.contracts]]
+name = "Clients do not reach resource access"
+type = "forbidden"
+source_modules = ["quookly.routes"]
+forbidden_modules = ["quookly.access"]
+# Only direct imports: a route calling a manager that reads the database is the layering
+# working as designed.
+allow_indirect_imports = true
+
 # ADR-006 and ADR-008: rule engines are pure functions, so their inputs arrive as
 # arguments and they can be tested as a table of cases.
 #

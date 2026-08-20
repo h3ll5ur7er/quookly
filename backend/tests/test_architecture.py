@@ -119,6 +119,20 @@ class TestArchitectureContracts:
             result = lint_imports()
         assert_rejected(result, "an engine importing resource access")
 
+    def test_a_client_may_not_reach_resource_access(self) -> None:
+        """A route that reads the database itself has no manager to hold the use case.
+
+        The layers contract allows a layer to skip one below it, so this rule needs a
+        contract of its own -- and it is the rule most easily broken by a route that only
+        needs "one quick lookup".
+        """
+        with violating_module(
+            "routes/_violation_probe.py",
+            "from quookly import access\n\n__all__ = ['access']\n",
+        ):
+            result = lint_imports()
+        assert_rejected(result, "a route importing resource access")
+
     def test_a_new_top_level_package_cannot_escape_the_rules(self) -> None:
         """The layers contract is exhaustive, so an undeclared package is a failure."""
         probe = PACKAGE_ROOT / "_rogue_layer"

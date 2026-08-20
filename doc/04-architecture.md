@@ -186,6 +186,12 @@ The last rule is what keeps utilities usable everywhere: the moment `Security` c
 it stops being a utility and becomes a layered service with a dependency cycle waiting to happen.
 Where a utility genuinely needs data, it receives it as an argument.
 
+The "never skip a layer downward" rules need contracts of their own. `import-linter`'s
+layers contract forbids a lower layer importing a higher one, but permits a layer to reach
+past the one below it — so *Client must not call Resource Access* and *Engine must not call
+Resource Access* are each stated separately. The first of those was missing until Phase 2,
+and a route had already taken the shortcut.
+
 These rules are mechanically enforced — see
 [ADR-008](07-decisions.md#adr-008-enforce-the-call-rules-with-import-linter). The template already
 anticipates this: `just backend clean` removes `.import_linter_cache`.
@@ -432,6 +438,7 @@ backend/src/quookly/
 │   ├── account.py          # bootstrap, registration, sign-in (Built)
 │   ├── recipe.py           # authoring, listing, presenting (Built)
 │   ├── eater.py            # households, and keeping them apart (Built)
+│   ├── ingredient.py       # finding registry entries to name (Built)
 │   └── seed.py             # stocking a fresh instance (Built)
 ├── engines/
 │   ├── measure.py          # units, conversion, scaling (Built)
