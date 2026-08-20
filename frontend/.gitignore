@@ -46,3 +46,7 @@ Thumbs.db
 #generated API client
 src/api
 !src/api/.gitignore
+# Playwright
+/test-results
+/playwright-report
+/e2e/screenshots

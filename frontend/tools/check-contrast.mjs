@@ -31,6 +31,7 @@ const PAIRS = [
   ['--on-success', '--success', AA_TEXT],
   ['--on-warning', '--warning', AA_TEXT],
   ['--on-danger', '--danger', AA_TEXT],
+  ['--on-danger-surface', '--danger-surface', AA_TEXT],
   ['--on-info', '--info', AA_TEXT],
 ];
 

@@ -41,6 +41,8 @@
   --on-warning: #ffffff;
   --danger: #97231a;
   --on-danger: #ffffff;
+  --danger-surface: #fbe9e6;
+  --on-danger-surface: #7d1a12;
   --info: #1b5273;
   --on-info: #ffffff;
 
@@ -120,6 +122,8 @@
   --on-warning: #2a1c00;
   --danger: #f0847a;
   --on-danger: #2e0704;
+  --danger-surface: #3a1512;
+  --on-danger-surface: #f7b8b0;
   --info: #7cbde6;
   --on-info: #04202f;
 
@@ -154,6 +158,8 @@
   --on-warning: #ffffff;
   --danger: #a81f22;
   --on-danger: #ffffff;
+  --danger-surface: #ffe4e0;
+  --on-danger-surface: #8c191c;
   --info: #0f5580;
   --on-info: #ffffff;
 
@@ -193,6 +199,8 @@
   --on-warning: #ffffff;
   --danger: #8f2a20;
   --on-danger: #ffffff;
+  --danger-surface: #f7e7e1;
+  --on-danger-surface: #78221a;
   --info: #274f6b;
   --on-info: #ffffff;
 

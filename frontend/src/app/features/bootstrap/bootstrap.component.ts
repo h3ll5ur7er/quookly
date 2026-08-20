@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { NgOptimizedImage } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AccountsService } from '@api';
@@ -9,7 +10,7 @@ const MINIMUM_PASSWORD_LENGTH = 12;
 
 @Component({
   selector: 'app-bootstrap',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, NgOptimizedImage],
   templateUrl: './bootstrap.component.html',
   styleUrl: './bootstrap.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

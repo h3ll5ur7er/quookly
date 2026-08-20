@@ -205,6 +205,7 @@ environment renders migrations in batch mode, which rewrites the table instead.
 | Backend | pytest, `asyncio_mode = "auto"` | `backend/tests/` |
 | CLI | pytest, `asyncio_mode = "auto"` | `cli/tests/` |
 | Frontend | Vitest via `@angular/build:unit-test` | alongside sources as `*.spec.ts` |
+| End to end | Playwright + axe, in Chromium | `frontend/e2e/` |
 
 Frontend specs use `provideHttpClientTesting` and assert against `HttpTestingController` rather than
 a mocked service, so the generated client is exercised rather than bypassed. Where a component
@@ -226,6 +227,38 @@ Test at the layer you are working in:
 - **Managers** — test sequencing with test doubles for the engines and access services they use.
 - **Resource access** — test against the real datastore.
 - **Routes** — test wiring and contract shape, not business rules.
+
+### End-to-end
+
+```bash
+just e2e
+```
+
+Builds the application, serves it from the backend on a **fresh database**, and drives it in a real
+browser on a phone viewport — the artefact a self-hoster runs, not the dev server.
+
+Three things it covers that nothing else can:
+
+- **Accessibility.** `@axe-core/playwright` runs on every screen in every theme. NFR-7 was
+  previously a claim; this is the check.
+- **The whole journey**, including the parts that only happen once: an unclaimed instance, the
+  bootstrap closing behind itself, the guard remembering where a stranger was going.
+- **What it looks like.** `e2e/03-looks.spec.ts` writes screenshots to `e2e/screenshots/` for a
+  human to look at. It asserts nothing about appearance — a suite that passes is not the same as a
+  screen that is good, and the only way to know the difference is to look.
+
+The suite runs with **one worker, in file order**, because the tests share one backend and one
+database and claiming an instance is a one-way door. Tests that need a claimed instance create one
+through the API in `beforeAll` rather than depending on an earlier file having run.
+
+It is a separate gate from `just check`: it builds and drives a browser, so it is slower than
+something you run after every unit. Run it before opening a pull request that touches the frontend.
+
+Playwright needs its browser once:
+
+```bash
+just frontend _nvm "npx playwright install chromium"
+```
 
 ## Type checking
 
@@ -305,7 +338,9 @@ The phone is the design target (NFR-11), not an afterthought:
 3. **Update the documents.** A change that alters a decision updates
    [Decisions](07-decisions.md); a change that introduces a new volatility updates
    [Volatility analysis](03-volatility-analysis.md). Documentation drift is a defect.
-4. **`just check` passes.** No exceptions. Run it per unit, not once at the end.
+4. **`just check` passes.** No exceptions. Run it per unit, not once at the end. If the change
+   touches the frontend, **`just e2e` passes too**, and you have looked at the screenshots it
+   produced.
 5. **Tests were written first.** A pull request whose tests were clearly written after the code is
    an acceptable outcome only when adding tests to pre-existing code; say so.
 6. **`just openapi` has been run** if the API changed, and the regenerated `openapi.json` is in the

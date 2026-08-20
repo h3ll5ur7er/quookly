@@ -5,8 +5,23 @@
 
 .auth {
   width: min(100% - var(--space-6), 30rem);
-  margin-inline: auto;
+  /* `auto` margins centre without clipping when the content is taller than the space,
+     which `align-content: center` would do once a phone keyboard is open. */
+  margin: auto;
   padding-block: var(--space-7);
+  text-align: center;
+}
+
+.auth__mark {
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+}
+
+form {
+  text-align: start;
 }
 
 .auth__lede {
@@ -46,16 +61,21 @@ input {
   color: var(--on-surface-subtle);
 }
 
+/* A tinted notice rather than a filled band: one filled element on the screen is the
+   action, and a message that shouts in the same red as the primary button competes with
+   the thing it is telling you to try again. */
 .error {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-2);
+  gap: var(--space-3);
   margin: var(--space-4) 0 0;
   padding: var(--space-3);
   border-radius: var(--radius-md);
-  background: var(--danger);
-  color: var(--on-danger);
+  border-inline-start: 4px solid var(--danger);
+  background: var(--danger-surface);
+  color: var(--on-danger-surface);
   font-size: var(--text-sm);
+  text-align: start;
 
   /* Never colour alone: the mark carries the meaning where hue cannot. */
   &::before {
@@ -68,6 +88,7 @@ input {
     border: 2px solid currentcolor;
     border-radius: var(--radius-full);
     font-weight: 700;
+    line-height: 1;
   }
 }
 

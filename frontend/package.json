@@ -13,6 +13,7 @@
     "typecheck": "ngc -p tsconfig.app.json --noEmit && ngc -p tsconfig.spec.json --noEmit",
     "check:contrast": "node tools/check-contrast.mjs",
     "check:i18n": "node tools/check-i18n.mjs",
+    "e2e": "playwright test",
     "extract-i18n": "ng extract-i18n --output-path src/locale",
     "generate-openapi": "openapi-generator-cli generate -i ../openapi.json -g typescript-angular -o ./src/api -c openapi-config.yaml --skip-validate-spec"
   },
@@ -34,8 +35,10 @@
     "@angular/build": "^21.2.11",
     "@angular/cli": "^21.2.11",
     "@angular/compiler-cli": "^21.2.0",
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
     "@openapitools/openapi-generator-cli": "2.33.1",
+    "@playwright/test": "^1.62.1",
     "angular-eslint": "21.4.0",
     "eslint": "^10.3.0",
     "jsdom": "^28.0.0",

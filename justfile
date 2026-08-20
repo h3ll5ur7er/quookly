@@ -40,6 +40,11 @@ check:
     @just cli check
     @just frontend check
 
+# End to end in a real browser, against the artefact a self-hoster runs. Slower than
+# `check` because it builds and drives a browser, so it is a separate gate.
+e2e:
+    @just frontend e2e
+
 clean:
     @just backend clean
     @just cli clean

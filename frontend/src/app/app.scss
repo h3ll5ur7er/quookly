@@ -20,13 +20,15 @@
 }
 
 .shell__content {
+  display: flex;
   flex: 1;
 }
 
 .shell__footer {
   display: flex;
   justify-content: center;
-  gap: var(--space-4);
+  align-items: center;
+  gap: var(--space-3) var(--space-5);
   flex-wrap: wrap;
   padding: var(--space-4);
   border-top: 1px solid var(--border);

@@ -20,3 +20,6 @@ wheels/
 # local database files
 *.db
 *.db-journal
+
+# e2e database
+e2e-run.db

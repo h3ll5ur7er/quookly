@@ -1,4 +1,12 @@
 <main class="auth">
+  <img
+    class="auth__mark"
+    ngSrc="icons/icon-192.png"
+    width="192"
+    height="192"
+    alt="Quookly"
+    priority
+  />
   <h1 i18n="@@signInHeading">Sign in to Quookly</h1>
 
   <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
