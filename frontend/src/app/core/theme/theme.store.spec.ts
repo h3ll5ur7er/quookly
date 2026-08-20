@@ -101,6 +101,34 @@ describe('ThemeStore', () => {
     });
   });
 
+  describe('the browser chrome', () => {
+    function themeColour(): string | null {
+      return document.querySelector('meta[name="theme-color"]')?.getAttribute('content') ?? null;
+    }
+
+    beforeEach(() => {
+      document.head.querySelector('meta[name="theme-color"]')?.remove();
+      const meta = document.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      meta.setAttribute('content', '#000000');
+      document.head.appendChild(meta);
+      document.documentElement.style.removeProperty('--surface');
+    });
+
+    it('follows the theme surface so the chrome matches the page', () => {
+      document.documentElement.style.setProperty('--surface', '#123456');
+      store().choose('dark');
+      TestBed.tick();
+      expect(themeColour()).toBe('#123456');
+    });
+
+    it('leaves the markup default alone when no surface can be read', () => {
+      store().choose('dark');
+      TestBed.tick();
+      expect(themeColour()).toBe('#000000');
+    });
+  });
+
   describe('what is offered', () => {
     it('lists the shipped themes for a picker to render', () => {
       expect(store().available.map((t) => t.id)).toEqual([

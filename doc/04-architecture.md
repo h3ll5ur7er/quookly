@@ -496,7 +496,13 @@ is themed. Two rules bind the code:
   ([ADR-024](07-decisions.md#adr-024-own-component-primitives-on-cdk-behaviour)).
 
 Theme selection lives in `core/theme/`: a signal store resolving `system` against
-`prefers-color-scheme`, persisting the choice, and applying `data-theme` to the document root.
+`prefers-color-scheme`, persisting the choice, and applying `data-theme` to the document root. It
+also points the browser's own chrome at the theme's surface colour, read from the applied stylesheet
+so themes stay the single source of truth.
+
+Locale lives in `core/locale/`, and is deliberately plain functions rather than an injectable: it
+resolves before bootstrap, because `$localize` catalogues load once and `LOCALE_ID` is fixed for the
+lifetime of the application ([ADR-025](07-decisions.md#adr-025-runtime-locale-localize-catalogues-one-artefact)).
 
 ### Mobile is the design target
 

@@ -1,0 +1,24 @@
+{
+  "locale": "fr-CH",
+  "translations": {
+    "skipToContent": "Aller au contenu",
+    "localePickerLabel": "Langue",
+    "localePickerAriaLabel": "Langue",
+    "themePickerLabel": "Thème",
+    "themePickerAriaLabel": "Thème de couleurs",
+    "bootstrapHeading": "Bienvenue sur Quookly",
+    "bootstrapLede": "Cette instance ne contient encore aucun compte. Créez le premier pour en devenir l’administrateur.",
+    "fieldDisplayName": "Votre nom",
+    "fieldEmail": "E-mail",
+    "fieldPassword": "Mot de passe",
+    "passwordHint": "Au moins {$INTERPOLATION} caractères.",
+    "bootstrapSubmitting": "Création…",
+    "bootstrapSubmit": "Créer l’administrateur",
+    "bootstrapClaimed": "Cette instance a déjà été revendiquée. Connectez-vous à la place.",
+    "bootstrapFailed": "Impossible de créer le compte. Veuillez réessayer.",
+    "signInHeading": "Se connecter à Quookly",
+    "signInFailed": "Ces identifiants ne correspondent à aucun compte.",
+    "signInSubmitting": "Connexion…",
+    "signInSubmit": "Se connecter"
+  }
+}

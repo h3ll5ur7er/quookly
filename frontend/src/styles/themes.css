@@ -45,9 +45,10 @@
   --on-info: #ffffff;
 
   /* Type */
+  /* Display is self-hosted (see _fonts.scss); body uses the platform's own UI face. */
   --font-display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
-  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-numeric: 'Inter', system-ui, sans-serif;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-numeric: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
 
   --text-xs: clamp(0.75rem, 0.72rem + 0.15vw, 0.82rem);
   --text-sm: clamp(0.875rem, 0.84rem + 0.18vw, 0.95rem);

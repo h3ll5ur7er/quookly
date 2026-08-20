@@ -92,6 +92,11 @@ phone and a worktop tablet without a second set of rules.
 internet access; a font that arrives from a CDN is a font that sometimes does not arrive. Subset,
 `woff2`, `font-display: swap`, with a real system fallback stack behind every face.
 
+**Only the display face is vendored.** Fraunces (SIL OFL 1.1) at one weight, Latin subsets, ~67 kB
+total, of which a browser fetches only the range it needs. Body text uses the platform's own UI
+face: nothing to download, native rendering, and already the most legible thing on the device. The
+character comes from the headings, which is where it should come from anyway.
+
 ## Colour
 
 Colours are referenced by **role**, never by name or hex. Nothing in a component says "blue"; it

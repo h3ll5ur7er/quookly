@@ -190,6 +190,17 @@ This requires the instance to be served over HTTPS — service workers do not ru
 `localhost`. A self-hoster exposing Quookly beyond their LAN needs a certificate; a reverse proxy
 terminating TLS is the usual answer.
 
+### Language and theme
+
+Both are per-browser choices, made in the application footer and remembered locally. Language
+follows the browser's preference until chosen — a browser asking for `de-DE` gets `de-CH`, which is
+not the same thing but far closer than English. Changing language reloads the page
+([ADR-025](07-decisions.md#adr-025-runtime-locale-localize-catalogues-one-artefact)); changing theme
+does not.
+
+Nothing about either is server-side, so an instance serves one artefact to everyone
+([NFR-2](02-requirements.md#non-functional-requirements)) and a household can disagree about both.
+
 ### Hardware
 
 Per NFR-1, Quookly itself targets 2 cores and 2 GB RAM. **Local inference is the exception and

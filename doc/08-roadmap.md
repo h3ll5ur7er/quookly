@@ -33,12 +33,14 @@ most likely to be built well by accident and least likely to matter if they are 
 - ~~Design tokens, the four shipped themes, and the app shell~~ **Built**
   ([ADR-023](07-decisions.md#adr-023-theming-by-design-tokens-themes-as-data),
   [Design language](11-design-language.md))
-- i18n scaffolding
+- ~~i18n scaffolding — runtime locale, `$localize` catalogues, `en_GB`/`de_CH`/`fr_CH`~~ **Built**
+  ([ADR-025](07-decisions.md#adr-025-runtime-locale-localize-catalogues-one-artefact))
+- ~~Self-hosted display face, PWA manifest, service worker~~ **Built**
 - **Mobile-first layout foundation and PWA shell** ([ADR-015](07-decisions.md#adr-015-mobile-first-installable-and-offline-where-it-matters))
 - **TDD and the per-unit quality gate in force from the first commit** ([ADR-017](07-decisions.md#adr-017-test-driven-development-with-per-unit-quality-gates))
 
 **Done when:** a fresh instance walks an operator through creating the first admin, that admin can
-log in on a phone, and a layer violation fails the build.
+log in on a phone, and a layer violation fails the build. **Met.**
 
 The mobile foundation belongs here rather than later. Retrofitting narrow-viewport layout onto
 components authored for the desktop is a rewrite, not an adjustment — the same argument that puts

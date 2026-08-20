@@ -38,10 +38,19 @@ typecheck:
 contrast:
     just _nvm "npm run check:contrast"
 
+# Extract translatable messages. Catalogues live in public/i18n (ADR-025).
+extract-i18n:
+    just _nvm "npm run extract-i18n"
+
+# Every translatable message must be answered by every catalogue (FR-10).
+i18n:
+    just _nvm "npm run check:i18n"
+
 check:
     just lint
     just typecheck
     just contrast
+    just i18n
     just test
 
 generate-openapi-client:

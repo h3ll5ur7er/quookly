@@ -163,7 +163,7 @@ Root recipes fan out to all three projects:
 | `just typecheck` | mypy (backend, cli) + ngc (frontend, templates included) |
 | `just format` | ruff format + prettier |
 | `just test` | pytest + vitest |
-| `just check` | lint + typecheck + contrast + test across all three |
+| `just check` | lint + typecheck + contrast + translations + test across all three |
 | `just build` | install, codegen, lint, typecheck, test, frontend build |
 | `just clean` | Remove caches and build output |
 
@@ -264,6 +264,28 @@ must:
 - **Contrast holds in every theme.** `just frontend contrast` checks every foreground/surface pair
   across all four themes and runs in `just frontend check`. Adding a colour token means adding it to
   every theme and to the checker's pair list.
+
+### Translatable strings
+
+Mark user-visible text with `i18n="@@someId"` in templates, or `` $localize`:@@someId:text` `` in
+TypeScript. Give every message an explicit id — generated hashes change when the source text is
+edited, silently orphaning its translations.
+
+```bash
+just frontend extract-i18n
+```
+
+```bash
+just frontend i18n
+```
+
+The check scans sources rather than the extracted `messages.xlf`, so a string added without
+re-running extraction is still caught, and it fails on messages that are translated but no longer
+used. An untranslated string is not a crash — `$localize` falls back to English — which is precisely
+why it needs a gate: it fails silently, in a language the author does not read.
+
+It also rejects `ß` in `de_CH`. Swiss German does not use it, and it is the single easiest thing to
+get wrong when writing German from habit.
 
 ### Mobile first, literally
 

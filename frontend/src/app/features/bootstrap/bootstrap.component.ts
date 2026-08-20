@@ -44,8 +44,8 @@ export class BootstrapComponent {
         this.submitting.set(false);
         this.error.set(
           response.status === 409
-            ? 'This instance has already been claimed. Sign in instead.'
-            : 'Could not create the account. Please try again.',
+            ? $localize`:@@bootstrapClaimed:This instance has already been claimed. Sign in instead.`
+            : $localize`:@@bootstrapFailed:Could not create the account. Please try again.`,
         );
       },
     });

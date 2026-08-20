@@ -1,0 +1,24 @@
+{
+  "locale": "de-CH",
+  "translations": {
+    "skipToContent": "Zum Inhalt springen",
+    "localePickerLabel": "Sprache",
+    "localePickerAriaLabel": "Sprache",
+    "themePickerLabel": "Design",
+    "themePickerAriaLabel": "Farbdesign",
+    "bootstrapHeading": "Willkommen bei Quookly",
+    "bootstrapLede": "Auf dieser Instanz gibt es noch keine Konten. Erstellen Sie das erste und werden Sie damit zur Administratorin oder zum Administrator.",
+    "fieldDisplayName": "Ihr Name",
+    "fieldEmail": "E-Mail",
+    "fieldPassword": "Passwort",
+    "passwordHint": "Mindestens {$INTERPOLATION} Zeichen.",
+    "bootstrapSubmitting": "Wird erstellt …",
+    "bootstrapSubmit": "Administrationskonto erstellen",
+    "bootstrapClaimed": "Diese Instanz wurde bereits übernommen. Melden Sie sich stattdessen an.",
+    "bootstrapFailed": "Das Konto konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+    "signInHeading": "Bei Quookly anmelden",
+    "signInFailed": "Diese Angaben passen zu keinem Konto.",
+    "signInSubmitting": "Wird angemeldet …",
+    "signInSubmit": "Anmelden"
+  }
+}

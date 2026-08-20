@@ -750,3 +750,37 @@ arrive without any appearance attached.
 [accessibility rules](11-design-language.md#accessibility) are stated as non-negotiable and checked
 per screen. Each primitive is one more thing to maintain. Revisit if the primitive set grows past
 what a small design system can carry.
+
+---
+
+## ADR-025 Runtime locale, `$localize` catalogues, one artefact
+
+**Status:** Accepted
+
+**Context.** `en_GB`, `de_CH` and `fr_CH` ship at v1 (FR-10). Angular's default i18n compiles one
+build per locale, served from `/en-GB/`, `/de-CH/` and so on.
+
+**Decision.** One build. Locale is chosen at **runtime**: the catalogue for the selected locale is
+loaded before bootstrap via `$localize`'s `loadTranslations`, and `LOCALE_ID` is provided from the
+same choice so dates and numbers format correctly. Messages are authored with Angular's `i18n`
+attributes and extracted with `just frontend extract-i18n`. Changing language reloads the
+application.
+
+**Rationale.** A build per locale contradicts the single-artefact promise (NFR-2): the image would
+carry three copies of the application, and the backend's SPA fallback would have to choose between
+them by URL or `Accept-Language` — one more thing for a self-hoster to get wrong.
+
+It is also wrong for the household this is built for. A family instance may have members who want
+different languages, and under a per-locale build that is a different URL rather than a setting.
+
+Using `$localize` rather than a third-party runtime library keeps extraction, ICU plurals, and the
+`i18n` attribute syntax on Angular's own supported path, with no extra dependency in something every
+deployment runs.
+
+**Cost.** Every locale's catalogue ships in the artefact, and switching language costs a reload
+because translations are loaded once before bootstrap. Both are acceptable: the catalogues are text,
+and changing language is rare.
+
+**Locale is not just language.** `de_CH` is not `de_DE` with different strings — it implies
+different units, number formatting, and ingredient names (V14). `LOCALE_ID` covers the formatting;
+ingredient naming is per-locale data in the registry, not a translation.

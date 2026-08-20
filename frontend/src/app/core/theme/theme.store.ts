@@ -46,6 +46,21 @@ function systemTheme(): Theme {
   return query?.matches ? 'dark' : 'light';
 }
 
+/**
+ * Point the browser's own chrome at the theme's surface colour.
+ *
+ * Read from the applied stylesheet rather than a table of colours here, so themes stay
+ * the single source of truth. Where no value can be read — no stylesheet yet, or a test
+ * environment — the markup's default stands rather than being replaced with a guess.
+ */
+function syncBrowserChrome(): void {
+  const surface = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim();
+  if (surface === '') {
+    return;
+  }
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', surface);
+}
+
 @Injectable({ providedIn: 'root' })
 export class ThemeStore {
   private readonly chosen = signal<ThemePreference>(readStoredPreference());
@@ -63,7 +78,10 @@ export class ThemeStore {
       .matchMedia?.('(prefers-color-scheme: dark)')
       .addEventListener('change', (event) => this.system.set(event.matches ? 'dark' : 'light'));
 
-    effect(() => document.documentElement.setAttribute('data-theme', this.resolved()));
+    effect(() => {
+      document.documentElement.setAttribute('data-theme', this.resolved());
+      syncBrowserChrome();
+    });
   }
 
   choose(preference: ThemePreference): void {

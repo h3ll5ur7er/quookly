@@ -5,11 +5,12 @@ import { ThemePreference, ThemeStore } from './theme.store';
   selector: 'app-theme-picker',
   template: `
     <label class="picker">
-      <span class="picker__label">Theme</span>
+      <span class="picker__label" i18n="@@themePickerLabel">Theme</span>
       <select
         class="picker__select"
         [value]="theme.preference()"
         (change)="pick($event)"
+        i18n-aria-label="@@themePickerAriaLabel"
         aria-label="Colour theme"
       >
         @for (choice of theme.available; track choice.id) {

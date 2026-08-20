@@ -28,9 +28,11 @@ marks status explicitly:
 - **Partial** — scaffolded but incomplete
 - **Planned** — designed here, not yet written
 
-As of this writing the repository contains the template scaffold, a single `/api/v1/status`
-endpoint, and the **layer packages with their call rules enforced by `import-linter`** — the first
-unit of [Phase 0](08-roadmap.md#phase-0--foundations). Everything else is **Planned**.
+**[Phase 0](08-roadmap.md#phase-0--foundations) is complete.** The repository contains the enforced
+layer architecture, the Configuration, Security and Diagnostics utilities, SQLite persistence with
+migrations, cook accounts, the bootstrap and sign-in endpoints with generated clients, and an Angular
+shell with authentication, four themes, and three locales. Everything from Phase 1 onward is
+**Planned**.
 
 ## A note on these documents
 

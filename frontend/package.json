@@ -12,6 +12,8 @@
     "format:check": "prettier --check .",
     "typecheck": "ngc -p tsconfig.app.json --noEmit && ngc -p tsconfig.spec.json --noEmit",
     "check:contrast": "node tools/check-contrast.mjs",
+    "check:i18n": "node tools/check-i18n.mjs",
+    "extract-i18n": "ng extract-i18n --output-path src/locale",
     "generate-openapi": "openapi-generator-cli generate -i ../openapi.json -g typescript-angular -o ./src/api -c openapi-config.yaml --skip-validate-spec"
   },
   "private": true,
@@ -21,8 +23,10 @@
     "@angular/compiler": "^21.2.0",
     "@angular/core": "^21.2.0",
     "@angular/forms": "^21.2.0",
+    "@angular/localize": "^21.2.13",
     "@angular/platform-browser": "^21.2.0",
     "@angular/router": "^21.2.0",
+    "@angular/service-worker": "^21.2.13",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

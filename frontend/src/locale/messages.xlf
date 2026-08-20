@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file source-language="en-US" datatype="plaintext" original="ng2.template">
+    <body>
+      <trans-unit id="skipToContent" datatype="html">
+        <source>Skip to content</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/app.html</context>
+          <context context-type="linenumber">1,4</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="localePickerLabel" datatype="html">
+        <source>Language</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/core/locale/locale-picker.component.ts</context>
+          <context context-type="linenumber">8,10</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="localePickerAriaLabel" datatype="html">
+        <source>Language</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/core/locale/locale-picker.component.ts</context>
+          <context context-type="linenumber">14,16</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="themePickerLabel" datatype="html">
+        <source>Theme</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/core/theme/theme-picker.component.ts</context>
+          <context context-type="linenumber">8,10</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="themePickerAriaLabel" datatype="html">
+        <source>Colour theme</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/core/theme/theme-picker.component.ts</context>
+          <context context-type="linenumber">14,16</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="bootstrapHeading" datatype="html">
+        <source>Welcome to Quookly</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/bootstrap/bootstrap.component.html</context>
+          <context context-type="linenumber">2,3</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="bootstrapLede" datatype="html">
+        <source> This instance has no accounts yet. Create the first one to become its administrator. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/bootstrap/bootstrap.component.html</context>
+          <context context-type="linenumber">4,7</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="fieldDisplayName" datatype="html">
+        <source>Your name</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/bootstrap/bootstrap.component.html</context>
+          <context context-type="linenumber">8,9</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="fieldEmail" datatype="html">
+        <source>Email</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/bootstrap/bootstrap.component.html</context>
+          <context context-type="linenumber">11,12</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/sign-in/sign-in.component.html</context>
+          <context context-type="linenumber">5,6</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="fieldPassword" datatype="html">
+        <source>Password</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/bootstrap/bootstrap.component.html</context>
+          <context context-type="linenumber">14,16</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/sign-in/sign-in.component.html</context>
+          <context context-type="linenumber">8,10</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="passwordHint" datatype="html">
+        <source> At least <x id="INTERPOLATION" equiv-text="{{ minimumPasswordLength }}"/> characters. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/bootstrap/bootstrap.component.html</context>
+          <context context-type="linenumber">25,28</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="bootstrapSubmitting" datatype="html">
+        <source>Creating…</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/bootstrap/bootstrap.component.html</context>
+          <context context-type="linenumber">34,36</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="bootstrapSubmit" datatype="html">
+        <source>Create administrator</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/bootstrap/bootstrap.component.html</context>
+          <context context-type="linenumber">36,39</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="bootstrapClaimed" datatype="html">
+        <source>This instance has already been claimed. Sign in instead.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/bootstrap/bootstrap.component.ts</context>
+          <context context-type="linenumber">47</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="bootstrapFailed" datatype="html">
+        <source>Could not create the account. Please try again.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/bootstrap/bootstrap.component.ts</context>
+          <context context-type="linenumber">48</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="signInHeading" datatype="html">
+        <source>Sign in to Quookly</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/sign-in/sign-in.component.html</context>
+          <context context-type="linenumber">2,4</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="signInFailed" datatype="html">
+        <source>Those credentials did not match an account.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/sign-in/sign-in.component.html</context>
+          <context context-type="linenumber">18,21</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="signInSubmitting" datatype="html">
+        <source>Signing in…</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/sign-in/sign-in.component.html</context>
+          <context context-type="linenumber">23,25</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="signInSubmit" datatype="html">
+        <source>Sign in</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/sign-in/sign-in.component.html</context>
+          <context context-type="linenumber">25,27</context>
+        </context-group>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>
