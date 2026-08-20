@@ -18,7 +18,7 @@ from quookly.access import ingredient as registry
 from quookly.access import recipe as recipes
 from quookly.access.database import dispose_engine, get_engine
 from quookly.contracts.errors import IngredientNotRegistered
-from quookly.contracts.ingredient import IngredientKind, Origin
+from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.contracts.measure import Quantity, Unit
 from quookly.contracts.recipe import (
     IngredientLineDraft,
@@ -260,3 +260,42 @@ class TestDrafts:
                 ],
                 steps=[],
             )
+
+
+class TestAllergensOnALine:
+    """A recipe read back has to carry what is known about its ingredients.
+
+    Without this a line's `allergens` is an empty set on every recipe, which reads as
+    "contains none" to anybody who does not also check `classified` — the exact confusion
+    ADR-006 exists to prevent.
+    """
+
+    async def test_a_line_carries_the_allergens_of_its_ingredient(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        await registry.classify("plain-flour", frozenset({Allergen.GLUTEN}))
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        fetched = await recipes.fetch(stored.id, "en-GB")
+        assert fetched is not None
+        flour = next(line for line in fetched.lines if line.ingredient.slug == "plain-flour")
+        assert flour.ingredient.allergens == frozenset({Allergen.GLUTEN})
+        assert flour.ingredient.classified is True
+
+    async def test_an_unexamined_ingredient_says_so(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        fetched = await recipes.fetch(stored.id, "en-GB")
+        assert fetched is not None
+        assert all(line.ingredient.classified is False for line in fetched.lines)
+
+    async def test_examined_and_clear_is_not_the_same_as_unexamined(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        await registry.classify("plain-flour", frozenset())
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        fetched = await recipes.fetch(stored.id, "en-GB")
+        assert fetched is not None
+        flour = next(line for line in fetched.lines if line.ingredient.slug == "plain-flour")
+        assert flour.ingredient.allergens == frozenset()
+        assert flour.ingredient.classified is True

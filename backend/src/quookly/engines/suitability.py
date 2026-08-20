@@ -44,6 +44,18 @@ def _violates(facts: IngredientFacts, constraint: Constraint) -> bool:
     return constraint.allergen in facts.allergens
 
 
+# Worst first, which is the order a doubt should be reported at when several apply.
+_GRAVITY = (Severity.MEDICAL, Severity.ETHICAL, Severity.INTOLERANCE, Severity.PREFERENCE)
+
+
+def _worst(constraints: list[Constraint]) -> Severity:
+    return next(
+        severity
+        for severity in _GRAVITY
+        if any(constraint.severity is severity for constraint in constraints)
+    )
+
+
 def evaluate(ingredients: list[IngredientFacts], eaters: list[Eater]) -> Verdict:
     """Judge a recipe against the people eating it.
 
@@ -53,33 +65,63 @@ def evaluate(ingredients: list[IngredientFacts], eaters: list[Eater]) -> Verdict
     findings: list[Finding] = []
 
     for eater in eaters:
-        for constraint in eater.constraints:
-            for facts in ingredients:
-                if _violates(facts, constraint):
-                    findings.append(
-                        Finding(
-                            eater=eater.name,
-                            ingredient=facts.name,
-                            severity=constraint.severity,
-                            allergen=constraint.allergen,
-                            avoidable=facts.optional,
-                        )
-                    )
-                elif not facts.classified and constraint.severity.carries_risk:
-                    # Nobody has looked at this ingredient, and this constraint is one
-                    # where not knowing matters.
-                    findings.append(
-                        Finding(
-                            eater=eater.name,
-                            ingredient=facts.name,
-                            severity=constraint.severity,
-                            allergen=constraint.allergen,
-                            avoidable=facts.optional,
-                            unknown=True,
-                        )
-                    )
+        for facts in ingredients:
+            broken = [
+                constraint for constraint in eater.constraints if _violates(facts, constraint)
+            ]
+            findings.extend(
+                Finding(
+                    eater=eater.name,
+                    ingredient=facts.name,
+                    severity=constraint.severity,
+                    allergen=constraint.allergen,
+                    avoidable=facts.optional,
+                )
+                for constraint in broken
+            )
 
-    return Verdict(outcome=_outcome(findings), findings=findings)
+            # Nobody has looked at this ingredient, so nothing is known about any
+            # allergen in it. That is one fact, reported once however many constraints it
+            # bears on: a row per constraint fills the verdict with lines that differ in
+            # no way a cook can see, and a warning nobody reads is the failure this path
+            # exists to avoid. It carries the gravest of those constraints, so collapsing
+            # can never make a doubt look milder than it is.
+            doubted = [
+                constraint
+                for constraint in eater.constraints
+                if constraint.severity.carries_risk and constraint not in broken
+            ]
+            if not facts.classified and doubted:
+                findings.append(
+                    Finding(
+                        eater=eater.name,
+                        ingredient=facts.name,
+                        severity=_worst(doubted),
+                        allergen=None,
+                        avoidable=facts.optional,
+                        unknown=True,
+                    )
+                )
+
+    return Verdict(outcome=_outcome(findings), findings=_worst_first(findings))
+
+
+def _worst_first(findings: list[Finding]) -> list[Finding]:
+    """Most serious first, so the reason the verdict came out as it did is at the top.
+
+    A long table produces a dozen rows, and the one that decided the answer should not be
+    the twelfth. Something the cook can leave out sinks below everything they cannot, and
+    a certainty comes before a doubt of the same gravity. The sort is stable, so ties keep
+    the recipe's own order and the list does not rearrange itself between visits.
+    """
+    return sorted(
+        findings,
+        key=lambda finding: (
+            finding.avoidable,
+            _GRAVITY.index(finding.severity),
+            finding.unknown,
+        ),
+    )
 
 
 def _outcome(findings: list[Finding]) -> Outcome:

@@ -152,4 +152,35 @@ describe('RecipeDetailComponent', () => {
       );
     });
   });
+
+  it('shows the verdict above the ingredients, not after them', async () => {
+    backend.expectOne('/api/v1/recipes/1').flush({
+      ...pancakes(),
+      suitability: {
+        outcome: 'unsuitable',
+        findings: [
+          {
+            eater: 'Mira',
+            ingredient: 'peanut butter',
+            severity: 'medical',
+            allergen: 'peanuts',
+            avoidable: false,
+            unknown: false,
+          },
+        ],
+      },
+    });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const html = fixture.nativeElement.innerHTML;
+    expect(html).toContain('Not suitable');
+    expect(html.indexOf('Not suitable')).toBeLessThan(html.indexOf('Ingredients'));
+  });
+
+  it('says nothing at all when there is nobody to judge against', async () => {
+    backend.expectOne('/api/v1/recipes/1').flush({ ...pancakes(), suitability: null });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.verdict')).toBeNull();
+  });
 });

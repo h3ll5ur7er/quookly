@@ -261,18 +261,30 @@ async def allergens_for(
     if not ingredient_ids:
         return {}
     async with session() as active:
-        rows = (
-            await active.exec(
-                select(IngredientRow).where(col(IngredientRow.id).in_(ingredient_ids))
+        return await allergens_within(active, ingredient_ids)
+
+
+async def allergens_within(
+    active: AsyncSession, ingredient_ids: list[int]
+) -> dict[int, tuple[frozenset[Allergen], bool]]:
+    """The same, inside a transaction the caller already has open.
+
+    A recipe resolves its lines and their classification in one read rather than opening
+    a second connection partway through the first — which, on SQLite, is a second file
+    handle to the same database in the middle of a transaction.
+    """
+    if not ingredient_ids:
+        return {}
+    rows = (
+        await active.exec(select(IngredientRow).where(col(IngredientRow.id).in_(ingredient_ids)))
+    ).all()
+    carried = (
+        await active.exec(
+            select(IngredientAllergenRow).where(
+                col(IngredientAllergenRow.ingredient_id).in_(ingredient_ids)
             )
-        ).all()
-        carried = (
-            await active.exec(
-                select(IngredientAllergenRow).where(
-                    col(IngredientAllergenRow.ingredient_id).in_(ingredient_ids)
-                )
-            )
-        ).all()
+        )
+    ).all()
 
     by_ingredient: dict[int, set[Allergen]] = {}
     for entry in carried:

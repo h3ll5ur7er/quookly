@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from quookly.contracts.ingredient import Ingredient, Origin
 from quookly.contracts.measure import DecimalString, Quantity
+from quookly.contracts.suitability import VerdictView
 
 
 class Visibility(Enum):
@@ -187,6 +188,8 @@ class PresentedRecipe(BaseModel):
     provenance: Provenance
     lines: list[PresentedLine]
     steps: list[PresentedStep]
+    # Absent when there is nobody to judge against, which is not the same as suitable.
+    suitability: VerdictView | None = None
 
 
 class RecipeSummaryView(BaseModel):

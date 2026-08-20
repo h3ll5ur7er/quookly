@@ -1,0 +1,152 @@
+/* Four states, each carrying a word and a mark as well as a hue. For a dietary warning
+   that is a safety rule (ADR-006), not a style preference. */
+.verdict {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-inline-start: 4px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+
+.verdict__headline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  font-weight: 700;
+}
+
+.verdict__mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid currentcolor;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.verdict__why {
+  margin: 0;
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
+.verdict__findings {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.verdict__finding {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.verdict__eater {
+  font-weight: 600;
+}
+
+.verdict__ingredient {
+  color: var(--on-surface-muted);
+}
+
+/* Which finding is the one that decided the verdict. Same three words as the household
+   chips use, so "never" means the same thing on both screens. */
+.verdict__severity {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.verdict__severity--medical,
+.verdict__severity--ethical {
+  color: var(--danger);
+}
+
+.verdict__severity--intolerance {
+  color: var(--warning);
+}
+
+.verdict__severity--preference {
+  color: var(--on-surface-subtle);
+}
+
+/* A qualifier, not a warning: "can be left out" is good news and should not shout. */
+.verdict__note {
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--on-surface-subtle);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.verdict--unsuitable {
+  border-inline-start-color: var(--danger);
+  background: var(--danger-surface);
+  color: var(--on-danger-surface);
+
+  .verdict__why,
+  .verdict__ingredient {
+    color: inherit;
+  }
+
+  .verdict__mark::before {
+    content: '✕';
+  }
+}
+
+/* Not styled like *suitable*, and not styled like *unsuitable* either. Nothing is known
+   to be wrong; nothing is known to be right. The question mark carries that where a
+   colour cannot. */
+.verdict--unknown {
+  border-inline-start-color: var(--info);
+
+  .verdict__mark {
+    color: var(--info);
+  }
+
+  .verdict__mark::before {
+    content: '?';
+  }
+}
+
+.verdict--caution {
+  border-inline-start-color: var(--warning);
+
+  .verdict__mark {
+    color: var(--warning);
+  }
+
+  .verdict__mark::before {
+    content: '!';
+  }
+}
+
+/* Quiet on purpose. Good news does not need a band across the screen — restraint is the
+   aesthetic, and the striking colour is reserved for the things that need acting on. */
+.verdict--suitable {
+  border-inline-start-color: var(--success);
+  background: none;
+
+  .verdict__mark {
+    color: var(--success);
+  }
+
+  .verdict__mark::before {
+    content: '✓';
+  }
+}

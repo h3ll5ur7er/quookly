@@ -76,6 +76,14 @@
   text-align: end;
 }
 
+/* Flex, so the whitespace the template puts between the name and the comma is not
+   rendered. Spacing between the parts comes from the parts themselves. */
+.lines__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
 .lines__preparation {
   color: var(--on-surface-muted);
 }

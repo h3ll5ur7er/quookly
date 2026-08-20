@@ -92,6 +92,16 @@
     "allergenLupin": "Lupinen",
     "allergenMolluscs": "Weichtiere",
     "householdOnePerson": "Kochen für eine Person",
-    "householdPeople": "Kochen für {$INTERPOLATION} Personen"
+    "householdPeople": "Kochen für {$INTERPOLATION} Personen",
+    "outcomeUnsuitable": "Nicht geeignet",
+    "outcomeUnknown": "Zu wenig bekannt",
+    "outcomeCaution": "Vorsicht",
+    "outcomeSuitable": "Für alle geeignet",
+    "outcomeUnsuitableWhy": "Jemand an Ihrem Tisch kann das nicht essen.",
+    "outcomeUnknownWhy": "Eine Zutat wurde nie auf Allergene geprüft; deshalb kann dies nicht als sicher gelten. Als unsicher gilt es ebenso wenig.",
+    "outcomeCautionWhy": "Jemand an Ihrem Tisch verträgt etwas darin nicht.",
+    "outcomeSuitableWhy": "Nichts davon steht im Widerspruch zu dem, was Sie erfasst haben.",
+    "findingUnchecked": "nicht auf Allergene geprüft",
+    "findingAvoidable": "kann weggelassen werden"
   }
 }

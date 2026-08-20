@@ -1,0 +1,36 @@
+<!-- role="status" rather than "alert": it is present when the page loads rather than
+     interrupting, and a refusal read out over the recipe title helps nobody. -->
+<section class="verdict verdict--{{ verdict().outcome }}" role="status">
+  <p class="verdict__headline">
+    <span class="verdict__mark" aria-hidden="true"></span>
+    <span class="verdict__outcome">{{ outcomeLabel(verdict().outcome) }}</span>
+  </p>
+
+  <p class="verdict__why">{{ outcomeExplanation(verdict().outcome) }}</p>
+
+  @if (verdict().outcome !== suitable && verdict().findings.length > 0) {
+    <ul class="verdict__findings">
+      @for (finding of verdict().findings; track $index) {
+        <li class="verdict__finding">
+          <span class="verdict__eater">{{ finding.eater }}</span>
+          <span class="verdict__ingredient">{{ finding.ingredient }}</span>
+          @if (finding.unknown) {
+            <!-- Not the constraint's severity: nothing here is known to be broken, and
+                 "NEVER" beside "never checked" reads as a refusal rather than a gap. -->
+            <span class="verdict__note" i18n="@@findingUnchecked">not checked for allergens</span>
+          } @else {
+            <!-- Which finding is the blocker. Without this an intolerance and a medical
+                 exclusion sit side by side in the same band looking identical, and the
+                 cook cannot tell which one is why the recipe was refused. -->
+            <span class="verdict__severity verdict__severity--{{ finding.severity }}">{{
+              severityMark(finding.severity)
+            }}</span>
+          }
+          @if (finding.avoidable) {
+            <span class="verdict__note" i18n="@@findingAvoidable">can be left out</span>
+          }
+        </li>
+      }
+    </ul>
+  }
+</section>

@@ -20,7 +20,7 @@ import {
   constraintLabel,
   severityLabel,
   severityMark,
-} from './household.labels';
+} from '../../core/dietary/labels';
 
 /** The option that switches the picker from the fourteen classes to a named ingredient. */
 const SOMETHING_ELSE = 'ingredient';

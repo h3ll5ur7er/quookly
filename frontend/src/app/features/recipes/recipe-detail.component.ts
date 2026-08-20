@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { PresentedRecipe, RecipesService } from '@api';
+import { VerdictComponent } from '../../core/dietary/verdict.component';
 
 @Component({
   selector: 'app-recipe-detail',
+  imports: [VerdictComponent],
   templateUrl: './recipe-detail.component.html',
   styleUrl: './recipe-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -114,6 +114,25 @@ test.describe('a recipe', () => {
     await expect(page.getByText('1800')).toHaveCount(0);
   });
 
+  test('writes a preparation as a person would, with no space before the comma', async ({
+    page,
+  }) => {
+    /*
+     * "plain flour , sifted" is what inline elements and a template newline produce, and
+     * it is invisible to every assertion that checks for the words rather than the line.
+     */
+    const gap = await page.evaluate(() => {
+      const name = [...document.querySelectorAll('.lines__name')].find((node) =>
+        node.textContent!.includes('plain flour'),
+      )!;
+      const [ingredient, preparation] = [...name.children] as HTMLElement[];
+      return preparation.getBoundingClientRect().left - ingredient.getBoundingClientRect().right;
+    });
+    // Measured rather than read: the text content says nothing about what was painted,
+    // and a space here is only ever visible by looking at it.
+    expect(gap).toBeLessThan(1);
+  });
+
   test('marks the optional ingredient', async ({ page }) => {
     await expect(page.getByText('optional')).toBeVisible();
   });

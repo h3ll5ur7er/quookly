@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { EaterView, EatersService, HouseholdSummary } from '@api';
-import { ageBandLabel, constraintLabel, severityMark } from './household.labels';
+import { ageBandLabel, constraintLabel, severityMark } from '../../core/dietary/labels';
 
 @Component({
   selector: 'app-household',

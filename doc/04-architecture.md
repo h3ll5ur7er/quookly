@@ -436,7 +436,7 @@ backend/src/quookly/
 │   └── community.py        # (Planned)
 ├── managers/
 │   ├── account.py          # bootstrap, registration, sign-in (Built)
-│   ├── recipe.py           # authoring, listing, presenting (Built)
+│   ├── recipe.py           # authoring, listing, presenting, judging (Built)
 │   ├── eater.py            # households, and keeping them apart (Built)
 │   ├── ingredient.py       # finding registry entries to name (Built)
 │   └── seed.py             # stocking a fresh instance (Built)

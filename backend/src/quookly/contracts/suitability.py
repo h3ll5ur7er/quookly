@@ -3,6 +3,8 @@
 from dataclasses import dataclass, field
 from enum import Enum
 
+from pydantic import BaseModel, ConfigDict
+
 from quookly.contracts.eater import Severity
 from quookly.contracts.ingredient import Allergen
 
@@ -40,3 +42,33 @@ class Finding:
 class Verdict:
     outcome: Outcome
     findings: list[Finding] = field(default_factory=list)
+
+
+# What crosses the API.
+
+
+class FindingView(BaseModel):
+    """One reason behind a verdict, as a client reads it."""
+
+    model_config = ConfigDict(frozen=True)
+
+    eater: str
+    ingredient: str
+    severity: Severity
+    allergen: Allergen | None = None
+    avoidable: bool = False
+    unknown: bool = False
+
+
+class VerdictView(BaseModel):
+    """Whether the household can eat this, and why.
+
+    Absent rather than `suitable` when there is nobody to judge against: a reassurance
+    about a question nobody asked is worse than silence, and a cook who has not yet
+    described their household should be told nothing rather than told yes.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    outcome: Outcome
+    findings: list[FindingView]

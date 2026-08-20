@@ -10,7 +10,7 @@ from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from quookly.access.database import session
-from quookly.access.ingredient import name_for
+from quookly.access.ingredient import allergens_within, name_for
 from quookly.access.models import IngredientLineRow, IngredientRow, RecipeRow, StepRow
 from quookly.contracts.errors import IngredientNotRegistered
 from quookly.contracts.ingredient import Ingredient
@@ -125,10 +125,18 @@ async def _lines_for(active: AsyncSession, recipe_id: int, locale: str) -> list[
         )
     ).all()
 
+    # Resolved for the whole recipe at once. Leaving it off would give every line an
+    # empty allergen set, which reads as "contains none" to anybody who does not also
+    # check `classified` — the confusion ADR-006 exists to prevent.
+    classification = await allergens_within(
+        active, [entry.id for _, entry in pairs if entry.id is not None]
+    )
+
     lines: list[IngredientLine] = []
     for line, entry in pairs:
         if line.id is None or entry.id is None:
             continue
+        allergens, classified = classification.get(entry.id, (frozenset(), False))
         lines.append(
             IngredientLine(
                 id=line.id,
@@ -139,6 +147,8 @@ async def _lines_for(active: AsyncSession, recipe_id: int, locale: str) -> list[
                     name=await name_for(active, entry.id, locale, entry.slug),
                     density=entry.density,
                     origin=entry.origin,
+                    allergens=allergens,
+                    classified=classified,
                 ),
                 quantity=Quantity(line.magnitude, line.unit),
                 preparation=line.preparation,

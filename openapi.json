@@ -372,7 +372,7 @@
           "ingredients"
         ],
         "summary": "Search Ingredients",
-        "description": "Find registry entries to point a recipe line at.",
+        "description": "Find registry entries to point a recipe line, or a dietary constraint, at.",
         "operationId": "searchIngredients",
         "parameters": [
           {
@@ -1102,6 +1102,49 @@
         ],
         "title": "ExchangeStep"
       },
+      "FindingView": {
+        "properties": {
+          "eater": {
+            "type": "string",
+            "title": "Eater"
+          },
+          "ingredient": {
+            "type": "string",
+            "title": "Ingredient"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "allergen": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Allergen"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "avoidable": {
+            "type": "boolean",
+            "title": "Avoidable",
+            "default": false
+          },
+          "unknown": {
+            "type": "boolean",
+            "title": "Unknown",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "eater",
+          "ingredient",
+          "severity"
+        ],
+        "title": "FindingView",
+        "description": "One reason behind a verdict, as a client reads it."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1234,6 +1277,17 @@
         "title": "IngredientView",
         "description": "A registry entry as a client reads it."
       },
+      "Outcome": {
+        "type": "string",
+        "enum": [
+          "unsuitable",
+          "unknown",
+          "caution",
+          "suitable"
+        ],
+        "title": "Outcome",
+        "description": "The answer, worst-first when several apply."
+      },
       "PresentedLine": {
         "properties": {
           "ingredient": {
@@ -1310,6 +1364,16 @@
             },
             "type": "array",
             "title": "Steps"
+          },
+          "suitability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VerdictView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -1632,6 +1696,27 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VerdictView": {
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/Outcome"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/FindingView"
+            },
+            "type": "array",
+            "title": "Findings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "outcome",
+          "findings"
+        ],
+        "title": "VerdictView",
+        "description": "Whether the household can eat this, and why.\n\nAbsent rather than `suitable` when there is nobody to judge against: a reassurance\nabout a question nobody asked is worse than silence, and a cook who has not yet\ndescribed their household should be told nothing rather than told yes."
       },
       "Visibility": {
         "type": "string",

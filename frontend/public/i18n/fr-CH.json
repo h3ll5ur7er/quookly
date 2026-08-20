@@ -92,6 +92,16 @@
     "allergenLupin": "Lupin",
     "allergenMolluscs": "Mollusques",
     "householdOnePerson": "Cuisiner pour une personne",
-    "householdPeople": "Cuisiner pour {$INTERPOLATION} personnes"
+    "householdPeople": "Cuisiner pour {$INTERPOLATION} personnes",
+    "outcomeUnsuitable": "Ne convient pas",
+    "outcomeUnknown": "Trop peu d’informations",
+    "outcomeCaution": "Prudence",
+    "outcomeSuitable": "Convient à tout le monde",
+    "outcomeUnsuitableWhy": "Quelqu’un à votre table ne peut pas manger cela.",
+    "outcomeUnknownWhy": "Un ingrédient n’a jamais été contrôlé pour les allergènes ; cela ne peut donc pas être qualifié de sûr. Ni de dangereux, du reste.",
+    "outcomeCautionWhy": "Quelqu’un à votre table présente une intolérance à un ingrédient.",
+    "outcomeSuitableWhy": "Rien ici n’entre en conflit avec ce que vous avez enregistré.",
+    "findingUnchecked": "allergènes non contrôlés",
+    "findingAvoidable": "peut être omis"
   }
 }

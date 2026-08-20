@@ -168,6 +168,21 @@ means unexamined and an empty list means examined and clear, so a recipe crossin
 does not quietly become safer than it was. The field is additive and optional, so documents written
 before it existed still read — and read as unexamined, which is exactly what they know.
 
+### How a verdict is reported
+
+One row per reason, most serious first, each naming the eater and the ingredient. A refusal
+a cook cannot act on is barely better than no answer.
+
+An **unclassified ingredient produces one row, not one per constraint**. Nobody has looked at
+it, so nothing is known about any allergen in it — that is a single fact, and repeating it
+once per constraint fills the verdict with rows that differ in no way a cook can see. The row
+carries the gravest of the constraints it bears on, so collapsing can never make a doubt read
+milder than it is.
+
+A verdict is **absent rather than *suitable*** when the household is empty. Nobody described
+satisfies every constraint there is, and reporting that as a clean bill of health would be a
+reassurance about a question nobody asked.
+
 ### Stock item and reservation
 
 A **stock item** is a quantity of an ingredient, with optional expiry and a source. A

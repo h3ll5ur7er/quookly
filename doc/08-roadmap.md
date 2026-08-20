@@ -88,7 +88,7 @@ handling into working features is the change this architecture exists to avoid.
 - ~~Household screens: recording eaters, their constraints, and what the table adds up to~~ **Built**
 - ~~Allergen classification in the ingredient registry~~ **Built**
 - ~~`SuitabilityEngine` — pure, exhaustively tested (V5, [ADR-006](07-decisions.md#adr-006-allergen-determination-is-structural))~~ **Built**
-- Suitability verdicts with reasons surfaced in the UI, including *unknown*
+- ~~Suitability verdicts with reasons surfaced in the UI, including *unknown*~~ **Built** — on the recipe page; the recipe *list* follows
 
 **Done when:** a recipe can be evaluated against a named set of eaters and explains every verdict by
 naming the ingredient responsible, and a new cook is walked from empty profile to ready household.

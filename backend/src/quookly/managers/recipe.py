@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
+from quookly.access import eater as eater_access
 from quookly.access import ingredient as registry
 from quookly.access import preferences as preference_access
 from quookly.access import recipe as recipe_access
@@ -28,7 +29,8 @@ from quookly.contracts.recipe import (
     RecipeSummaryView,
     StepDraft,
 )
-from quookly.engines import exchange, measure
+from quookly.contracts.suitability import FindingView, VerdictView
+from quookly.engines import exchange, measure, suitability
 
 _UNITS_BY_SYMBOL = {unit.symbol: unit for unit in Unit}
 
@@ -80,7 +82,7 @@ async def author(submitted: RecipeInput, cook_id: int, locale: str) -> Presented
         ],
     )
     stored = await recipe_access.store(draft, cook_id)
-    return await _present(stored, await preference_access.for_cook(cook_id), None)
+    return await _present(stored, await preference_access.for_cook(cook_id), None, cook_id)
 
 
 async def list_for(cook_id: int) -> list[RecipeSummaryView]:
@@ -110,11 +112,52 @@ async def present(
         # Someone else's private recipe is absent, not forbidden: saying "forbidden"
         # confirms it exists.
         return None
-    return await _present(recipe, await preference_access.for_cook(cook_id), servings)
+    return await _present(recipe, await preference_access.for_cook(cook_id), servings, cook_id)
+
+
+async def _judge(recipe: Recipe, cook_id: int) -> VerdictView | None:
+    """Whether this cook's household can eat this (V5, UC-2.4).
+
+    Shown without being asked for, because the system already knows it and making
+    somebody apply a filter to learn it would be a worse interface.
+
+    Nobody described means no verdict, rather than *suitable*. An empty household
+    satisfies every constraint there is, and reporting that as a clean bill of health
+    would be a reassurance about a question nobody asked.
+    """
+    household = await eater_access.list_for_cook(cook_id)
+    if not household:
+        return None
+
+    facts = [
+        suitability.IngredientFacts(
+            slug=line.ingredient.slug,
+            name=line.ingredient.name,
+            allergens=line.ingredient.allergens,
+            classified=line.ingredient.classified,
+            optional=line.optional,
+        )
+        for line in recipe.lines
+    ]
+    verdict = suitability.evaluate(facts, household)
+    return VerdictView(
+        outcome=verdict.outcome,
+        findings=[
+            FindingView(
+                eater=finding.eater,
+                ingredient=finding.ingredient,
+                severity=finding.severity,
+                allergen=finding.allergen,
+                avoidable=finding.avoidable,
+                unknown=finding.unknown,
+            )
+            for finding in verdict.findings
+        ],
+    )
 
 
 async def _present(
-    recipe: Recipe, preferences: UnitPreferences, servings: Decimal | None
+    recipe: Recipe, preferences: UnitPreferences, servings: Decimal | None, cook_id: int
 ) -> PresentedRecipe:
     factor = Decimal(1) if servings is None else servings / recipe.yield_quantity.magnitude
     scaled_yield = measure.scale(recipe.yield_quantity, factor)
@@ -138,6 +181,7 @@ async def _present(
         id=recipe.id,
         title=recipe.title,
         summary=recipe.summary,
+        suitability=await _judge(recipe, cook_id),
         yield_quantity=_view(scaled_yield),
         visibility=recipe.visibility,
         provenance=recipe.provenance,

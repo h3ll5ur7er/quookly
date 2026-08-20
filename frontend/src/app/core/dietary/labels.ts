@@ -1,4 +1,4 @@
-import { AgeBand, Allergen, ConstraintView, Severity } from '@api';
+import { AgeBand, Allergen, ConstraintView, Outcome, Severity } from '@api';
 
 /** Youngest first, which is the order a person would read them in. */
 export const AGE_BANDS: readonly AgeBand[] = [
@@ -119,6 +119,33 @@ export function allergenLabel(allergen: Allergen): string {
  * is unhyphenated for display; a locale-aware name would mean a lookup per constraint,
  * and the slug is close enough to English to be read until that exists.
  */
+export function outcomeLabel(outcome: Outcome): string {
+  switch (outcome) {
+    case Outcome.unsuitable:
+      return $localize`:@@outcomeUnsuitable:Not suitable`;
+    case Outcome.unknown:
+      return $localize`:@@outcomeUnknown:Not enough is known`;
+    case Outcome.caution:
+      return $localize`:@@outcomeCaution:Take care`;
+    case Outcome.suitable:
+      return $localize`:@@outcomeSuitable:Suits everyone`;
+  }
+}
+
+/** What the cook should do about it, which is the part a verdict alone does not say. */
+export function outcomeExplanation(outcome: Outcome): string {
+  switch (outcome) {
+    case Outcome.unsuitable:
+      return $localize`:@@outcomeUnsuitableWhy:Somebody at your table cannot eat this.`;
+    case Outcome.unknown:
+      return $localize`:@@outcomeUnknownWhy:An ingredient has never been checked for allergens, so this cannot be called safe. It has not been called unsafe either.`;
+    case Outcome.caution:
+      return $localize`:@@outcomeCautionWhy:Somebody at your table has an intolerance to something in this.`;
+    case Outcome.suitable:
+      return $localize`:@@outcomeSuitableWhy:Nothing here conflicts with what you have recorded.`;
+  }
+}
+
 export function constraintLabel(constraint: ConstraintView): string {
   if (constraint.allergen) {
     return allergenLabel(constraint.allergen);

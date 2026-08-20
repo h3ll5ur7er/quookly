@@ -227,3 +227,121 @@ class TestTheEngineItself:
         source = inspect.getsource(suitability)
         for forbidden in ("access", "session", "await", "requests", "httpx"):
             assert forbidden not in source, f"{forbidden!r} has no business in a rule engine"
+
+
+class TestDoubtIsReportedOnce:
+    """An unclassified ingredient is one fact, however many constraints it bears on.
+
+    Nobody has looked at it, so nothing is known about *any* allergen in it. Reporting
+    that once per constraint fills the verdict with rows that differ in no way a cook can
+    see — and a warning nobody reads is the failure mode this whole path exists to avoid.
+    """
+
+    def test_one_row_per_ingredient_not_per_constraint(self) -> None:
+        mira = eater(
+            "Mira",
+            avoids(Allergen.PEANUTS, Severity.MEDICAL),
+            avoids(Allergen.MILK, Severity.INTOLERANCE),
+            avoids(Allergen.GLUTEN, Severity.MEDICAL),
+        )
+        verdict = suitability.evaluate([facts("mystery paste", classified=False)], [mira])
+        assert len(verdict.findings) == 1
+
+    def test_it_is_still_unknown(self) -> None:
+        mira = eater(
+            "Mira",
+            avoids(Allergen.PEANUTS, Severity.MEDICAL),
+            avoids(Allergen.MILK, Severity.INTOLERANCE),
+        )
+        verdict = suitability.evaluate([facts("mystery paste", classified=False)], [mira])
+        assert verdict.outcome is Outcome.UNKNOWN
+        assert verdict.findings[0].unknown is True
+
+    def test_the_row_carries_the_most_serious_reason_to_worry(self) -> None:
+        """Collapsing must not soften it: an unchecked ingredient under a medical
+        constraint is a more serious doubt than the same one under an intolerance."""
+        mira = eater(
+            "Mira",
+            avoids(Allergen.MILK, Severity.INTOLERANCE),
+            avoids(Allergen.PEANUTS, Severity.MEDICAL),
+        )
+        verdict = suitability.evaluate([facts("mystery paste", classified=False)], [mira])
+        assert verdict.findings[0].severity is Severity.MEDICAL
+
+    def test_each_eater_still_gets_their_own_row(self) -> None:
+        verdict = suitability.evaluate(
+            [facts("mystery paste", classified=False)],
+            [
+                eater("Mira", avoids(Allergen.PEANUTS, Severity.MEDICAL)),
+                eater("Jonas", avoids(Allergen.MILK, Severity.INTOLERANCE)),
+            ],
+        )
+        assert {finding.eater for finding in verdict.findings} == {"Mira", "Jonas"}
+
+    def test_each_unchecked_ingredient_still_gets_its_own_row(self) -> None:
+        mira = eater("Mira", avoids(Allergen.PEANUTS, Severity.MEDICAL))
+        verdict = suitability.evaluate(
+            [facts("mystery paste", classified=False), facts("odd jam", classified=False)],
+            [mira],
+        )
+        assert {finding.ingredient for finding in verdict.findings} == {"mystery paste", "odd jam"}
+
+    def test_a_known_violation_is_still_reported_alongside_the_doubt(self) -> None:
+        """Different facts: one constraint is definitely broken, the others are unknown."""
+        mira = eater(
+            "Mira",
+            dislikes("odd-jam", Severity.MEDICAL),
+            avoids(Allergen.PEANUTS, Severity.MEDICAL),
+        )
+        verdict = suitability.evaluate([facts("odd jam", classified=False)], [mira])
+        assert [finding.unknown for finding in verdict.findings] == [False, True]
+        assert verdict.outcome is Outcome.UNSUITABLE
+
+
+class TestOrder:
+    """The most serious reason is reported first.
+
+    With four eaters and a long ingredient list a verdict runs to a dozen rows, and the
+    one that decided it should not be the twelfth. Ties keep the recipe's own order, so
+    the list stays predictable between visits.
+    """
+
+    def test_the_blocker_comes_before_the_caution(self) -> None:
+        mira = eater(
+            "Mira",
+            avoids(Allergen.MILK, Severity.INTOLERANCE),
+            avoids(Allergen.GLUTEN, Severity.MEDICAL),
+        )
+        verdict = suitability.evaluate(
+            [facts("butter", Allergen.MILK), facts("flour", Allergen.GLUTEN)], [mira]
+        )
+        assert [finding.ingredient for finding in verdict.findings] == ["flour", "butter"]
+
+    def test_a_certainty_comes_before_a_doubt_of_the_same_gravity(self) -> None:
+        mira = eater(
+            "Mira",
+            dislikes("odd-jam", Severity.MEDICAL),
+            avoids(Allergen.PEANUTS, Severity.MEDICAL),
+        )
+        verdict = suitability.evaluate([facts("odd jam", classified=False)], [mira])
+        assert [finding.unknown for finding in verdict.findings] == [False, True]
+
+    def test_something_avoidable_sinks_below_something_that_is_not(self) -> None:
+        """A line the cook can simply leave out is the least urgent thing on the list."""
+        mira = eater(
+            "Mira",
+            avoids(Allergen.PEANUTS, Severity.MEDICAL),
+            avoids(Allergen.MILK, Severity.INTOLERANCE),
+        )
+        verdict = suitability.evaluate(
+            [facts("peanuts", Allergen.PEANUTS, optional=True), facts("butter", Allergen.MILK)],
+            [mira],
+        )
+        assert [finding.ingredient for finding in verdict.findings] == ["butter", "peanuts"]
+
+    def test_ties_keep_the_order_the_recipe_is_written_in(self) -> None:
+        mira = eater("Mira", avoids(Allergen.MILK, Severity.INTOLERANCE))
+        verdict = suitability.evaluate(
+            [facts("butter", Allergen.MILK), facts("cream", Allergen.MILK)], [mira]
+        )
+        assert [finding.ingredient for finding in verdict.findings] == ["butter", "cream"]
