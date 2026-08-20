@@ -227,7 +227,7 @@ product actually targets.
 
 ## ADR-008 Enforce the call rules with import-linter
 
-**Status:** Proposed
+**Status:** Accepted
 
 **Context.** The call rules are currently prose. Prose is not enforcement, and layering rules decay
 under deadline pressure.
@@ -279,25 +279,42 @@ forbidden_modules = ["quookly.access"]
 The third contract is the one that matters most: it is ADR-006 expressed as a build failure.
 
 **Cost.** One more dev dependency and a contract file to maintain as the package layout evolves.
+The contract must be updated in the same commit as any package-layout change, or it silently stops
+covering the thing it was written for.
 
 ---
 
-## ADR-009 SQLite by default, Postgres opt-in
+## ADR-009 SQLite only to begin with
 
-**Status:** Proposed
+**Status:** Accepted
 
-**Context.** NFR-1 and NFR-3 target self-hosting on modest hardware.
+**Context.** NFR-1 and NFR-3 target self-hosting on modest hardware. Supporting two datastores from
+the start doubles the testing surface before there is anything to test.
 
-**Decision.** SQLite is the default and requires no configuration. Postgres is supported through the
-same resource access interfaces, selected by configuration.
+**Decision.** Ship **SQLite only**. Postgres is not supported at v1. The persistence volatility (V13)
+is still encapsulated, so adding Postgres later is a change confined to the resource access layer
+and its configuration.
 
-**Rationale.** A household instance should not require a database server. The resource access layer
-exists precisely so this choice does not reach business logic (V13).
+**Rationale.** A household instance should not require a database server, and SQLite is sufficient
+for the read-heavy, single-household workload Quookly actually has. Building Postgres support before
+a single real query exists would be speculative work against unknown requirements.
 
-**Cost.** Two backends to test. Full-text search differs between them, which `SearchIndexAccess`
-must absorb — and this is where the abstraction will be under most strain.
+Deferring is safe here specifically because the architecture already isolates the decision. Business
+logic never sees a connection, a session, or a dialect — it calls domain verbs on resource access
+services (V13). Combined with [ADR-018](#adr-018-sqlmodel-as-the-orm), the later swap is a
+configuration change plus whatever dialect-specific code the access layer holds.
 
----
+**Cost, and the honest limit of the abstraction.** Two things will *not* swap for free, and
+pretending otherwise is how this decision goes wrong later:
+
+- **Full-text search.** SQLite FTS5 and Postgres `tsvector` are different mechanisms, not different
+  spellings of one. `SearchIndexAccess` exists so that difference is absorbed in one service, and it
+  is where the strain will show first (V10).
+- **Concurrency.** SQLite serialises writers. That is fine for a household and not fine for a shared
+  community instance, which is the point at which Postgres stops being optional.
+
+**When to revisit:** the first instance with concurrent writers, or the first search requirement
+FTS5 cannot serve.
 
 ## ADR-010 The frontend never decides suitability
 
@@ -460,3 +477,33 @@ benefit, since a requirement that cannot be expressed as a test is usually one t
 understood.
 
 **Procedure:** [Development](10-development.md#the-development-loop).
+
+---
+
+## ADR-018 SQLModel as the ORM
+
+**Status:** Accepted
+
+**Context.** [ADR-009](#adr-009-sqlite-only-to-begin-with) ships SQLite only, on the understanding
+that moving to Postgres later stays cheap. Something has to make that true in practice.
+
+**Decision.** Use **SQLModel** in the resource access layer. Models are defined once and serve as
+both table definitions and typed structures. Async access uses `AsyncSession` from
+`sqlmodel.ext.asyncio.session` over SQLAlchemy 2.0's async engine, which for SQLite means the
+`aiosqlite` driver.
+
+**Rationale.** SQLModel sits on SQLAlchemy, so dialect portability comes from a mature engine rather
+than from hand-written SQL. It is Pydantic-based, which matches a codebase whose API contracts are
+already Pydantic and which runs strict mypy — the same model definition carries the types rather
+than being restated. It is also from the FastAPI author, so the integration path is well trodden.
+
+**What actually guarantees the swap.** SQLModel makes it easier; **the resource access layer makes
+it possible**. If business logic imported SQLModel types, the ORM would be part of the domain and no
+amount of dialect abstraction would help. The rule stands: SQLModel types live in `access/`, and
+what crosses upward is `contracts/`.
+
+**Cost.** One more layer between the code and SQLAlchemy, and SQLModel does not cover everything
+SQLAlchemy exposes. The escape hatch is deliberate and cheap: because it is a thin layer, dropping
+to SQLAlchemy directly *inside a resource access service* is possible without any caller noticing.
+
+Migrations are Alembic, as they would be with SQLAlchemy alone.

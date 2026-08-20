@@ -107,9 +107,9 @@ just frontend serve
 **None of this exists yet.** Target shape, per NFR-2:
 
 - One image containing the built frontend and the backend that serves it
-- SQLite by default, on a mounted volume — no database server required
-  ([ADR-009](07-decisions.md#adr-009-sqlite-by-default-postgres-opt-in))
-- Postgres and a local inference backend as optional Compose profiles
+- SQLite on a mounted volume — no database server required, and the only supported datastore at v1
+  ([ADR-009](07-decisions.md#adr-009-sqlite-only-to-begin-with))
+- A local inference backend as an optional Compose profile
 
 ```mermaid
 flowchart LR
@@ -120,13 +120,11 @@ flowchart LR
     DB[("SQLite volume")]
     MEDIA[("Media volume")]
     OLLAMA["Ollama container (optional)"]
-    PG[("Postgres container (optional)")]
   end
   Browser["Browser"] --> API
   API --> DB
   API --> MEDIA
   API -.-> OLLAMA
-  API -.-> PG
 ```
 
 Planned configuration surface, all via environment variables so that no file needs editing inside
@@ -135,7 +133,7 @@ the image:
 | Variable | Purpose | Default |
 | --- | --- | --- |
 | `PORT` | Listen port | `8000` |
-| `QUOOKLY_DATABASE_URL` | Datastore | SQLite on the data volume |
+| `QUOOKLY_DATABASE_URL` | Datastore — SQLite only at v1 | SQLite on the data volume |
 | `QUOOKLY_MEDIA_DIR` | Image storage | Media volume |
 | `QUOOKLY_SECRET_KEY` | JWT signing key | none — **must be set** |
 | `QUOOKLY_INFERENCE_PROVIDER` | `ollama`, `vllm`, `openai`, `anthropic`, `openrouter` | `ollama` |

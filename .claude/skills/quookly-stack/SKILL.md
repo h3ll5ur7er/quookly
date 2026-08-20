@@ -75,7 +75,12 @@ Rules from those documents that are easy to violate and expensive to unwind:
 2. **Managers never call managers.** Cross-manager reactions go through the event bus.
 3. **Rule engines are pure.** No I/O; reference data arrives as arguments. An engine that grows a
    resource-access call has stopped being a rule engine.
-4. **The phone is the design target.** Author layouts at the narrow viewport and widen. Never the
+4. **SQLModel types stay in `access/`.** Persistence is SQLite only at v1, via SQLModel over async
+   SQLAlchemy with Alembic migrations. What crosses upward out of the access layer is `contracts/`,
+   never an ORM model — that is what keeps the datastore swappable (ADR-009, ADR-018).
+5. **Layer violations fail the build.** `import-linter` contracts run in `just backend check`
+   (ADR-008). Update the contract in the same commit as any package-layout change.
+6. **The phone is the design target.** Author layouts at the narrow viewport and widen. Never the
    reverse.
 
 ## How to work: test-first, gate per unit

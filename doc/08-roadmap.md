@@ -15,7 +15,9 @@ most likely to be built well by accident and least likely to matter if they are 
 
 - Package layout: `routes/`, `managers/`, `engines/`, `access/`, `utilities/`, `contracts/`
 - `import-linter` contracts wired into `just backend check` ([ADR-008](07-decisions.md#adr-008-enforce-the-call-rules-with-import-linter))
-- Persistence chosen and migrations wired; SQLite default ([ADR-009](07-decisions.md#adr-009-sqlite-by-default-postgres-opt-in))
+- Persistence: SQLite only, SQLModel over async SQLAlchemy, Alembic migrations
+  ([ADR-009](07-decisions.md#adr-009-sqlite-only-to-begin-with),
+  [ADR-018](07-decisions.md#adr-018-sqlmodel-as-the-orm))
 - `Configuration`, `Diagnostics`, `Security` utilities
 - Authentication: register, log in, JWT (UC-6.1)
 - First-run admin bootstrap, closing permanently once a user exists (UC-10.1, FR-16)

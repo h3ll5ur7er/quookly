@@ -217,7 +217,9 @@ multi-user instances, visibility rules for private, shared, followed, and public
 
 **Question:** where does the data physically live?
 **Varies:** SQLite or Postgres; local filesystem or object storage for images; backup shape;
-migration tooling.
+migration tooling. v1 ships SQLite only
+([ADR-009](07-decisions.md#adr-009-sqlite-only-to-begin-with)) — the volatility is encapsulated now
+so that the choice can change later without business logic noticing.
 **Stable:** business operations expressed as atomic verbs over the domain.
 **Encapsulated by:** the resource access layer, whose interfaces are stated in domain terms — not
 as CRUD over tables.
