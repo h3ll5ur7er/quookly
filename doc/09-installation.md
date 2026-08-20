@@ -127,25 +127,49 @@ flowchart LR
   API -.-> OLLAMA
 ```
 
-Planned configuration surface, all via environment variables so that no file needs editing inside
-the image:
+All configuration is by environment variable, so nothing inside the image needs editing.
+
+**Implemented:**
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
 | `PORT` | Listen port | `8000` |
-| `QUOOKLY_DATABASE_URL` | Datastore — SQLite only at v1 | SQLite on the data volume |
-| `QUOOKLY_MEDIA_DIR` | Image storage | Media volume |
-| `QUOOKLY_SECRET_KEY` | JWT signing key | none — **must be set** |
-| `QUOOKLY_INFERENCE_PROVIDER` | `ollama`, `vllm`, `openai`, `anthropic`, `openrouter` | `ollama` |
-| `QUOOKLY_INFERENCE_BASE_URL` | Endpoint for local providers | `http://ollama:11434` |
-| `QUOOKLY_INFERENCE_API_KEY` | Credential for hosted providers | none |
-| `QUOOKLY_INFERENCE_MODEL` | Model identifier | provider-specific |
-| `QUOOKLY_DEFAULT_LOCALE` | `en_GB`, `de_CH`, `fr_CH` | `en_GB` |
-| `QUOOKLY_SEED_ON_FIRST_RUN` | Load seed ingredients and starter recipes | `true` |
+| `QUOOKLY_ENVIRONMENT` | `development` or `production` | `development` |
+| `QUOOKLY_SECRET_KEY` | JWT signing key | none — see below |
+| `QUOOKLY_DATABASE_URL` | Datastore — SQLite only at v1 | `sqlite+aiosqlite:///./quookly.db` |
 
-Names are provisional until Phase 0 implements `Configuration`. The provider variables are the
-concrete form of [ADR-003](07-decisions.md#adr-003-inference-is-a-resource-prompting-is-an-activity):
-switching from local Ollama to a hosted provider is configuration, never a code change.
+**Planned**, arriving with the phases that use them:
+
+| Variable | Purpose | Arrives with |
+| --- | --- | --- |
+| `QUOOKLY_MEDIA_DIR` | Image storage | Phase 1 |
+| `QUOOKLY_DEFAULT_LOCALE` | `en_GB`, `de_CH`, `fr_CH` | Phase 1 |
+| `QUOOKLY_SEED_ON_FIRST_RUN` | Load seed ingredients and starter recipes | Phase 1 |
+| `QUOOKLY_INFERENCE_PROVIDER` | `ollama`, `vllm`, `openai`, `anthropic`, `openrouter` | Phase 3 |
+| `QUOOKLY_INFERENCE_BASE_URL` | Endpoint for local providers | Phase 3 |
+| `QUOOKLY_INFERENCE_API_KEY` | Credential for hosted providers | Phase 3 |
+| `QUOOKLY_INFERENCE_MODEL` | Model identifier | Phase 3 |
+
+Settings are added as they are used rather than in anticipation, so this table describes the system
+that exists rather than one that is hoped for. The provider variables are the concrete form of
+[ADR-003](07-decisions.md#adr-003-inference-is-a-resource-prompting-is-an-activity): switching from
+local Ollama to a hosted provider is configuration, never a code change.
+
+### The secret key
+
+There is no default, and this is deliberate
+([ADR-019](07-decisions.md#adr-019-no-default-secret-key)):
+
+- **`QUOOKLY_ENVIRONMENT=production`** — `QUOOKLY_SECRET_KEY` must be set. The instance refuses to
+  start without it, rather than falling back to something guessable.
+- **`development`** (the default) — a throwaway key is generated per process, so a fresh clone runs
+  with no configuration. Tokens do not survive a restart.
+
+Generate one with:
+
+```bash
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+```
 
 ### Installing on a phone
 

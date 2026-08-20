@@ -521,3 +521,27 @@ SQLAlchemy exposes. The escape hatch is deliberate and cheap: because it is a th
 to SQLAlchemy directly *inside a resource access service* is possible without any caller noticing.
 
 Migrations are Alembic, as they would be with SQLAlchemy alone.
+
+---
+
+## ADR-019 No default secret key
+
+**Status:** Accepted
+
+**Context.** The JWT signing key has to come from somewhere. A default in the source makes
+development frictionless.
+
+**Decision.** There is no default. In `production`, a missing `QUOOKLY_SECRET_KEY` is a startup
+failure. In `development`, a throwaway key is generated per process.
+
+**Rationale.** A key committed to the source would be identical on every self-hosted instance and
+published in the repository — every instance forgeable by anyone who read it. Refusing to start is
+the correct failure: loud, immediate, and impossible to ship past.
+
+Development gets a generated key rather than the same treatment because the failure mode there is
+harmless. Tokens do not survive a restart, which is a mild annoyance and a fair trade for having no
+constant in the source. It also keeps the ergonomics promise: a fresh clone runs with no
+configuration.
+
+**Cost.** Sessions end on restart during development, which will occasionally confuse someone. The
+alternative costs every production instance its security.
