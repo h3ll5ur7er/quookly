@@ -11,6 +11,22 @@ scaled repeatedly; binary floats drift, and a drifting quantity is a wrong recip
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
+from typing import Annotated
+
+from pydantic import WithJsonSchema
+
+# A decimal as it crosses the API: documented as a string, because that is how a client
+# should send it. A JSON number is a binary float in a browser, and a magnitude that has
+# been through one is no longer the magnitude that was written.
+#
+# Only the published schema changes; a number is still accepted, since refusing one would
+# break every client that has not been regenerated. Without this the generated TypeScript
+# for a `Decimal` field is an empty interface -- pydantic emits `anyOf: [number, string]`
+# and the generator has nothing to make of it, so the field ends up with no type at all.
+DecimalString = Annotated[
+    Decimal,
+    WithJsonSchema({"type": "string", "pattern": r"^-?\d*\.?\d+$"}, mode="validation"),
+]
 
 
 class Dimension(Enum):

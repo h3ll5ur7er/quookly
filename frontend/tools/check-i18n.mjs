@@ -92,6 +92,4 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log(
-  `Translations: ${used.size} messages, complete in ${TARGET_LOCALES.join(' and ')}.`,
-);
+console.log(`Translations: ${used.size} messages, complete in ${TARGET_LOCALES.join(' and ')}.`);

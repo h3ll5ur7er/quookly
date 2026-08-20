@@ -62,12 +62,16 @@ export class RecipeDetailComponent {
   }
 
   private load(servings: number | null): void {
-    this.recipes.getRecipe(this.recipeId, servings ?? undefined).subscribe({
-      next: (recipe) => {
-        this.recipe.set(recipe);
-        this.missing.set(false);
-      },
-      error: () => this.missing.set(true),
-    });
+    // Sent as text, not as a JSON number: the backend holds yields as exact decimals,
+    // and a value that has been through a binary float is no longer the one asked for.
+    this.recipes
+      .getRecipe(this.recipeId, servings === null ? undefined : String(servings))
+      .subscribe({
+        next: (recipe) => {
+          this.recipe.set(recipe);
+          this.missing.set(false);
+        },
+        error: () => this.missing.set(true),
+      });
   }
 }

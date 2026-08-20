@@ -1,6 +1,5 @@
 """Recipe endpoints."""
 
-from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -8,6 +7,7 @@ from pydantic import BaseModel
 
 from quookly.contracts.errors import IngredientNotRegistered, UnknownUnit, UnsupportedDocument
 from quookly.contracts.exchange import ExchangeDocument
+from quookly.contracts.measure import DecimalString
 from quookly.contracts.recipe import PresentedRecipe, RecipeInput, RecipeSummaryView
 from quookly.managers import recipe as recipe_manager
 from quookly.routes.dependencies import CurrentCook
@@ -73,7 +73,7 @@ async def import_recipes(document: dict[str, Any], cook: CurrentCook) -> ImportO
 async def get_recipe(
     recipe_id: int,
     cook: CurrentCook,
-    servings: Decimal | None = Query(
+    servings: DecimalString | None = Query(
         default=None,
         gt=0,
         description="Show the recipe at this yield, in whatever the recipe itself yields.",

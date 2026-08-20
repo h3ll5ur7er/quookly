@@ -44,10 +44,7 @@ async function start(): Promise<void> {
 
   await bootstrapApplication(App, {
     ...appConfig,
-    providers: [
-      ...appConfig.providers,
-      { provide: LOCALE_ID, useValue: locale },
-    ],
+    providers: [...appConfig.providers, { provide: LOCALE_ID, useValue: locale }],
   });
 }
 

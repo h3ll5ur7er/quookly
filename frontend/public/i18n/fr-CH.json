@@ -34,6 +34,9 @@
     "recipeLoading": "Chargement…",
     "durationMinutes": "{$PH} min",
     "durationHours": "{$PH} h",
-    "durationHoursMinutes": "{$PH} h {$PH_1} min"
+    "durationHoursMinutes": "{$PH} h {$PH_1} min",
+    "navLabel": "Sections",
+    "navRecipes": "Recettes",
+    "navHousehold": "Foyer"
   }
 }

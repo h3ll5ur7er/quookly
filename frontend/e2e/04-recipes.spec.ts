@@ -123,7 +123,9 @@ test.describe('a recipe', () => {
     for (let i = 0; i < 6; i++) {
       await page.getByRole('button', { name: 'Fewer' }).click();
     }
-    await expect(page.getByText('Makes').locator('..').getByText('6', { exact: true })).toBeVisible();
+    await expect(
+      page.getByText('Makes').locator('..').getByText('6', { exact: true }),
+    ).toBeVisible();
     await expect(page.getByText('150 ml')).toBeVisible();
   });
 

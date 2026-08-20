@@ -1,4 +1,10 @@
-import { LOCALES, LOCALE_STORAGE_KEY, isLocale, preferredLocale, storeLocale } from './locale.store';
+import {
+  LOCALES,
+  LOCALE_STORAGE_KEY,
+  isLocale,
+  preferredLocale,
+  storeLocale,
+} from './locale.store';
 
 function navigatorLanguages(languages: readonly string[]): void {
   Object.defineProperty(window.navigator, 'languages', {

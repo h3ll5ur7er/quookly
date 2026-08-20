@@ -34,6 +34,9 @@
     "recipeLoading": "Wird geladen …",
     "durationMinutes": "{$PH} Min.",
     "durationHours": "{$PH} Std.",
-    "durationHoursMinutes": "{$PH} Std. {$PH_1} Min."
+    "durationHoursMinutes": "{$PH} Std. {$PH_1} Min.",
+    "navLabel": "Bereiche",
+    "navRecipes": "Rezepte",
+    "navHousehold": "Haushalt"
   }
 }

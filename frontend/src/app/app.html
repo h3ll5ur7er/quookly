@@ -5,8 +5,33 @@
     <router-outlet />
   </div>
 
+  <!-- Low, within thumb reach, and the same bar on every screen. Navigation is available
+       rather than present: two words, no icons competing with the content above them. -->
   <footer class="shell__footer">
-    <app-locale-picker />
-    <app-theme-picker />
+    @if (signedIn()) {
+      <nav class="shell__nav" aria-label="Sections" i18n-aria-label="@@navLabel">
+        <a
+          class="shell__link"
+          routerLink="/recipes"
+          routerLinkActive="shell__link--current"
+          ariaCurrentWhenActive="page"
+          i18n="@@navRecipes"
+          >Recipes</a
+        >
+        <a
+          class="shell__link"
+          routerLink="/household"
+          routerLinkActive="shell__link--current"
+          ariaCurrentWhenActive="page"
+          i18n="@@navHousehold"
+          >Household</a
+        >
+      </nav>
+    }
+
+    <div class="shell__settings">
+      <app-locale-picker />
+      <app-theme-picker />
+    </div>
   </footer>
 </div>

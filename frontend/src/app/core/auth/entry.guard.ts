@@ -20,15 +20,17 @@ function entryGuard(whenBootstrapRequired: string, otherwise: string): CanActiva
       return router.createUrlTree(['/recipes']);
     }
 
-    return inject(AccountsService).getBootstrapState().pipe(
-      map((state) => {
-        const target = state.required ? whenBootstrapRequired : otherwise;
-        return target === '' ? true : router.createUrlTree([target]);
-      }),
-      // If the instance cannot be asked, let the page render. A network blip should not
-      // strand someone on a blank screen with nothing to try.
-      catchError(() => of(true)),
-    );
+    return inject(AccountsService)
+      .getBootstrapState()
+      .pipe(
+        map((state) => {
+          const target = state.required ? whenBootstrapRequired : otherwise;
+          return target === '' ? true : router.createUrlTree([target]);
+        }),
+        // If the instance cannot be asked, let the page render. A network blip should not
+        // strand someone on a blank screen with nothing to try.
+        catchError(() => of(true)),
+      );
   };
 }
 

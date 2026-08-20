@@ -24,8 +24,9 @@ describe('SignInComponent', () => {
   let navigate: ReturnType<typeof vi.spyOn>;
 
   function fill(email: string, password: string): void {
-    const form = (fixture.componentInstance as unknown as { form: { setValue: (v: unknown) => void } })
-      .form;
+    const form = (
+      fixture.componentInstance as unknown as { form: { setValue: (v: unknown) => void } }
+    ).form;
     form.setValue({ email, password });
   }
 

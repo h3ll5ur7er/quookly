@@ -329,12 +329,8 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "number",
-                  "exclusiveMinimum": 0.0
-                },
-                {
                   "type": "string",
-                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                  "pattern": "^-?\\d*\\.?\\d+$"
                 },
                 {
                   "type": "null"
@@ -822,17 +818,8 @@
             "$ref": "#/components/schemas/AgeBand"
           },
           "appetite": {
-            "anyOf": [
-              {
-                "type": "number",
-                "maximum": 10.0,
-                "exclusiveMinimum": 0.0
-              },
-              {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
-              }
-            ],
+            "type": "string",
+            "pattern": "^-?\\d*\\.?\\d+$",
             "title": "Appetite",
             "default": "1"
           },
@@ -1184,16 +1171,8 @@
             "title": "Ingredient Id"
           },
           "magnitude": {
-            "anyOf": [
-              {
-                "type": "number",
-                "exclusiveMinimum": 0.0
-              },
-              {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
-              }
-            ],
+            "type": "string",
+            "pattern": "^-?\\d*\\.?\\d+$",
             "title": "Magnitude"
           },
           "unit": {
@@ -1443,16 +1422,8 @@
             "title": "Summary"
           },
           "yield_magnitude": {
-            "anyOf": [
-              {
-                "type": "number",
-                "exclusiveMinimum": 0.0
-              },
-              {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
-              }
-            ],
+            "type": "string",
+            "pattern": "^-?\\d*\\.?\\d+$",
             "title": "Yield Magnitude"
           },
           "yield_unit": {

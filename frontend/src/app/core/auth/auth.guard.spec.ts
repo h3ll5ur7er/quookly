@@ -18,9 +18,9 @@ const SESSION: Authenticated = {
 };
 
 function guardFor(url: string): boolean | UrlTree {
-  return TestBed.runInInjectionContext(() =>
-    requireSignedIn({} as never, { url } as never),
-  ) as boolean | UrlTree;
+  return TestBed.runInInjectionContext(() => requireSignedIn({} as never, { url } as never)) as
+    | boolean
+    | UrlTree;
 }
 
 describe('requireSignedIn', () => {

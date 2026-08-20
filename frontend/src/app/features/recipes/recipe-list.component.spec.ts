@@ -69,9 +69,7 @@ describe('RecipeListComponent', () => {
   });
 
   it('reports a failure rather than showing an empty kitchen', async () => {
-    backend
-      .expectOne('/api/v1/recipes')
-      .flush({}, { status: 500, statusText: 'Server Error' });
+    backend.expectOne('/api/v1/recipes').flush({}, { status: 500, statusText: 'Server Error' });
     await fixture.whenStable();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="alert"]')).not.toBeNull();

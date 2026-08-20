@@ -45,13 +45,14 @@
           <li class="lines__line">
             <span class="lines__quantity numeric">{{ line.quantity.display }}</span>
             <span class="lines__name"
-              >{{ line.ingredient
-              }}@if (line.preparation) {<span class="lines__preparation"
-                >, {{ line.preparation }}</span
-              >}@if (line.optional) {
+              >{{ line.ingredient }}
+              @if (line.preparation) {
+                <span class="lines__preparation">, {{ line.preparation }}</span>
+              }
+              @if (line.optional) {
                 <span class="lines__optional" i18n="@@recipeOptional">optional</span>
-              }</span
-            >
+              }
+            </span>
           </li>
         }
       </ul>

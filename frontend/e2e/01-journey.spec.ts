@@ -55,13 +55,15 @@ test.describe('an unclaimed instance', () => {
 
     const undersized = await page.evaluate(() => {
       const MINIMUM = 44;
-      return [...document.querySelectorAll('input, button, select, a')]
-        .map((node) => ({ node, box: node.getBoundingClientRect() }))
-        // Off-screen affordances — the skip link until it is focused — are reached by
-        // keyboard, not by thumb, and are not touch targets.
-        .filter(({ box }) => box.x >= 0 && box.y >= 0 && box.width > 0)
-        .filter(({ box }) => box.height < MINIMUM)
-        .map(({ node, box }) => `${node.tagName.toLowerCase()} ${box.height.toFixed(1)}px`);
+      return (
+        [...document.querySelectorAll('input, button, select, a')]
+          .map((node) => ({ node, box: node.getBoundingClientRect() }))
+          // Off-screen affordances — the skip link until it is focused — are reached by
+          // keyboard, not by thumb, and are not touch targets.
+          .filter(({ box }) => box.x >= 0 && box.y >= 0 && box.width > 0)
+          .filter(({ box }) => box.height < MINIMUM)
+          .map(({ node, box }) => `${node.tagName.toLowerCase()} ${box.height.toFixed(1)}px`)
+      );
     });
 
     expect(undersized).toEqual([]);

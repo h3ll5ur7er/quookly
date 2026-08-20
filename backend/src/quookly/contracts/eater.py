@@ -11,6 +11,7 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from quookly.contracts.ingredient import Allergen
+from quookly.contracts.measure import DecimalString
 
 
 class AgeBand(Enum):
@@ -164,5 +165,5 @@ class EaterInput(BaseModel):
 
     name: str = Field(min_length=1, max_length=100)
     age_band: AgeBand
-    appetite: Decimal = Field(default=STANDARD_PORTION, gt=0, le=10)
+    appetite: DecimalString = Field(default=STANDARD_PORTION, gt=0, le=10)
     constraints: list[ConstraintView] = Field(default_factory=list, max_length=50)

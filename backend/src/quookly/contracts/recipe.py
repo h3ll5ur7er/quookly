@@ -10,13 +10,12 @@ ingredients.
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from decimal import Decimal
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from quookly.contracts.ingredient import Ingredient, Origin
-from quookly.contracts.measure import Quantity
+from quookly.contracts.measure import DecimalString, Quantity
 
 
 class Visibility(Enum):
@@ -206,7 +205,7 @@ class IngredientLineInput(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     ingredient_id: int
-    magnitude: Decimal = Field(gt=0)
+    magnitude: DecimalString = Field(gt=0)
     unit: str
     preparation: str | None = Field(default=None, max_length=200)
     optional: bool = False
@@ -227,7 +226,7 @@ class RecipeInput(BaseModel):
 
     title: str = Field(min_length=1, max_length=200)
     summary: str | None = Field(default=None, max_length=1000)
-    yield_magnitude: Decimal = Field(gt=0)
+    yield_magnitude: DecimalString = Field(gt=0)
     yield_unit: str
     lines: list[IngredientLineInput] = Field(min_length=1)
     steps: list[StepInput] = Field(min_length=1)

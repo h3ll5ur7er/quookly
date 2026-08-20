@@ -23,7 +23,9 @@
     />
 
     @if (failed()) {
-      <p class="error" role="alert" i18n="@@signInFailed">Those credentials did not match an account.</p>
+      <p class="error" role="alert" i18n="@@signInFailed">
+        Those credentials did not match an account.
+      </p>
     }
 
     <button type="submit" [disabled]="form.invalid || submitting()">
