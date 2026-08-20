@@ -47,3 +47,11 @@ class UnknownUnit(QuooklyError):
 
 class IngredientNotRegistered(QuooklyError):
     """A recipe line points at an ingredient that is not in the registry (FR-9)."""
+
+
+class UnsupportedDocument(QuooklyError):
+    """The document is not one this version can read.
+
+    Reading a format we do not understand would silently drop whatever is new in it, so
+    an unrecognised version is refused rather than partially honoured.
+    """

@@ -169,3 +169,19 @@ async def list_for_cook(cook_id: int) -> list[RecipeSummary]:
         for row in rows
         if row.id is not None
     ]
+
+
+async def fetch_all_for_cook(cook_id: int, locale: str) -> list[Recipe]:
+    """Every recipe a cook owns, whole. For export, which needs contents not summaries."""
+    async with session() as active:
+        rows = (
+            await active.exec(
+                select(RecipeRow)
+                .where(col(RecipeRow.cook_id) == cook_id)
+                .order_by(col(RecipeRow.title))
+            )
+        ).all()
+        ids = [row.id for row in rows if row.id is not None]
+
+    recipes = [await fetch(recipe_id, locale) for recipe_id in ids]
+    return [recipe for recipe in recipes if recipe is not None]

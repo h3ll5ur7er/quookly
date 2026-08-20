@@ -230,3 +230,58 @@ class TestScaling:
         recipe_id = created.json()["id"]
         response = await client.get(f"/api/v1/recipes/{recipe_id}?servings=0", headers=headers)
         assert response.status_code == 422
+
+
+class TestExchange:
+    async def test_export_is_not_mistaken_for_a_recipe_id(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """`/recipes/export` and `/recipes/{id}` share a prefix; order decides which wins."""
+        headers = await sign_up(client, "chef@example.com")
+        response = await client.get("/api/v1/recipes/export", headers=headers)
+        assert response.status_code == 200
+        assert response.json()["quookly"] == 1
+
+    async def test_a_cook_can_take_their_recipes_with_them(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        await client.post("/api/v1/recipes", json=pancakes(pantry), headers=headers)
+
+        exported = (await client.get("/api/v1/recipes/export", headers=headers)).json()
+        assert [recipe["title"] for recipe in exported["recipes"]] == ["Pancakes"]
+        assert {entry["slug"] for entry in exported["ingredients"]} == {
+            "plain-flour",
+            "milk",
+            "egg",
+        }
+
+    async def test_what_was_exported_can_be_imported(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """FR-11 end to end: the export format is the import format."""
+        mine = await sign_up(client, "chef@example.com")
+        await client.post("/api/v1/recipes", json=pancakes(pantry), headers=mine)
+        exported = (await client.get("/api/v1/recipes/export", headers=mine)).json()
+
+        theirs = await sign_up(client, "other@example.com")
+        response = await client.post(
+            "/api/v1/recipes/import", json=exported, headers=theirs
+        )
+        assert response.status_code == 201
+        assert response.json() == {"recipes_added": 1, "ingredients_added": 0}
+
+        listed = await client.get("/api/v1/recipes", headers=theirs)
+        assert [item["title"] for item in listed.json()] == ["Pancakes"]
+
+    async def test_a_document_this_build_cannot_read_is_refused(
+        self, client: AsyncClient
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        response = await client.post(
+            "/api/v1/recipes/import", json={"quookly": 99, "recipes": []}, headers=headers
+        )
+        assert response.status_code == 422
+
+    async def test_export_requires_signing_in(self, client: AsyncClient) -> None:
+        assert (await client.get("/api/v1/recipes/export")).status_code == 401

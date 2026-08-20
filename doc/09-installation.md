@@ -226,6 +226,18 @@ Request bodies are never logged, which is what keeps passwords out of the logs
 Intended shape: pull the new image, restart, and let migrations run at startup. Back up the data
 volume first.
 
+### Taking your data with you
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" https://your-instance/api/v1/recipes/export > quookly.json
+```
+
+That file is a complete, portable copy: the recipes and the registry entries they use. Importing it
+into any Quookly instance recreates them, including one that has never seen those ingredients
+([ADR-012](07-decisions.md#adr-012-export-format-is-the-import-format)). It is also a valid backup —
+the export format and the import format are the same one, so the path out is exercised by every
+round trip rather than only by people leaving.
+
 Upgrades may replace **seeded** ingredients and recipes and never touch user-created ones
 ([ADR-016](07-decisions.md#adr-016-ship-seed-content-marked-and-upgradable)). Editing a seeded recipe
 produces a user-owned variant, so an improved seed set can ship without discarding a cook's changes. Because export is the same format as import

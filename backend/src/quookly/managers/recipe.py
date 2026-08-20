@@ -4,11 +4,15 @@ Sequences the steps and owns none of the rules. Storage is `RecipeAccess`, prefe
 `PreferenceAccess`, and every quantity decision belongs to `MeasureEngine`.
 """
 
+from dataclasses import dataclass
 from decimal import Decimal
+from typing import Any
 
+from quookly.access import ingredient as registry
 from quookly.access import preferences as preference_access
 from quookly.access import recipe as recipe_access
-from quookly.contracts.errors import UnknownUnit
+from quookly.contracts.errors import UnknownUnit, UnsupportedDocument
+from quookly.contracts.exchange import ExchangeDocument
 from quookly.contracts.measure import Quantity, Unit
 from quookly.contracts.preferences import UnitPreferences
 from quookly.contracts.recipe import (
@@ -24,7 +28,7 @@ from quookly.contracts.recipe import (
     RecipeSummaryView,
     StepDraft,
 )
-from quookly.engines import measure
+from quookly.engines import exchange, measure
 
 _UNITS_BY_SYMBOL = {unit.symbol: unit for unit in Unit}
 
@@ -142,3 +146,90 @@ async def _present(
             for position, step in enumerate(recipe.steps)
         ],
     )
+
+
+@dataclass(frozen=True, slots=True)
+class ImportResult:
+    """What an import actually did."""
+
+    recipes_added: int
+    ingredients_added: int
+
+
+async def export_for(cook_id: int, locale: str) -> ExchangeDocument:
+    """Everything a cook owns, in the portable format (FR-11)."""
+    recipes = await recipe_access.fetch_all_for_cook(cook_id, locale)
+    return exchange.to_document(recipes, locale)
+
+
+async def import_document(raw: dict[str, Any], cook_id: int, locale: str) -> ImportResult:
+    """Read a document into this instance (UC-1.2).
+
+    Slugs are resolved against the local registry and whatever is missing is created, so a
+    document is enough on its own. Where an entry already exists the **local** one wins: an
+    instance's own densities are its business, and a document should not be able to rewrite
+    them.
+
+    The document is validated in full — format version, shape, units, and that every slug
+    a recipe refers to is one the document defines or this instance already holds — before
+    anything is written. A half-finished import would leave a cook unable to tell what
+    arrived.
+
+    That validation is not a transaction. Each write is its own, so a failure *during*
+    writing could still leave part of a document imported. Making the whole import atomic
+    needs a transaction spanning several access services, which this layer does not offer
+    yet; the validation above is what keeps the realistic failures — a bad document — from
+    ever reaching that point.
+    """
+    document = exchange.from_document(raw)
+
+    known = await registry.slugs_present([entry.slug for entry in document.ingredients])
+    missing = [entry for entry in document.ingredients if entry.slug not in known]
+
+    referenced = {line.slug for recipe in document.recipes for line in recipe.lines}
+    unresolvable = referenced - known - {entry.slug for entry in missing}
+    if unresolvable:
+        raise UnsupportedDocument(
+            f"the document refers to ingredients it does not define: {sorted(unresolvable)}"
+        )
+
+    for entry in missing:
+        # Imported entries are the importer's own. A document must not be able to forge a
+        # seeded row, which an upgrade would then feel free to replace.
+        await registry.register(
+            slug=entry.slug,
+            kind=entry.kind,
+            density=entry.density,
+            names={document.locale: entry.names},
+        )
+
+    ids = await registry.ids_by_slug(sorted(referenced))
+    for recipe in document.recipes:
+        await recipe_access.store(
+            RecipeDraft(
+                title=recipe.title,
+                summary=recipe.summary,
+                yield_quantity=recipe.yield_quantity,
+                provenance=Provenance.IMPORTED_JSON,
+                lines=[
+                    IngredientLineDraft(
+                        ingredient_id=ids[line.slug],
+                        quantity=line.quantity,
+                        preparation=line.preparation,
+                        optional=line.optional,
+                    )
+                    for line in recipe.lines
+                ],
+                steps=[
+                    StepDraft(
+                        instruction=step.instruction,
+                        duration_seconds=step.duration_seconds,
+                        temperature_celsius=step.temperature_celsius,
+                    )
+                    for step in recipe.steps
+                ],
+            ),
+            cook_id,
+        )
+
+    return ImportResult(recipes_added=len(document.recipes), ingredients_added=len(missing))

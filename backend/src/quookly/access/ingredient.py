@@ -137,3 +137,25 @@ async def densities_for(ingredient_ids: list[int]) -> dict[int, Decimal | None]:
             )
         ).all()
     return {row.id: row.density for row in rows if row.id is not None}
+
+
+async def slugs_present(slugs: list[str]) -> set[str]:
+    """Which of these slugs this instance already knows."""
+    if not slugs:
+        return set()
+    async with session() as active:
+        rows = (
+            await active.exec(select(IngredientRow).where(col(IngredientRow.slug).in_(slugs)))
+        ).all()
+    return {row.slug for row in rows}
+
+
+async def ids_by_slug(slugs: list[str]) -> dict[str, int]:
+    """Map slugs to this instance's ids. A document refers by slug; storage needs ids."""
+    if not slugs:
+        return {}
+    async with session() as active:
+        rows = (
+            await active.exec(select(IngredientRow).where(col(IngredientRow.slug).in_(slugs)))
+        ).all()
+    return {row.slug: row.id for row in rows if row.id is not None}

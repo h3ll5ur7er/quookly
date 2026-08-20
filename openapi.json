@@ -238,6 +238,72 @@
         }
       }
     },
+    "/api/v1/recipes/export": {
+      "get": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Export Recipes",
+        "description": "Everything this cook owns, in the portable format (FR-11).",
+        "operationId": "exportRecipes",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeDocument"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recipes/import": {
+      "post": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Import Recipes",
+        "description": "Read an exported document into this instance (UC-1.2).",
+        "operationId": "importRecipes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Document"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportOutcome"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/recipes/{recipe_id}": {
       "get": {
         "tags": [
@@ -409,6 +475,218 @@
         "title": "Credentials",
         "description": "A request to sign in. No length rule \u2014 an old password is still the password."
       },
+      "ExchangeDocument": {
+        "properties": {
+          "quookly": {
+            "type": "integer",
+            "title": "Quookly"
+          },
+          "exported_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Exported At"
+          },
+          "locale": {
+            "type": "string",
+            "title": "Locale"
+          },
+          "ingredients": {
+            "items": {
+              "$ref": "#/components/schemas/ExchangeIngredient"
+            },
+            "type": "array",
+            "title": "Ingredients"
+          },
+          "recipes": {
+            "items": {
+              "$ref": "#/components/schemas/ExchangeRecipe"
+            },
+            "type": "array",
+            "title": "Recipes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "quookly",
+          "exported_at",
+          "locale",
+          "ingredients",
+          "recipes"
+        ],
+        "title": "ExchangeDocument",
+        "description": "A portable set of recipes and the registry entries they use."
+      },
+      "ExchangeIngredient": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/IngredientKind"
+          },
+          "density": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Density"
+          },
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Names"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "kind",
+          "names"
+        ],
+        "title": "ExchangeIngredient",
+        "description": "Enough to recreate a registry entry on an instance that lacks it."
+      },
+      "ExchangeLine": {
+        "properties": {
+          "ingredient": {
+            "type": "string",
+            "title": "Ingredient"
+          },
+          "magnitude": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Magnitude"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "preparation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preparation"
+          },
+          "optional": {
+            "type": "boolean",
+            "title": "Optional",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "ingredient",
+          "magnitude",
+          "unit"
+        ],
+        "title": "ExchangeLine"
+      },
+      "ExchangeRecipe": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "yield_magnitude": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Yield Magnitude"
+          },
+          "yield_unit": {
+            "type": "string",
+            "title": "Yield Unit"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/Provenance"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/ExchangeLine"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Lines"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ExchangeStep"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Steps"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "yield_magnitude",
+          "yield_unit",
+          "provenance",
+          "lines",
+          "steps"
+        ],
+        "title": "ExchangeRecipe"
+      },
+      "ExchangeStep": {
+        "properties": {
+          "instruction": {
+            "type": "string",
+            "title": "Instruction"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "temperature_celsius": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature Celsius"
+          }
+        },
+        "type": "object",
+        "required": [
+          "instruction"
+        ],
+        "title": "ExchangeStep"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -421,6 +699,36 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "ImportOutcome": {
+        "properties": {
+          "recipes_added": {
+            "type": "integer",
+            "title": "Recipes Added"
+          },
+          "ingredients_added": {
+            "type": "integer",
+            "title": "Ingredients Added"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipes_added",
+          "ingredients_added"
+        ],
+        "title": "ImportOutcome",
+        "description": "What an import did."
+      },
+      "IngredientKind": {
+        "type": "string",
+        "enum": [
+          "liquid",
+          "powder",
+          "solid",
+          "countable"
+        ],
+        "title": "IngredientKind",
+        "description": "What sort of thing this is, for the purpose of measuring it.\n\nThis is the axis a cook's unit preferences run along: powders in grams, liquids in\nmillilitres (UC-6.2). It is deliberately coarse \u2014 it exists to choose a unit, not to\nclassify food."
       },
       "IngredientLineInput": {
         "properties": {

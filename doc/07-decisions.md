@@ -400,6 +400,22 @@ by people leaving.
 
 **Cost.** The format becomes a public contract and must be versioned.
 
+**Built.** Two properties make the format portable, and both were forced by asking what happens on
+an instance that has never seen the recipe:
+
+- **Lines refer to ingredients by slug.** Database ids belong to the instance that issued them; a
+  slug means the same thing everywhere.
+- **The ingredients used travel with the recipes.** Without their definitions, importing into a
+  fresh instance would resolve nothing, and the promise would hold only between instances that
+  already agreed.
+
+Where an entry already exists locally, the **local one wins** — an instance's own densities are its
+business and a document must not rewrite them. Imported entries are created as the importer's own,
+so a document cannot forge a seeded row that an upgrade would later feel free to replace.
+
+A document declaring a format version this build does not know is refused rather than partially
+read: honouring the parts we recognise would silently drop whatever the newer format added.
+
 ---
 
 ## ADR-013 Cooking sessions are server-side state; timers store instants

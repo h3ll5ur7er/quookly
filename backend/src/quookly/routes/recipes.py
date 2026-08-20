@@ -1,10 +1,13 @@
 """Recipe endpoints."""
 
 from decimal import Decimal
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, status
+from pydantic import BaseModel
 
-from quookly.contracts.errors import IngredientNotRegistered, UnknownUnit
+from quookly.contracts.errors import IngredientNotRegistered, UnknownUnit, UnsupportedDocument
+from quookly.contracts.exchange import ExchangeDocument
 from quookly.contracts.recipe import PresentedRecipe, RecipeInput, RecipeSummaryView
 from quookly.managers import recipe as recipe_manager
 from quookly.routes.dependencies import CurrentCook
@@ -35,6 +38,37 @@ async def create_recipe(submitted: RecipeInput, cook: CurrentCook) -> PresentedR
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="A line refers to an ingredient that is not in the registry.",
         ) from None
+
+
+class ImportOutcome(BaseModel):
+    """What an import did."""
+
+    recipes_added: int
+    ingredients_added: int
+
+
+# Declared before `/recipes/{recipe_id}`: they share a prefix, and the first match wins.
+@router.get("/recipes/export", response_model=ExchangeDocument)
+async def export_recipes(cook: CurrentCook) -> ExchangeDocument:
+    """Everything this cook owns, in the portable format (FR-11)."""
+    return await recipe_manager.export_for(cook.cook_id, DEFAULT_LOCALE)
+
+
+@router.post(
+    "/recipes/import", response_model=ImportOutcome, status_code=status.HTTP_201_CREATED
+)
+async def import_recipes(document: dict[str, Any], cook: CurrentCook) -> ImportOutcome:
+    """Read an exported document into this instance (UC-1.2)."""
+    try:
+        result = await recipe_manager.import_document(document, cook.cook_id, DEFAULT_LOCALE)
+    except UnsupportedDocument as unreadable:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"This file is not a Quookly export this version can read: {unreadable}",
+        ) from None
+    return ImportOutcome(
+        recipes_added=result.recipes_added, ingredients_added=result.ingredients_added
+    )
 
 
 @router.get("/recipes/{recipe_id}", response_model=PresentedRecipe)
