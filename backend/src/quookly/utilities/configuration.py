@@ -15,6 +15,10 @@ Environment = Literal["development", "production"]
 
 DEFAULT_DATABASE_URL = "sqlite+aiosqlite:///./quookly.db"
 
+# RFC 7518 section 3.2: an HMAC key for HS256 should be at least as long as the hash
+# output. A shorter key weakens every token signed with it.
+MINIMUM_SECRET_KEY_BYTES = 32
+
 
 class Settings(BaseSettings):
     """Instance configuration.
@@ -28,6 +32,7 @@ class Settings(BaseSettings):
     environment: Environment = "development"
     database_url: str = DEFAULT_DATABASE_URL
     secret_key: SecretStr = SecretStr("")
+    token_lifetime_hours: int = 12
 
     @model_validator(mode="after")
     def resolve_secret_key(self) -> "Settings":
@@ -38,13 +43,20 @@ class Settings(BaseSettings):
         key: tokens do not survive a restart, which is the correct trade for not having
         a constant in the source.
         """
-        if self.secret_key.get_secret_value():
+        supplied = self.secret_key.get_secret_value()
+        if supplied:
+            if len(supplied.encode()) < MINIMUM_SECRET_KEY_BYTES:
+                raise ValueError(
+                    f"QUOOKLY_SECRET_KEY must be at least {MINIMUM_SECRET_KEY_BYTES} bytes. "
+                    "Generate one with: "
+                    'python3 -c "import secrets; print(secrets.token_urlsafe(32))"'
+                )
             return self
         if self.environment == "production":
             raise ValueError(
                 "QUOOKLY_SECRET_KEY must be set when QUOOKLY_ENVIRONMENT is 'production'."
             )
-        self.secret_key = SecretStr(secrets.token_urlsafe(32))
+        self.secret_key = SecretStr(secrets.token_urlsafe(MINIMUM_SECRET_KEY_BYTES))
         return self
 
 

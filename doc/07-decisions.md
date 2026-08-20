@@ -565,3 +565,46 @@ configuration.
 
 **Cost.** Sessions end on restart during development, which will occasionally confuse someone. The
 alternative costs every production instance its security.
+
+**Amended: a supplied key must be at least 32 bytes.** PyJWT warns that an HS256 key shorter than
+the SHA-256 output weakens every token signed with it (RFC 7518 §3.2). Refusing a short key is the
+same argument as refusing a missing one — `QUOOKLY_SECRET_KEY=hunter2` would otherwise start
+happily and sign real tokens. The rule applies in development too: environment-dependent security
+rules are harder to reason about than one rule, and the fix is a single command.
+
+---
+
+## ADR-020 Argon2 via pwdlib, tokens via PyJWT
+
+**Status:** Accepted
+
+**Context.** Password hashing and JWT libraries. Most FastAPI material — including, for a long
+time, the official tutorial — pairs `passlib` with `python-jose`, so that is what a contributor is
+likely to reach for.
+
+**Decision.** Hash with **Argon2 via `pwdlib`**. Sign and verify tokens with **PyJWT**. Do not use
+`passlib` or `python-jose`.
+
+**Rationale.** Both of the conventional choices are effectively unmaintained, which is
+disqualifying for security code specifically: an unfixed vulnerability in a hashing or token
+library is not a bug, it is an exposure. `passlib` additionally depends on the `crypt` module,
+removed from the standard library in Python 3.13. FastAPI's own documentation has moved to `pwdlib`
+and PyJWT. Argon2 is the current recommendation for password hashing; `PasswordHash.recommended()`
+tracks it rather than pinning our own opinion.
+
+Verified against upstream sources in August 2026 rather than assumed — this is the kind of decision
+that silently rots.
+
+**Consequences.**
+
+- Every verification path returns a value instead of raising. A malformed hash or a forged token is
+  ordinary input to a public endpoint, not an exceptional condition, and an exception there is an
+  unhandled 500 on an unauthenticated route.
+- The signing algorithm is pinned on decode, so a token declaring `alg: none` is rejected before its
+  claims are read. This is the classic JWT forgery and it is cheap to prevent.
+
+**Cost, and a real limitation.** `argon2-cffi` brings a compiled extension, so the image needs the
+wheel for its platform. More importantly: **tokens cannot be revoked before they expire.** There is
+no token store, so a leaked token is valid for its remaining lifetime and a logout is client-side
+only. `QUOOKLY_TOKEN_LIFETIME_HOURS` (default 12) is the only bound. Refresh tokens with a
+server-side store are the fix, and are deferred rather than forgotten.

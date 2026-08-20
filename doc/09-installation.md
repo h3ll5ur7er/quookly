@@ -137,6 +137,7 @@ All configuration is by environment variable, so nothing inside the image needs 
 | `QUOOKLY_ENVIRONMENT` | `development` or `production` | `development` |
 | `QUOOKLY_SECRET_KEY` | JWT signing key | none — see below |
 | `QUOOKLY_DATABASE_URL` | Datastore — SQLite only at v1 | `sqlite+aiosqlite:///./quookly.db` |
+| `QUOOKLY_TOKEN_LIFETIME_HOURS` | How long a sign-in lasts | `12` |
 
 **Planned**, arriving with the phases that use them:
 
@@ -165,11 +166,17 @@ There is no default, and this is deliberate
 - **`development`** (the default) — a throwaway key is generated per process, so a fresh clone runs
   with no configuration. Tokens do not survive a restart.
 
-Generate one with:
+A supplied key must be **at least 32 bytes**; anything shorter is refused at startup, because an
+HS256 key below the hash output length weakens every token signed with it. Generate one with:
 
 ```bash
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
+
+**Sign-ins cannot be revoked before they expire.** There is no token store yet, so a leaked token
+stays valid for its remaining lifetime and signing out is client-side only
+([ADR-020](07-decisions.md#adr-020-argon2-via-pwdlib-tokens-via-pyjwt)). Shorten
+`QUOOKLY_TOKEN_LIFETIME_HOURS` if that trade is wrong for your instance.
 
 ### Installing on a phone
 

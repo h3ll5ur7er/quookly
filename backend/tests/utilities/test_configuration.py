@@ -11,6 +11,8 @@ from pytest import MonkeyPatch
 
 from quookly.utilities.configuration import Settings, get_settings
 
+VALID_KEY = "a-signing-key-that-is-long-enough-to-be-safe-0123"
+
 QUOOKLY_VARS = (
     "QUOOKLY_ENVIRONMENT",
     "QUOOKLY_SECRET_KEY",
@@ -57,8 +59,18 @@ class TestSecretKey:
 
     def test_production_accepts_a_supplied_secret_key(self, monkeypatch: MonkeyPatch) -> None:
         monkeypatch.setenv("QUOOKLY_ENVIRONMENT", "production")
-        monkeypatch.setenv("QUOOKLY_SECRET_KEY", "a-real-secret")
-        assert Settings().secret_key.get_secret_value() == "a-real-secret"
+        monkeypatch.setenv("QUOOKLY_SECRET_KEY", VALID_KEY)
+        assert Settings().secret_key.get_secret_value() == VALID_KEY
+
+    def test_a_short_key_is_refused(self, monkeypatch: MonkeyPatch) -> None:
+        """RFC 7518: an HS256 key shorter than the hash output weakens every token."""
+        monkeypatch.setenv("QUOOKLY_SECRET_KEY", "hunter2")
+        with pytest.raises(ValidationError, match="at least 32 bytes"):
+            Settings()
+
+    def test_the_generated_key_satisfies_its_own_rule(self) -> None:
+        generated = Settings().secret_key.get_secret_value()
+        assert len(generated.encode()) >= 32
 
     def test_development_generates_a_key_rather_than_shipping_one(self) -> None:
         """A default key baked into the source would be the same on every instance."""
@@ -69,10 +81,11 @@ class TestSecretKey:
 
     def test_the_secret_key_does_not_leak_when_rendered(self, monkeypatch: MonkeyPatch) -> None:
         """Settings end up in logs and tracebacks; the key must not travel with them."""
-        monkeypatch.setenv("QUOOKLY_SECRET_KEY", "do-not-print-me")
+        secret = "do-not-print-me-and-also-long-enough-to-be-valid-01"
+        monkeypatch.setenv("QUOOKLY_SECRET_KEY", secret)
         settings = Settings()
-        assert "do-not-print-me" not in repr(settings)
-        assert "do-not-print-me" not in str(settings.secret_key)
+        assert secret not in repr(settings)
+        assert secret not in str(settings.secret_key)
 
 
 class TestAccessor:

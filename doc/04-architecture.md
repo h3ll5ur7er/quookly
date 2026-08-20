@@ -416,9 +416,11 @@ backend/src/quookly/
 │   ├── models.py           # SQLModel tables — never leave this layer (Built)
 │   └── cook.py             # cook accounts, in domain verbs (Built)
 ├── utilities/
-│   └── configuration.py    # typed settings (Built)
+│   ├── configuration.py    # typed settings (Built)
+│   └── security.py         # password hashing, bearer tokens (Built)
 ├── contracts/
 │   ├── cook.py             # Cook, StoredCredential (Built)
+│   ├── security.py         # Principal (Built)
 │   └── errors.py           # errors that cross layers (Built)
 └── ../alembic/             # migrations; the schema of record (Built)
 ```
