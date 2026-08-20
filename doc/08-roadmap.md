@@ -20,7 +20,8 @@ most likely to be built well by accident and least likely to matter if they are 
 - ~~Persistence: SQLite only, SQLModel over async SQLAlchemy~~ **Built**
   ([ADR-009](07-decisions.md#adr-009-sqlite-only-to-begin-with),
   [ADR-018](07-decisions.md#adr-018-sqlmodel-as-the-orm))
-- Alembic migrations — arriving with the first table
+- ~~Alembic migrations~~ **Built** — async env, SQLModel metadata, drift check in the test suite
+- ~~First persisted entity: the cook account~~ **Built**
 - ~~`Configuration` utility~~ **Built** ([ADR-019](07-decisions.md#adr-019-no-default-secret-key))
 - `Diagnostics` and `Security` utilities
 - Authentication: register, log in, JWT (UC-6.1)

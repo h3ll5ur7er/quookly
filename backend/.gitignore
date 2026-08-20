@@ -16,3 +16,7 @@ wheels/
 # generated frontend files
 **/app/*
 !**/app/.gitkeep
+
+# local database files
+*.db
+*.db-journal

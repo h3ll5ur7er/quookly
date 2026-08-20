@@ -1,29 +1,21 @@
 """Database plumbing: an async engine and session over SQLite (ADR-009, ADR-018).
 
 These tests exercise the connection machinery through the ORM path that resource access
-services will actually use. Domain tables arrive with the services that own them; the
-table here is a throwaway standing in for one.
+services will actually use, against a real table rather than a fixture one — a
+test-only model would register in SQLModel's metadata and drift from the migrations.
 """
 
 from collections.abc import AsyncIterator
 
 import pytest
 from pytest import MonkeyPatch
-from sqlmodel import Field, SQLModel, select
+from sqlmodel import SQLModel, select
 
 from quookly.access.database import dispose_engine, get_engine, session
+from quookly.access.models import CookRow
 from quookly.utilities.configuration import get_settings
 
 IN_MEMORY = "sqlite+aiosqlite://"
-
-
-class StockProbe(SQLModel, table=True):
-    """Stand-in for a real table, so the plumbing is tested the way it will be used."""
-
-    __tablename__ = "stock_probe"
-
-    id: int | None = Field(default=None, primary_key=True)
-    label: str
 
 
 @pytest.fixture(autouse=True)
@@ -58,17 +50,17 @@ class TestEngine:
 class TestSession:
     async def test_a_session_reads_what_it_wrote(self) -> None:
         async with session() as active:
-            active.add(StockProbe(label="butter"))
+            active.add(CookRow(email="a@example.com", display_name="A", password_hash="x"))
             await active.commit()
 
         async with session() as active:
-            found = (await active.exec(select(StockProbe))).all()
-        assert [probe.label for probe in found] == ["butter"]
+            found = (await active.exec(select(CookRow))).all()
+        assert [row.email for row in found] == ["a@example.com"]
 
     async def test_the_unit_of_work_ends_with_the_block(self) -> None:
         """A session left holding a transaction pins a connection and blocks writers."""
         async with session() as active:
-            await active.exec(select(StockProbe))
+            await active.exec(select(CookRow))
             assert active.in_transaction()
         assert not active.in_transaction()
 
@@ -76,10 +68,12 @@ class TestSession:
         """An exception must roll back rather than leave a half-written transaction."""
         with pytest.raises(RuntimeError):
             async with session() as active:
-                active.add(StockProbe(label="never-written"))
+                active.add(
+                    CookRow(email="ghost@example.com", display_name="Ghost", password_hash="x")
+                )
                 await active.flush()
                 raise RuntimeError("deliberate failure")
 
         async with session() as active:
-            survivors = (await active.exec(select(StockProbe))).all()
+            survivors = (await active.exec(select(CookRow))).all()
         assert survivors == [], "the failed block left rows behind"

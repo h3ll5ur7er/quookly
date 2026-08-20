@@ -412,10 +412,15 @@ backend/src/quookly/
 ├── managers/               # (Built, empty)
 ├── engines/                # (Built, empty)
 ├── access/
-│   └── database.py         # async engine and session (Built)
+│   ├── database.py         # async engine and session (Built)
+│   ├── models.py           # SQLModel tables — never leave this layer (Built)
+│   └── cook.py             # cook accounts, in domain verbs (Built)
 ├── utilities/
 │   └── configuration.py    # typed settings (Built)
-└── contracts/              # data shapes shared across layers (Built, empty)
+├── contracts/
+│   ├── cook.py             # Cook, StoredCredential (Built)
+│   └── errors.py           # errors that cross layers (Built)
+└── ../alembic/             # migrations; the schema of record (Built)
 ```
 
 Each layer package carries a docstring stating what it encapsulates and what it may not import. The

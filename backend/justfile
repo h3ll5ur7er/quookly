@@ -28,6 +28,14 @@ typecheck:
 architecture:
     uv run lint-imports
 
+# Apply migrations. Safe to run repeatedly; a fresh database is built by this.
+migrate:
+    uv run alembic upgrade head
+
+# Generate a migration from the models. Review it before committing.
+makemigration message:
+    uv run alembic revision --autogenerate -m "{{message}}"
+
 check:
     just lint
     just typecheck
