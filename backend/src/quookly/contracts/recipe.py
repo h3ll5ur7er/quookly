@@ -10,7 +10,10 @@ ingredients.
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from decimal import Decimal
 from enum import Enum
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from quookly.contracts.ingredient import Ingredient, Origin
 from quookly.contracts.measure import Quantity
@@ -134,3 +137,97 @@ class RecipeSummary:
     summary: str | None
     yield_quantity: Quantity
     visibility: Visibility
+
+
+# What leaves the API. These are pydantic rather than dataclasses because they are the
+# client boundary: they are validated on the way in and serialised on the way out.
+
+
+class QuantityView(BaseModel):
+    """A quantity as a client reads it.
+
+    `magnitude` is a string. JSON numbers are binary floats in a browser, and 0.1 of a
+    gram is not worth losing to that; `display` is what a screen actually shows.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    magnitude: str
+    unit: str
+    display: str
+
+
+class PresentedLine(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    ingredient: str
+    quantity: QuantityView
+    preparation: str | None = None
+    optional: bool = False
+
+
+class PresentedStep(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    position: int
+    instruction: str
+    duration_seconds: int | None = None
+    temperature_celsius: int | None = None
+
+
+class PresentedRecipe(BaseModel):
+    """A recipe scaled and rendered for one cook, ready to display."""
+
+    model_config = ConfigDict(frozen=True)
+
+    id: int
+    title: str
+    summary: str | None
+    yield_quantity: QuantityView
+    visibility: Visibility
+    provenance: Provenance
+    lines: list[PresentedLine]
+    steps: list[PresentedStep]
+
+
+class RecipeSummaryView(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    id: int
+    title: str
+    summary: str | None
+    yield_quantity: QuantityView
+    visibility: Visibility
+
+
+class IngredientLineInput(BaseModel):
+    """One line of a recipe being authored."""
+
+    model_config = ConfigDict(frozen=True)
+
+    ingredient_id: int
+    magnitude: Decimal = Field(gt=0)
+    unit: str
+    preparation: str | None = Field(default=None, max_length=200)
+    optional: bool = False
+
+
+class StepInput(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    instruction: str = Field(min_length=1, max_length=2000)
+    duration_seconds: int | None = Field(default=None, gt=0)
+    temperature_celsius: int | None = Field(default=None, ge=0, le=500)
+
+
+class RecipeInput(BaseModel):
+    """A recipe being authored (UC-1.1)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    title: str = Field(min_length=1, max_length=200)
+    summary: str | None = Field(default=None, max_length=1000)
+    yield_magnitude: Decimal = Field(gt=0)
+    yield_unit: str
+    lines: list[IngredientLineInput] = Field(min_length=1)
+    steps: list[StepInput] = Field(min_length=1)

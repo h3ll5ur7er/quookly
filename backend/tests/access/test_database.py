@@ -13,6 +13,8 @@ from sqlmodel import SQLModel, select
 
 from quookly.access.database import dispose_engine, get_engine, session
 from quookly.access.models import CookRow
+from quookly.contracts.measure import Unit
+from quookly.contracts.recipe import Provenance
 from quookly.utilities.configuration import get_settings
 
 IN_MEMORY = "sqlite+aiosqlite://"
@@ -77,3 +79,26 @@ class TestSession:
         async with session() as active:
             survivors = (await active.exec(select(CookRow))).all()
         assert survivors == [], "the failed block left rows behind"
+
+
+class TestReferentialIntegrity:
+    async def test_a_reference_to_something_absent_is_refused(self) -> None:
+        """SQLite does not enforce foreign keys unless asked, and silence here is the
+        worst outcome: a row that points nowhere is accepted, and the thing it belonged
+        to quietly disappears on read."""
+        from sqlalchemy.exc import IntegrityError
+
+        from quookly.access.models import RecipeRow
+
+        with pytest.raises(IntegrityError):
+            async with session() as active:
+                active.add(
+                    RecipeRow(
+                        cook_id=9999,
+                        title="Orphan",
+                        yield_magnitude=1,
+                        yield_unit=Unit.PIECE,
+                        provenance=Provenance.AUTHORED,
+                    )
+                )
+                await active.commit()

@@ -5,12 +5,14 @@ lines resolved against the registry for the caller's locale. Callers deal in rec
 rows and joins stay here.
 """
 
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from quookly.access.database import session
 from quookly.access.ingredient import name_for
 from quookly.access.models import IngredientLineRow, IngredientRow, RecipeRow, StepRow
+from quookly.contracts.errors import IngredientNotRegistered
 from quookly.contracts.ingredient import Ingredient
 from quookly.contracts.measure import Quantity
 from quookly.contracts.recipe import (
@@ -60,7 +62,11 @@ async def store(draft: RecipeDraft, cook_id: int) -> Recipe:
                     temperature_celsius=step.temperature_celsius,
                 )
             )
-        await active.commit()
+        try:
+            await active.commit()
+        except IntegrityError as exc:
+            # A line pointing at an ingredient that is not in the registry (FR-9).
+            raise IngredientNotRegistered(str(exc.orig)) from exc
         recipe_id = row.id
 
     stored = await fetch(recipe_id, "en-GB")

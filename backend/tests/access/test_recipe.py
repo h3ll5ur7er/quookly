@@ -17,6 +17,7 @@ from quookly.access import cook as cook_access
 from quookly.access import ingredient as registry
 from quookly.access import recipe as recipes
 from quookly.access.database import dispose_engine, get_engine
+from quookly.contracts.errors import IngredientNotRegistered
 from quookly.contracts.ingredient import IngredientKind, Origin
 from quookly.contracts.measure import Quantity, Unit
 from quookly.contracts.recipe import (
@@ -217,6 +218,24 @@ class TestFetching:
         await recipes.store(shortbread(pantry), cook_id)
         other = await cook_access.register("other@example.com", "Someone", "hash")
         assert await recipes.list_for_cook(other.id) == []
+
+
+class TestUnregisteredIngredients:
+    async def test_a_line_pointing_at_nothing_is_refused(self, cook_id: int) -> None:
+        """FR-9: an unresolvable ingredient is reported, never silently dropped."""
+        draft = RecipeDraft(
+            title="Ghost",
+            yield_quantity=Quantity(Decimal("1"), Unit.PIECE),
+            provenance=Provenance.AUTHORED,
+            lines=[
+                IngredientLineDraft(
+                    ingredient_id=9999, quantity=Quantity(Decimal("1"), Unit.GRAM)
+                )
+            ],
+            steps=[StepDraft(instruction="Do it.")],
+        )
+        with pytest.raises(IngredientNotRegistered):
+            await recipes.store(draft, cook_id)
 
 
 class TestDrafts:

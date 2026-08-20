@@ -42,6 +42,11 @@ aggregated across recipes (V8). Free-text ingredients would make every one of th
 An ingredient line that cannot be resolved to a registry entry is a **validation failure**, surfaced
 to the cook (FR-9). It is never silently stored as text, and never guessed at.
 
+Foreign keys are **enforced**. SQLite ignores them unless each connection asks it not to, and the
+silent version of that failure is the worst one: a line referencing an ingredient that does not exist
+is accepted, and then vanishes on read. A recipe losing an ingredient without telling anybody is
+precisely the failure this product exists to prevent.
+
 **Identity is a slug, not a name.** `unsalted-butter` is what a recipe points at; what it is *called*
 is per locale, and there may be several names per locale because recipes say cornflour or cornstarch
 and mean one thing. Lookups match on a normalised form, so a cook typing into a form is not typing a

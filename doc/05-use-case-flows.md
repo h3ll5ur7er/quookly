@@ -239,14 +239,14 @@ sequenceDiagram
 
   Cook->>API: show recipe for 6, my units
   API->>RM: present(recipe id, yield=6, cook)
-  RM->>RCA: fetch(recipe id)
-  RCA-->>RM: canonical recipe
+  RM->>RCA: fetch(recipe id, locale)
+  RCA-->>RM: recipe, each line's ingredient resolved
   RM->>EAT: unit_preferences_for(cook)
   EAT-->>RM: preferences per ingredient kind
-  RM->>ING: density_for(ingredients)
-  ING-->>RM: densities
-  RM->>ME: render(recipe, yield=6, preferences, densities)
-  ME-->>RM: scaled and converted recipe
+  RM->>ME: scale(each quantity, 6 / recipe yield)
+  ME-->>RM: scaled quantities
+  RM->>ME: render(quantity, kind, density, preferences)
+  ME-->>RM: converted and rounded quantities
   RM-->>API: presented recipe
   API-->>Cook: recipe as requested
 ```
@@ -254,6 +254,11 @@ sequenceDiagram
 `MeasureEngine` receives densities and preferences as arguments rather than fetching them. That is
 what keeps it pure and exhaustively testable — the same property that matters most for
 `SuitabilityEngine`. Gathering the inputs is sequencing, and sequencing is the manager's job.
+
+**Corrected against the implementation.** This flow originally showed a separate call to
+`IngredientAccess` for densities. In practice a line's ingredient — density included — arrives with
+the recipe, because a recipe is fetched whole. One fewer round trip, and one fewer thing for a
+manager to coordinate.
 
 ## UC-3.4 Find recipes that use what is about to expire
 

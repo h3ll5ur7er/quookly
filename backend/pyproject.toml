@@ -38,6 +38,19 @@ extend-exclude = ["src/quookly/app"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI declares parameter metadata by calling these in argument defaults. It is the
+# framework's documented idiom, not the mutable-default trap B008 exists to catch.
+extend-immutable-calls = [
+    "fastapi.Body",
+    "fastapi.Depends",
+    "fastapi.File",
+    "fastapi.Form",
+    "fastapi.Header",
+    "fastapi.Path",
+    "fastapi.Query",
+]
+
 [tool.mypy]
 python_version = "3.12"
 files = ["src", "tests"]

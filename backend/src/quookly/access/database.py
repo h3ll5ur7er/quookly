@@ -11,8 +11,10 @@ from contextlib import asynccontextmanager
 from functools import lru_cache
 from typing import Any
 
+from sqlalchemy import event
+from sqlalchemy.engine.interfaces import DBAPIConnection
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import ConnectionPoolEntry, StaticPool
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from quookly.utilities.configuration import get_settings
@@ -34,11 +36,27 @@ def _engine_options(url: str) -> dict[str, Any]:
     return {}
 
 
+def _enforce_foreign_keys(connection: DBAPIConnection, _record: ConnectionPoolEntry) -> None:
+    """SQLite ignores foreign keys unless each connection asks it not to.
+
+    Without this a row may reference something that does not exist: the insert succeeds,
+    and the thing it belonged to quietly disappears on read. A recipe losing an
+    ingredient without telling anybody is exactly the failure this product exists to
+    prevent.
+    """
+    cursor = connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
+
 @lru_cache(maxsize=1)
 def get_engine() -> AsyncEngine:
     """The process-wide engine. Connection pools are expensive; one is enough."""
     url = get_settings().database_url
-    return create_async_engine(url, **_engine_options(url))
+    engine = create_async_engine(url, **_engine_options(url))
+    if url.startswith("sqlite"):
+        event.listen(engine.sync_engine, "connect", _enforce_foreign_keys)
+    return engine
 
 
 async def dispose_engine() -> None:

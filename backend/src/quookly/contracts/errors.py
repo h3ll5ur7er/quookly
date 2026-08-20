@@ -39,3 +39,11 @@ class DensityRequired(QuooklyError):
 
 class IngredientAlreadyRegistered(QuooklyError):
     """That slug is already in the registry."""
+
+
+class UnknownUnit(QuooklyError):
+    """No such unit. Guessing one would misweigh whatever was measured with it."""
+
+
+class IngredientNotRegistered(QuooklyError):
+    """A recipe line points at an ingredient that is not in the registry (FR-9)."""

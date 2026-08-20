@@ -172,6 +172,138 @@
         }
       }
     },
+    "/api/v1/recipes": {
+      "get": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "List Recipes",
+        "description": "The cook's own recipes.",
+        "operationId": "listRecipes",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RecipeSummaryView"
+                  },
+                  "type": "array",
+                  "title": "Response Listrecipes"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Create Recipe",
+        "description": "Author a recipe.",
+        "operationId": "createRecipe",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecipeInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentedRecipe"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recipes/{recipe_id}": {
+      "get": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Get Recipe",
+        "description": "A recipe, scaled and in the cook's preferred units.",
+        "operationId": "getRecipe",
+        "parameters": [
+          {
+            "name": "recipe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Recipe Id"
+            }
+          },
+          {
+            "name": "servings",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0.0
+                },
+                {
+                  "type": "string",
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Show the recipe at this yield, in whatever the recipe itself yields.",
+              "title": "Servings"
+            },
+            "description": "Show the recipe at this yield, in whatever the recipe itself yields."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentedRecipe"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Read Root",
@@ -290,6 +422,326 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "IngredientLineInput": {
+        "properties": {
+          "ingredient_id": {
+            "type": "integer",
+            "title": "Ingredient Id"
+          },
+          "magnitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Magnitude"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "preparation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preparation"
+          },
+          "optional": {
+            "type": "boolean",
+            "title": "Optional",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "ingredient_id",
+          "magnitude",
+          "unit"
+        ],
+        "title": "IngredientLineInput",
+        "description": "One line of a recipe being authored."
+      },
+      "PresentedLine": {
+        "properties": {
+          "ingredient": {
+            "type": "string",
+            "title": "Ingredient"
+          },
+          "quantity": {
+            "$ref": "#/components/schemas/QuantityView"
+          },
+          "preparation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preparation"
+          },
+          "optional": {
+            "type": "boolean",
+            "title": "Optional",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "ingredient",
+          "quantity"
+        ],
+        "title": "PresentedLine"
+      },
+      "PresentedRecipe": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "yield_quantity": {
+            "$ref": "#/components/schemas/QuantityView"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/Visibility"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/Provenance"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PresentedLine"
+            },
+            "type": "array",
+            "title": "Lines"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/PresentedStep"
+            },
+            "type": "array",
+            "title": "Steps"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "summary",
+          "yield_quantity",
+          "visibility",
+          "provenance",
+          "lines",
+          "steps"
+        ],
+        "title": "PresentedRecipe",
+        "description": "A recipe scaled and rendered for one cook, ready to display."
+      },
+      "PresentedStep": {
+        "properties": {
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          },
+          "instruction": {
+            "type": "string",
+            "title": "Instruction"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "temperature_celsius": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature Celsius"
+          }
+        },
+        "type": "object",
+        "required": [
+          "position",
+          "instruction"
+        ],
+        "title": "PresentedStep"
+      },
+      "Provenance": {
+        "type": "string",
+        "enum": [
+          "authored",
+          "imported_json",
+          "imported_url",
+          "generated"
+        ],
+        "title": "Provenance",
+        "description": "How a recipe came to exist (V1).\n\nRecorded because it is worth knowing, but a recipe's usefulness never depends on it \u2014\nevery path ends in the same canonical structure."
+      },
+      "QuantityView": {
+        "properties": {
+          "magnitude": {
+            "type": "string",
+            "title": "Magnitude"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "display": {
+            "type": "string",
+            "title": "Display"
+          }
+        },
+        "type": "object",
+        "required": [
+          "magnitude",
+          "unit",
+          "display"
+        ],
+        "title": "QuantityView",
+        "description": "A quantity as a client reads it.\n\n`magnitude` is a string. JSON numbers are binary floats in a browser, and 0.1 of a\ngram is not worth losing to that; `display` is what a screen actually shows."
+      },
+      "RecipeInput": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "yield_magnitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Yield Magnitude"
+          },
+          "yield_unit": {
+            "type": "string",
+            "title": "Yield Unit"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/IngredientLineInput"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Lines"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/StepInput"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Steps"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "yield_magnitude",
+          "yield_unit",
+          "lines",
+          "steps"
+        ],
+        "title": "RecipeInput",
+        "description": "A recipe being authored (UC-1.1)."
+      },
+      "RecipeSummaryView": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "yield_quantity": {
+            "$ref": "#/components/schemas/QuantityView"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/Visibility"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "summary",
+          "yield_quantity",
+          "visibility"
+        ],
+        "title": "RecipeSummaryView"
+      },
       "Registration": {
         "properties": {
           "email": {
@@ -336,6 +788,46 @@
         ],
         "title": "StatusResponse"
       },
+      "StepInput": {
+        "properties": {
+          "instruction": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Instruction"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "temperature_celsius": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 500.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature Celsius"
+          }
+        },
+        "type": "object",
+        "required": [
+          "instruction"
+        ],
+        "title": "StepInput"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -375,6 +867,15 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "Visibility": {
+        "type": "string",
+        "enum": [
+          "private",
+          "public"
+        ],
+        "title": "Visibility",
+        "description": "Private by default; publishing is explicit (FR-5)."
       }
     }
   }

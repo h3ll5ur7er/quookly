@@ -7,11 +7,11 @@ from enum import Enum
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.routing import APIRoute
 
 from .access.database import dispose_engine
-from .routes import accounts_router, status_router
+from .routes import accounts_router, recipes_router, status_router
 from .utilities.diagnostics import configure_logging, get_logger, use_request_id
 
 REQUEST_ID_HEADER = "X-Request-ID"
@@ -19,6 +19,7 @@ REQUEST_ID_HEADER = "X-Request-ID"
 request_log = get_logger("request")
 
 FRONTEND_STATIC_DIR = "src/quookly/app/browser/"
+API_PREFIX = "/api/v1"
 
 CONTROL_SETS: dict[str | Enum, set[str]] = {}
 
@@ -86,8 +87,9 @@ async def correlate_and_log(
     return response
 
 
-app.include_router(status_router, prefix="/api/v1", tags=["status"])
-app.include_router(accounts_router, prefix="/api/v1", tags=["accounts"])
+app.include_router(status_router, prefix=API_PREFIX, tags=["status"])
+app.include_router(accounts_router, prefix=API_PREFIX, tags=["accounts"])
+app.include_router(recipes_router, prefix=API_PREFIX, tags=["recipes"])
 
 
 @app.get("/")
@@ -96,18 +98,21 @@ def read_root() -> RedirectResponse:
 
 
 @app.exception_handler(404)
-def custom_404_handler(request: Request, exc: Exception) -> Response:
-    if "." not in request.url.path:
-        return FileResponse(FRONTEND_STATIC_DIR + "index.html")
-    try:
-        path = FRONTEND_STATIC_DIR + request.scope["path"].lstrip("/")
-        if not os.path.isfile(path):
-            print("File not found:", path)
-            return FileResponse(FRONTEND_STATIC_DIR + "index.html")
-        return FileResponse(path)
-    except Exception as e:
-        print("Error serving file:", e)
-        return FileResponse(FRONTEND_STATIC_DIR + "index.html")
+def serve_frontend_or_report_missing(request: Request, exc: Exception) -> Response:
+    """Fall back to the single-page application for client-side routes.
+
+    The API is excluded. Turning an API 404 into a page of HTML with a 200 status leaves
+    a client unable to tell "no such recipe" from success, and generated clients would
+    parse the index page as a response body.
+    """
+    if request.url.path.startswith(f"{API_PREFIX}/"):
+        detail = getattr(exc, "detail", "Not found.")
+        return JSONResponse(status_code=404, content={"detail": detail})
+
+    requested = FRONTEND_STATIC_DIR + request.scope["path"].lstrip("/")
+    if "." in request.url.path and os.path.isfile(requested):
+        return FileResponse(requested)
+    return FileResponse(FRONTEND_STATIC_DIR + "index.html")
 
 
 def main() -> None:

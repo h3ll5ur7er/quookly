@@ -421,12 +421,15 @@ backend/src/quookly/
 ├── routes/                 # Client services — thin, no business logic (Partial)
 │   ├── status.py           # (Built)
 │   ├── accounts.py         # bootstrap, register, sign in (Built)
+│   ├── recipes.py          # author, list, present (Built)
+│   ├── dependencies.py     # resolving the caller (Built)
 │   ├── recipes.py          # (Planned)
 │   ├── plans.py            # (Planned)
 │   ├── pantry.py           # (Planned)
 │   └── community.py        # (Planned)
 ├── managers/
-│   └── account.py          # bootstrap, registration, sign-in (Built)
+│   ├── account.py          # bootstrap, registration, sign-in (Built)
+│   └── recipe.py           # authoring, listing, presenting (Built)
 ├── engines/
 │   └── measure.py          # units, conversion, scaling (Built)
 ├── access/
