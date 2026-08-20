@@ -145,6 +145,17 @@ blocks a menu or a life-threatening allergen is presented as a suggestion. Both 
 distinction is consumed by `SuitabilityEngine` (V5) and is why suitability returns *verdicts with
 reasons* rather than a boolean.
 
+Severity also decides what **not knowing** costs. A dislike carries no risk, so an unclassified
+ingredient raises no doubt about it; every other severity does.
+
+Allergens are the **fourteen classes** that must be declared on food sold in the EU and Switzerland —
+a fixed, externally defined list rather than free text, because a constraint and an ingredient have
+to mean the same thing by "nuts" for a verdict to be worth anything. Anything outside those fourteen
+is avoided by naming the ingredient instead.
+
+An **optional** ingredient never bars a recipe: it can be left out, and telling a cook to omit the
+butter is more useful than refusing them the recipe. It is still reported.
+
 ### Stock item and reservation
 
 A **stock item** is a quantity of an ingredient, with optional expiry and a source. A

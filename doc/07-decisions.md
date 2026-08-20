@@ -142,6 +142,23 @@ Structural determination is verifiable, testable, and explainable — it can sta
 caused a verdict. The separation is architectural rather than procedural so that it cannot be
 bypassed under deadline.
 
+**Built.** `SuitabilityEngine` is a pure function of resolved ingredients and structured
+constraints, and its test file is a table of cases with no fixtures, no database and no model — the
+standard a safety-critical component has to meet in order to be argued about.
+
+Three behaviours carry the decision:
+
+- **Unknown outranks suitable.** An ingredient nobody has classified makes the answer *unknown*, not
+  safe. Silence about a nut is not an absence of nuts, and "classified as containing nothing" is a
+  different fact from "never looked at" — which is why the engine is told which of the two it has.
+- **A known violation outranks a doubt.** There is nothing left to find out about it.
+- **The verdict names the eater and the ingredient responsible.** A refusal a cook cannot act on is
+  barely better than no answer.
+
+The purity is enforced, not merely intended: the `import-linter` contract added in Phase 1 forbids
+every engine from reaching resource access, so this engine cannot acquire a database call or a model
+call without breaking the build. A test also asserts the module's own source contains no I/O.
+
 **Cost.** Every ingredient must resolve to a registry entry before suitability can be judged; an
 unresolved ingredient must be treated as *unknown*, not as *safe*. Unknown must surface as a warning
 in the UI, never be silently omitted.

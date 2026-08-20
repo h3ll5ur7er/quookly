@@ -432,7 +432,8 @@ backend/src/quookly/
 │   └── recipe.py           # authoring, listing, presenting (Built)
 ├── engines/
 │   ├── measure.py          # units, conversion, scaling (Built)
-│   └── exchange.py         # the interchange format (Built)
+│   ├── exchange.py         # the interchange format (Built)
+│   └── suitability.py      # can these people eat this (Built)
 ├── access/
 │   ├── database.py         # async engine and session (Built)
 │   ├── ingredient.py       # the registry, in domain verbs (Built)
@@ -451,6 +452,8 @@ backend/src/quookly/
 │   ├── recipe.py           # Recipe, IngredientLine, Step, drafts (Built)
 │   ├── preferences.py      # UnitPreferences (Built)
 │   ├── exchange.py         # the portable document (Built)
+│   ├── eater.py            # Eater, Constraint, Severity, AgeBand (Built)
+│   ├── suitability.py      # Outcome, Finding, Verdict (Built)
 │   ├── measure.py          # Dimension, Unit, Quantity (Built)
 │   ├── security.py         # Principal (Built)
 │   └── errors.py           # errors that cross layers (Built)

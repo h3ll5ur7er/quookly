@@ -86,7 +86,7 @@ handling into working features is the change this architecture exists to avoid.
 - Appetite multipliers, summed to required yield (UC-6.5, FR-18)
 - `OnboardingEngine` and the new-cook setup flow (UC-10.2, UC-10.3, V16)
 - Allergen classification in the ingredient registry
-- `SuitabilityEngine` — pure, exhaustively tested (V5, [ADR-006](07-decisions.md#adr-006-allergen-determination-is-structural))
+- ~~`SuitabilityEngine` — pure, exhaustively tested (V5, [ADR-006](07-decisions.md#adr-006-allergen-determination-is-structural))~~ **Built**
 - Suitability verdicts with reasons surfaced in the UI, including *unknown*
 
 **Done when:** a recipe can be evaluated against a named set of eaters and explains every verdict by

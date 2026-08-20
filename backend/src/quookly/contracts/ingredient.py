@@ -22,6 +22,30 @@ class Origin(Enum):
     USER = "user"
 
 
+class Allergen(Enum):
+    """The allergen classes that must be declared on food sold in the EU and Switzerland.
+
+    A fixed, externally defined list rather than free text: a constraint and an ingredient
+    have to mean the same thing by "nuts" for a verdict to be worth anything. Anything
+    outside these fourteen is avoided by ingredient instead.
+    """
+
+    GLUTEN = "gluten"
+    CRUSTACEANS = "crustaceans"
+    EGGS = "eggs"
+    FISH = "fish"
+    PEANUTS = "peanuts"
+    SOYBEANS = "soybeans"
+    MILK = "milk"
+    TREE_NUTS = "tree_nuts"
+    CELERY = "celery"
+    MUSTARD = "mustard"
+    SESAME = "sesame"
+    SULPHITES = "sulphites"
+    LUPIN = "lupin"
+    MOLLUSCS = "molluscs"
+
+
 class IngredientKind(Enum):
     """What sort of thing this is, for the purpose of measuring it.
 
