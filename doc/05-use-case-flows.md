@@ -287,6 +287,46 @@ sequenceDiagram
 Waste reduction as a ranking input rather than a feature bolted on: urgency is a signal into
 `RankingEngine`, which is where V10 already lives.
 
+## UC-10.1 Claiming a fresh instance
+
+**Built.** The first flow in the system to exist rather than be designed.
+
+```mermaid
+sequenceDiagram
+  actor Operator
+  participant API as "API route"
+  participant ACM as "AccountManager"
+  participant CKA as "CookAccess"
+  participant SEC as "Security"
+
+  Operator->>API: does this instance need an admin
+  API->>ACM: bootstrap_required()
+  ACM->>CKA: any_registered()
+  CKA-->>ACM: false
+  ACM-->>API: required
+  API-->>Operator: yes, claim it
+  Operator->>API: create the first admin
+  API->>ACM: bootstrap_admin(registration)
+  ACM->>CKA: any_registered()
+  CKA-->>ACM: still false
+  ACM->>SEC: hash_password(password)
+  SEC-->>ACM: hash
+  ACM->>CKA: register(email, name, hash, is_admin=true)
+  CKA-->>ACM: cook
+  ACM->>SEC: issue_token(cook)
+  SEC-->>ACM: token
+  ACM-->>API: authenticated
+  API-->>Operator: signed in as admin
+```
+
+The window closes against **any** account, not just an admin one — otherwise an instance somebody
+had already registered on could still be claimed by the next visitor. A second attempt is a 409,
+not a crash.
+
+Note where the work sits. `Security` hashes and signs but never touches storage, because a utility
+that reaches into a layer stops being usable by all of them. `CookAccess` stores but decides
+nothing. The manager owns only the order.
+
 ## UC-10.2 and UC-10.3 Onboarding a new cook
 
 ```mermaid

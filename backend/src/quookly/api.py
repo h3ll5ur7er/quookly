@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.routing import APIRoute
 
-from .routes import status_router
+from .routes import accounts_router, status_router
 
 FRONTEND_STATIC_DIR = "src/quookly/app/browser/"
 
@@ -49,6 +49,7 @@ app.add_middleware(
 
 
 app.include_router(status_router, prefix="/api/v1", tags=["status"])
+app.include_router(accounts_router, prefix="/api/v1", tags=["accounts"])
 
 
 @app.get("/")

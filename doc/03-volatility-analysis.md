@@ -211,7 +211,8 @@ retuning rules without migrating history — becomes impossible.
 **Varies:** authentication mechanism (JWT now, OIDC plausibly later), single-user versus
 multi-user instances, visibility rules for private, shared, followed, and public content.
 **Stable:** a request carries a principal; content carries a visibility.
-**Encapsulated by:** the `Security` utility, with `EaterAccess` for profile data.
+**Encapsulated by:** the `Security` utility for the mechanism, `AccountManager` for the sequence
+(bootstrap, registration, sign-in), and `CookAccess` for the accounts themselves.
 
 ### V13 Persistence and media
 
@@ -298,7 +299,7 @@ independently of something that already has a home:
 
 | Candidate | Why not |
 | --- | --- |
-| `UserManager` | Account lifecycle here is thin: register, authenticate, edit profile. Authentication varies and is a utility; profile data is reference data behind `EaterAccess`. A manager would be an empty shell. Promote it if account workflows grow teeth. |
+| ~~`UserManager`~~ | **Rejected, then reinstated as `AccountManager`.** The claim that account lifecycle was too thin for a manager did not survive contact with the code: a Client may not call Resource Access directly, so there was no legal shape for the account endpoints without one, and the sign-in sequence turned out not to be empty. See [ADR-021](07-decisions.md#adr-021-account-management-does-need-a-manager). |
 | `TagManager` | Tags do not vary independently of recipes. |
 | `ImageManager` | Storing bytes is `MediaAccess`. Interpreting a photograph into a recipe is V2. Nothing remains in between. |
 | `ShoppingListManager` | A shopping list is an output of V8, not a thing with its own lifecycle. Making it a manager forces Manager→Manager calls with planning. |

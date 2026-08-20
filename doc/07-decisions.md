@@ -54,6 +54,9 @@ reasons — refined against people cooking dinner, not against recipe sources or
 Adding a manager is not a violation of this ADR. Adding one *per entity or per feature* is. The
 count is not the rule; the test is.
 
+**Amended again:** this record also asserted that account management needed no manager. Building it
+refuted that — see [ADR-021](#adr-021-account-management-does-need-a-manager).
+
 ---
 
 ## ADR-003 Inference is a resource, prompting is an activity
@@ -608,3 +611,41 @@ wheel for its platform. More importantly: **tokens cannot be revoked before they
 no token store, so a leaked token is valid for its remaining lifetime and a logout is client-side
 only. `QUOOKLY_TOKEN_LIFETIME_HOURS` (default 12) is the only bound. Refresh tokens with a
 server-side store are the fix, and are deferred rather than forgotten.
+
+---
+
+## ADR-021 Account management does need a manager
+
+**Status:** Accepted. Reverses part of [ADR-002](#adr-002-four-managers-not-one-per-entity).
+
+**Context.** ADR-002 rejected a user manager, reasoning that account lifecycle here is thin —
+register, authenticate, edit profile — so a manager would be an empty shell, with authentication
+living in the `Security` utility and profile data behind resource access.
+
+Implementing the account endpoints refuted this in two ways at once.
+
+**The architecture forbids the alternative.** A Client may not call Resource Access directly. With
+no manager, the only way to build `POST /accounts` would have been a route calling `CookAccess`, and
+the call rules — the ones now enforced by `import-linter` — prohibit exactly that. There was no
+legal shape for the code without a manager. `Security` could not take the work either: a utility may
+not call resource access, or it stops being usable by every layer.
+
+**And the shell was not empty.** Written out, sign-in is: fetch the credential, verify the password
+against a decoy hash when no account matches, refuse both cases identically, fetch the cook, issue a
+token. Bootstrap is: check that no account exists, create one as admin, close the path. That is
+sequencing with branching and ordering constraints, which is what a manager is for.
+
+**Decision.** `AccountManager` sequences bootstrap, registration, and sign-in. Six managers now.
+
+**Rationale.** It passes ADR-002's test rather than evading it: it encapsulates V12, it varies for
+its own reasons — authentication mechanism, registration policy, bootstrap rules — and it changes at
+its own rate, independently of recipes, planning, cooking, and engagement.
+
+**Cost.** One more manager, and ADR-002's headline count is wrong twice over. That is the right
+trade: the count was always a summary of the reasoning, not the rule itself.
+
+**What this says about the method.** The decomposition was judged before the work was attempted, and
+attempting it corrected the judgement. That is the process working. The signal to watch for is the
+one described in the [development loop](10-development.md#when-the-architecture-resists): a change
+that has no legal shape is telling you the decomposition is wrong, not that the rules are
+inconvenient.

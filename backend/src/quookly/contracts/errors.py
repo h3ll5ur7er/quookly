@@ -11,3 +11,15 @@ class QuooklyError(Exception):
 
 class EmailAlreadyRegistered(QuooklyError):
     """An account already exists for that email address."""
+
+
+class InvalidCredentials(QuooklyError):
+    """The email and password did not identify an account.
+
+    Deliberately one error for both "no such account" and "wrong password". Separate
+    errors would let anyone discover which addresses hold accounts.
+    """
+
+
+class BootstrapClosed(QuooklyError):
+    """The instance already has an account, so the first-admin path is closed."""

@@ -45,6 +45,7 @@ flowchart TB
     PNM["PantryManager"]
     CKM["CookingManager"]
     EGM["EngagementManager"]
+    ACM["AccountManager"]
   end
 
   subgraph EN["Engines"]
@@ -131,6 +132,8 @@ flowchart TB
   EGM --> COM
   EGM --> ACA
 
+  ACM --> EAT
+
   IE --> MOD
   GE --> MOD
   RKE --> IDX
@@ -189,7 +192,7 @@ anticipates this: `just backend clean` removes `.import_linter_cache`.
 
 ## Managers
 
-Five managers. The count is deliberate: the Method warns that a manager per entity is functional
+Six managers. The count is deliberate: the Method warns that a manager per entity is functional
 decomposition wearing a costume, and each manager here corresponds to a family of use cases that
 sequences independently of the others. `CookingManager` was added after the original four; the test
 it had to pass, and the reasoning, are in
@@ -244,6 +247,18 @@ On completion `CookingManager` publishes `MealCooked` rather than consuming stoc
 `PantryManager` owns inventory truth (V9) and subscribes. This is the Manager→Manager prohibition
 doing useful work: cooking does not need to know how stock accounting is done, and stock accounting
 does not need to know cooking mode exists.
+
+### AccountManager
+
+**Volatility:** the sequencing of V12 identity and authorisation.
+**Use cases:** UC-6.1, UC-10.1
+**Sequences:** claim a fresh instance with its first admin, closing that path permanently; register
+an account; exchange credentials for a token.
+
+Added after the original four were named, reversing part of
+[ADR-002](07-decisions.md#adr-002-four-managers-not-one-per-entity) — see
+[ADR-021](07-decisions.md#adr-021-account-management-does-need-a-manager). The mechanism stays in the
+`Security` utility; what lives here is the order things happen in.
 
 ### EngagementManager
 
@@ -405,11 +420,13 @@ backend/src/quookly/
 ├── api.py                  # app construction (Built)
 ├── routes/                 # Client services — thin, no business logic (Partial)
 │   ├── status.py           # (Built)
+│   ├── accounts.py         # bootstrap, register, sign in (Built)
 │   ├── recipes.py          # (Planned)
 │   ├── plans.py            # (Planned)
 │   ├── pantry.py           # (Planned)
 │   └── community.py        # (Planned)
-├── managers/               # (Built, empty)
+├── managers/
+│   └── account.py          # bootstrap, registration, sign-in (Built)
 ├── engines/                # (Built, empty)
 ├── access/
 │   ├── database.py         # async engine and session (Built)
@@ -419,6 +436,7 @@ backend/src/quookly/
 │   ├── configuration.py    # typed settings (Built)
 │   └── security.py         # password hashing, bearer tokens (Built)
 ├── contracts/
+│   ├── accounts.py         # Registration, Credentials, Authenticated (Built)
 │   ├── cook.py             # Cook, StoredCredential (Built)
 │   ├── security.py         # Principal (Built)
 │   └── errors.py           # errors that cross layers (Built)

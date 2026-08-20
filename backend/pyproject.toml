@@ -100,3 +100,7 @@ source_modules = [
     "quookly.utilities",
 ]
 forbidden_modules = ["sqlmodel", "sqlalchemy"]
+# Only direct imports. A manager calling a resource access service that itself uses the
+# ORM is the layering working as designed; what is forbidden is business logic naming an
+# ORM type itself.
+allow_indirect_imports = true
