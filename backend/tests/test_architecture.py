@@ -107,6 +107,18 @@ class TestArchitectureContracts:
             result = lint_imports()
         assert_rejected(result, "an engine importing the ORM")
 
+    def test_a_rule_engine_may_not_reach_resource_access(self) -> None:
+        """Rule engines take their inputs as arguments; that is what makes them testable.
+
+        This is the contract ADR-008 deferred until there was a rule engine to name.
+        """
+        with violating_module(
+            "engines/_violation_probe.py",
+            "from quookly import access\n\n__all__ = ['access']\n",
+        ):
+            result = lint_imports()
+        assert_rejected(result, "an engine importing resource access")
+
     def test_a_new_top_level_package_cannot_escape_the_rules(self) -> None:
         """The layers contract is exhaustive, so an undeclared package is a failure."""
         probe = PACKAGE_ROOT / "_rogue_layer"

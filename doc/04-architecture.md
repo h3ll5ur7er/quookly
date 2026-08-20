@@ -427,7 +427,8 @@ backend/src/quookly/
 │   └── community.py        # (Planned)
 ├── managers/
 │   └── account.py          # bootstrap, registration, sign-in (Built)
-├── engines/                # (Built, empty)
+├── engines/
+│   └── measure.py          # units, conversion, scaling (Built)
 ├── access/
 │   ├── database.py         # async engine and session (Built)
 │   ├── models.py           # SQLModel tables — never leave this layer (Built)
@@ -439,6 +440,7 @@ backend/src/quookly/
 ├── contracts/
 │   ├── accounts.py         # Registration, Credentials, Authenticated (Built)
 │   ├── cook.py             # Cook, StoredCredential (Built)
+│   ├── measure.py          # Dimension, Unit, Quantity (Built)
 │   ├── security.py         # Principal (Built)
 │   └── errors.py           # errors that cross layers (Built)
 └── ../alembic/             # migrations; the schema of record (Built)

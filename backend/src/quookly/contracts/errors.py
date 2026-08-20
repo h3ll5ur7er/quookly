@@ -23,3 +23,15 @@ class InvalidCredentials(QuooklyError):
 
 class BootstrapClosed(QuooklyError):
     """The instance already has an account, so the first-admin path is closed."""
+
+
+class IncompatibleUnits(QuooklyError):
+    """The two units measure different kinds of thing, and no density bridges them."""
+
+
+class DensityRequired(QuooklyError):
+    """Converting between mass and volume needs the ingredient's density.
+
+    Raised rather than assuming water: a wrong assumption here silently misweighs every
+    dry ingredient, and flour is roughly half the density of water.
+    """

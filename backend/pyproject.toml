@@ -104,3 +104,16 @@ forbidden_modules = ["sqlmodel", "sqlalchemy"]
 # ORM is the layering working as designed; what is forbidden is business logic naming an
 # ORM type itself.
 allow_indirect_imports = true
+
+# ADR-006 and ADR-008: rule engines are pure functions, so their inputs arrive as
+# arguments and they can be tested as a table of cases.
+#
+# Every engine is a rule engine today. When a capability engine arrives — one that
+# mediates the model or the search index — this contract will break the build until it is
+# rewritten to name the rule engines explicitly. That is deliberate: an engine acquiring
+# I/O should be a decision someone makes, not something that happens.
+[[tool.importlinter.contracts]]
+name = "Engines do not reach resource access"
+type = "forbidden"
+source_modules = ["quookly.engines"]
+forbidden_modules = ["quookly.access"]

@@ -148,6 +148,24 @@ of the same age eat different amounts, and folding the two into one field would 
 misjudging portions or misjudging safety. `SuitabilityEngine` reads the age band; `MeasureEngine`
 reads the multiplier.
 
+### Units that quietly disagree
+
+A US cup is 236.6 ml; a metric cup is 250 ml. A US tablespoon is 14.8 ml; a metric one is 15 ml. US
+and imperial fluid ounces differ again.
+
+They are **separate units**, not one unit with a regional footnote. Conflating them is a 6% error on
+every ingredient measured that way, applied silently, and it is one of the ways a scraped recipe goes
+wrong without anybody noticing. Swiss and German recipes are written in **decilitres**, which is why
+`dl` is a first-class unit rather than something to convert away.
+
+Magnitudes are decimals rather than floats. Recipes are scaled repeatedly and appetite multipliers
+sum to values like 3.5; binary drift in a quantity is a wrong recipe.
+
+Mass and volume convert into each other **only** with the ingredient's density, and `MeasureEngine`
+refuses without one rather than assuming water — an assumption that would misweigh every dry
+ingredient, flour being roughly half the density of water. A count converts to nothing: three eggs
+weigh something, but not something the engine can know.
+
 ### Unit preference
 
 A per-cook mapping from **ingredient kind** to preferred unit — powders in grams, liquids in

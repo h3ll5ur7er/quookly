@@ -296,14 +296,18 @@ contract naming a module that does not exist as an *error*, not as a no-op — v
 independence and rule-engine purity cannot be declared before those modules are written. They land
 with them:
 
-| Contract | Type | Arrives with |
+| Contract | Type | Status |
 | --- | --- | --- |
-| Managers never import one another | `independence` | the first two managers (Phase 4) |
-| Rule engines never import resource access | `forbidden` | `SuitabilityEngine` (Phase 2) |
+| Engines do not reach resource access | `forbidden` | **Active** since `MeasureEngine` (Phase 1) |
+| Managers never import one another | `independence` | Arrives with the first two managers |
 
-The rule-engine contract is the one that matters most — it is
-[ADR-006](#adr-006-allergen-determination-is-structural) expressed as a build failure — and it is
-**not yet active**. Until Phase 2 that rule is carried by review and by the layer contract alone.
+The engine contract — [ADR-006](#adr-006-allergen-determination-is-structural) expressed as a build
+failure — is written against the whole `quookly.engines` package, because every engine today is a
+rule engine. When a **capability** engine arrives, one that mediates the model or the search index,
+this contract will break the build until it is rewritten to name the rule engines explicitly.
+
+That is deliberate. An engine acquiring I/O should be a decision somebody makes and records, not
+something that happens because a file was added to a directory.
 
 **Guarding the guard.** `backend/tests/test_architecture.py` asserts both that the codebase conforms
 *and* that each contract rejects a deliberately planted violation. A layering contract that silently
