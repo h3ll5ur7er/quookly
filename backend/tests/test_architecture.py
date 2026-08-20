@@ -98,6 +98,15 @@ class TestArchitectureContracts:
             result = lint_imports()
         assert_rejected(result, "a contract importing resource access")
 
+    def test_the_orm_may_not_escape_the_access_layer(self) -> None:
+        """ADR-018: if business logic imported SQLModel, the datastore would be domain."""
+        with violating_module(
+            "engines/_violation_probe.py",
+            "from sqlmodel import SQLModel\n\n__all__ = ['SQLModel']\n",
+        ):
+            result = lint_imports()
+        assert_rejected(result, "an engine importing the ORM")
+
     def test_a_new_top_level_package_cannot_escape_the_rules(self) -> None:
         """The layers contract is exhaustive, so an undeclared package is a failure."""
         probe = PACKAGE_ROOT / "_rogue_layer"

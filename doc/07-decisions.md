@@ -239,7 +239,8 @@ under deadline pressure.
 template already anticipates this — `just backend clean` removes `.import_linter_cache`, though the
 tool was never added.
 
-**Implemented** in `backend/pyproject.toml` as three contracts:
+**Implemented** in `backend/pyproject.toml`. Three contracts landed with the package layout; a
+fourth arrived with persistence:
 
 ```toml
 [tool.importlinter]
@@ -268,6 +269,21 @@ forbidden_modules = [
     "quookly.access", "quookly.utilities",
 ]
 ```
+
+```toml
+[[tool.importlinter.contracts]]
+name = "The ORM does not escape the access layer"
+type = "forbidden"
+source_modules = [
+    "quookly.routes", "quookly.managers", "quookly.engines",
+    "quookly.contracts", "quookly.utilities",
+]
+forbidden_modules = ["sqlmodel", "sqlalchemy"]
+```
+
+That last one needs `include_external_packages = true` on `[tool.importlinter]`, and it is
+[ADR-018](#adr-018-sqlmodel-as-the-orm) made mechanical: the datastore stays swappable only for as
+long as no business logic imports an ORM type.
 
 `exhaustive = true` is the one that keeps the guard honest over time: a new top-level package that
 is not declared as a layer fails the build rather than quietly escaping the rules.
@@ -515,6 +531,10 @@ than being restated. It is also from the FastAPI author, so the integration path
 it possible**. If business logic imported SQLModel types, the ORM would be part of the domain and no
 amount of dialect abstraction would help. The rule stands: SQLModel types live in `access/`, and
 what crosses upward is `contracts/`.
+
+That rule is **enforced**, not merely stated — an import-linter contract forbids every layer except
+`access` from importing `sqlmodel` or `sqlalchemy`, and a test plants a violation to prove the
+contract bites ([ADR-008](#adr-008-enforce-the-call-rules-with-import-linter)).
 
 **Cost.** One more layer between the code and SQLAlchemy, and SQLModel does not cover everything
 SQLAlchemy exposes. The escape hatch is deliberate and cheap: because it is a thin layer, dropping

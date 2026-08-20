@@ -5,8 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "aiosqlite>=0.22.1",
     "fastapi[all]>=0.136.1",
     "pydantic-settings>=2.14.1",
+    "sqlmodel>=0.0.39",
 ]
 [dependency-groups]
 dev = [
@@ -44,6 +46,9 @@ asyncio_mode = "auto"
 
 [tool.importlinter]
 root_package = "quookly"
+# Needed so contracts can name third-party packages, which is how the ORM is kept
+# inside the access layer.
+include_external_packages = true
 
 # The iDesign call rules, enforced (ADR-008, NFR-10). Calls flow strictly downward.
 # Contracts covering individual services are added alongside those services — a contract
@@ -78,3 +83,17 @@ forbidden_modules = [
     "quookly.access",
     "quookly.utilities",
 ]
+
+# ADR-018: SQLModel makes the datastore swappable, the access layer makes it possible.
+# If business logic imported ORM types, the datastore would be part of the domain.
+[[tool.importlinter.contracts]]
+name = "The ORM does not escape the access layer"
+type = "forbidden"
+source_modules = [
+    "quookly.routes",
+    "quookly.managers",
+    "quookly.engines",
+    "quookly.contracts",
+    "quookly.utilities",
+]
+forbidden_modules = ["sqlmodel", "sqlalchemy"]

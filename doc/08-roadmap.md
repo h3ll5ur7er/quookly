@@ -17,9 +17,10 @@ most likely to be built well by accident and least likely to matter if they are 
 - ~~`import-linter` contracts wired into `just backend check`~~ **Built**
   ([ADR-008](07-decisions.md#adr-008-enforce-the-call-rules-with-import-linter)) — per-service
   contracts follow their services
-- Persistence: SQLite only, SQLModel over async SQLAlchemy, Alembic migrations
+- ~~Persistence: SQLite only, SQLModel over async SQLAlchemy~~ **Built**
   ([ADR-009](07-decisions.md#adr-009-sqlite-only-to-begin-with),
   [ADR-018](07-decisions.md#adr-018-sqlmodel-as-the-orm))
+- Alembic migrations — arriving with the first table
 - ~~`Configuration` utility~~ **Built** ([ADR-019](07-decisions.md#adr-019-no-default-secret-key))
 - `Diagnostics` and `Security` utilities
 - Authentication: register, log in, JWT (UC-6.1)

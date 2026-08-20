@@ -411,8 +411,10 @@ backend/src/quookly/
 │   └── community.py        # (Planned)
 ├── managers/               # (Built, empty)
 ├── engines/                # (Built, empty)
-├── access/                 # (Built, empty)
-├── utilities/              # (Built, empty)
+├── access/
+│   └── database.py         # async engine and session (Built)
+├── utilities/
+│   └── configuration.py    # typed settings (Built)
 └── contracts/              # data shapes shared across layers (Built, empty)
 ```
 
