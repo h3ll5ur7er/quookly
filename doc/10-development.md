@@ -163,7 +163,7 @@ Root recipes fan out to all three projects:
 | `just typecheck` | mypy (backend, cli) + ngc (frontend, templates included) |
 | `just format` | ruff format + prettier |
 | `just test` | pytest + vitest |
-| `just check` | lint + typecheck + test across all three |
+| `just check` | lint + typecheck + contrast + test across all three |
 | `just build` | install, codegen, lint, typecheck, test, frontend build |
 | `just clean` | Remove caches and build output |
 
@@ -253,6 +253,17 @@ Beyond that guide:
 - Accessibility is checked by eslint's template rules and is a requirement (NFR-7).
 - The frontend never implements suitability rules
   ([ADR-010](07-decisions.md#adr-010-the-frontend-never-decides-suitability)).
+
+### Styling
+
+[Design language](11-design-language.md) is authoritative. Two rules the gate enforces or review
+must:
+
+- **Tokens only.** No literal colours, fonts, or spacing in a component — a hardcoded value opts
+  that component out of theming.
+- **Contrast holds in every theme.** `just frontend contrast` checks every foreground/surface pair
+  across all four themes and runs in `just frontend check`. Adding a colour token means adding it to
+  every theme and to the checker's pair list.
 
 ### Mobile first, literally
 

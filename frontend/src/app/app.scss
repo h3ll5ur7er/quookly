@@ -1,0 +1,31 @@
+.skip {
+  position: absolute;
+  left: -9999px;
+
+  &:focus-visible {
+    left: var(--space-4);
+    top: var(--space-4);
+    z-index: 10;
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface-raised);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-2);
+  }
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.shell__content {
+  flex: 1;
+}
+
+.shell__footer {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4);
+  border-top: 1px solid var(--border);
+}

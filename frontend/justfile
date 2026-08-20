@@ -34,9 +34,14 @@ format-check:
 typecheck:
     just _nvm "npm run typecheck"
 
+# Every foreground/surface token pair must meet WCAG AA in every theme (NFR-15).
+contrast:
+    just _nvm "npm run check:contrast"
+
 check:
     just lint
     just typecheck
+    just contrast
     just test
 
 generate-openapi-client:

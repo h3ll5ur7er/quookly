@@ -1,0 +1,93 @@
+/* Shared shape for the two entry screens. Tokens only — no literal colours or sizes. */
+:host {
+  display: block;
+}
+
+.auth {
+  width: min(100% - var(--space-6), 30rem);
+  margin-inline: auto;
+  padding-block: var(--space-7);
+}
+
+.auth__lede {
+  color: var(--on-surface-muted);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
+
+label {
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--on-surface-muted);
+}
+
+input {
+  min-height: 44px;
+  padding: var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  transition: border-color var(--motion-fast) var(--ease-standard);
+
+  &:focus-visible {
+    border-color: var(--primary);
+  }
+}
+
+.hint {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  color: var(--on-surface-subtle);
+}
+
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--danger);
+  color: var(--on-danger);
+  font-size: var(--text-sm);
+
+  /* Never colour alone: the mark carries the meaning where hue cannot. */
+  &::before {
+    content: '!';
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid currentcolor;
+    border-radius: var(--radius-full);
+    font-weight: 700;
+  }
+}
+
+button[type='submit'] {
+  min-height: 48px;
+  margin-top: var(--space-5);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-standard);
+
+  &:hover:not(:disabled) {
+    background: var(--primary-hover);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}

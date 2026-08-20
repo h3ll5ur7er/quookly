@@ -495,6 +495,9 @@ is themed. Two rules bind the code:
   comes from `@angular/cdk`
   ([ADR-024](07-decisions.md#adr-024-own-component-primitives-on-cdk-behaviour)).
 
+Theme selection lives in `core/theme/`: a signal store resolving `system` against
+`prefers-color-scheme`, persisting the choice, and applying `data-theme` to the document root.
+
 ### Mobile is the design target
 
 Per NFR-11, the phone is where Quookly is used: in a shop, at a worktop, holding something in the

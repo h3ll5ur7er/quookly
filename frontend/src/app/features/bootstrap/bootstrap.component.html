@@ -1,6 +1,6 @@
 <main class="auth">
   <h1>Welcome to Quookly</h1>
-  <p>This instance has no accounts yet. Create the first one to become its administrator.</p>
+  <p class="auth__lede">This instance has no accounts yet. Create the first one to become its administrator.</p>
 
   <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
     <label for="display_name">Your name</label>
@@ -19,7 +19,7 @@
       aria-describedby="password-hint"
       required
     />
-    <p id="password-hint">At least {{ minimumPasswordLength }} characters.</p>
+    <p id="password-hint" class="hint">At least {{ minimumPasswordLength }} characters.</p>
 
     @if (error(); as message) {
       <p class="error" role="alert">{{ message }}</p>

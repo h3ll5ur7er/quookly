@@ -1,1 +1,88 @@
-/* You can add global styles to this file, and also import other style files */
+/* Design tokens and the shipped themes. Everything below consumes them. */
+@use './styles/themes.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  font-size: calc(var(--text-md) * var(--density));
+  line-height: var(--leading-normal);
+  /* The page never scrolls sideways; wide things scroll inside their own container. */
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: var(--leading-tight);
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: calc(var(--text-2xl) * var(--density));
+}
+h2 {
+  font-size: calc(var(--text-xl) * var(--density));
+}
+h3 {
+  font-size: calc(var(--text-lg) * var(--density));
+}
+
+p {
+  margin: 0 0 var(--space-4);
+  max-width: 68ch;
+}
+
+/* Quantities and timers: tabular figures so columns align and digits do not jitter. */
+.numeric,
+time,
+output {
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+}
+
+a {
+  color: var(--primary);
+  text-underline-offset: 0.2em;
+}
+
+/* A focus ring is never removed without a replacement. */
+:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* Motion is a garnish, and it comes off on request. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

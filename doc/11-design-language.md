@@ -103,12 +103,17 @@ the pair rather than a hope. **Every pair must meet WCAG AA** — 4.5:1 for body
 text and meaningful non-text — *in every shipped theme*. A theme that fails this is a bug, not a
 style choice.
 
+This is **enforced, not asserted**: `just frontend contrast` checks all 56 pairs across the four
+themes and runs as part of `just frontend check`. It reads `src/styles/themes.css` directly, so the
+stylesheet stays the single source of truth. Colour tokens must be hex for that reason — a value the
+checker cannot parse is reported rather than skipped.
+
 ## The token contract
 
 Themes set these; components consume them and nothing else.
 
 ```
-Surface     --surface  --surface-raised  --surface-sunken  --border  --overlay
+Surface     --surface  --surface-raised  --surface-sunken  --border  --border-strong  --overlay
 Foreground  --on-surface  --on-surface-muted  --on-surface-subtle
 Brand       --primary  --on-primary  --primary-hover  --accent  --on-accent
 Status      --success  --warning  --danger  --info   (+ --on-* for each)
@@ -120,6 +125,11 @@ Depth       --shadow-1  --shadow-2  --shadow-3
 Motion      --motion-fast  --motion-base  --motion-slow  --ease-standard  --ease-emphasised
 Density     --density                 (1 normal, larger in cooking mode)
 ```
+
+`--border` and `--border-strong` are separate on purpose. WCAG 1.4.11 requires 3:1 for the visible
+**boundary of a control**, and requires nothing of a decorative divider. One token doing both jobs
+means either dividers that shout or inputs whose edge cannot be seen. The split was forced by the
+contrast check failing on the original single token — the check earning its place on its first run.
 
 **A component that hardcodes a colour, a font, or a spacing value is a defect**, in the same way an
 unmigrated model is. The token contract is the seam that makes theming work at all.

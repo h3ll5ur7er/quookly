@@ -11,6 +11,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "ngc -p tsconfig.app.json --noEmit && ngc -p tsconfig.spec.json --noEmit",
+    "check:contrast": "node tools/check-contrast.mjs",
     "generate-openapi": "openapi-generator-cli generate -i ../openapi.json -g typescript-angular -o ./src/api -c openapi-config.yaml --skip-validate-spec"
   },
   "private": true,
