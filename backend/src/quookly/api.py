@@ -1,5 +1,7 @@
 import os
-from collections.abc import AsyncIterator
+import time
+import uuid
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from enum import Enum
 
@@ -8,7 +10,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.routing import APIRoute
 
+from .access.database import dispose_engine
 from .routes import accounts_router, status_router
+from .utilities.diagnostics import configure_logging, get_logger, use_request_id
+
+REQUEST_ID_HEADER = "X-Request-ID"
+
+request_log = get_logger("request")
 
 FRONTEND_STATIC_DIR = "src/quookly/app/browser/"
 
@@ -33,9 +41,9 @@ def endpoint_name_generator(route: APIRoute) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    # Perform any startup tasks here
+    configure_logging()
     yield
-    # Perform any shutdown tasks here
+    await dispose_engine()
 
 
 NAME = "Quookly API"
@@ -46,6 +54,36 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def correlate_and_log(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Give every request an id, and log how it went.
+
+    An id supplied upstream is adopted rather than replaced, so a trace that started at
+    a proxy stays whole. The request body is never logged — that is what keeps
+    passwords out of the log rather than a filter that has to be remembered.
+    """
+    request_id = request.headers.get(REQUEST_ID_HEADER) or str(uuid.uuid4())
+    started = time.perf_counter()
+    with use_request_id(request_id):
+        response = await call_next(request)
+        request_log.info(
+            "%s %s -> %s",
+            request.method,
+            request.url.path,
+            response.status_code,
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "duration_ms": round((time.perf_counter() - started) * 1000, 2),
+            },
+        )
+    response.headers[REQUEST_ID_HEADER] = request_id
+    return response
 
 
 app.include_router(status_router, prefix="/api/v1", tags=["status"])

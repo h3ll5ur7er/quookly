@@ -649,3 +649,43 @@ attempting it corrected the judgement. That is the process working. The signal t
 one described in the [development loop](10-development.md#when-the-architecture-resists): a change
 that has no legal shape is telling you the decomposition is wrong, not that the rules are
 inconvenient.
+
+---
+
+## ADR-022 Standard-library logging, configured in one place
+
+**Status:** Accepted
+
+**Context.** A self-hoster debugging a failure at dinner time has the logs and nothing else. They
+need to be machine-readable where they will be shipped or grepped, and legible where a developer is
+watching a terminal.
+
+**Decision.** Structured logging on the standard library — a JSON formatter in `production`, a
+human formatter in `development` — with a request id carried in a `ContextVar`. No logging
+framework. `quookly.utilities.diagnostics.configure_logging()` is the **only** thing that
+configures logging, including for migrations.
+
+**Rationale.** The formatter is short enough to read in full, and every deployment runs this code,
+so a dependency here should earn its place. The context variable is what makes the several lines of
+one request findable together, which is the difference between a log and a pile of lines.
+
+**Two properties that are easy to get wrong.**
+
+- **Only our own handler is replaced.** An earlier version removed every root handler, which
+  silences anything else that attached one — uvicorn, a test harness, a self-hoster's own
+  configuration. The handler is named and only handlers of that name are removed.
+- **Alembic does not configure logging.** The generated `env.py` calls `fileConfig`, which disables
+  every existing logger by default; running migrations in-process therefore silenced the
+  application. `env.py` calls `configure_logging()` instead, and `alembic.ini` carries no logging
+  sections. Restoring those sections would reintroduce the bug.
+
+Both were found by tests failing in the suite while passing alone — the classic shape of a
+configuration side effect.
+
+**Request bodies are never logged.** That is what keeps passwords out of the logs, rather than a
+redaction filter that has to be kept in step with every new field. A test asserts a registration
+password never reaches the log.
+
+**Cost.** No log framework niceties — no bound loggers, no processor pipeline. If structured
+context becomes common enough to want them, `structlog` can sit on top without changing callers,
+since everything goes through `get_logger`.

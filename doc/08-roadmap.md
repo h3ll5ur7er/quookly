@@ -25,7 +25,8 @@ most likely to be built well by accident and least likely to matter if they are 
 - ~~`Configuration` utility~~ **Built** ([ADR-019](07-decisions.md#adr-019-no-default-secret-key))
 - ~~`Security` utility — Argon2 hashing, token issue and verification~~ **Built**
   ([ADR-020](07-decisions.md#adr-020-argon2-via-pwdlib-tokens-via-pyjwt))
-- `Diagnostics` utility
+- ~~`Diagnostics` utility — structured logging, request correlation~~ **Built**
+  ([ADR-022](07-decisions.md#adr-022-standard-library-logging-configured-in-one-place))
 - ~~Authentication: register, log in, JWT (UC-6.1)~~ **Built**
 - ~~First-run admin bootstrap, closing permanently once a user exists (UC-10.1, FR-16)~~ **Built**
 - Angular shell: routing, auth guard, layout, i18n scaffolding

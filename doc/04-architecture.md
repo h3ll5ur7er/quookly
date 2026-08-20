@@ -434,7 +434,8 @@ backend/src/quookly/
 │   └── cook.py             # cook accounts, in domain verbs (Built)
 ├── utilities/
 │   ├── configuration.py    # typed settings (Built)
-│   └── security.py         # password hashing, bearer tokens (Built)
+│   ├── security.py         # password hashing, bearer tokens (Built)
+│   └── diagnostics.py      # structured logging, request correlation (Built)
 ├── contracts/
 │   ├── accounts.py         # Registration, Credentials, Authenticated (Built)
 │   ├── cook.py             # Cook, StoredCredential (Built)

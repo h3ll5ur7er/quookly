@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     database_url: str = DEFAULT_DATABASE_URL
     secret_key: SecretStr = SecretStr("")
     token_lifetime_hours: int = 12
+    log_level: str = "INFO"
 
     @model_validator(mode="after")
     def resolve_secret_key(self) -> "Settings":

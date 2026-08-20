@@ -138,6 +138,7 @@ All configuration is by environment variable, so nothing inside the image needs 
 | `QUOOKLY_SECRET_KEY` | JWT signing key | none — see below |
 | `QUOOKLY_DATABASE_URL` | Datastore — SQLite only at v1 | `sqlite+aiosqlite:///./quookly.db` |
 | `QUOOKLY_TOKEN_LIFETIME_HOURS` | How long a sign-in lasts | `12` |
+| `QUOOKLY_LOG_LEVEL` | `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
 
 **Planned**, arriving with the phases that use them:
 
@@ -195,6 +196,19 @@ Per NFR-1, Quookly itself targets 2 cores and 2 GB RAM. **Local inference is the
 dominates the requirement** — a machine that runs Quookly comfortably will not necessarily run a
 useful model. Two options: run Ollama on a stronger machine on the network and point
 `QUOOKLY_INFERENCE_BASE_URL` at it, or use a hosted provider with your own key.
+
+## Logs
+
+`production` logs one JSON object per line to stdout, ready to grep or ship. `development` logs for
+a human reading a terminal. Set the verbosity with `QUOOKLY_LOG_LEVEL`.
+
+Every request carries an id, returned as the `X-Request-ID` response header and attached to every
+line logged while handling it. If a proxy in front of Quookly already sets that header, the value is
+adopted rather than replaced, so a trace that started upstream stays whole. When reporting a
+problem, the request id is the single most useful thing to include.
+
+Request bodies are never logged, which is what keeps passwords out of the logs
+([ADR-022](07-decisions.md#adr-022-standard-library-logging-configured-in-one-place)).
 
 ## Upgrading — Planned
 

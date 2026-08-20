@@ -6,7 +6,6 @@ autogenerate sees the same tables the application does.
 """
 
 import asyncio
-from logging.config import fileConfig
 
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
@@ -15,11 +14,14 @@ from sqlmodel import SQLModel
 from alembic import context
 from quookly.access import models  # noqa: F401  (imported for its side effect: table registration)
 from quookly.utilities.configuration import get_settings
+from quookly.utilities.diagnostics import configure_logging
 
 config = context.config
 
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+# Logging is configured by the application's own utility rather than from alembic.ini.
+# `fileConfig` disables every existing logger by default, which silences the application
+# whenever migrations run in the same process.
+configure_logging()
 
 config.set_main_option("sqlalchemy.url", get_settings().database_url)
 
