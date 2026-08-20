@@ -10,7 +10,8 @@ from decimal import Decimal
 
 import pytest
 
-from quookly.contracts.errors import DensityRequired, IncompatibleUnits
+from quookly.contracts.eater import AgeBand, Eater
+from quookly.contracts.errors import DensityRequired, IncompatibleUnits, PortionsUnknown
 from quookly.contracts.ingredient import IngredientKind
 from quookly.contracts.measure import Dimension, Quantity, Unit
 from quookly.contracts.preferences import UnitPreferences
@@ -301,3 +302,57 @@ class TestRounding:
         """A pinch rounded to nothing would silently drop an ingredient."""
         rounded = measure.round_for_display(q("0.004", Unit.GRAM))
         assert rounded.magnitude > 0
+
+
+def person(name: str, appetite: str) -> Eater:
+    return Eater(id=1, cook_id=1, name=name, age_band=AgeBand.ADULT, appetite=Decimal(appetite))
+
+
+class TestRequiredYield:
+    """Portion sizing is part of V4: it changes for the same reason quantities do."""
+
+    def test_one_standard_eater_needs_one_serving(self) -> None:
+        assert measure.required_yield([person("Ana", "1")]) == q("1", Unit.SERVING)
+
+    def test_multipliers_are_summed_rather_than_counted(self) -> None:
+        """Four people where one eats half is 3.5 servings, not 4 (FR-18)."""
+        table = [person(str(n), "1") for n in range(3)] + [person("Mira", "0.5")]
+        assert measure.required_yield(table).magnitude == Decimal("3.5")
+
+    def test_the_sum_is_exact(self) -> None:
+        """0.3 + 1.4 + 0.6 is 2.3. In binary floats it is 2.3000000000000003."""
+        table = [person("Toddler", "0.3"), person("Teen", "1.4"), person("Nonna", "0.6")]
+        assert measure.required_yield(table).magnitude == Decimal("2.3")
+
+    def test_one_large_appetite_is_not_rounded_to_a_head(self) -> None:
+        assert measure.required_yield([person("Teen", "1.4")]).magnitude == Decimal("1.4")
+
+    def test_cooking_for_nobody_is_refused(self) -> None:
+        """A yield of zero would scale every ingredient out of the recipe."""
+        with pytest.raises(ValueError):
+            measure.required_yield([])
+
+
+class TestScalingToAppetite:
+    def test_a_recipe_for_four_shrinks_to_the_table(self) -> None:
+        table = [person("Toddler", "0.3"), person("Teen", "1.4"), person("Nonna", "0.6")]
+        assert measure.scaling_for(q("4", Unit.SERVING), table) == Decimal("0.575")
+
+    def test_a_recipe_already_the_right_size_scales_by_one(self) -> None:
+        assert measure.scaling_for(q("2", Unit.SERVING), [person("A", "1"), person("B", "1")]) == 1
+
+    def test_a_recipe_measured_in_pieces_is_refused(self) -> None:
+        """Nothing in "makes 12 pancakes" says how many of them feed one person.
+
+        Guessing would misportion every meal planned from it, quietly.
+        """
+        with pytest.raises(PortionsUnknown):
+            measure.scaling_for(q("12", Unit.PIECE), [person("Ana", "1")])
+
+    def test_a_recipe_measured_in_grams_is_refused(self) -> None:
+        with pytest.raises(PortionsUnknown):
+            measure.scaling_for(q("900", Unit.GRAM), [person("Ana", "1")])
+
+    def test_a_recipe_that_yields_nothing_is_refused(self) -> None:
+        with pytest.raises(ValueError):
+            measure.scaling_for(q("0", Unit.SERVING), [person("Ana", "1")])

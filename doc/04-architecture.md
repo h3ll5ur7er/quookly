@@ -276,7 +276,7 @@ what allows scoring rules to change without touching a single line in recipe or 
 | --- | --- | --- |
 | `InterpretationEngine` | V2 | Unstructured content to canonical recipe. Filler removal, quantity resolution, step extraction. |
 | `GenerationEngine` | V1, V3 | Composes prompts for synthesis; parses and constrains model output. Knows *what to ask*, never *whom to ask*. |
-| `MeasureEngine` | V4 | Unit conversion, density-aware mass/volume, yield scaling, preferred-unit rendering. |
+| `MeasureEngine` | V4 | Unit conversion, density-aware mass/volume, yield scaling, portion sizing from appetite multipliers, preferred-unit rendering. |
 | `SuitabilityEngine` | V5 | Evaluates a structured recipe against structured eater constraints. Safety-critical. |
 | `NutritionEngine` | V6 | Aggregates nutrient profiles; per-serving and per-recipe bases. |
 | `PlanningEngine` | V7 | Proposes assignments satisfying constraints and objectives. |

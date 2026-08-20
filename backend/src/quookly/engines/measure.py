@@ -5,9 +5,11 @@ parameters rather than being fetched, which is what keeps this exhaustively test
 usable identically by recipes, planning, shopping, and cooking.
 """
 
+from collections.abc import Sequence
 from decimal import ROUND_HALF_UP, Decimal
 
-from quookly.contracts.errors import DensityRequired, IncompatibleUnits
+from quookly.contracts.eater import Eater
+from quookly.contracts.errors import DensityRequired, IncompatibleUnits, PortionsUnknown
 from quookly.contracts.ingredient import IngredientKind
 from quookly.contracts.measure import Dimension, Quantity, Unit
 from quookly.contracts.preferences import UnitPreferences
@@ -182,3 +184,34 @@ def render(
         except (IncompatibleUnits, DensityRequired):
             converted = quantity
     return round_for_display(humanise(converted))
+
+
+def required_yield(eaters: Sequence[Eater]) -> Quantity:
+    """How much a recipe has to make to feed these people (UC-6.5, FR-18).
+
+    The **sum of their appetite multipliers**, not a head count. Four adults where one
+    eats half portions is 3.5 servings, and every quantity follows from that.
+
+    Portion sizing lives here rather than in a service of its own because it changes for
+    the same reason and at the same rate as everything else about quantities (V4). Having
+    one implementation is what stops planning, shopping, and cooking from disagreeing
+    about how much food a household needs.
+    """
+    if not eaters:
+        raise ValueError("a recipe is cooked for somebody; no eaters were given")
+    return Quantity(sum((eater.appetite for eater in eaters), Decimal(0)), Unit.SERVING)
+
+
+def scaling_for(recipe_yield: Quantity, eaters: Sequence[Eater]) -> Decimal:
+    """The factor that takes a recipe from what it makes to what this table needs.
+
+    Only a yield stated in servings can answer this. A recipe that makes twelve pancakes
+    says nothing about how many pancakes feed one person, so it raises `PortionsUnknown`
+    rather than inventing a figure — the same refusal, and for the same reason, as
+    converting mass to volume without a density.
+    """
+    if recipe_yield.unit is not Unit.SERVING:
+        raise PortionsUnknown(f"a yield of {recipe_yield} does not say how much one person eats")
+    if recipe_yield.magnitude <= 0:
+        raise ValueError("a recipe that yields nothing cannot be scaled to a table")
+    return required_yield(eaters).magnitude / recipe_yield.magnitude

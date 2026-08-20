@@ -41,6 +41,15 @@ class IngredientAlreadyRegistered(QuooklyError):
     """That slug is already in the registry."""
 
 
+class PortionsUnknown(QuooklyError):
+    """The recipe's yield does not say how much of it one person eats.
+
+    "Makes 12 pancakes" is a count of pancakes, not of people. Raised rather than guessing
+    a pieces-per-serving figure, which would misportion every meal planned from it and
+    give no sign that it had.
+    """
+
+
 class UnknownUnit(QuooklyError):
     """No such unit. Guessing one would misweigh whatever was measured with it."""
 

@@ -83,7 +83,7 @@ handling into working features is the change this architecture exists to avoid.
 **Goal:** the safety-critical path, before anything generates content.
 
 - ~~Eater profiles, dietary constraints with severity, age bands (UC-6.3, UC-6.4)~~ **Built**
-- Appetite multipliers, summed to required yield (UC-6.5, FR-18)
+- ~~Appetite multipliers, summed to required yield (UC-6.5, FR-18)~~ **Built** — in `MeasureEngine`, because portion sizing is V4
 - `OnboardingEngine` and the new-cook setup flow (UC-10.2, UC-10.3, V16)
 - ~~Allergen classification in the ingredient registry~~ **Built**
 - ~~`SuitabilityEngine` — pure, exhaustively tested (V5, [ADR-006](07-decisions.md#adr-006-allergen-determination-is-structural))~~ **Built**
@@ -120,6 +120,7 @@ This is the phase that determines whether the product is worth using.
 - `PantryAccess`, `PantryManager`: receive, adjust, expire, waste (UC-5.*)
 - Reservation model ([ADR-004](07-decisions.md#adr-004-plans-reserve-stock-cooking-consumes-it)); releasing a reservation is a first-class path, as well tested as consuming one
 - `PlanAccess`, `PlanningManager`, `PlanningEngine`: slots, attendance, suitability checks (UC-4.1–4.3)
+- A recipe's `serves` alongside its yield, so "makes 12 pancakes" can be scaled to a table — see [the domain model](06-domain-model.md#appetite-multiplier)
 - `ReplenishmentEngine`: shopping list net of stock (UC-4.4, V8)
 - Cook a meal, consume reservations (UC-4.5)
 - `EventBus` and the first events

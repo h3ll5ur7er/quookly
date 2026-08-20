@@ -206,6 +206,17 @@ difference between 1.33 and 1.333 of a serving is not something anybody can plat
 the open means the value read back is the value that was written instead of the two disagreeing
 until somebody reloads the page.
 
+**What a recipe makes is not how many it serves.** A recipe whose yield reads "12 pancakes" states a
+count of pancakes, and nothing in it says how many pancakes feed one person. `MeasureEngine` can
+scale such a recipe to a requested number of pancakes, but not to a table, and it raises
+`PortionsUnknown` rather than inventing a pieces-per-serving figure — the same refusal, for the same
+reason, as converting mass to volume without a density. Both shipped starter recipes are in this
+position.
+
+Closing it means a recipe carrying **`serves`** alongside its yield: makes 12, serves 4. That is a
+schema change, and it lands in Phase 4 where planning is the first thing that consumes it. Until
+then, scaling to a household works for recipes whose yield is already stated in servings.
+
 ### Units that quietly disagree
 
 A US cup is 236.6 ml; a metric cup is 250 ml. A US tablespoon is 14.8 ml; a metric one is 15 ml. US
