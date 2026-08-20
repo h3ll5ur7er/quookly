@@ -28,6 +28,8 @@ Quookly is a cooking app targeted at professionally trained home chefs and those
 - per-eater appetite multiplier, so portions match the person rather than the head count
 - mobile-first: the phone and tablet are the primary targets, installable as a PWA, with the active
   recipe, running cooking session and shopping list usable offline
+- theming: light, dark, playful and decorative themes, following the system preference until you
+  choose, and extensible by self-hosters without a rebuild
 - recipe management with ingredients, steps, tags, variants, images, ratings and comments
 - weekly meal planning with shopping list generation
 - stock management with automatic stock deduction when planning meals
@@ -88,6 +90,7 @@ Design documentation lives in [`doc/`](doc/README.md):
 | [Roadmap](doc/08-roadmap.md) | Delivery order |
 | [Installation](doc/09-installation.md) | Running and self-hosting |
 | [Development](doc/10-development.md) | Working on Quookly, and contributing |
+| [Design language](doc/11-design-language.md) | How it should look and feel, and the theming system |
 
 Start with [the volatility analysis](doc/03-volatility-analysis.md) before judging the
 architecture — the code deliberately does not mirror the feature list above.

@@ -689,3 +689,64 @@ password never reaches the log.
 **Cost.** No log framework niceties — no bound loggers, no processor pipeline. If structured
 context becomes common enough to want them, `structlog` can sit on top without changing callers,
 since everything goes through `get_logger`.
+
+---
+
+## ADR-023 Theming by design tokens, themes as data
+
+**Status:** Accepted
+
+**Context.** Quookly should look distinctive on first run, and ship a small set of themes — light,
+dark, playful, decorative — that a cook picks between. Self-hosters will want their own.
+
+**Decision.** A fixed contract of **CSS custom properties** — colour roles, type, space, shape,
+depth, motion, density — set on `:root` and overridden by `[data-theme='…']`. Components consume
+tokens and nothing else. A theme is a block of values, not code.
+
+**Rationale.** Themes become data. Adding one requires no rebuild, no component changes, and no
+audit of what might have hardcoded a colour — which is exactly what makes a self-hoster's own theme
+practical rather than a fork. Runtime switching is free, and `prefers-color-scheme` slots in as a
+default rather than a special case.
+
+Compiling a stylesheet per theme from SCSS variables was the alternative. It rules out runtime
+switching, makes a user-supplied theme a build step, and multiplies the CSS payload for something
+that must work offline on a phone.
+
+Colours are referenced by **role**, never by name. Nothing says "blue"; it says `--primary`. Every
+foreground token is paired with the surface it belongs on, so **contrast is checkable per token
+pair** rather than per screen — which is how "WCAG AA in every theme" becomes a testable claim
+instead of an aspiration.
+
+**Density is deliberately not a theme.** Cooking mode raises `--density` because the cook is
+standing a metre away, not because they prefer larger text. Tying it to theme choice would make
+legibility a setting somebody has to find mid-recipe.
+
+**Cost.** The token contract is a real interface and has to be maintained as one; adding a token is
+a change every theme must answer. A component that hardcodes a value silently opts out of theming,
+so this needs to be caught in review — and it is the reason the contract is small enough to hold in
+your head.
+
+---
+
+## ADR-024 Own component primitives on CDK behaviour
+
+**Status:** Accepted
+
+**Context.** Roughly a dozen UI primitives are needed. Angular Material provides them.
+
+**Decision.** No component library. Build the primitives, using `@angular/cdk` for behaviour —
+focus trapping, overlay positioning, live-region announcements — which ships unstyled.
+
+**Rationale.** Material carries a strong and widely recognised visual identity; the design language
+here is meant to be distinctive, and fighting a framework's opinions costs more than writing a
+button. It is also heavy for an application that must install to a phone and work offline. The
+primitive set is small and mostly native elements with tokens applied.
+
+The CDK is the right seam: the parts that are easy to get subtly and inaccessibly wrong — focus
+management, overlays, announcements — are exactly the parts we should not reimplement, and they
+arrive without any appearance attached.
+
+**Cost.** Accessibility is ours to get right rather than inherited, which is why the
+[accessibility rules](11-design-language.md#accessibility) are stated as non-negotiable and checked
+per screen. Each primitive is one more thing to maintain. Revisit if the primitive set grows past
+what a small design system can carry.

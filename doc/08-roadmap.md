@@ -30,7 +30,10 @@ most likely to be built well by accident and least likely to matter if they are 
 - ~~Authentication: register, log in, JWT (UC-6.1)~~ **Built**
 - ~~First-run admin bootstrap, closing permanently once a user exists (UC-10.1, FR-16)~~ **Built**
 - ~~Angular shell: routing, auth guard, sign-in and bootstrap screens~~ **Built**
-- Layout system and i18n scaffolding
+- Design tokens, the four shipped themes, and the app shell
+  ([ADR-023](07-decisions.md#adr-023-theming-by-design-tokens-themes-as-data),
+  [Design language](11-design-language.md))
+- i18n scaffolding
 - **Mobile-first layout foundation and PWA shell** ([ADR-015](07-decisions.md#adr-015-mobile-first-installable-and-offline-where-it-matters))
 - **TDD and the per-unit quality gate in force from the first commit** ([ADR-017](07-decisions.md#adr-017-test-driven-development-with-per-unit-quality-gates))
 

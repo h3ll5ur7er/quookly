@@ -164,6 +164,8 @@ UC-8.4 is **Built** — `/api/v1/status` exists and the CLI can query it.
 | FR-18 | Each eater carries an appetite multiplier applied when portions are computed. |
 | FR-19 | Completing a cooking session consumes reserved stock; abandoning one releases it. |
 | FR-20 | Every nutrient profile records its data source and licence. The application displays the attribution required by the sources actually in use — mandatory for the Swiss, UK, and French overlays. |
+| FR-21 | The interface ships light, dark, playful and decorative themes. Selection follows the system preference until the cook chooses, and the choice is remembered. |
+| FR-22 | Themes are sets of design-token values, so an instance can add one without rebuilding the application. |
 
 FR-11 matters more than it looks: it is the guarantee that self-hosters are not trapped, and it
 makes the import path (UC-1.2) and the export path the same contract.
@@ -186,6 +188,8 @@ makes the import path (UC-1.2) and the export path the same contract.
 | NFR-12 | Cooking mode is usable with busy hands | Large touch targets, screen wake lock held, legible at arm's length |
 | NFR-13 | Offline tolerance where it matters | The active recipe, the running session, and the shopping list remain usable without connectivity |
 | NFR-14 | Behaviour changes arrive test-first | Every behavioural change lands with a test written before the implementation |
+| NFR-15 | Contrast holds in every theme | Every foreground/surface token pair meets WCAG AA in every shipped theme |
+| NFR-16 | No external asset requests | Fonts and assets are self-hosted, so an instance with no outbound internet renders identically |
 
 NFR-10 is not aspirational — see [ADR-008](07-decisions.md#adr-008-enforce-the-call-rules-with-import-linter).
 
@@ -193,6 +197,13 @@ NFR-11 is a correction to the obvious assumption. The laptop is where Quookly ge
 phone in a shop and the tablet on a worktop are where it gets *used*. Designing for the desktop and
 adapting downward produces exactly the cramped experience the product is meant to replace — so the
 narrow viewport is the design target and the wide one is the adaptation.
+
+NFR-15 is what makes "themes are data" safe. Contrast is a property of a token *pair*, so it can be
+checked once per theme rather than argued about per screen — see
+[Design language](11-design-language.md#colour).
+
+NFR-16 follows from NFR-13. A font that arrives from a CDN is a font that sometimes does not arrive,
+and an instance with no outbound internet is a supported deployment, not an edge case.
 
 NFR-14 is a process requirement rather than a property of the running system, recorded here because
 it is not negotiable — see [ADR-017](07-decisions.md#adr-017-test-driven-development-with-per-unit-quality-gates).

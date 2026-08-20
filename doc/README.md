@@ -17,6 +17,7 @@ not the life story that precedes it.
 | 08 | [Roadmap](08-roadmap.md) | Delivery order and what "done" means per phase |
 | 09 | [Installation](09-installation.md) | Running and self-hosting Quookly |
 | 10 | [Development](10-development.md) | Working on Quookly, and contributing |
+| 11 | [Design language](11-design-language.md) | How it should look and feel, and the theming system |
 
 ## Status legend
 

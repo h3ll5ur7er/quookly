@@ -484,6 +484,17 @@ A deliberate constraint follows from the safety rule: the frontend never *decide
 displays what the backend computed. Duplicating that logic in TypeScript would create a second
 implementation of a safety-critical rule, guaranteed to drift.
 
+### Appearance
+
+[Design language](11-design-language.md) is authoritative for how the interface looks, behaves, and
+is themed. Two rules bind the code:
+
+- **Components consume design tokens and nothing else.** A hardcoded colour, font, or spacing value
+  silently opts out of theming ([ADR-023](07-decisions.md#adr-023-theming-by-design-tokens-themes-as-data)).
+- **No component library.** Primitives are ours; behaviour that is easy to get inaccessibly wrong
+  comes from `@angular/cdk`
+  ([ADR-024](07-decisions.md#adr-024-own-component-primitives-on-cdk-behaviour)).
+
 ### Mobile is the design target
 
 Per NFR-11, the phone is where Quookly is used: in a shop, at a worktop, holding something in the
