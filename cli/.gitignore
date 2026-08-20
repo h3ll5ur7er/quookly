@@ -1,0 +1,17 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# cache and log files
+*.log
+.*_cache/
+
+# Virtual environments
+.venv
+
+# Generated code
+**/api_client/*

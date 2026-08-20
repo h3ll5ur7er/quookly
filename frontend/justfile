@@ -1,0 +1,35 @@
+set shell := ["bash", "-uc"]
+
+default:
+    @just --list
+
+_nvm *command:
+    export NVM_DIR="${NVM_DIR:-$HOME/.nvm}" && \
+    source "$NVM_DIR/nvm.sh" && \
+    nvm use && \
+    {{command}}
+
+install:
+    export NVM_DIR="${NVM_DIR:-$HOME/.nvm}" && source "$NVM_DIR/nvm.sh" && nvm install
+    just _nvm "npm install"
+
+serve:
+    just _nvm "npm run start"
+
+build:
+    just _nvm "npm run build"
+
+test:
+    just _nvm "npm run test"
+
+lint:
+    just _nvm "npm run lint"
+
+format:
+    just _nvm "npm run format"
+
+generate-openapi-client:
+    just _nvm "npm run generate-openapi"
+    
+clean:
+    rm -rf .angular

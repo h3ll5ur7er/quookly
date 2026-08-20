@@ -1,0 +1,37 @@
+default:
+    @just --list
+
+install:
+    uv sync
+
+run *args:
+    uv run my_fullstack_template {{args}}
+
+test:
+    uv run pytest
+
+lint:
+    uv run ruff check .
+
+format:
+    uv run ruff format .
+
+typecheck:
+    uv run mypy .
+
+check:
+    just lint
+    just typecheck
+    just test
+
+generate-openapi-client:
+    uv run my_fullstack_template codegen openapi generate --path ../openapi.json --output-path src/my_fullstack_template/api_client/ --meta none --overwrite 
+    
+clean:
+    # pycache
+    python3 -Bc "import pathlib; import shutil; [shutil.rmtree(p) for p in pathlib.Path('.').rglob('__pycache__')]"
+    # tool caches
+    rm -rf .import_linter_cache
+    rm -rf .mypy_cache
+    rm -rf .pytest_cache
+    rm -rf .ruff_cache

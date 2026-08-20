@@ -1,0 +1,13 @@
+generatorName: typescript-angular
+outputDir: ./src/api
+additionalProperties:
+  npmName: "@my-fullstack-template/api"
+  fileNaming: kebab-case
+  withoutPrefixEnums: true
+  stringEnums: true
+  enumPropertyNaming: original
+  servicesSuffix: ApiService
+  apiModulePrefix: Api
+  providedInRoot: true
+  ngVersion: 21.2.0
+skipValidateSpec: true

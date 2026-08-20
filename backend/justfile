@@ -1,0 +1,40 @@
+default:
+    @just --list
+
+install:
+    uv sync
+
+run *args:
+    uv run my_fullstack_template {{args}}
+
+serve:
+    uv run my_fullstack_template
+
+export-openapi:
+    uv run export_openapi > ../openapi.json
+
+test:
+    uv run pytest
+
+lint:
+    uv run ruff check .
+
+format:
+    uv run ruff format .
+
+typecheck:
+    uv run mypy .
+
+check:
+    just lint
+    just typecheck
+    just test
+
+clean:
+    # pycache
+    python3 -Bc "import pathlib; import shutil; [shutil.rmtree(p) for p in pathlib.Path('.').rglob('__pycache__')]"
+    # tool caches
+    rm -rf .import_linter_cache
+    rm -rf .mypy_cache
+    rm -rf .pytest_cache
+    rm -rf .ruff_cache
