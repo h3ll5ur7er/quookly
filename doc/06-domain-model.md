@@ -161,6 +161,12 @@ reference database is not the same as one estimated by a model, and presenting t
 would misrepresent both. Nutrition is decision support, not medical advice
 ([Non-goals](01-vision.md#non-goals)).
 
+It also carries its **source and licence** (FR-20). The base dataset is USDA FoodData Central, which
+is CC0 and demands nothing, but regional overlays are not: OGL and Licence Ouverte both require
+attribution. Recording provenance per profile is what lets an instance credit exactly the sources it
+actually uses, and what makes swapping or layering datasets a data change rather than a code change.
+See [ADR-007](07-decisions.md#adr-007-nutrition-data-usda-fooddata-central-as-the-base).
+
 ### Cooking session
 
 A session is a cook working through one recipe at one moment: the scaled recipe, the execution plan,
@@ -212,9 +218,10 @@ locale; UI strings are separate and handled by the `Localisation` utility (V14).
 
 Recorded rather than guessed at; each affects the schema and should be settled before it is written:
 
-1. **Nutrition source.** A bundled reference dataset, per-ingredient user entry, or model
-   estimation with low confidence? Licensing needs checking before a dataset is chosen — see
-   [ADR-007](07-decisions.md#adr-007-nutrition-source-is-pluggable-and-unresolved).
+1. ~~**Nutrition source.**~~ *Settled* by
+   [ADR-007](07-decisions.md#adr-007-nutrition-data-usda-fooddata-central-as-the-base): USDA
+   FoodData Central (CC0) as the base, with optional clearly-licensed regional overlays. Still open
+   is whether Swiss-specific values matter enough to seek written permission from the FSVO.
 2. **Recipe versioning.** Is edit history retained, and do plans reference a version or the current
    state? Affects whether a cooked meal can be reproduced exactly.
 3. **Ingredient registry ownership.** *Partly settled* by

@@ -35,7 +35,8 @@ components authored for the desktop is a rewrite, not an adjustment — the same
 **Goal:** structured recipes exist and can be read the way the product promises.
 
 - Domain model for recipe, ingredient line, step, technique reference
-- Ingredient registry with locale-aware names ([ADR-007](07-decisions.md#adr-007-nutrition-source-is-pluggable-and-unresolved) still open)
+- Ingredient registry with locale-aware names, seeded from USDA FoodData Central
+  ([ADR-007](07-decisions.md#adr-007-nutrition-data-usda-fooddata-central-as-the-base))
 - `RecipeAccess`, `IngredientAccess`, `EaterAccess`
 - `MeasureEngine`: conversion, density, yield scaling (V4)
 - Unit preferences per ingredient kind (UC-6.2)
@@ -47,7 +48,7 @@ components authored for the desktop is a rewrite, not an adjustment — the same
 **Done when:** a recipe can be authored, viewed at any yield in the cook's preferred units, exported,
 and re-imported without loss — and a fresh instance already has recipes to look at.
 
-Seed content lands here rather than in Phase 8 because it is what makes every later phase testable.
+Seed content lands here rather than in Phase 9 because it is what makes every later phase testable.
 Planning, ranking, and cooking mode all need a recipe corpus, and hand-entering one before each test
 run is a tax paid repeatedly.
 
@@ -94,7 +95,7 @@ This is the phase that determines whether the product is worth using.
 **Goal:** the week actually gets planned.
 
 - `PantryAccess`, `PantryManager`: receive, adjust, expire, waste (UC-5.*)
-- Reservation model ([ADR-004](07-decisions.md#adr-004-plans-reserve-stock-cooking-consumes-it) — confirm first)
+- Reservation model ([ADR-004](07-decisions.md#adr-004-plans-reserve-stock-cooking-consumes-it)); releasing a reservation is a first-class path, as well tested as consuming one
 - `PlanAccess`, `PlanningManager`, `PlanningEngine`: slots, attendance, suitability checks (UC-4.1–4.3)
 - `ReplenishmentEngine`: shopping list net of stock (UC-4.4, V8)
 - Cook a meal, consume reservations (UC-4.5)
@@ -118,8 +119,8 @@ a correct shopping list, and cooking a meal updates the pantry.
 **Done when:** a cook can start a session on a tablet, prep from the mise-en-place list, run a timer,
 lock the screen, pick the session up on their phone, finish, and see the pantry updated.
 
-Requires Phase 4 for reservations and Phase 6's Academy for in-step technique lookup (UC-9.5) — that
-last piece can land after the Academy without blocking the rest.
+Requires Phase 4 for reservations, and Phase 7's Academy for in-step technique lookup (UC-9.5) —
+that last piece can land after the Academy without blocking the rest.
 
 ## Phase 6 — Generation and discovery
 
@@ -129,7 +130,7 @@ last piece can land after the Academy without blocking the rest.
 - Variant derivation (UC-1.7)
 - `SearchIndexAccess` and full-text search (UC-3.1, UC-3.2)
 - `RankingEngine`: pantry coverage and expiry urgency (UC-3.3, UC-3.4)
-- `NutritionEngine` and nutrition display (UC-2.3) — requires ADR-007 resolved
+- `NutritionEngine` and nutrition display (UC-2.3), over the USDA FoodData Central base set
 
 **Done when:** "what should I cook this week" returns ranked, suitable suggestions that use up what
 is about to expire.
@@ -182,7 +183,7 @@ whose absence costs the product least.
 | Risk | Mitigation |
 | --- | --- |
 | Interpretation quality (V2) is the product, and is hard | Phase 3 is deliberately early; build a fixture corpus of real messy pages and measure against it |
-| Nutrition data licensing unresolved | ADR-007 open; nutrition is confined to Phase 6 so it blocks nothing before then |
+| Swiss-specific nutrient values unavailable under clear terms | Base set is CC0 USDA ([ADR-007](07-decisions.md#adr-007-nutrition-data-usda-fooddata-central-as-the-base)); if Swiss values prove necessary, seek written permission from the FSVO rather than vendoring ambiguous data |
 | Ingredient registry needs curation a self-hoster cannot provide | Ship a base registry, allow local additions; decide ownership in [open questions](06-domain-model.md#open-questions) |
 | Local models may be too weak for reliable structured extraction | Support hosted providers from Phase 3; treat structured-output failure as a normal, reported outcome |
 | Scope: the feature list is very large | Phases 0–4 are the product; 5–8 are extension |

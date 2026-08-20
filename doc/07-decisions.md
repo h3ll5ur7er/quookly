@@ -78,7 +78,7 @@ direct use.
 
 ## ADR-004 Plans reserve stock; cooking consumes it
 
-**Status:** Proposed — confirm before the pantry schema is written
+**Status:** Accepted
 
 **Context.** The brain-dump says "automatic stock deduction when planning meals". Read literally,
 planning a meal removes ingredients from the pantry.
@@ -94,8 +94,16 @@ still preventing double-allocation, and the shopping list falls out of the reser
 **Cost.** More state: stock has free and reserved quantities, and reservations need lifecycle
 handling for abandoned plans.
 
-**Confirm:** that "deduction on planning" meant "do not let me plan two meals with the same
-ingredient", which reservation delivers, rather than literal immediate removal.
+**Confirmed.** The deciding case is the ordinary one: a cook plans a dish, changes their mind, and
+cooks something else. A reservation is released and the ingredients are simply still there. Literal
+deduction would have to *re-add* stock that never left the fridge, and any bug in that path shows up
+as food the system believes was eaten.
+
+This makes **release** a first-class operation, not an error path. Three things release a
+reservation: cancelling a plan, reassigning a slot to a different recipe, and abandoning a cooking
+session (UC-9.8, FR-19). Each must be as well tested as consumption — the failure mode of a missed
+release is stock that is invisible forever, which is precisely the waste the product exists to
+reduce.
 
 ---
 
@@ -137,21 +145,68 @@ in the UI, never be silently omitted.
 
 ---
 
-## ADR-007 Nutrition source is pluggable and unresolved
+## ADR-007 Nutrition data: USDA FoodData Central as the base
 
-**Status:** Open
+**Status:** Accepted
 
-**Context.** Nutrition requires reference data. Options include a bundled public dataset, per-
-ingredient user entry, and model estimation.
+**Context.** Nutrition requires reference data. The constraint set is: usable freely, redistributable
+inside a self-hosted container, and with no licensing obligation that could become a problem for
+anyone running an instance.
 
-**Decision so far.** `IngredientAccess` exposes `nutrients_for`, and `NutritionEngine` consumes what
-it is given. Profiles carry a confidence level. The actual source is deferred.
+**Decision.** Ship **USDA FoodData Central** as the base dataset. Where a clearly-licensed regional
+dataset improves accuracy for a target locale, add it as an overlay. Do not vendor any dataset whose
+terms are ambiguous.
 
-**Open.** Which dataset, under which licence, and whether it can be redistributed inside a
-self-hosted container. Swiss and UK sources are both relevant given the target locales. **Licensing
-must be verified before any dataset is vendored** — this has not been done.
+**Verified licensing** (checked August 2026 against the publishers' own pages, not summaries):
 
----
+| Dataset | Licence | Obligation | Verdict |
+| --- | --- | --- | --- |
+| [USDA FoodData Central](https://fdc.nal.usda.gov/) | CC0 1.0, public domain | None. Attribution requested, not required | **Base dataset** |
+| [UK CoFID](https://www.gov.uk/government/publications/composition-of-foods-integrated-dataset-cofid) | Open Government Licence v3.0 | Attribution | Optional overlay for `en_GB` |
+| [Ciqual (ANSES)](https://www.anses.fr/en/content/ciqual-nutritional-composition-table) | Licence Ouverte (Etalab) | Attribution | Optional overlay for `fr_CH` |
+| [Open Food Facts](https://world.openfoodfacts.org/terms-of-use) | ODbL | Attribution **and share-alike** | Rejected |
+| [Swiss Food Composition Database](https://naehrwertdaten.ch/en/legal-information/) | Unclear — see below | Unknown | Not vendored |
+
+**Rationale.** CC0 is the only status with genuinely zero obligations: no attribution requirement, no
+share-alike, no restriction on redistribution inside an image. Every self-hoster inherits those
+terms, and "it should just work" for them too, without any of them having to read a licence.
+
+USDA is a US dataset while the target locales are British and Swiss. That matters less than it
+appears: nutrient values for generic ingredients — flour, butter, chicken thigh — travel well across
+borders. What does *not* travel is naming and shelf products, and that is V14 localisation, already
+handled separately by locale-specific ingredient names.
+
+**Why Open Food Facts is rejected.** ODbL's share-alike applies to *adapted databases*: publish one
+and it must be offered under ODbL. Shipping a seeded ingredient registry derived from Open Food Facts
+would plausibly trigger that. The obligation is survivable but it is an obligation, and it would be
+inherited by everyone running an instance. It is also the wrong shape — barcode-level packaged
+products rather than the generic ingredients recipes are written from.
+
+**Why the Swiss database is not vendored, despite two Swiss target locales.** Its terms conflict.
+The download page states the data may be used commercially with acknowledgement of source, while the
+[legal information page](https://naehrwertdaten.ch/en/legal-information/) states that *"written
+permission must be obtained in advance from the copyright holder before any material is reproduced"*
+and grants no open licence. A third-party packaging of it warns that some underlying data comes from
+sources whose publishing rights are unclear. The `opendata.swiss` listing could not be checked — it
+returns 403 to automated fetches.
+
+That ambiguity is precisely what this decision exists to avoid. **If Swiss-specific values turn out
+to matter, the action is to ask the FSVO for written confirmation** — not to vendor it and hope. Until
+then, generic values from a CC0 source are the safer default.
+
+**Consequences for the design.**
+
+- Every nutrient profile records its **source and licence** alongside its values and confidence
+  (FR-20). This is what makes attribution possible per record rather than per application, and it is
+  what allows an OGL or Licence Ouverte overlay to carry its own required credit.
+- Because the source sits behind `IngredientAccess` and `NutritionEngine` consumes whatever it is
+  handed, swapping or layering datasets is a data change, not a code change (V6, V13).
+- Attribution for USDA is not legally required, but Quookly credits it anyway. It costs a line and
+  the request is reasonable.
+
+**Cost.** Some ingredients common in Swiss and British kitchens will be absent or approximate in a US
+dataset, and closing those gaps means either an overlay or manual registry additions — which
+[ADR-016](#adr-016-ship-seed-content-marked-and-upgradable) already supports.
 
 ## ADR-008 Enforce the call rules with import-linter
 
@@ -357,8 +412,10 @@ be improved without risking user data. Reusing the existing variant relationship
 inventing a copy-on-write concept.
 
 **Cost.** The seed set must be maintained and translated per locale, and its licensing must be clean
-— the same constraint that keeps [ADR-007](#adr-007-nutrition-source-is-pluggable-and-unresolved)
-open applies to any recipe content that is not written for this project.
+— the same licensing discipline applied in
+[ADR-007](#adr-007-nutrition-data-usda-fooddata-central-as-the-base) applies to any recipe content
+not written for this project. Starter recipes should be authored for Quookly or taken from clearly
+public-domain sources.
 
 ---
 
