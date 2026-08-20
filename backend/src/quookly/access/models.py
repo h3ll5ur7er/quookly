@@ -111,3 +111,15 @@ class StepRow(SQLModel, table=True):
     instruction: str
     duration_seconds: int | None = Field(default=None)
     temperature_celsius: int | None = Field(default=None)
+
+
+class UnitPreferenceRow(SQLModel, table=True):
+    """One cook's preferred unit for one kind of ingredient (UC-6.2)."""
+
+    __tablename__ = "unit_preference"
+    __table_args__ = (UniqueConstraint("cook_id", "kind", name="uq_unit_preference"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    cook_id: int = Field(foreign_key="cook.id", index=True)
+    kind: IngredientKind
+    unit: Unit

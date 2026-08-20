@@ -11,7 +11,9 @@ from decimal import Decimal
 import pytest
 
 from quookly.contracts.errors import DensityRequired, IncompatibleUnits
+from quookly.contracts.ingredient import IngredientKind
 from quookly.contracts.measure import Dimension, Quantity, Unit
+from quookly.contracts.preferences import UnitPreferences
 from quookly.engines import measure
 
 # g/ml. Water is 1 by definition; flour is famously not, which is why a cup of it is a
@@ -176,3 +178,126 @@ class TestQuantities:
     def test_decimal_arithmetic_does_not_drift(self) -> None:
         total = measure.scale(q("0.1", Unit.GRAM), Decimal("3"))
         assert total.magnitude == Decimal("0.3")
+
+
+class TestRendering:
+    """Turning a stored quantity into the one a particular cook wants to read (UC-2.2).
+
+    Rendering is a *display* operation: it converts, tidies, and rounds. The stored
+    quantity stays exact, because rounding on the way in would compound every time a
+    recipe was scaled.
+    """
+
+    POWDERS_IN_GRAMS = UnitPreferences(
+        {
+            IngredientKind.POWDER: Unit.GRAM,
+            IngredientKind.LIQUID: Unit.MILLILITRE,
+            IngredientKind.SOLID: Unit.GRAM,
+        }
+    )
+
+    def test_a_cup_of_flour_becomes_grams(self) -> None:
+        """The founding annoyance: a cup of flour is a mass pretending to be a volume."""
+        rendered = measure.render(
+            q("1", Unit.CUP_US), IngredientKind.POWDER, FLOUR, self.POWDERS_IN_GRAMS
+        )
+        assert rendered == q("125", Unit.GRAM)
+
+    def test_a_cup_of_water_becomes_millilitres(self) -> None:
+        rendered = measure.render(
+            q("1", Unit.CUP_US), IngredientKind.LIQUID, WATER, self.POWDERS_IN_GRAMS
+        )
+        assert rendered == q("237", Unit.MILLILITRE)
+
+    def test_a_count_is_left_alone(self) -> None:
+        """Three eggs are three eggs, whatever anybody prefers."""
+        rendered = measure.render(
+            q("3", Unit.PIECE), IngredientKind.COUNTABLE, None, self.POWDERS_IN_GRAMS
+        )
+        assert rendered == q("3", Unit.PIECE)
+
+    def test_without_a_density_the_original_unit_stands(self) -> None:
+        """Rendering must not fail a page. An unconvertible quantity is shown as written."""
+        rendered = measure.render(
+            q("1", Unit.CUP_US), IngredientKind.POWDER, None, self.POWDERS_IN_GRAMS
+        )
+        assert rendered.unit is Unit.CUP_US
+
+    def test_a_kind_with_no_preference_keeps_its_unit(self) -> None:
+        rendered = measure.render(
+            q("2", Unit.TABLESPOON_METRIC), IngredientKind.COUNTABLE, None, UnitPreferences({})
+        )
+        assert rendered.unit is Unit.TABLESPOON_METRIC
+
+    def test_a_decilitre_preference_is_honoured(self) -> None:
+        """Swiss recipes are written in decilitres, and a cook who asks for them means it."""
+        rendered = measure.render(
+            q("500", Unit.MILLILITRE),
+            IngredientKind.LIQUID,
+            WATER,
+            UnitPreferences({IngredientKind.LIQUID: Unit.DECILITRE}),
+        )
+        assert rendered == q("5", Unit.DECILITRE)
+
+
+class TestHumanising:
+    """Nobody writes 1500 g on a shopping list."""
+
+    @pytest.mark.parametrize(
+        ("magnitude", "unit", "expected_magnitude", "expected_unit"),
+        [
+            ("1500", Unit.GRAM, "1.5", Unit.KILOGRAM),
+            ("2000", Unit.MILLILITRE, "2", Unit.LITRE),
+            ("0.5", Unit.GRAM, "500", Unit.MILLIGRAM),
+            ("999", Unit.GRAM, "999", Unit.GRAM),
+            ("32", Unit.OUNCE, "2", Unit.POUND),
+        ],
+    )
+    def test_magnitudes_move_to_a_readable_unit(
+        self, magnitude: str, unit: Unit, expected_magnitude: str, expected_unit: Unit
+    ) -> None:
+        humanised = measure.humanise(q(magnitude, unit))
+        assert humanised.unit is expected_unit
+        assert humanised.magnitude == Decimal(expected_magnitude)
+
+    def test_units_a_cook_chose_deliberately_are_left_alone(self) -> None:
+        """Decilitres, cups and spoons are choices, not accidents of magnitude."""
+        for unit in (Unit.DECILITRE, Unit.CUP_US, Unit.TABLESPOON_METRIC):
+            assert measure.humanise(q("2000", unit)).unit is unit
+
+    def test_zero_is_left_alone(self) -> None:
+        assert measure.humanise(q("0", Unit.GRAM)) == q("0", Unit.GRAM)
+
+
+class TestRounding:
+    """Precision a cook can act on: nobody weighs 125.39 grams."""
+
+    @pytest.mark.parametrize(
+        ("magnitude", "expected"),
+        [
+            ("125.39", "125"),
+            ("1234.56", "1235"),
+            ("12.345", "12.3"),
+            ("2.345", "2.35"),
+            ("0.257", "0.26"),
+            ("225", "225"),
+        ],
+    )
+    def test_precision_falls_as_the_number_grows(self, magnitude: str, expected: str) -> None:
+        assert measure.round_for_display(q(magnitude, Unit.GRAM)).magnitude == Decimal(expected)
+
+    @pytest.mark.parametrize(
+        ("magnitude", "expected"),
+        [("2000", "2000 g"), ("1500", "1500 g"), ("1234.56", "1235 g"), ("12.30", "12.3 g")],
+    )
+    def test_a_rounded_quantity_reads_as_a_number(self, magnitude: str, expected: str) -> None:
+        """Trailing zeros must not turn into an exponent. `2E+3 g` is not a quantity."""
+        assert str(measure.round_for_display(q(magnitude, Unit.GRAM))) == expected
+
+    def test_a_humanised_quantity_reads_as_a_number(self) -> None:
+        assert str(measure.humanise(q("1500", Unit.GRAM))) == "1.5 kg"
+
+    def test_rounding_never_reaches_zero_for_a_real_amount(self) -> None:
+        """A pinch rounded to nothing would silently drop an ingredient."""
+        rounded = measure.round_for_display(q("0.004", Unit.GRAM))
+        assert rounded.magnitude > 0

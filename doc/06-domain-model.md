@@ -184,8 +184,18 @@ weigh something, but not something the engine can know.
 ### Unit preference
 
 A per-cook mapping from **ingredient kind** to preferred unit — powders in grams, liquids in
-millilitres, and so on — not a global unit system. This is what UC-2.2 requires, and it is why
-`MeasureEngine` takes preferences as an argument rather than reading a single system-wide setting.
+millilitres, and so on — not a global unit system. "Metric" is not a fine enough answer to be useful
+in a kitchen, where the same cook may want powders in grams and liquids in decilitres. This is why
+`MeasureEngine` takes preferences as an argument rather than reading a system-wide setting.
+
+Every kind has a **default**, merged underneath whatever the cook has chosen. An empty preference set
+would show a scraped American recipe in cups to a Swiss cook forever, and callers should never have
+to reason about a partially configured cook.
+
+Rendering is a *display* operation: it converts to the preferred unit, moves to a readable one — 1500
+g reads as 1.5 kg — and rounds to a precision a cook can act on. The **stored** quantity stays exact,
+because rounding on the way in would compound every time the recipe was scaled. A quantity that
+cannot be converted, for want of a density, is shown as written rather than failing the page.
 
 ### Nutrient profile and confidence
 

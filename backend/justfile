@@ -37,7 +37,9 @@ migrate:
 # Upgrades first: autogenerate compares the models against a database at head, and fails
 # with an unhelpful message otherwise. Formats after: generated migrations exceed the
 # line length, and every one of them would fail the linter unattended.
-makemigration message:
+# Variadic, because the root justfile delegates through `*cmd` and loses quoting — so
+# `just backend makemigration unit preferences` has to work without them.
+makemigration *message:
     uv run alembic upgrade head
     uv run alembic revision --autogenerate -m "{{message}}"
     uv run ruff format alembic/versions
