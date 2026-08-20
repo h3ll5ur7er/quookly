@@ -498,6 +498,17 @@ produces a user-owned variant.
 be improved without risking user data. Reusing the existing variant relationship for edits avoids
 inventing a copy-on-write concept.
 
+**Built.** The seed file *is* an exchange document
+([ADR-012](#adr-012-export-format-is-the-import-format)), so the format that carries a cook's recipes
+out is the one that brings the starter set in — one format to maintain, already tested by every round
+trip, and a self-hoster can supply their own.
+
+Stocking the registry runs at start-up and is idempotent, and it never touches an entry that already
+exists: a cook's own density is their business, and an upgrade refreshing the seed set must not
+overwrite their work. Starter recipes are given to the first cook rather than owned by the instance,
+so they are theirs to change — which is the point of a starter recipe, and avoids inventing a system
+account nothing else needs.
+
 **Cost.** The seed set must be maintained and translated per locale, and its licensing must be clean
 — the same licensing discipline applied in
 [ADR-007](#adr-007-nutrition-data-usda-fooddata-central-as-the-base) applies to any recipe content

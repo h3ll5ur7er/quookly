@@ -186,6 +186,26 @@ class TestRendering:
         assert isinstance(created.json()["lines"][0]["quantity"]["magnitude"], str)
 
 
+class TestDisplayStrings:
+    async def test_a_listed_yield_reads_as_a_number(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """Stored precision is not display precision. "12.0000 pieces" is not a yield."""
+        headers = await sign_up(client, "chef@example.com")
+        await client.post("/api/v1/recipes", json=pancakes(pantry), headers=headers)
+
+        listed = await client.get("/api/v1/recipes", headers=headers)
+        assert listed.json()[0]["yield_quantity"]["display"] == "12"
+
+    async def test_the_precise_magnitude_is_still_available(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """Display is tidied; the value a client might compute with is not."""
+        headers = await sign_up(client, "chef@example.com")
+        created = await client.post("/api/v1/recipes", json=pancakes(pantry), headers=headers)
+        assert created.json()["lines"][1]["quantity"]["magnitude"]
+
+
 class TestScaling:
     async def test_halving_the_yield_halves_the_ingredients(
         self, client: AsyncClient, pantry: dict[str, int]

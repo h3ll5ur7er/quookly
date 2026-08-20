@@ -41,8 +41,16 @@ def _unit(symbol: str) -> Unit:
 
 
 def _view(quantity: Quantity) -> QuantityView:
+    """A quantity as a client reads it.
+
+    `magnitude` keeps the stored precision, for a client that computes with it.
+    `display` is tidied here rather than at each call site: stored precision is not
+    display precision, and a yield of "12.0000" is not a yield.
+    """
     return QuantityView(
-        magnitude=str(quantity.magnitude), unit=quantity.unit.symbol, display=str(quantity)
+        magnitude=str(quantity.magnitude),
+        unit=quantity.unit.symbol,
+        display=str(measure.round_for_display(quantity)),
     )
 
 
@@ -132,7 +140,7 @@ async def _present(
         id=recipe.id,
         title=recipe.title,
         summary=recipe.summary,
-        yield_quantity=_view(measure.round_for_display(scaled_yield)),
+        yield_quantity=_view(scaled_yield),
         visibility=recipe.visibility,
         provenance=recipe.provenance,
         lines=lines,

@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
 
+from pydantic import BaseModel, ConfigDict
+
 
 class Origin(Enum):
     """Where a record came from.
@@ -44,3 +46,14 @@ class Ingredient:
     name: str
     density: Decimal | None
     origin: Origin
+
+
+class IngredientView(BaseModel):
+    """A registry entry as a client reads it."""
+
+    model_config = ConfigDict(frozen=True)
+
+    id: int
+    slug: str
+    name: str
+    kind: IngredientKind

@@ -4,8 +4,9 @@ import { expect, test } from '@playwright/test';
 /**
  * The recipe screens, on a phone, against a real instance.
  *
- * A recipe is seeded through the import endpoint: it is the only way to get ingredients
- * into a fresh registry today, and it exercises the interchange format at the same time.
+ * The instance already has starter recipes — claiming it installs them. This adds one
+ * more through the import endpoint, written in US cups, so the conversion the product
+ * exists for is visible on screen rather than only in a unit test.
  */
 
 const COOK = {
@@ -26,7 +27,7 @@ const DOCUMENT = {
   ],
   recipes: [
     {
-      title: 'Buttermilk Pancakes',
+      title: 'American Pancakes',
       summary: 'Batter, pan, patience.',
       yield_magnitude: '12',
       yield_unit: 'piece',
@@ -83,7 +84,7 @@ test.beforeEach(async ({ page }) => {
 test.describe('the recipe list', () => {
   test('shows what the cook has', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Recipes' })).toBeVisible();
-    await expect(page.getByText('Buttermilk Pancakes')).toBeVisible();
+    await expect(page.getByText('American Pancakes')).toBeVisible();
   });
 
   test('has no accessibility violations', async ({ page }) => {
@@ -98,8 +99,8 @@ test.describe('the recipe list', () => {
 
 test.describe('a recipe', () => {
   test.beforeEach(async ({ page }) => {
-    await page.getByText('Buttermilk Pancakes').click();
-    await expect(page.getByRole('heading', { name: 'Buttermilk Pancakes' })).toBeVisible();
+    await page.getByText('American Pancakes').click();
+    await expect(page.getByRole('heading', { name: 'American Pancakes' })).toBeVisible();
   });
 
   test('shows a cup of flour in grams', async ({ page }) => {

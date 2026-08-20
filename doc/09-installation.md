@@ -54,10 +54,18 @@ On a fresh instance with no users, Quookly opens a one-time bootstrap path to cr
 (UC-10.1). It closes permanently as soon as any user exists (FR-16) — there is no way to reopen it
 short of emptying the user table.
 
-**Planned:** the same bootstrap will be available from the CLI for headless installs, and seed
-content — a locale-appropriate ingredient registry and starter recipes — will be loaded on first run
-([ADR-016](07-decisions.md#adr-016-ship-seed-content-marked-and-upgradable)), so a new instance is
-usable rather than empty.
+The instance stocks its ingredient registry at start-up from the shipped seed file, and claiming it
+also installs a couple of starter recipes for the new admin — so the first screen has something on it
+([ADR-016](07-decisions.md#adr-016-ship-seed-content-marked-and-upgradable)). Neither ever overwrites
+an entry that already exists.
+
+To stock the registry by hand — after replacing the seed file with your own, for instance:
+
+```bash
+just backend seed
+```
+
+**Planned:** the same bootstrap from the CLI, for headless installs.
 
 ### Verify
 

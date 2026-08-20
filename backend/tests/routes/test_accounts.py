@@ -135,3 +135,29 @@ class TestSignIn:
         )
         assert unknown.status_code == wrong.status_code == 401
         assert unknown.json() == wrong.json()
+
+
+class TestStartingWithSomething:
+    async def test_the_first_cook_lands_on_a_stocked_kitchen(self, client: AsyncClient) -> None:
+        """UC-10.4: an empty app is indistinguishable from a broken one."""
+        created = await client.post("/api/v1/accounts/bootstrap", json=REGISTRATION)
+        headers = {"Authorization": f"Bearer {created.json()['token']}"}
+
+        recipes = await client.get("/api/v1/recipes", headers=headers)
+        assert len(recipes.json()) > 0
+
+    async def test_the_registry_is_stocked_too(self, client: AsyncClient) -> None:
+        created = await client.post("/api/v1/accounts/bootstrap", json=REGISTRATION)
+        headers = {"Authorization": f"Bearer {created.json()['token']}"}
+
+        found = await client.get("/api/v1/ingredients?search=flour", headers=headers)
+        assert [entry["slug"] for entry in found.json()]
+
+    async def test_a_starter_recipe_is_readable(self, client: AsyncClient) -> None:
+        created = await client.post("/api/v1/accounts/bootstrap", json=REGISTRATION)
+        headers = {"Authorization": f"Bearer {created.json()['token']}"}
+
+        listed = (await client.get("/api/v1/recipes", headers=headers)).json()
+        first = await client.get(f"/api/v1/recipes/{listed[0]['id']}", headers=headers)
+        assert first.status_code == 200
+        assert first.json()["lines"]

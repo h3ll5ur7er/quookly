@@ -28,7 +28,12 @@ marks status explicitly:
 - **Partial** — scaffolded but incomplete
 - **Planned** — designed here, not yet written
 
-**[Phase 0](08-roadmap.md#phase-0--foundations) is complete.** The repository contains the enforced
+**[Phase 0](08-roadmap.md#phase-0--foundations) and [Phase 1](08-roadmap.md#phase-1--the-canonical-recipe)
+are complete.** A fresh instance stocks its ingredient registry, gives its first admin a couple of
+starter recipes, and shows any recipe scaled to a chosen yield in that cook's preferred units — a
+cup of flour reads as 125 g. Recipes export and re-import losslessly.
+
+**[Phase 0](08-roadmap.md#phase-0--foundations) delivered:** The repository contains the enforced
 layer architecture, the Configuration, Security and Diagnostics utilities, SQLite persistence with
 migrations, cook accounts, the bootstrap and sign-in endpoints with generated clients, and an Angular
 shell with authentication, four themes, and three locales. Everything from Phase 1 onward is

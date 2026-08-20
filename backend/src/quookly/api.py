@@ -11,7 +11,13 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.routing import APIRoute
 
 from .access.database import dispose_engine
-from .routes import accounts_router, recipes_router, status_router
+from .managers.seed import stock_registry
+from .routes import (
+    accounts_router,
+    ingredients_router,
+    recipes_router,
+    status_router,
+)
 from .utilities.diagnostics import configure_logging, get_logger, use_request_id
 
 REQUEST_ID_HEADER = "X-Request-ID"
@@ -43,6 +49,7 @@ def endpoint_name_generator(route: APIRoute) -> str:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     configure_logging()
+    await stock_registry()
     yield
     await dispose_engine()
 
@@ -90,6 +97,7 @@ async def correlate_and_log(
 app.include_router(status_router, prefix=API_PREFIX, tags=["status"])
 app.include_router(accounts_router, prefix=API_PREFIX, tags=["accounts"])
 app.include_router(recipes_router, prefix=API_PREFIX, tags=["recipes"])
+app.include_router(ingredients_router, prefix=API_PREFIX, tags=["ingredients"])
 
 
 @app.get("/")

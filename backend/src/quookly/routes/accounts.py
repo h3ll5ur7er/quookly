@@ -18,6 +18,7 @@ from quookly.contracts.errors import (
     InvalidCredentials,
 )
 from quookly.managers import account as account_manager
+from quookly.managers import seed as seed_manager
 
 router = APIRouter()
 
@@ -34,7 +35,7 @@ async def get_bootstrap_state() -> BootstrapState:
 async def bootstrap_admin(registration: Registration) -> Authenticated:
     """Claim a fresh instance by creating its first, admin, account."""
     try:
-        return await account_manager.bootstrap_admin(registration)
+        authenticated = await account_manager.bootstrap_admin(registration)
     except BootstrapClosed:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -45,6 +46,10 @@ async def bootstrap_admin(registration: Registration) -> Authenticated:
             status_code=status.HTTP_409_CONFLICT,
             detail="That email is already registered.",
         ) from None
+
+    # The first cook should land on a kitchen with something in it (UC-10.4).
+    await seed_manager.install_starter_recipes(authenticated.cook.id)
+    return authenticated
 
 
 @router.post("/accounts", response_model=Authenticated, status_code=status.HTTP_201_CREATED)

@@ -159,3 +159,39 @@ async def ids_by_slug(slugs: list[str]) -> dict[str, int]:
             await active.exec(select(IngredientRow).where(col(IngredientRow.slug).in_(slugs)))
         ).all()
     return {row.slug: row.id for row in rows if row.id is not None}
+
+
+async def search(term: str, locale: str, limit: int = 20) -> list[Ingredient]:
+    """Registry entries whose name contains `term`, for choosing one.
+
+    Matches on the normalised name, so a cook typing into a field is not typing a database
+    key. Results are the canonical name for their locale, deduplicated: matching two
+    aliases of one ingredient should offer it once.
+    """
+    wanted = normalise(term)
+    if not wanted:
+        return []
+
+    async with session() as active:
+        matches = (
+            await active.exec(
+                select(IngredientNameRow)
+                .where(
+                    col(IngredientNameRow.normalised).contains(wanted),
+                    col(IngredientNameRow.locale).in_([locale, SOURCE_LOCALE]),
+                )
+                .limit(limit * 4)
+            )
+        ).all()
+
+        found: dict[int, Ingredient] = {}
+        for match in matches:
+            if match.ingredient_id in found:
+                continue
+            row = await active.get(IngredientRow, match.ingredient_id)
+            if row is None or row.id is None:
+                continue
+            display = await name_for(active, row.id, locale, match.name)
+            found[row.id] = _to_contract(row, display)
+
+    return sorted(found.values(), key=lambda entry: entry.name)[:limit]

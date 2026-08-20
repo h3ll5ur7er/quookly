@@ -17,7 +17,10 @@
               @if (recipe.summary) {
                 <span class="recipes__summary">{{ recipe.summary }}</span>
               }
-              <span class="recipes__yield numeric">{{ recipe.yield_quantity.display }}</span>
+              <span class="recipes__yield">
+                <span i18n="@@recipeMakes">Makes</span>
+                <span class="numeric">{{ recipe.yield_quantity.display }}</span>
+              </span>
             </a>
           </li>
         }

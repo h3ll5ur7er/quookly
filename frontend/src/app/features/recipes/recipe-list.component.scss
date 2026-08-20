@@ -36,6 +36,8 @@
 }
 
 .recipes__yield {
+  display: flex;
+  gap: 0.35em;
   color: var(--on-surface-subtle);
   font-size: var(--text-sm);
 }

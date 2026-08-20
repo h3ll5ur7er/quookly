@@ -370,6 +370,57 @@
         }
       }
     },
+    "/api/v1/ingredients": {
+      "get": {
+        "tags": [
+          "ingredients"
+        ],
+        "summary": "Search Ingredients",
+        "description": "Find registry entries to point a recipe line at.",
+        "operationId": "searchIngredients",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "description": "Part of an ingredient name.",
+              "title": "Search"
+            },
+            "description": "Part of an ingredient name."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IngredientView"
+                  },
+                  "title": "Response Searchingredients"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Read Root",
@@ -779,6 +830,34 @@
         ],
         "title": "IngredientLineInput",
         "description": "One line of a recipe being authored."
+      },
+      "IngredientView": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/IngredientKind"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "kind"
+        ],
+        "title": "IngredientView",
+        "description": "A registry entry as a client reads it."
       },
       "PresentedLine": {
         "properties": {

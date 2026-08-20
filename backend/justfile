@@ -32,6 +32,11 @@ architecture:
 migrate:
     uv run alembic upgrade head
 
+# Stock the ingredient registry from the shipped seed file. Runs at start-up too; this is
+# for an operator who wants it done now, or after replacing the seed file.
+seed:
+    uv run python -c "import asyncio; from quookly.managers.seed import stock_registry; print(f'{asyncio.run(stock_registry())} ingredients added')"
+
 # Generate a migration from the models. Review it before committing.
 #
 # Upgrades first: autogenerate compares the models against a database at head, and fails

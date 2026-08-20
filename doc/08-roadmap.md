@@ -52,19 +52,24 @@ components authored for the desktop is a rewrite, not an adjustment — the same
 
 - ~~Domain model for recipe, ingredient line, step~~ **Built** — technique references arrive with
   the Academy (Phase 7); step-to-line references with cooking mode (Phase 5)
-- ~~Ingredient registry with locale-aware names~~ **Built** — seeding from USDA FoodData Central,
-  with the Swiss and UK overlays, follows with the seed content
+- ~~Ingredient registry with locale-aware names~~ **Built**
   ([ADR-007](07-decisions.md#adr-007-nutrition-data-usda-fooddata-central-as-the-base))
 - ~~`RecipeAccess`, `IngredientAccess`~~ **Built**; `EaterAccess` arrives with eaters (Phase 2)
 - ~~`MeasureEngine`: conversion, density, yield scaling (V4)~~ **Built**
 - ~~Unit preferences per ingredient kind (UC-6.2)~~ **Built**
 - ~~Hand-authored recipes (UC-1.1); JSON import and export (UC-1.2, FR-11)~~ **Built**
 - ~~Recipe list and detail pages with scaling and unit conversion (UC-2.1, UC-2.2)~~ **Built**
-- **Seed content**: ingredient registry and starter recipes, marked by origin (UC-10.4, FR-17,
-  [ADR-016](07-decisions.md#adr-016-ship-seed-content-marked-and-upgradable))
+- ~~**Seed content**: ingredient registry and starter recipes, marked by origin (UC-10.4, FR-17,
+  [ADR-016](07-decisions.md#adr-016-ship-seed-content-marked-and-upgradable))~~ **Built**
+
+Nutrition — and with it the USDA FoodData Central seeding of
+[ADR-007](07-decisions.md#adr-007-nutrition-data-usda-fooddata-central-as-the-base) — arrives in
+Phase 6 with `NutritionEngine`. The Phase 1 registry carries names, kinds and densities: the working
+approximations needed to turn a scraped cup into a weight, authored for this project rather than
+taken from a dataset.
 
 **Done when:** a recipe can be authored, viewed at any yield in the cook's preferred units, exported,
-and re-imported without loss — and a fresh instance already has recipes to look at.
+and re-imported without loss — and a fresh instance already has recipes to look at. **Met.**
 
 Seed content lands here rather than in Phase 9 because it is what makes every later phase testable.
 Planning, ranking, and cooking mode all need a recipe corpus, and hand-entering one before each test
