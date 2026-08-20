@@ -201,6 +201,11 @@ of the same age eat different amounts, and folding the two into one field would 
 misjudging portions or misjudging safety. `SuitabilityEngine` reads the age band; `MeasureEngine`
 reads the multiplier.
 
+Stored to two decimal places, and rounded there on the way in rather than by the column. The
+difference between 1.33 and 1.333 of a serving is not something anybody can plate, and rounding in
+the open means the value read back is the value that was written instead of the two disagreeing
+until somebody reloads the page.
+
 ### Units that quietly disagree
 
 A US cup is 236.6 ml; a metric cup is 250 ml. A US tablespoon is 14.8 ml; a metric one is 15 ml. US

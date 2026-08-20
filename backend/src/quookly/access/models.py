@@ -10,6 +10,7 @@ from decimal import Decimal
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
+from quookly.contracts.eater import AgeBand, Severity
 from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.contracts.measure import Unit
 from quookly.contracts.recipe import Provenance, Visibility
@@ -137,3 +138,39 @@ class IngredientAllergenRow(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     ingredient_id: int = Field(foreign_key="ingredient.id", index=True)
     allergen: Allergen
+
+
+class EaterRow(SQLModel, table=True):
+    """One of the people a cook cooks for.
+
+    Hangs off a cook rather than off an account: most people cooked for never sign in, and
+    requiring a login to record a guest's allergy would make the feature useless (ADR-005).
+    """
+
+    __tablename__ = "eater"
+
+    id: int | None = Field(default=None, primary_key=True)
+    cook_id: int = Field(foreign_key="cook.id", index=True)
+    name: str
+    age_band: AgeBand
+    # A multiplier against a standard portion. Decimal, because these are summed and then
+    # applied to every quantity in a recipe (FR-18).
+    appetite: Decimal = Field(default=Decimal("1"), max_digits=4, decimal_places=2)
+    created_at: datetime = Field(default_factory=_now)
+
+
+class EaterConstraintRow(SQLModel, table=True):
+    """One thing an eater avoids, and how seriously.
+
+    `ingredient_slug` is text rather than a foreign key on purpose: somebody avoids
+    coriander whether or not the registry has heard of it, and a constraint that waits on
+    a registry entry is a constraint that is silently not applied.
+    """
+
+    __tablename__ = "eater_constraint"
+
+    id: int | None = Field(default=None, primary_key=True)
+    eater_id: int = Field(foreign_key="eater.id", index=True)
+    allergen: Allergen | None = Field(default=None)
+    ingredient_slug: str | None = Field(default=None)
+    severity: Severity

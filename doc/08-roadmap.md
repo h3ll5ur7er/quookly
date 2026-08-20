@@ -82,7 +82,7 @@ handling into working features is the change this architecture exists to avoid.
 
 **Goal:** the safety-critical path, before anything generates content.
 
-- Eater profiles, dietary constraints with severity, age bands (UC-6.3, UC-6.4)
+- ~~Eater profiles, dietary constraints with severity, age bands (UC-6.3, UC-6.4)~~ **Built**
 - Appetite multipliers, summed to required yield (UC-6.5, FR-18)
 - `OnboardingEngine` and the new-cook setup flow (UC-10.2, UC-10.3, V16)
 - ~~Allergen classification in the ingredient registry~~ **Built**

@@ -40,9 +40,9 @@ def facts(
 def eater(name: str, *constraints: Constraint) -> Eater:
     return Eater(
         id=1,
+        cook_id=1,
         name=name,
         age_band=AgeBand.ADULT,
-        appetite=1.0,
         constraints=list(constraints),
     )
 

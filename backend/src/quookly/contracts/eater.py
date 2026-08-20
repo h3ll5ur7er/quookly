@@ -5,6 +5,7 @@ requiring one to record a guest's shellfish allergy would make the feature usele
 """
 
 from dataclasses import dataclass, field
+from decimal import Decimal
 from enum import Enum
 
 from quookly.contracts.ingredient import Allergen
@@ -67,16 +68,28 @@ class Constraint:
             raise ValueError("a constraint names exactly one of an allergen or an ingredient")
 
 
+#: What one person eats, before anybody is described as eating more or less than it.
+STANDARD_PORTION = Decimal("1")
+
+
 @dataclass(frozen=True, slots=True)
 class Eater:
     """Somebody at the table.
 
     `appetite` multiplies a standard portion. A teenager is 1.4, a small eater 0.6; the
     yield a recipe needs is the sum across everyone attending, not a head count (FR-18).
+
+    A `Decimal` rather than a float, because these are summed and then multiplied through
+    every quantity in a recipe: 0.3 + 1.4 + 0.6 has to be 2.3 and not 2.3000000000000003.
     """
 
     id: int
+    cook_id: int
     name: str
     age_band: AgeBand
-    appetite: float
+    appetite: Decimal = STANDARD_PORTION
     constraints: list[Constraint] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        if self.appetite <= 0:
+            raise ValueError("an appetite multiplier is greater than zero")

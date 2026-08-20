@@ -314,7 +314,7 @@ Each service exposes atomic business verbs. Illustrative, not exhaustive:
 | --- | --- | --- |
 | `RecipeAccess` | Database | `store`, `fetch`, `list_for_cook`, `publish`, `derive_variant` |
 | `IngredientAccess` | Database | `resolve_by_name`, `nutrients_for`, `density_for`, `localised_name` |
-| `EaterAccess` | Database | `fetch_cook`, `list_eaters`, `constraints_for`, `unit_preferences_for` |
+| `EaterAccess` | Database | `add`, `fetch`, `list_for_cook`, `for_ids`, `amend`, `restate_constraints`, `remove` |
 | `PantryAccess` | Database | `receive`, `reserve`, `release`, `consume`, `record_waste`, `expiring_before` |
 | `PlanAccess` | Database | `store_plan`, `fetch_plan`, `assign_slot`, `mark_cooked` |
 | `CommunityAccess` | Database | `follow`, `rate`, `comment`, `award`, `leaderboard` |
@@ -438,6 +438,7 @@ backend/src/quookly/
 │   ├── database.py         # async engine and session (Built)
 │   ├── ingredient.py       # the registry, in domain verbs (Built)
 │   ├── recipe.py           # recipes, whole (Built)
+│   ├── eater.py            # eaters and their constraints (Built)
 │   ├── preferences.py      # a cook's unit preferences (Built)
 │   ├── models.py           # SQLModel tables — never leave this layer (Built)
 │   └── cook.py             # cook accounts, in domain verbs (Built)
