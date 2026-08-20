@@ -67,7 +67,7 @@ describe('SignInComponent', () => {
     await fixture.whenStable();
 
     expect(TestBed.inject(AuthStore).isSignedIn()).toBe(true);
-    expect(navigate).toHaveBeenCalledWith('/dashboard');
+    expect(navigate).toHaveBeenCalledWith('/recipes');
   });
 
   it('reports a refusal without saying why', async () => {

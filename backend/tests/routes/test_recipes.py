@@ -158,7 +158,7 @@ class TestRendering:
     ) -> None:
         headers = await sign_up(client, "chef@example.com")
         created = await client.post("/api/v1/recipes", json=pancakes(pantry), headers=headers)
-        assert created.json()["lines"][2]["quantity"]["display"] == "2 piece"
+        assert created.json()["lines"][2]["quantity"]["display"] == "2"
 
     async def test_quantities_follow_the_cooks_preference(
         self, client: AsyncClient, pantry: dict[str, int]
@@ -196,7 +196,7 @@ class TestScaling:
 
         response = await client.get(f"/api/v1/recipes/{recipe_id}?servings=6", headers=headers)
         body = response.json()
-        assert body["yield_quantity"]["display"] == "6 piece"
+        assert body["yield_quantity"]["display"] == "6"
         assert body["lines"][0]["quantity"]["display"] == "62.7 g"
         assert body["lines"][1]["quantity"]["display"] == "150 ml"
 

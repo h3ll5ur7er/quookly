@@ -64,14 +64,14 @@ describe('BootstrapComponent', () => {
     backend.expectNone('/api/v1/accounts/bootstrap');
   });
 
-  it('creates the administrator and continues to the dashboard', async () => {
+  it('creates the administrator and continues to the recipes', async () => {
     fill('a-sufficiently-long-password');
     submit();
     backend.expectOne('/api/v1/accounts/bootstrap').flush(ADMIN);
     await fixture.whenStable();
 
     expect(TestBed.inject(AuthStore).isAdmin()).toBe(true);
-    expect(navigate).toHaveBeenCalledWith('/dashboard');
+    expect(navigate).toHaveBeenCalledWith('/recipes');
   });
 
   it('explains a claimed instance rather than failing silently', async () => {

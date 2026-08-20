@@ -1,0 +1,85 @@
+@if (missing()) {
+  <main class="recipe">
+    <p class="notice notice--danger" role="alert" i18n="@@recipeMissing">
+      That recipe could not be found.
+    </p>
+  </main>
+} @else if (recipe(); as shown) {
+  <main class="recipe">
+    <header class="recipe__header">
+      <h1>{{ shown.title }}</h1>
+      @if (shown.summary) {
+        <p class="recipe__summary">{{ shown.summary }}</p>
+      }
+    </header>
+
+    <section class="recipe__yield" aria-labelledby="yield-heading">
+      <h2 id="yield-heading" class="recipe__section-title" i18n="@@recipeMakes">Makes</h2>
+      <div class="stepper">
+        <button
+          type="button"
+          class="stepper__button"
+          (click)="step(-1)"
+          i18n-aria-label="@@recipeFewer"
+          aria-label="Fewer"
+        >
+          −
+        </button>
+        <output class="stepper__value numeric">{{ shown.yield_quantity.display }}</output>
+        <button
+          type="button"
+          class="stepper__button"
+          (click)="step(1)"
+          i18n-aria-label="@@recipeMore"
+          aria-label="More"
+        >
+          +
+        </button>
+      </div>
+    </section>
+
+    <section class="recipe__section" aria-labelledby="ingredients-heading">
+      <h2 id="ingredients-heading" i18n="@@recipeIngredients">Ingredients</h2>
+      <ul class="lines">
+        @for (line of shown.lines; track line.ingredient) {
+          <li class="lines__line">
+            <span class="lines__quantity numeric">{{ line.quantity.display }}</span>
+            <span class="lines__name"
+              >{{ line.ingredient
+              }}@if (line.preparation) {<span class="lines__preparation"
+                >, {{ line.preparation }}</span
+              >}@if (line.optional) {
+                <span class="lines__optional" i18n="@@recipeOptional">optional</span>
+              }</span
+            >
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="recipe__section" aria-labelledby="steps-heading">
+      <h2 id="steps-heading" i18n="@@recipeMethod">Method</h2>
+      <ol class="steps">
+        @for (step of shown.steps; track step.position) {
+          <li class="steps__step">
+            <p class="recipe__step-text">{{ step.instruction }}</p>
+            @if (step.duration_seconds || step.temperature_celsius) {
+              <p class="steps__facts">
+                @if (step.duration_seconds) {
+                  <span class="fact numeric">{{ minutes(step.duration_seconds) }}</span>
+                }
+                @if (step.temperature_celsius) {
+                  <span class="fact numeric">{{ step.temperature_celsius }} °C</span>
+                }
+              </p>
+            }
+          </li>
+        }
+      </ol>
+    </section>
+  </main>
+} @else {
+  <main class="recipe">
+    <p i18n="@@recipeLoading">Loading…</p>
+  </main>
+}

@@ -76,4 +76,15 @@ class Quantity:
             raise ValueError(f"a quantity cannot be negative: {self.magnitude} {self.unit}")
 
     def __str__(self) -> str:
+        """How the quantity reads.
+
+        A count of things needs no unit word: "2 egg" is how a cook writes it, where
+        "2 piece egg" is how a database does. Servings keep their word and take a plural,
+        because "Makes 12" alone loses what is being made.
+        """
+        if self.unit is Unit.PIECE:
+            return f"{self.magnitude}"
+        if self.unit is Unit.SERVING:
+            word = "serving" if self.magnitude == 1 else "servings"
+            return f"{self.magnitude} {word}"
         return f"{self.magnitude} {self.unit.symbol}"

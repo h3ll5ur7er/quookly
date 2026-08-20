@@ -156,6 +156,16 @@ stock is neither freely available nor gone. Two plans cannot reserve the same bu
 cancelled plan releases it. Deducting on planning would make the pantry wrong the moment anything
 changed.
 
+### How a quantity reads
+
+A count of things needs no unit word: "2 egg" is how a cook writes it, "2 piece egg" is how a
+database does. Servings keep their word and take a plural, because "Makes 12" alone loses what is
+being made.
+
+**Known limitation.** The rendered `display` string is produced by the backend in English, so unit
+*symbols* (g, ml, dl) travel fine but the words "serving" and "servings" do not yet localise. Fixing
+it means either returning the parts and formatting in the browser, or rendering per request locale.
+
 ### Appetite multiplier
 
 Each Eater carries a multiplier against a standard portion — a teenager at 1.4, a small eater at

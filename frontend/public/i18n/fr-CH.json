@@ -19,6 +19,21 @@
     "signInHeading": "Se connecter à Quookly",
     "signInFailed": "Ces identifiants ne correspondent à aucun compte.",
     "signInSubmitting": "Connexion…",
-    "signInSubmit": "Se connecter"
+    "signInSubmit": "Se connecter",
+    "recipesHeading": "Recettes",
+    "recipesFailed": "Impossible de charger vos recettes. Veuillez réessayer.",
+    "recipesEmpty": "Aucune recette pour l’instant.",
+    "recipesLoading": "Chargement…",
+    "recipeMissing": "Cette recette est introuvable.",
+    "recipeMakes": "Donne",
+    "recipeFewer": "Moins",
+    "recipeMore": "Plus",
+    "recipeIngredients": "Ingrédients",
+    "recipeOptional": "facultatif",
+    "recipeMethod": "Préparation",
+    "recipeLoading": "Chargement…",
+    "durationMinutes": "{$PH} min",
+    "durationHours": "{$PH} h",
+    "durationHoursMinutes": "{$PH} h {$PH_1} min"
   }
 }

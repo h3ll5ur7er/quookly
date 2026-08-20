@@ -36,7 +36,7 @@ export class SignInComponent {
     this.accounts.signIn(this.form.getRawValue()).subscribe({
       next: (authenticated) => {
         this.auth.signIn(authenticated);
-        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/dashboard';
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/recipes';
         void this.router.navigateByUrl(returnUrl);
       },
       error: () => {

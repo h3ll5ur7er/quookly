@@ -1,0 +1,131 @@
+@use '../../../styles/page';
+
+.recipe__summary {
+  color: var(--on-surface-muted);
+}
+
+.recipe__section,
+.recipe__yield {
+  margin-top: var(--space-6);
+}
+
+.recipe__section-title {
+  font-size: var(--text-sm);
+  font-family: var(--font-body);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--on-surface-muted);
+}
+
+/* The yield control: the one thing on this page that is a control, so it looks like one. */
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
+}
+
+.stepper__button {
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--on-surface);
+  font-size: var(--text-lg);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--surface-sunken);
+  }
+}
+
+.stepper__value {
+  min-width: 6rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.lines,
+.steps {
+  margin: var(--space-4) 0 0;
+  padding: 0;
+}
+
+.lines {
+  list-style: none;
+}
+
+.lines__line {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, auto) 1fr;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Quantities align in a column, which is what makes a list scannable rather than read. */
+.lines__quantity {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: end;
+}
+
+.lines__preparation {
+  color: var(--on-surface-muted);
+}
+
+.lines__optional {
+  margin-inline-start: var(--space-2);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  color: var(--on-surface-muted);
+  font-size: var(--text-xs);
+}
+
+.steps {
+  counter-reset: step;
+  list-style: none;
+}
+
+.steps__step {
+  position: relative;
+  padding: 0 0 var(--space-5) var(--space-6);
+  counter-increment: step;
+
+  &::before {
+    content: counter(step);
+    position: absolute;
+    inset-block-start: 0.15em;
+    inset-inline-start: 0;
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--primary);
+  }
+}
+
+.recipe__step-text {
+  margin: 0;
+}
+
+.steps__facts {
+  display: flex;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+}
+
+.fact {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--surface-sunken);
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}

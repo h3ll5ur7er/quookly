@@ -78,14 +78,14 @@ test.describe('an unclaimed instance', () => {
 });
 
 test.describe('claiming the instance', () => {
-  test('creates the administrator and lands on the dashboard', async ({ page }) => {
+  test('creates the administrator and lands on the recipes', async ({ page }) => {
     await page.goto('/bootstrap');
     await page.getByLabel('Your name').fill(ADMIN.name);
     await page.getByLabel('Email').fill(ADMIN.email);
     await page.getByLabel('Password').fill(ADMIN.password);
     await page.getByRole('button', { name: 'Create administrator' }).click();
 
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page).toHaveURL(/\/recipes$/);
   });
 
   test('the instance is now claimed, so the bootstrap form is gone', async ({ page }) => {
@@ -124,16 +124,16 @@ test.describe('a claimed instance', () => {
     await page.getByLabel('Email').fill(ADMIN.email);
     await page.getByLabel('Password').fill(ADMIN.password);
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page).toHaveURL(/\/recipes$/);
   });
 
-  test('keeps a stranger out of the dashboard and remembers where they were going', async ({
+  test('keeps a stranger out of the recipes and remembers where they were going', async ({
     page,
   }) => {
     await page.context().clearCookies();
     await page.evaluate(() => localStorage.clear());
-    await page.goto('/dashboard');
-    await expect(page).toHaveURL(/\/sign-in\?returnUrl=%2Fdashboard$/);
+    await page.goto('/recipes');
+    await expect(page).toHaveURL(/\/sign-in\?returnUrl=%2Frecipes$/);
   });
 
   test('is operable by keyboard alone', async ({ page }) => {

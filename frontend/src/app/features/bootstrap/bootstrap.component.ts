@@ -39,7 +39,7 @@ export class BootstrapComponent {
     this.accounts.bootstrapAdmin(this.form.getRawValue()).subscribe({
       next: (authenticated) => {
         this.auth.signIn(authenticated);
-        void this.router.navigateByUrl('/dashboard');
+        void this.router.navigateByUrl('/recipes');
       },
       error: (response: { status?: number }) => {
         this.submitting.set(false);

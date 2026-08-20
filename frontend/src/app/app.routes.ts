@@ -16,11 +16,17 @@ export const routes: Routes = [
       import('./features/sign-in/sign-in.component').then((m) => m.SignInComponent),
   },
   {
-    path: 'dashboard',
+    path: 'recipes',
     canActivate: [requireSignedIn],
     loadComponent: () =>
-      import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+      import('./features/recipes/recipe-list.component').then((m) => m.RecipeListComponent),
   },
-  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-  { path: '**', redirectTo: 'dashboard' },
+  {
+    path: 'recipes/:id',
+    canActivate: [requireSignedIn],
+    loadComponent: () =>
+      import('./features/recipes/recipe-detail.component').then((m) => m.RecipeDetailComponent),
+  },
+  { path: '', redirectTo: 'recipes', pathMatch: 'full' },
+  { path: '**', redirectTo: 'recipes' },
 ];

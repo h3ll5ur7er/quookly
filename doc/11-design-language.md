@@ -82,6 +82,11 @@ A recipe is a document, so type carries most of the design.
 | Body | Steps, descriptions, everything read at length | `--font-body` |
 | Numeric | Quantities, timers, nutrition — tabular figures so columns align | `--font-numeric` |
 
+The recipe page is where these rules are first tested against real content. Quantities sit in their
+own aligned column so the list is *scanned* rather than read; timings and temperatures are chips
+rather than sentences, because they were captured as fields; and the yield control is the only thing
+on the page shaped like a control, because it is the only thing that is one.
+
 **Tabular figures for every quantity.** Ingredient amounts and timers that jitter as digits change
 look broken, and a column of quantities that does not align is harder to scan.
 

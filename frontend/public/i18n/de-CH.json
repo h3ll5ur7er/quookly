@@ -19,6 +19,21 @@
     "signInHeading": "Bei Quookly anmelden",
     "signInFailed": "Diese Angaben passen zu keinem Konto.",
     "signInSubmitting": "Wird angemeldet …",
-    "signInSubmit": "Anmelden"
+    "signInSubmit": "Anmelden",
+    "recipesHeading": "Rezepte",
+    "recipesFailed": "Ihre Rezepte konnten nicht geladen werden. Bitte versuchen Sie es erneut.",
+    "recipesEmpty": "Noch keine Rezepte.",
+    "recipesLoading": "Wird geladen …",
+    "recipeMissing": "Dieses Rezept wurde nicht gefunden.",
+    "recipeMakes": "Ergibt",
+    "recipeFewer": "Weniger",
+    "recipeMore": "Mehr",
+    "recipeIngredients": "Zutaten",
+    "recipeOptional": "optional",
+    "recipeMethod": "Zubereitung",
+    "recipeLoading": "Wird geladen …",
+    "durationMinutes": "{$PH} Min.",
+    "durationHours": "{$PH} Std.",
+    "durationHoursMinutes": "{$PH} Std. {$PH_1} Min."
   }
 }
