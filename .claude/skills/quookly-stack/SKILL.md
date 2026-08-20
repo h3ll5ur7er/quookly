@@ -53,9 +53,69 @@ Start the app with `just backend run` — uvicorn with `reload=True` on `0.0.0.0
 
 **Bootstrap a fresh clone with `just install && just openapi`** — both generated clients are gitignored, so without codegen the frontend won't compile and the cli can't reach the API.
 
+## Design documentation
+
+`doc/` holds the design of the product, and it is the authority on *what to build and where it
+goes*. Read before adding domain code:
+
+| Document | Read it when |
+| --- | --- |
+| `doc/03-volatility-analysis.md` | Placing any new feature — it defines the 16 volatilities and the procedure for placing work |
+| `doc/04-architecture.md` | Adding a service — service catalog, layers, call rules, code layout |
+| `doc/05-use-case-flows.md` | Implementing a use case — sequence diagrams per flow |
+| `doc/06-domain-model.md` | Touching the data model |
+| `doc/07-decisions.md` | Before revisiting a settled decision, or when one is marked Open |
+| `doc/08-roadmap.md` | Deciding what comes next |
+
+Rules from those documents that are easy to violate and expensive to unwind:
+
+1. **Suitability and allergen conclusions are computed from structured ingredients, never taken
+   from model-generated text.** `SuitabilityEngine` is a pure function with no I/O and no model
+   access. This is safety-critical — see `doc/07-decisions.md` ADR-006.
+2. **Managers never call managers.** Cross-manager reactions go through the event bus.
+3. **Rule engines are pure.** No I/O; reference data arrives as arguments. An engine that grows a
+   resource-access call has stopped being a rule engine.
+4. **The phone is the design target.** Author layouts at the narrow viewport and widen. Never the
+   reverse.
+
+## How to work: test-first, gate per unit
+
+This project treats quality, architecture, and documentation as part of every unit of work, not a
+phase at the end (ADR-017). Follow this loop:
+
+1. **Read the spec** — the use case in `doc/02-requirements.md`, the flow in
+   `doc/05-use-case-flows.md`, the volatility in `doc/03-volatility-analysis.md`.
+2. **Write the failing test first.** Run it; confirm it fails for the right reason.
+3. **Implement** until green — the simplest thing that passes.
+4. **Refactor** with the test green.
+5. **Run the gate** before moving on:
+
+```bash
+just check
+```
+
+Then verify, every time:
+
+- lint and typecheck green, with no suppressions added
+- the whole test suite passes, not only the tests you touched
+- the code has been re-read and refactored — duplication, unclear names, functions doing two things
+- it sits in the layer the architecture says it does, with no Manager→Manager call and no rule engine
+  doing I/O
+- **the documentation is updated in the same commit** if this changed a decision, volatility, flow,
+  or requirement
+
+Documentation drift is a defect, exactly like a failing test. Do not batch the gate to the end of a
+task — a layer violation caught immediately is a one-line fix; caught later it is a refactor.
+
+Rule engines are pure functions, which makes their tests a table of inputs and expected outputs with
+no fixtures, database, or mocks. Use that; it is why the decomposition is shaped this way.
+
+If a change is awkward to place, do **not** force it into the nearest service. Report which it is: a
+new volatility, a misplaced one, or a requirement that is not yet understood.
+
 ## Architecture: iDesign, decomposed by volatility
 
-The codebase is **not** organized by feature. It is decomposed by *volatility* — each service encapsulates one thing that is likely to change and owns it. Requirements are satisfied by the *interaction* of services, not by a subsystem per requirement. When adding a recipe/pantry/meal-plan capability, resist creating a `recipes` vertical slice that spans all layers; ask instead which volatility is new.
+The codebase is **not** organized by feature. It is decomposed by *volatility* — each service encapsulates one thing that is likely to change and owns it. Requirements are satisfied by the *interaction* of services, not by a subsystem per requirement. When adding a recipe/pantry/meal-plan capability, resist creating a `recipes` vertical slice that spans all layers; ask instead which volatility is new. `doc/03-volatility-analysis.md` has the four-question procedure for this, and lists what was deliberately *not* made a service.
 
 Service flavors and their call rules:
 

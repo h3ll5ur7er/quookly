@@ -3,6 +3,95 @@
 A fullstack cooking app: a FastAPI backend, a Typer management CLI and an Angular 21 frontend,
 wired together automatically through OpenAPI codegen.
 
+## General information
+
+Quookly is a cooking app targeted at professionally trained home chefs and those who want to become one. It is designed to be a personal cooking assistant that helps you manage your recipes, plan your meals, and keep track of your ingredients and stock.
+
+- Want to plan your meals for the week? Quookly can help you create a meal plan and generate a shopping list based on your recipes and stock.
+- No idea what to cook? Quookly can generate recipes for you based on your available ingredients, dietary preferences, and desired cuisine.
+- Guests with dietary restrictions? Quookly can help you plan meals that accommodate everyone's needs.
+- Want to eat healthier? Quookly can provide nutritional information for your recipes and help you make informed choices about your meals.
+- Want to reduce food waste? Quookly can help you keep track of your stock and suggest recipes based on what you have available, so you can use up ingredients before they go bad.
+- Cooking for adults, elderly, children, or babies? Quookly can help you adjust your recipes to suit different age groups and dietary needs.
+- Annoyed at the text bloat recipes you find online? Quookly can destill the essence of a recipe down to the ingredients, steps, and nutritional information you need to know, without any unnecessary fluff.
+- No idea what a kitchen-chargon word means? Quookly can provide definitions for cooking terms and techniques, so you can learn as you cook. 
+
+## Features
+
+- simple user management with JWT authentication
+- server onboarding: a fresh instance guides the operator through creating the first admin user
+- user onboarding: new accounts are walked through eaters, dietary preferences, units and locale
+- sane defaults: ships with a starter ingredient registry and a set of recipes, so the app is usable
+  and testable from the first run
+- cooking mode: pick a recipe and the eaters, then get a mise-en-place list followed by step-by-step
+  guidance, with per-step timers and one-tap access to the academy entry for any jargon on screen
+- per-eater appetite multiplier, so portions match the person rather than the head count
+- mobile-first: the phone and tablet are the primary targets, installable as a PWA, with the active
+  recipe, running cooking session and shopping list usable offline
+- recipe management with ingredients, steps, tags, variants, images, ratings and comments
+- weekly meal planning with shopping list generation
+- stock management with automatic stock deduction when planning meals
+- private and public recipes
+- ingredient registry with nutritional information
+- unit conversion and automatic unit conversion when adding ingredients to recipes (e.g., cups to grams, tablespoons to grams, etc). each user can define their own preferred units for each kind of ingredient (e.g. powders -> grams, liquids -> milliliters, solids -> grams, etc).
+- recipe import from exported JSON
+- AI-powered recipe generation (from ingredients, tags, recipe name, recipe description, user uploaded image, website URL or a combination of these)
+  - self hosted AI model (ollama, vllm, etc)
+  - byo-api-key for major llm providers (OpenAI/anthropic/open router/etc)
+- recipe search with filters and fulltext search
+- fully localized frontend with i18n support (en_GB, de_CH, fr_CH)
+- learning area with definitions for cooking terms and techniques, as well as tips and tricks for cooking (extensible by the users).
+- social cooking:
+  - users can follow each other and see each other's recipes and shared meal plans
+  - users can comment on each other's recipes and meal plans
+  - users can rate each other's recipes
+  - users can share their meal plans and recipes with each other
+- gamification: users can earn points and badges for completing learning modules and contributing to the learning area (e.g., adding definitions, tips and tricks, etc). The points and badges can be displayed on the user's profile page.
+  - Users can also earn points and badges for completing recipes, meal plans, and stock management tasks. The points and badges can be displayed on the user's profile page.
+  - leaderboards: users can see how they rank against other users in terms of points and badges earned. The leaderboards can be filtered by time period (e.g., weekly, monthly, all-time), by category (e.g., recipes, meal plans, stock management, learning area contributions) and by user-group (favorites, friends, world).
+- Users can assign "regular guests" to their profile, each one with their own dietary preferences and restrictions. When planning meals, the user can select which guests will be attending, and Quookly will automatically filter recipes based on the guests' dietary preferences and restrictions. 
+- Pages:
+  - LoggedOut/public pages
+    - Landing/hero page
+    - Public recipe list page with search and filters
+    - Academy page with learning area
+  - LoggedIn/private pages
+    - Dashboard page with meal plan overview and stock overview
+    - Recipe list page with search and filters
+    - Recipe detail page with ingredients, steps, tags, variants, images, ratings and comments
+    - Meal plan page with shopping list generation
+    - Stock management page with automatic stock deduction when planning meals
+    - Shopping list page with automatic stock deduction when planning meals
+    - Ingredient registry page with nutritional information
+    - Settings page with user management and unit conversion preferences
+    - Cooking mode: mise-en-place, guided steps, timers, inline academy lookup
+    - Onboarding flow for new users
+    - Social page with user profile, points and badges
+    - Academy page with learning area
+      - Gamification dashboard
+      - Learning modules with definitions for cooking terms and techniques, as well as tips and tricks for cooking (extensible by the users).
+
+
+## Documentation
+
+Design documentation lives in [`doc/`](doc/README.md):
+
+| Document | What it answers |
+| --- | --- |
+| [Vision](doc/01-vision.md) | Why this exists, who it is for, what it refuses to be |
+| [Requirements](doc/02-requirements.md) | Actors, use cases, functional and non-functional requirements |
+| [Volatility analysis](doc/03-volatility-analysis.md) | What changes, and why the feature list is not the architecture |
+| [Architecture](doc/04-architecture.md) | Services, layers, call rules, code layout |
+| [Use case flows](doc/05-use-case-flows.md) | How services interact to satisfy the requirements |
+| [Domain model](doc/06-domain-model.md) | The concepts and their relationships |
+| [Decisions](doc/07-decisions.md) | Design decisions and what is still open |
+| [Roadmap](doc/08-roadmap.md) | Delivery order |
+| [Installation](doc/09-installation.md) | Running and self-hosting |
+| [Development](doc/10-development.md) | Working on Quookly, and contributing |
+
+Start with [the volatility analysis](doc/03-volatility-analysis.md) before judging the
+architecture — the code deliberately does not mirror the feature list above.
+
 ## Tools
 
 - management CLI built with Typer
@@ -89,6 +178,17 @@ All tools and entrypoints you might need commonly are encapsulated in justfiles:
 - `just frontend check`: checks frontend code (lint, typecheck, run tests)
 - `just frontend generate-openapi-client`: generate openapi client
 
+### Development practice
+
+Test-driven, with quality gates per unit of work rather than per pull request:
+
+1. read the spec, 2. write the failing test, 3. implement until green, 4. refactor.
+
+Then, before moving on: `just check`, review and refactor, confirm the change sits where the
+architecture says it should, and update the documentation. Details in
+[doc/10-development.md](doc/10-development.md#the-development-loop); rationale in
+[ADR-017](doc/07-decisions.md#adr-017-test-driven-development-with-per-unit-quality-gates).
+
 ### The OpenAPI contract
 
 The backend is the single source of truth for the API. Both clients are **generated** — never
@@ -108,6 +208,9 @@ A route's **function name** determines the generated client method name (`get_st
 and must be unique within its tag.
 
 ### Architecture
+
+Full detail in [doc/04-architecture.md](doc/04-architecture.md); the analysis behind it is in
+[doc/03-volatility-analysis.md](doc/03-volatility-analysis.md).
 
 The architecture strictly follows the iDesign Method. The code is not broken down by features, but volatilities. Requirements are not represented by subsystems, but by the interaction of services. Each service encapsulates a single volatility and is responsible for it. There are the following "flavors" of services:
 
