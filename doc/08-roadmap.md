@@ -13,8 +13,10 @@ most likely to be built well by accident and least likely to matter if they are 
 
 **Goal:** the architecture is real and enforced before any domain code depends on it.
 
-- Package layout: `routes/`, `managers/`, `engines/`, `access/`, `utilities/`, `contracts/`
-- `import-linter` contracts wired into `just backend check` ([ADR-008](07-decisions.md#adr-008-enforce-the-call-rules-with-import-linter))
+- ~~Package layout: `routes/`, `managers/`, `engines/`, `access/`, `utilities/`, `contracts/`~~ **Built**
+- ~~`import-linter` contracts wired into `just backend check`~~ **Built**
+  ([ADR-008](07-decisions.md#adr-008-enforce-the-call-rules-with-import-linter)) — per-service
+  contracts follow their services
 - Persistence: SQLite only, SQLModel over async SQLAlchemy, Alembic migrations
   ([ADR-009](07-decisions.md#adr-009-sqlite-only-to-begin-with),
   [ADR-018](07-decisions.md#adr-018-sqlmodel-as-the-orm))

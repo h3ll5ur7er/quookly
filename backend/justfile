@@ -25,9 +25,13 @@ format:
 typecheck:
     uv run mypy .
 
+architecture:
+    uv run lint-imports
+
 check:
     just lint
     just typecheck
+    just architecture
     just test
 
 clean:

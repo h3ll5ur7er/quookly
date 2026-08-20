@@ -27,8 +27,9 @@ marks status explicitly:
 - **Partial** — scaffolded but incomplete
 - **Planned** — designed here, not yet written
 
-As of this writing the repository contains the template scaffold plus a single `/api/v1/status`
-endpoint. Everything else is **Planned**.
+As of this writing the repository contains the template scaffold, a single `/api/v1/status`
+endpoint, and the **layer packages with their call rules enforced by `import-linter`** — the first
+unit of [Phase 0](08-roadmap.md#phase-0--foundations). Everything else is **Planned**.
 
 ## A note on these documents
 

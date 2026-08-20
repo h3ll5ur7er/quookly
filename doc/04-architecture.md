@@ -398,23 +398,28 @@ functional decomposition would have smeared across every feature service.
 
 ## Code layout
 
-**Planned** structure for the backend package:
+The package skeleton is **Built**; the services inside it are **Planned**:
 
 ```
 backend/src/quookly/
 ├── api.py                  # app construction (Built)
 ├── routes/                 # Client services — thin, no business logic (Partial)
-│   ├── recipes.py
-│   ├── plans.py
-│   ├── pantry.py
-│   ├── community.py
-│   └── status.py           # (Built)
-├── managers/
-├── engines/
-├── access/
-├── utilities/
-└── contracts/              # pydantic models shared across layers
+│   ├── status.py           # (Built)
+│   ├── recipes.py          # (Planned)
+│   ├── plans.py            # (Planned)
+│   ├── pantry.py           # (Planned)
+│   └── community.py        # (Planned)
+├── managers/               # (Built, empty)
+├── engines/                # (Built, empty)
+├── access/                 # (Built, empty)
+├── utilities/              # (Built, empty)
+└── contracts/              # data shapes shared across layers (Built, empty)
 ```
+
+Each layer package carries a docstring stating what it encapsulates and what it may not import. The
+boundaries between them are enforced by `import-linter` in `just backend check`
+([ADR-008](07-decisions.md#adr-008-enforce-the-call-rules-with-import-linter)), and
+`backend/tests/test_architecture.py` verifies the enforcement actually rejects violations.
 
 `contracts/` holds the data shapes passed between layers. It depends on nothing else in the
 package, which is what allows engines to be pure and keeps the layers from importing each other for

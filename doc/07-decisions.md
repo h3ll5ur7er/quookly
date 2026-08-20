@@ -239,44 +239,58 @@ under deadline pressure.
 template already anticipates this — `just backend clean` removes `.import_linter_cache`, though the
 tool was never added.
 
-**Sketch:**
+**Implemented** in `backend/pyproject.toml` as three contracts:
 
 ```toml
 [tool.importlinter]
 root_package = "quookly"
 
 [[tool.importlinter.contracts]]
-name = "iDesign layers"
+name = "Calls flow downward through the layers"
 type = "layers"
-layers = ["quookly.routes", "quookly.managers", "quookly.engines", "quookly.access"]
+containers = ["quookly"]
+layers = ["routes", "managers", "engines", "access"]
+exhaustive = true
+exhaustive_ignores = ["api", "utilities", "contracts"]
 
 [[tool.importlinter.contracts]]
-name = "Managers do not call managers"
-type = "independence"
-modules = [
-  "quookly.managers.recipe",
-  "quookly.managers.planning",
-  "quookly.managers.pantry",
-  "quookly.managers.cooking",
-  "quookly.managers.engagement",
-]
-
-[[tool.importlinter.contracts]]
-name = "Rule engines are pure"
+name = "Utilities do not depend on the layers that use them"
 type = "forbidden"
-source_modules = [
-  "quookly.engines.measure",
-  "quookly.engines.suitability",
-  "quookly.engines.nutrition",
-  "quookly.engines.replenishment",
-  "quookly.engines.scoring",
-  "quookly.engines.execution",
-  "quookly.engines.onboarding",
+source_modules = ["quookly.utilities"]
+forbidden_modules = ["quookly.routes", "quookly.managers", "quookly.engines", "quookly.access"]
+
+[[tool.importlinter.contracts]]
+name = "Contracts depend on nothing else in the package"
+type = "forbidden"
+source_modules = ["quookly.contracts"]
+forbidden_modules = [
+    "quookly.routes", "quookly.managers", "quookly.engines",
+    "quookly.access", "quookly.utilities",
 ]
-forbidden_modules = ["quookly.access"]
 ```
 
-The third contract is the one that matters most: it is ADR-006 expressed as a build failure.
+`exhaustive = true` is the one that keeps the guard honest over time: a new top-level package that
+is not declared as a layer fails the build rather than quietly escaping the rules.
+
+**Contracts covering individual services are added alongside those services.** import-linter treats a
+contract naming a module that does not exist as an *error*, not as a no-op — verified — so manager
+independence and rule-engine purity cannot be declared before those modules are written. They land
+with them:
+
+| Contract | Type | Arrives with |
+| --- | --- | --- |
+| Managers never import one another | `independence` | the first two managers (Phase 4) |
+| Rule engines never import resource access | `forbidden` | `SuitabilityEngine` (Phase 2) |
+
+The rule-engine contract is the one that matters most — it is
+[ADR-006](#adr-006-allergen-determination-is-structural) expressed as a build failure — and it is
+**not yet active**. Until Phase 2 that rule is carried by review and by the layer contract alone.
+
+**Guarding the guard.** `backend/tests/test_architecture.py` asserts both that the codebase conforms
+*and* that each contract rejects a deliberately planted violation. A layering contract that silently
+matches nothing is worse than no contract, because it looks like protection. The tests require the
+linter to report a *broken contract* rather than merely exiting non-zero, so a linter error cannot
+masquerade as a working guard.
 
 **Cost.** One more dev dependency and a contract file to maintain as the package layout evolves.
 The contract must be updated in the same commit as any package-layout change, or it silently stops
