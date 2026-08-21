@@ -287,6 +287,21 @@ is the client's subtraction, computed afresh every second. Storing the remainder
 the moment anything pauses, disconnects, or resumes elsewhere, and a reduction that quietly loses
 four minutes is worse than no timer at all.
 
+### What an ingredient line's number counts
+
+A number at the front of an ingredient line is usually an amount, and sometimes it is not
+([ADR-044](07-decisions.md#adr-044-what-a-number-in-an-ingredient-line-counts)).
+
+*"4 cloves garlic"* counts pieces of garlic. The ingredient is **garlic** — read as a name,
+"cloves garlic" resolves against no registry and is recorded as a new ingredient nobody has
+classified. *"4-inch piece ginger"* counts nothing: it is one piece, four inches long, and
+the recipe does not say what that weighs. The amount stays absent and the length becomes the
+note, because four gingers is nine times the recipe.
+
+A bracketed aside is always a note, never part of the name, and it is taken out before commas
+are looked at — a note in brackets nearly always contains one, and splitting there produced
+an ingredient called *"neutral oil ((such as vegetable"*.
+
 ### A line without a quantity
 
 "Salt, to taste." "Oil, for frying." "A pinch of nutmeg." These are ordinary lines in every

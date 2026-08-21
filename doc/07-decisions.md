@@ -1729,3 +1729,65 @@ it was stating the two rules separately — split by moments, and write plain se
 hoping one implied the other. The live tests exist so the next adjustment is measured rather than
 guessed at.
 
+---
+
+## ADR-044 What a number in an ingredient line counts
+
+**Status:** Accepted
+
+**Context.** A cook imported a recipe and reported what came out. Three lines off one page:
+
+| The page wrote | Quookly read |
+| --- | --- |
+| `2 ounces chicken fat ((taken from the cavity of the chicken))` | an ingredient called *"chicken fat ((taken from the cavity of the chicken))"* |
+| `1 teaspoon neutral oil ((such as vegetable, canola, or avocado oil))` | *"neutral oil ((such as vegetable"*, note *"canola, or avocado oil))"* |
+| `4 cloves garlic` | four of something called *"cloves garlic"* |
+| `4-inch piece ginger` | **four** gingers |
+
+The doubled brackets are the site's own; several large publishers emit them. The note was cut
+in half because the reader looked for a comma before it looked for a bracket, and a
+bracketed note nearly always contains one.
+
+**Decision.** Three rules, all in the reader rather than in a model:
+
+**A bracket is a note.** Taken out before commas are considered. Doubled and mismatched
+pairs are collapsed first — `((… ) )` is what one page publishes, and a reader that insisted
+on balance would put the whole apology in the ingredient's name.
+
+**A counting word is not the ingredient.** "Cloves", "slices", "sprigs", "rashers" and their
+German and French equivalents count *pieces of* something, and the something is the
+ingredient. The word is kept as the line's note.
+
+**A length is not a count.** "4-inch piece ginger" is one piece four inches long. The recipe
+does not say what that weighs, so the amount stays **absent** and the length becomes the
+note.
+
+**Rationale.** The first two are not really about quantities at all — they are about the
+**name**, and a wrong name is the more expensive failure. An unread quantity leaves a visible
+gap a cook fills in a second. *"cloves garlic"* resolves against no registry, so importing
+one recipe records a new ingredient nobody has heard of and nobody has classified for
+allergens ([ADR-029](#adr-029-an-ingredient-the-registry-does-not-know-is-recorded-and-reported),
+[ADR-006](#adr-006-allergen-determination-is-structural)). The recipe looks complete and is
+quietly less safe.
+
+The third is the ordinary rule of this codebase applied to a case that was getting it wrong:
+four pieces of ginger is nine times the recipe, and **a wrong number is worse than a visible
+gap because a cook cannot see that it is wrong.**
+
+**In the reader rather than in a model**, even though a model would also manage it. These are
+deterministic shapes, so they can be a table of cases; they cost no round trip; and they work
+on an instance with no model configured, which is the instance importing from a site that
+publishes its recipes properly. The division stays where
+[ADR-043](#adr-043-a-pages-method-is-edited-on-the-way-in) put it: a model decides what a
+line *says*, a tested reader decides what a number in it *means*.
+
+**Cost.** Three word lists to keep — counting words, elisions, length measures — each of
+which is a place a language Quookly does not yet read will be missing from. They fail the
+safe way: an unrecognised counting word leaves the line as it was, which is where this
+started, rather than producing something worse.
+
+The lists are also a judgement that will be wrong somewhere. "Bar" counts chocolate and
+measures pressure; "head" counts lettuce and is part of a fish. Both readings are recorded in
+the note, so nothing is lost — but the *name* is now the reader's opinion rather than the
+page's words, which is a change worth being honest about.
+

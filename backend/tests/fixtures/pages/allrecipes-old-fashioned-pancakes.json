@@ -1,6 +1,7 @@
 {
  "url": "https://www.allrecipes.com/recipe/21014/good-old-fashioned-pancakes/",
  "title": "Good Old-Fashioned Pancakes",
+ "text": "Perfect pancakes are easier to make than you think. This pancake recipe produces thick, fluffy, and all-around delicious pancakes with just a few ingredients that are probably already in your kitchen (and it's so much better than the boxed stuff).\nPancake Ingredients\nYou likely already have everything you need to make this pancake recipe. If not, here's what to add to your grocery list:\n · Flour: This homemade pancake recipe starts with all-purpose flour.\n· Baking powder: Baking powder, a leavener, is the secret to fluffy pancakes.\n· Sugar: Just a tablespoon of white sugar is all you'll need for subtly sweet pancakes.\n· Salt: A pinch of salt will enhance the overall flavor without making your pancakes taste salty.\n· Milk and butter: Milk and butter add moisture and richness to the pancakes.\n· Egg: A whole egg lends even more moisture. Plus, it helps bind the pancake batter together.\nHow to Store and Reheat Pancakes\nStore leftover pancakes in an airtight container in the fridge for about a week. Refrain from adding toppings (such as syrup) until right before you serve them so the pancakes don't get soggy.\nTo reheat pancakes, you have a few options: warm a batch in a 350 degrees F oven (covered) for 8 to 10 minutes, microwave individual pancakes in 20 to 30 second bursts with a damp paper towel, or reheat them in a skillet over medium-low heat for 30–60 seconds per side until warmed through.\nCan You Save Pancake Batter?\n Don't let leftover pancake batter go to waste! Store the batter in an airtight container in the fridge for up to two days. If you plan to keep it longer than that, it's best to freeze the batter.\nCan You Freeze Pancakes?\nYes, you can freeze pancakes and pancake batter.\n · To freeze cooked pancakes: Allow the pancakes to cool completely, then arrange them in a single layer on a baking sheet (make sure the edges aren't touching). Flash freeze for a few hours or up to overnight. Reheat in an oven set to 350 degrees F until warmed through.\n· To freeze pancake batter: Ladle the pancake batter in serving size portions into freezer bags, then wrap the bags in foil. Freeze flat for up to one month. Thaw in the refrigerator overnight.\nAllrecipes Community Tips and Praise\n\"This recipe is one to hand down to your grandkids,\" raves ashleyalbertine. \"Fluffy and delicious. Haven't bought a box of pancake mix in months! Just add a bit of vanilla and poof! Magic.\"\n\"Perfect,\" according to Laura W. \"Delicious! If you're looking for some thick, hearty pancakes these are the ones to make! Made them exactly as the recipe states and then added mini-chocolate chips to each cake as they were on the frying pan (before flipping).\"\n\"I made this recipe exactly as written...the kids were eating them off the plate faster than I could cook them,\" says aellis1970. \"They are so delicious, they were eaten without syrup.\"\nEditorial contributions by Corey Williams\nIngredients\n- \n1 ½ cups all-purpose flour\n- \n3 ½ teaspoons baking powder\n- \n1 tablespoon white sugar\n- \n¼ teaspoon salt, or more to taste\n- \n1 ¼ cups milk\n- \n3 tablespoons butter, melted\n- \n1 large egg\nDirections\n- \nGather all ingredients.\n- \nSift flour, baking powder, sugar, and salt together in a large bowl. Make a well in the center and add milk, melted butter, and egg; mix until smooth.\n- \nHeat a lightly oiled griddle or pan over medium-high heat. Pour or scoop the batter onto the griddle, using approximately 1/4 cup for each pancake; cook until bubbles form and the edges are dry, about 2 to 3 minutes.\n- \nFlip and cook until browned on the other side. Repeat with remaining batter.\n- \nServe and enjoy!\nFrom the Editor\nThe salt amount has been reduced based on review feedback. The original recipe called for 1 teaspoon.\nNutrition Facts (per serving)\n| 158 | Calories | \n| 6g | Fat | \n| 22g | Carbs | \n| 5g | Protein | \n| Nutrition Facts |  | \n|---|---|\n| Servings Per Recipe 8 |  | \n| Calories 158 |  | \n| % Daily Value * |  | \n| Total Carbohydrate 22g | 8% | \n| Dietary Fiber 1g | 2% | \n| Total Sugars 4g |  | \n| Protein 5g | 9% | \n| Total Fat 6g | 8% | \n| Saturated Fat 3g | 17% | \n| Cholesterol 38mg | 13% | \n| Vitamin C 0mg | 0% | \n| Sodium 504mg | 22% | \n| Calcium 140mg | 11% | \n| Iron 1mg | 8% | \n| Potassium 92mg | 2% | \n* Percent Daily Values are based on a 2,000 calorie diet. Your daily values may be higher or lower depending on your calorie needs.\n** Nutrient information is not available for all ingredients. Amount is based on available nutrient data.\n(-) Information is not currently available for this nutrient. If you are following a medically restrictive diet, please consult your doctor or registered dietitian before preparing this recipe for personal consumption.\n** Nutrient information is not available for all ingredients. Amount is based on available nutrient data.\n(-) Information is not currently available for this nutrient. If you are following a medically restrictive diet, please consult your doctor or registered dietitian before preparing this recipe for personal consumption.",
  "structured": [
   {
    "@context": "http://schema.org",
@@ -60,7 +61,7 @@
    "aggregateRating": {
     "@type": "AggregateRating",
     "ratingValue": "4.6",
-    "ratingCount": "20215"
+    "ratingCount": "20216"
    },
    "cookTime": "PT15M",
    "keywords": "publisher-tested",
@@ -294,6 +295,19 @@
      "@type": "Review",
      "reviewRating": {
       "@type": "Rating",
+      "ratingValue": "5"
+     },
+     "author": {
+      "@type": "Person",
+      "name": "Mohamed"
+     },
+     "reviewBody": "Great",
+     "datePublished": "2026-08-21T02:19:41.459Z"
+    },
+    {
+     "@type": "Review",
+     "reviewRating": {
+      "@type": "Rating",
       "ratingValue": "3"
      },
      "author": {
@@ -393,19 +407,6 @@
      },
      "reviewBody": "Easy to double I added vanilla bean paste and a little bit more sugar",
      "datePublished": "2026-08-04T12:57:26.614Z"
-    },
-    {
-     "@type": "Review",
-     "reviewRating": {
-      "@type": "Rating",
-      "ratingValue": "2"
-     },
-     "author": {
-      "@type": "Person",
-      "name": "Anthony"
-     },
-     "reviewBody": "Completely baffled by the fact that there is no vanilla in this recipe. Add 3 to 3.5 tablespoons and 1.5 more tsps of baking powder (for fluff) and it’s perfect!",
-     "datePublished": "2026-08-03T21:10:14.874Z"
     }
    ],
    "mainEntityOfPage": {

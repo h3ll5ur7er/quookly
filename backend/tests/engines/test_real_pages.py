@@ -4,7 +4,7 @@ The fixture corpus the roadmap names as the mitigation for interpretation risk: 
 pages, fetched once and kept, so a change to the reader is measured against what sites
 actually publish rather than against what is convenient to invent.
 
-These are the *metadata* blocks exactly as four publishers served them, with the page HTML
+These are the *metadata* blocks exactly as the publishers served them, with the page HTML
 discarded — the blocks are the part being read, and keeping four megabytes of markup to
 test a parser would be keeping the wrong thing.
 
@@ -42,6 +42,10 @@ ALL_PAGES = [
     "bbcgoodfood-chocolate-brownies",
     "allrecipes-old-fashioned-pancakes",
     "jamieoliver-easy-pancakes",
+    # Added after a cook reported what it did to their recipe. Its notes come in doubled
+    # brackets, its garlic in cloves and its ginger by the inch — three shapes the reader
+    # had no answer for, on one page.
+    "woksoflife-hainanese-chicken-rice",
 ]
 
 
@@ -74,12 +78,16 @@ class TestEveryCapturedPage:
     @pytest.mark.parametrize("name", ALL_PAGES)
     def test_most_lines_are_read_rather_than_given_up_on(self, name: str) -> None:
         """A reader that quietly gives up on half a page is worse than a broken one,
-        because the recipe still looks complete."""
+        because the recipe still looks complete.
+
+        A proportion rather than "all but one". A long ingredient list has more lines that
+        genuinely carry no number — ice, stock from the pot, salt to taste, a piece of
+        ginger measured by the inch — and a fixed allowance made a page fail for being
+        long rather than for being read badly.
+        """
         recipe = read(name)
-        measured = [line for line in recipe.lines if line.magnitude is not None]
-        assert len(measured) >= len(recipe.lines) - 1, [
-            line.written for line in recipe.lines if line.magnitude is None
-        ]
+        unread = [line.written for line in recipe.lines if line.magnitude is None]
+        assert len(unread) <= len(recipe.lines) // 4, unread
 
 
 class TestWhatEachPageSays:
@@ -126,3 +134,57 @@ class TestWhatEachPageSays:
         assert recipe.yield_unit is Unit.PIECE
         assert len(recipe.lines) == 8
         assert all(line.magnitude is not None for line in recipe.lines)
+
+
+class TestTheShapesThisPageBrought:
+    """One page, three failures, all of them about the ingredient's *name*.
+
+    An unread quantity is a visible gap a cook can fill. A wrong name is not: "cloves
+    garlic" resolves against no registry, so it is recorded as a new ingredient nobody has
+    heard of and nobody has classified for allergens (ADR-029, ADR-006).
+    """
+
+    def named(self, name: str) -> dict[str, str | None]:
+        return {line.ingredient: line.preparation for line in read(name).lines}
+
+    def test_a_bracketed_note_does_not_end_up_in_the_name(self) -> None:
+        lines = self.named("woksoflife-hainanese-chicken-rice")
+        assert "chicken fat" in lines
+        assert lines["chicken fat"] == "taken from the cavity of the chicken"
+
+    def test_a_comma_inside_a_note_does_not_cut_the_name_in_half(self) -> None:
+        lines = self.named("woksoflife-hainanese-chicken-rice")
+        assert "neutral oil" in lines
+        assert not any("such as vegetable" in name for name in lines)
+
+    def test_garlic_is_garlic_rather_than_cloves_garlic(self) -> None:
+        lines = self.named("woksoflife-hainanese-chicken-rice")
+        assert "garlic" in lines
+        assert not any("cloves garlic" in name for name in lines)
+
+    def test_a_four_inch_piece_of_ginger_is_not_four_gingers(self) -> None:
+        ginger = [
+            line
+            for line in read("woksoflife-hainanese-chicken-rice").lines
+            if line.ingredient == "ginger" and line.magnitude is None
+        ]
+        assert ginger
+        assert any("4-inch" in (line.preparation or "") for line in ginger)
+
+    def test_only_the_lines_that_carry_no_number_are_unmeasured(self) -> None:
+        """Named rather than counted, so a regression says which line stopped being read."""
+        unmeasured = {
+            line.ingredient
+            for line in read("woksoflife-hainanese-chicken-rice").lines
+            if line.magnitude is None
+        }
+        assert unmeasured == {"Ice", "Chicken stock", "ginger", "salt"}
+
+    def test_every_name_is_something_a_registry_could_know(self) -> None:
+        """The test that would have caught all three at once: no brackets, no commas, and
+        short enough to be an ingredient rather than a sentence."""
+        for line in read("woksoflife-hainanese-chicken-rice").lines:
+            assert "(" not in line.ingredient, line.ingredient
+            assert ")" not in line.ingredient, line.ingredient
+            assert "," not in line.ingredient, line.ingredient
+            assert len(line.ingredient.split()) <= 4, line.ingredient

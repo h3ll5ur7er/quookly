@@ -132,6 +132,12 @@ _VAGUE = ("knob", "pinch", "handful", "splash", "dash", "drizzle", "sprinkle", "
 
 # "a good pinch of salt", "a generous knob of butter" — the adjective is part of the
 # hand-waving, not part of the ingredient.
+#: The little word between a measure and what it measures, in each language Quookly reads.
+#: The apostrophe is written both ways on purpose: a French page types "gousses d’ail" with
+#: a typographic apostrophe, and a pattern that only knows the straight one leaves the
+#: elision stuck to the ingredient — "d’ail" resolves against no registry, "ail" does.
+_ELIDED = r"(?:of|de|d['’]|du|des|von)"
+
 _VAGUE_PATTERN = re.compile(
     rf"^(?P<amount>(?:a|an)\s+(?:\w+\s+)?(?:{'|'.join(_VAGUE)}))\s+of\s+(?P<name>.+)$",
     re.IGNORECASE,
@@ -143,6 +149,12 @@ _VAGUE_PATTERN = re.compile(
 _PURPOSE = re.compile(
     r"^(?P<name>.+?)[,;]?\s+(?P<purpose>(?:for|to)\s+\w+(?:\s+\w+)?)$", re.IGNORECASE
 )
+
+# Where an ingredient came from, which is the same kind of note read from the other end.
+# "Broth from boiling the chicken" is broth; "juice from one lemon" is juice. Unlike a
+# purpose this needs no word list — "from" is doing all the work, and what follows it is
+# always provenance rather than part of the name.
+_PROVENANCE = re.compile(r"^(?P<name>.+?)[,;]?\s+(?P<from>from\s+\S.*)$", re.IGNORECASE)
 _PURPOSE_WORDS = (
     "frying",
     "greasing",
@@ -172,7 +184,7 @@ _AMOUNT = re.compile(
 
 _UNIT_PATTERN = re.compile(
     rf"^(?P<unit>{'|'.join(sorted((re.escape(name) for name in _UNITS), key=len, reverse=True))})"
-    r"(?:s|es)?\b\.?\s*(?:of|de|d'|du|des)\s+(?P<rest>.*)$|"
+    rf"(?:s|es)?\b\.?\s*{_ELIDED}\s+(?P<rest>.*)$|"
     rf"^(?P<unit2>{'|'.join(sorted((re.escape(name) for name in _UNITS), key=len, reverse=True))})"
     r"(?:s|es)?\b\.?\s*(?P<rest2>.*)$",
     re.IGNORECASE,
@@ -183,7 +195,99 @@ _VAGUE_UNIT_PATTERN = re.compile(
     r"^(?P<unit>"
     + "|".join(sorted((re.escape(name) for name in _VAGUE_UNITS), key=len, reverse=True))
     + r")"
-    r"\b\.?\s*(?:of|de|d'|du|des)?\s*(?P<rest>.*)$",
+    rf"\b\.?\s*{_ELIDED}?\s*(?P<rest>.*)$",
+    re.IGNORECASE,
+)
+
+#: Doubled brackets, which at least one large site emits, and the mismatched pair one of
+#: them publishes — "((… ) )". Collapsed before anything reads them, because a reader that
+#: insisted on balance would put the whole apology in the ingredient's name.
+_DOUBLED_BRACKETS = re.compile(r"\(\s*\(|\)\s*\)")
+
+#: A note a page put in brackets. Taken out before commas are looked at: the note usually
+#: contains one, and splitting there is what turned "neutral oil (such as vegetable,
+#: canola, or avocado oil)" into an ingredient called "neutral oil (such as vegetable".
+_BRACKETED = re.compile(r"[(\[]([^()\[\]]*)[)\]]")
+
+#: Words for the shape a countable ingredient arrives in. Without these "4 cloves garlic"
+#: is four of something called "cloves garlic" — and a name like that resolves against no
+#: registry, so importing one recipe invents an ingredient nobody has heard of and nobody
+#: has classified for allergens. That is a worse outcome than an unread quantity.
+_COUNTING_WORDS = frozenset(
+    {
+        "clove",
+        "cloves",
+        "slice",
+        "slices",
+        "sprig",
+        "sprigs",
+        "stick",
+        "sticks",
+        "stalk",
+        "stalks",
+        "can",
+        "cans",
+        "tin",
+        "tins",
+        "jar",
+        "jars",
+        "packet",
+        "packets",
+        "bunch",
+        "bunches",
+        "head",
+        "heads",
+        "rasher",
+        "rashers",
+        "fillet",
+        "fillets",
+        "sheet",
+        "sheets",
+        "strip",
+        "strips",
+        "chunk",
+        "chunks",
+        "cube",
+        "cubes",
+        "bar",
+        "bars",
+        # German, which is how a Swiss page writes a clove of garlic.
+        "zehe",
+        "zehen",
+        "scheibe",
+        "scheiben",
+        "stange",
+        "stangen",
+        "bund",
+        "dose",
+        "dosen",
+        # French.
+        "gousse",
+        "gousses",
+        "tranche",
+        "tranches",
+        "brin",
+        "brins",
+        "botte",
+        "bottes",
+    }
+)
+
+_COUNTING_PATTERN = re.compile(
+    r"^(?P<counted>"
+    + "|".join(sorted((re.escape(word) for word in _COUNTING_WORDS), key=len, reverse=True))
+    + rf")\b\.?\s*{_ELIDED}?\s*(?P<rest>.*)$",
+    re.IGNORECASE,
+)
+
+#: A number that measures a *length* rather than a count. "4-inch piece ginger" is one
+#: piece of ginger four inches long; read as a count it is four gingers, which is nine
+#: times the recipe. The recipe does not say how much that weighs, so nothing here invents
+#: a figure — the length becomes the note and the amount stays absent.
+_SIZE_PATTERN = re.compile(
+    r"^[-–—]?\s*(?P<measure>inch|inches|in\.|\"|cm|centimetre|centimeter|mm)\b"
+    r"\s*(?P<shape>piece|pieces|chunk|chunks|length|lengths|knob|stück|morceau)?\s*"
+    rf"{_ELIDED}?\s*(?P<rest>.*)$",
     re.IGNORECASE,
 )
 
@@ -259,6 +363,8 @@ def read_ingredient(written: str) -> InterpretedLine | None:
     body = _expand_fractions(original)
     optional = bool(_OPTIONAL.search(body))
     body = _tidy(_OPTIONAL.sub("", body))
+    # Before the commas are looked at: a bracketed note usually contains one.
+    body, aside = _bracketed(body)
 
     vague = _VAGUE_PATTERN.match(body)
     if vague:
@@ -266,12 +372,13 @@ def read_ingredient(written: str) -> InterpretedLine | None:
         amount = vague.group("amount").strip()
         return InterpretedLine(
             ingredient=_tidy(name),
-            preparation=f"{amount}, {purpose}" if purpose else amount,
+            preparation=_joined(amount, purpose, aside),
             optional=optional,
             written=original,
         )
 
-    ingredient, preparation = _split_note(body)
+    ingredient, written_note = _split_note(body)
+    preparation = _joined(written_note, aside)
 
     amount = _AMOUNT.match(ingredient)
     if not amount:
@@ -290,7 +397,36 @@ def read_ingredient(written: str) -> InterpretedLine | None:
         # its words and refuses a number — in whatever language it was judged in.
         return InterpretedLine(
             ingredient=_tidy(vague_unit.group("rest")),
-            preparation=f"{amount.group('amount').strip()} {vague_unit.group('unit')}".strip(),
+            preparation=_joined(
+                f"{amount.group('amount').strip()} {vague_unit.group('unit')}".strip(), preparation
+            ),
+            optional=optional,
+            written=original,
+        )
+
+    size = _SIZE_PATTERN.match(rest)
+    if size and size.group("rest").strip():
+        # "4-inch piece ginger". The number is a length, and the recipe does not say what
+        # that weighs — so the length becomes a note and the amount stays absent, rather
+        # than the line claiming four gingers.
+        measured = f"{amount.group('amount').strip()}-{size.group('measure')}"
+        shape = size.group("shape")
+        return InterpretedLine(
+            ingredient=_tidy(size.group("rest")),
+            preparation=_joined(f"{measured} {shape}".strip() if shape else measured, preparation),
+            optional=optional,
+            written=original,
+        )
+
+    counted = _COUNTING_PATTERN.match(rest)
+    if counted and counted.group("rest").strip() and magnitude is not None:
+        # "4 cloves garlic" is four of a thing, and the thing is garlic. Read as a name,
+        # "cloves garlic" resolves against no registry and invents an ingredient.
+        return InterpretedLine(
+            ingredient=_tidy(counted.group("rest")),
+            magnitude=magnitude,
+            unit=Unit.PIECE,
+            preparation=_joined(counted.group("counted").strip(), preparation),
             optional=optional,
             written=original,
         )
@@ -343,6 +479,33 @@ def _looks_like_a_unit(rest: str) -> bool:
     return bool(re.match(r"^\w+s?\s+of\s+", rest, re.IGNORECASE))
 
 
+def _bracketed(body: str) -> tuple[str, str | None]:
+    """Take a page's bracketed asides out of the line, and hand them back as a note.
+
+    Before commas are looked at, deliberately: a bracketed note usually contains one, and
+    splitting there is what left an ingredient called "neutral oil ((such as vegetable".
+
+    Several brackets on one line are joined rather than fought over. And a line that is
+    *nothing but* a bracket keeps its words: emptying the name would lose the ingredient,
+    which is the one thing importing must never do.
+    """
+    collapsed = _DOUBLED_BRACKETS.sub(lambda found: found.group()[0], body)
+    notes = [found.strip() for found in _BRACKETED.findall(collapsed) if found.strip()]
+    if not notes:
+        return body, None
+
+    without = _tidy(_BRACKETED.sub(" ", collapsed))
+    if not without:
+        return body, None
+    return without, "; ".join(notes)
+
+
+def _joined(*notes: str | None) -> str | None:
+    """Every note this line carried, or nothing where it carried none."""
+    kept = [note for note in notes if note]
+    return ", ".join(kept) if kept else None
+
+
 def _split_note(body: str) -> tuple[str, str | None]:
     """Separate a trailing note from the ingredient.
 
@@ -362,6 +525,10 @@ def _split_note(body: str) -> tuple[str, str | None]:
     purpose = _PURPOSE.match(body.strip())
     if purpose and purpose.group("purpose").lower().split(maxsplit=1)[-1] in _PURPOSE_WORDS:
         return purpose.group("name").strip(), purpose.group("purpose").strip()
+
+    provenance = _PROVENANCE.match(body.strip())
+    if provenance:
+        return provenance.group("name").strip(), provenance.group("from").strip()
     return body, None
 
 

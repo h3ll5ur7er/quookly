@@ -5,9 +5,11 @@ fixtures are meant to be a fixed point that a change to the reader is measured a
 
     cd backend && uv run python tests/fixtures/capture.py
 
-Only the metadata blocks are kept. The page markup is the part being read *around*, and
-four megabytes of it would be keeping the wrong thing. A test failing after a refresh is
-real news about how a site has changed, not a broken test.
+The metadata blocks are kept, and the readable text with them — a page that publishes no
+metadata is read out of its prose, and a fixture without the prose could not exercise that
+half. The page *markup* is still thrown away: it is the part being read around, and four
+megabytes of it would be keeping the wrong thing. A test failing after a refresh is real
+news about how a site has changed, not a broken test.
 """
 
 import asyncio
@@ -22,6 +24,11 @@ PAGES = {
     "bbcgoodfood-chocolate-brownies": "https://www.bbcgoodfood.com/recipes/best-ever-chocolate-brownies-recipe",
     "allrecipes-old-fashioned-pancakes": "https://www.allrecipes.com/recipe/21014/good-old-fashioned-pancakes/",
     "jamieoliver-easy-pancakes": "https://www.jamieoliver.com/recipes/eggs/easy-pancakes/",
+    # Reported by a cook, and both awkward in their own way: the first writes its
+    # ingredient notes in brackets and its ginger as "4-inch piece", the second is a
+    # French blog from 2005.
+    "woksoflife-hainanese-chicken-rice": "https://thewoksoflife.com/hainanese-chicken-rice/",
+    "papilles-quiche-lorraine": "https://www.papillesetpupilles.fr/2005/07/quiche-lorraine.html/",
 }
 
 
@@ -34,7 +41,12 @@ async def main() -> None:
             continue
         (OUT / f"{name}.json").write_text(
             json.dumps(
-                {"url": content.url, "title": content.title, "structured": content.structured},
+                {
+                    "url": content.url,
+                    "title": content.title,
+                    "text": content.text,
+                    "structured": content.structured,
+                },
                 indent=1,
                 ensure_ascii=False,
             )
