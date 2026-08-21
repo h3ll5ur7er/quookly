@@ -153,6 +153,25 @@ describe('RecipeDetailComponent', () => {
     });
   });
 
+  it('shows a line the cook judges themselves without inventing a number', async () => {
+    /* "Salt, to taste" has no quantity. A zero or a one there would be a lie. */
+    const recipe = {
+      ...pancakes(),
+      lines: [
+        { ingredient: 'fine salt', quantity: null, preparation: 'to taste', optional: false },
+      ],
+    };
+    backend.expectOne('/api/v1/recipes/1').flush(recipe);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(text()).toContain('fine salt');
+    expect(text()).toContain('to taste');
+    // The quantity column is empty rather than holding a fabricated number. Asserted on
+    // the element, because the page elsewhere is full of digits — "30 min", "180 °C".
+    const quantity = fixture.nativeElement.querySelector('.lines__quantity');
+    expect(quantity.textContent.trim()).toBe('');
+  });
+
   it('shows the verdict above the ingredients, not after them', async () => {
     backend.expectOne('/api/v1/recipes/1').flush({
       ...pancakes(),

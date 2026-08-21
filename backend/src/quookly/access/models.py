@@ -98,8 +98,10 @@ class IngredientLineRow(SQLModel, table=True):
     recipe_id: int = Field(foreign_key="recipe.id", index=True)
     position: int
     ingredient_id: int = Field(foreign_key="ingredient.id", index=True)
-    magnitude: Decimal = Field(max_digits=12, decimal_places=4)
-    unit: Unit
+    # Absent together for a line the cook judges themselves — salt to taste, oil for
+    # frying. Absent is not zero: a stored zero would scale, render and shop as nothing.
+    magnitude: Decimal | None = Field(default=None, max_digits=12, decimal_places=4)
+    unit: Unit | None = Field(default=None)
     preparation: str | None = Field(default=None)
     optional: bool = Field(default=False)
 

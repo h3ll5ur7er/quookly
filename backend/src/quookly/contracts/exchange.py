@@ -39,8 +39,10 @@ class ExchangeLine(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     ingredient: str
-    magnitude: Decimal
-    unit: str
+    # Absent together for a line the cook judges themselves — salt to taste, oil for
+    # frying. A recipe must not gain a quantity by crossing between instances.
+    magnitude: Decimal | None = None
+    unit: str | None = None
     preparation: str | None = None
     optional: bool = False
 

@@ -66,7 +66,12 @@ async def author(submitted: RecipeInput, cook_id: int, locale: str) -> Presented
         lines=[
             IngredientLineDraft(
                 ingredient_id=line.ingredient_id,
-                quantity=Quantity(line.magnitude, _unit(line.unit)),
+                # Both or neither: the input model already refuses one without the other.
+                quantity=(
+                    None
+                    if line.magnitude is None or line.unit is None
+                    else Quantity(line.magnitude, _unit(line.unit))
+                ),
                 preparation=line.preparation,
                 optional=line.optional,
             )
@@ -198,14 +203,22 @@ async def _present(
 
     lines = []
     for line in recipe.lines:
-        scaled = measure.scale(line.quantity, factor)
-        rendered = measure.render(
-            scaled, line.ingredient.kind, line.ingredient.density, preferences
+        # A line with no quantity is left alone. Twice as much "to taste" is still "to
+        # taste", and rendering a zero there would read as an amount.
+        rendered = (
+            None
+            if line.quantity is None
+            else measure.render(
+                measure.scale(line.quantity, factor),
+                line.ingredient.kind,
+                line.ingredient.density,
+                preferences,
+            )
         )
         lines.append(
             PresentedLine(
                 ingredient=line.ingredient.name,
-                quantity=_view(rendered),
+                quantity=None if rendered is None else _view(rendered),
                 preparation=line.preparation,
                 optional=line.optional,
             )

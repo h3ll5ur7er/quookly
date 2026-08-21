@@ -135,7 +135,8 @@ class TestStarterRecipes:
         shortbread = next(s for s in listed if s.title == "Shortbread")
         presented = await recipe_manager.present(shortbread.id, cook_id, ENGLISH)
         assert presented is not None
-        assert presented.lines[0].quantity.display == "225 g"
+        butter = presented.lines[0].quantity
+        assert butter is not None and butter.display == "225 g"
         assert presented.lines[0].ingredient == "unsalted butter"
 
 

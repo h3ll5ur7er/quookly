@@ -194,6 +194,22 @@ stock is neither freely available nor gone. Two plans cannot reserve the same bu
 cancelled plan releases it. Deducting on planning would make the pantry wrong the moment anything
 changed.
 
+### A line without a quantity
+
+"Salt, to taste." "Oil, for frying." "A pinch of nutmeg." These are ordinary lines in every
+cookbook, and a recipe holding one has to be storable — otherwise importing a real page either
+fails or quietly drops the line, and dropping an ingredient is the failure this project refuses.
+
+A missing quantity is **not zero and not one**. A stored zero would scale, render and shop as
+nothing; a stored one would misweigh the recipe. So the magnitude and the unit are absent together,
+and every path treats that as its own case: scaling leaves the line alone, because twice as much
+"to taste" is still "to taste"; the display shows the ingredient and its note with nothing where a
+number would go; and the interchange format carries the absence, so a recipe cannot gain a quantity
+by crossing between instances.
+
+A magnitude **without** a unit is still refused. Half a *what* is not less information than "half a
+cup", it is wrong information.
+
 ### How a quantity reads
 
 A count of things needs no unit word: "2 egg" is how a cook writes it, "2 piece egg" is how a

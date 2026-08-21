@@ -1198,12 +1198,26 @@
             "title": "Ingredient"
           },
           "magnitude": {
-            "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Magnitude"
           },
           "unit": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Unit"
           },
           "preparation": {
@@ -1225,9 +1239,7 @@
         },
         "type": "object",
         "required": [
-          "ingredient",
-          "magnitude",
-          "unit"
+          "ingredient"
         ],
         "title": "ExchangeLine"
       },
@@ -1435,12 +1447,26 @@
             "title": "Ingredient Id"
           },
           "magnitude": {
-            "type": "string",
-            "pattern": "^-?\\d*\\.?\\d+$",
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d*\\.?\\d+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Magnitude"
           },
           "unit": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Unit"
           },
           "preparation": {
@@ -1463,9 +1489,7 @@
         },
         "type": "object",
         "required": [
-          "ingredient_id",
-          "magnitude",
-          "unit"
+          "ingredient_id"
         ],
         "title": "IngredientLineInput",
         "description": "One line of a recipe being authored."
@@ -1530,7 +1554,14 @@
             "title": "Ingredient"
           },
           "quantity": {
-            "$ref": "#/components/schemas/QuantityView"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuantityView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "preparation": {
             "anyOf": [
@@ -1551,8 +1582,7 @@
         },
         "type": "object",
         "required": [
-          "ingredient",
-          "quantity"
+          "ingredient"
         ],
         "title": "PresentedLine"
       },

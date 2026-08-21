@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from quookly.contracts.ingredient import Ingredient, Origin
 from quookly.contracts.measure import DecimalString, Quantity
@@ -47,7 +47,8 @@ class IngredientLineDraft:
     """
 
     ingredient_id: int
-    quantity: Quantity
+    #: Absent for a line the cook judges themselves — salt to taste, oil for frying.
+    quantity: Quantity | None = None
     preparation: str | None = None
     optional: bool = False
 
@@ -94,11 +95,16 @@ class RecipeDraft:
 
 @dataclass(frozen=True, slots=True)
 class IngredientLine:
-    """A stored line, with its registry entry resolved for one locale."""
+    """A stored line, with its registry entry resolved for one locale.
+
+    `quantity` is absent for a line the cook judges themselves — salt to taste, oil for
+    frying. Absent is not zero and not one: inventing either would misweigh the recipe or
+    mislead about it, and dropping the line would lose an ingredient.
+    """
 
     id: int
     ingredient: Ingredient
-    quantity: Quantity
+    quantity: Quantity | None
     preparation: str | None
     optional: bool
 
@@ -161,7 +167,9 @@ class PresentedLine(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     ingredient: str
-    quantity: QuantityView
+    # Absent for a line the cook judges themselves. A client shows the ingredient and its
+    # note, and nothing where a number would go.
+    quantity: QuantityView | None = None
     preparation: str | None = None
     optional: bool = False
 
@@ -211,10 +219,18 @@ class IngredientLineInput(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     ingredient_id: int
-    magnitude: DecimalString = Field(gt=0)
-    unit: str
+    # Both or neither. Half a *what* is not less information than "half a cup", it is
+    # wrong information, so a magnitude without a unit is refused.
+    magnitude: DecimalString | None = Field(default=None, gt=0)
+    unit: str | None = None
     preparation: str | None = Field(default=None, max_length=200)
     optional: bool = False
+
+    @model_validator(mode="after")
+    def measured_or_not_at_all(self) -> "IngredientLineInput":
+        if (self.magnitude is None) != (self.unit is None):
+            raise ValueError("a line carries a magnitude and a unit, or neither")
+        return self
 
 
 class StepInput(BaseModel):

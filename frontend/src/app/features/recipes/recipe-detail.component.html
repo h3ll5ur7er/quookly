@@ -49,7 +49,9 @@
       <ul class="lines">
         @for (line of shown.lines; track line.ingredient) {
           <li class="lines__line">
-            <span class="lines__quantity numeric">{{ line.quantity.display }}</span>
+            <!-- A line the cook judges themselves — salt to taste, oil for frying — has
+                 no number. The column stays, so the names still align down the list. -->
+            <span class="lines__quantity numeric">{{ line.quantity?.display }}</span>
             <!-- Every part is its own element, and the container is a flex box. That
                  is what stops the newline before the comma from rendering as a space:
                  whitespace between flex items is dropped, whitespace between inline

@@ -47,8 +47,8 @@ async def store(draft: RecipeDraft, cook_id: int) -> Recipe:
                     recipe_id=row.id,
                     position=position,
                     ingredient_id=line.ingredient_id,
-                    magnitude=line.quantity.magnitude,
-                    unit=line.quantity.unit,
+                    magnitude=None if line.quantity is None else line.quantity.magnitude,
+                    unit=None if line.quantity is None else line.quantity.unit,
                     preparation=line.preparation,
                     optional=line.optional,
                 )
@@ -151,7 +151,11 @@ async def _lines_for(active: AsyncSession, recipe_id: int, locale: str) -> list[
                     allergens=allergens,
                     classified=classified,
                 ),
-                quantity=Quantity(line.magnitude, line.unit),
+                quantity=(
+                    None
+                    if line.magnitude is None or line.unit is None
+                    else Quantity(line.magnitude, line.unit)
+                ),
                 preparation=line.preparation,
                 optional=line.optional,
             )

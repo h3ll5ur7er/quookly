@@ -32,7 +32,7 @@ _UNITS_BY_SYMBOL = {unit.symbol: unit for unit in Unit}
 @dataclass(frozen=True, slots=True)
 class ReadLine:
     slug: str
-    quantity: Quantity
+    quantity: Quantity | None
     preparation: str | None
     optional: bool
 
@@ -108,8 +108,8 @@ def to_document(recipes: list[Recipe], locale: str) -> ExchangeDocument:
                 lines=[
                     ExchangeLine(
                         ingredient=line.ingredient.slug,
-                        magnitude=line.quantity.magnitude,
-                        unit=line.quantity.unit.symbol,
+                        magnitude=(None if line.quantity is None else line.quantity.magnitude),
+                        unit=(None if line.quantity is None else line.quantity.unit.symbol),
                         preparation=line.preparation,
                         optional=line.optional,
                     )
@@ -174,7 +174,11 @@ def from_document(raw: dict[str, Any]) -> ReadDocument:
                 lines=[
                     ReadLine(
                         slug=line.ingredient,
-                        quantity=Quantity(line.magnitude, _unit(line.unit)),
+                        quantity=(
+                            None
+                            if line.magnitude is None or line.unit is None
+                            else Quantity(line.magnitude, _unit(line.unit))
+                        ),
                         preparation=line.preparation,
                         optional=line.optional,
                     )

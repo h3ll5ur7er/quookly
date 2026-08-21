@@ -122,8 +122,9 @@ class TestImportingIntoAnEmptyInstance:
         listed = await recipe_manager.list_for(elsewhere.id)
         presented = await recipe_manager.present(listed[0].id, elsewhere.id, ENGLISH)
         assert presented is not None
-        assert presented.lines[0].quantity.display == "225 g"
-        assert presented.lines[1].quantity.display == "2"
+        flour, egg = presented.lines[0].quantity, presented.lines[1].quantity
+        assert flour is not None and flour.display == "225 g"
+        assert egg is not None and egg.display == "2"
 
     async def test_missing_ingredients_are_created(self, cook_id: int) -> None:
         pantry = await seed_pantry()
