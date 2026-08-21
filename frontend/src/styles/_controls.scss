@@ -1,0 +1,60 @@
+/* Buttons, in one place.
+ *
+ * The design language lists `button` as a primitive we own (ADR-024), and three screens
+ * had grown their own copy of it. One definition means a disabled button looks disabled
+ * everywhere, and that a change to the shape is a change rather than three.
+ *
+ * Filled is the screen's action; there should be one. Outline is a step within the work,
+ * and quiet is for something destructive, which should be findable and never be what a
+ * thumb lands on.
+ */
+
+button {
+  min-height: 48px;
+  padding-inline: var(--space-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: var(--on-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard);
+
+  &:hover:not(:disabled) {
+    background: var(--primary-hover);
+  }
+
+  /* Neutral rather than a faded accent. A washed-out primary still reads as a filled
+     button, which is exactly the thing a disabled control must not do — and next to a
+     real one it competes for the eye it should be giving up. */
+  &:disabled {
+    border-color: var(--border);
+    background: var(--surface-sunken);
+    color: var(--on-surface-muted);
+    cursor: not-allowed;
+  }
+}
+
+/* A step within the form rather than the point of it. */
+button.secondary {
+  border-color: var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--on-surface);
+
+  &:hover:not(:disabled) {
+    background: var(--surface-sunken);
+  }
+}
+
+button.destructive {
+  background: none;
+  color: var(--danger);
+
+  &:hover:not(:disabled) {
+    background: var(--danger-surface);
+    color: var(--on-danger-surface);
+  }
+}

@@ -33,6 +33,19 @@
   }
 }
 
+/* Something to know rather than something wrong. Tinted with the ground rather than a
+   colour of its own, so it does not compete with a real warning. */
+.notice--info {
+  border-inline-start: 4px solid var(--info);
+  background: var(--surface-sunken);
+  color: var(--on-surface);
+
+  &::before {
+    content: 'i';
+    font-style: italic;
+  }
+}
+
 .notice--danger {
   border-inline-start: 4px solid var(--danger);
   background: var(--danger-surface);

@@ -1,4 +1,5 @@
 /* Shared shape for the two entry screens. Tokens only — no literal colours or sizes. */
+@use './controls';
 :host {
   display: block;
 }
@@ -93,22 +94,5 @@ input {
 }
 
 button[type='submit'] {
-  min-height: 48px;
   margin-top: var(--space-5);
-  border: none;
-  border-radius: var(--radius-md);
-  background: var(--primary);
-  color: var(--on-primary);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background var(--motion-fast) var(--ease-standard);
-
-  &:hover:not(:disabled) {
-    background: var(--primary-hover);
-  }
-
-  &:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-  }
 }

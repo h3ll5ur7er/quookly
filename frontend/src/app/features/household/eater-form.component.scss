@@ -1,5 +1,16 @@
 @use '../../../styles/page';
+@use '../../../styles/controls';
 @use '../../../styles/chips';
+
+/* Appearance comes from the shared partial; the spacing is this form's own. */
+button[type='submit'],
+button.destructive {
+  margin-top: var(--space-4);
+}
+
+button.secondary {
+  margin-top: var(--space-3);
+}
 
 form {
   display: flex;
@@ -83,52 +94,6 @@ select {
   margin-top: var(--space-4);
   padding-top: var(--space-4);
   border-top: 1px solid var(--border);
-}
-
-button {
-  min-height: 48px;
-  margin-top: var(--space-4);
-  border: none;
-  border-radius: var(--radius-md);
-  background: var(--primary);
-  color: var(--on-primary);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background var(--motion-fast) var(--ease-standard);
-
-  &:hover:not(:disabled) {
-    background: var(--primary-hover);
-  }
-
-  &:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-  }
-}
-
-/* One filled element per screen is the primary action. Adding a constraint is a step
-   within the form, not the point of it. */
-.secondary {
-  margin-top: var(--space-3);
-  border: 1px solid var(--border-strong);
-  background: var(--surface-raised);
-  color: var(--on-surface);
-
-  &:hover:not(:disabled) {
-    background: var(--surface-sunken);
-  }
-}
-
-/* Destructive and quiet: it should be findable, never the thing a thumb lands on. */
-.destructive {
-  background: none;
-  color: var(--danger);
-  font-weight: 600;
-
-  &:hover:not(:disabled) {
-    background: var(--danger-surface);
-    color: var(--on-danger-surface);
-  }
 }
 
 /* Tinted rather than filled, so it does not shout in the same red as the action it is

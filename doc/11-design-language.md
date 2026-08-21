@@ -204,6 +204,12 @@ The primitive set, added as screens need them: button, input, select, checkbox a
 field with label and error, card, list row, dialog, sheet, toast, tabs, badge, empty state,
 skeleton.
 
+**Button** lives in `styles/_controls.scss` — filled for the screen's one action, outline for a step
+within it, quiet for something destructive. A disabled button is **neutral, not a faded accent**: a
+washed-out primary still reads as a filled button, which is the one thing a disabled control must
+not do, and beside a real one it competes for the eye it should be giving up. Three screens had
+grown their own copy before this was pulled together, and they had drifted.
+
 Each primitive: one responsibility, tokens only, keyboard-operable, and a visible focus ring that
 is never removed without a replacement.
 

@@ -13,6 +13,11 @@ rm -f "$DATABASE"
 
 export QUOOKLY_DATABASE_URL="sqlite+aiosqlite:///$DATABASE"
 export QUOOKLY_SECRET_KEY="an-end-to-end-signing-key-of-sufficient-length"
+# The URL import fetches from the *server*, so the pages under test are served from a
+# second local server — which means lifting the guard that stops an instance fetching its
+# own network (ADR-027). Exercising that setting is itself worth something: this is the
+# configuration a self-hoster with a recipe box on their LAN runs.
+export QUOOKLY_ALLOW_PRIVATE_FETCH=true
 
 cd backend
 uv run alembic upgrade head >/dev/null

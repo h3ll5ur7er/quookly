@@ -22,6 +22,13 @@ export const routes: Routes = [
       import('./features/recipes/recipe-list.component').then((m) => m.RecipeListComponent),
   },
   {
+    // `import` before `:id`: they share a shape, and the first match wins.
+    path: 'recipes/import',
+    canActivate: [requireSignedIn],
+    loadComponent: () =>
+      import('./features/recipes/import-recipe.component').then((m) => m.ImportRecipeComponent),
+  },
+  {
     path: 'recipes/:id',
     canActivate: [requireSignedIn],
     loadComponent: () =>

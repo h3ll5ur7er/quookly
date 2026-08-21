@@ -1,0 +1,91 @@
+<main class="page import">
+  <h1 i18n="@@importHeading">Import from a link</h1>
+  <p class="import__lede" i18n="@@importLede">
+    Paste a link to a recipe. Quookly reads the ingredients and the method, and leaves the life
+    story behind.
+  </p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <label for="url" i18n="@@importFieldUrl">Address of the recipe</label>
+    <input
+      id="url"
+      type="url"
+      formControlName="url"
+      inputmode="url"
+      autocomplete="off"
+      spellcheck="false"
+      placeholder="https://"
+    />
+
+    <button type="submit" [disabled]="form.invalid || working()">
+      @if (working()) {
+        <span i18n="@@importWorking">Reading the page…</span>
+      } @else {
+        <span i18n="@@importSubmit">Import</span>
+      }
+    </button>
+  </form>
+
+  @if (working()) {
+    <!-- role="status" rather than "alert": it is progress, not a problem. -->
+    <p class="import__waiting" role="status" i18n="@@importWaiting">
+      Pages that publish their recipes properly are read at once. One that does not has to be read
+      through, which takes a little longer.
+    </p>
+  }
+
+  @if (failure(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+
+  @if (outcome(); as imported) {
+    <section class="import__result" aria-labelledby="imported-heading">
+      <p class="import__done" i18n="@@importDone">Imported.</p>
+      <h2 id="imported-heading">{{ imported.recipe.title }}</h2>
+
+      <ul class="import__facts">
+        <li>
+          <span class="numeric">{{ imported.recipe.lines.length }}</span>
+          <span i18n="@@importIngredients">ingredients</span>
+        </li>
+        <li>
+          <span class="numeric">{{ imported.recipe.steps.length }}</span>
+          <span i18n="@@importSteps">steps</span>
+        </li>
+        <li>
+          <span i18n="@@importMakes">Makes</span>
+          <span class="numeric">{{ imported.recipe.yield_quantity.display }}</span>
+        </li>
+      </ul>
+
+      @if (readByModel()) {
+        <p class="import__note" i18n="@@importReadByModel">
+          That page publishes no recipe data, so it was read through by a model. Worth a glance
+          before you cook from it.
+        </p>
+      }
+
+      @if (newIngredients().length > 0) {
+        <!-- The part a cook has to act on. Nothing is known about a new entry's allergens
+             until somebody looks, so every recipe using one reads as unknown. -->
+        <div class="notice notice--info" role="status">
+          <div>
+            <p i18n="@@importNewIngredients">
+              These were not in your ingredient list, so nothing is known about what they contain.
+              Recipes using them cannot be checked against your household until you say.
+            </p>
+            <ul class="import__new">
+              @for (name of newIngredients(); track name) {
+                <li>{{ name }}</li>
+              }
+            </ul>
+          </div>
+        </div>
+      }
+
+      <a class="action" [routerLink]="['/recipes', imported.recipe.id]" i18n="@@importOpen">
+        Open the recipe
+      </a>
+    </section>
+  }
+</main>

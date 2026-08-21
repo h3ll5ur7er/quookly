@@ -146,6 +146,21 @@
     "setupHouseholdDeclared": "Sie haben angegeben, für niemanden bestimmten zu kochen.",
     "setupConstraintsDeclared": "Sie haben angegeben, dass niemand etwas meidet.",
     "setupUnitsDeclared": "Sie haben die voreingestellten Einheiten behalten.",
-    "setupLocaleDeclared": "Sie haben die aktuelle Sprache behalten."
+    "setupLocaleDeclared": "Sie haben die aktuelle Sprache behalten.",
+    "importHeading": "Aus einem Link importieren",
+    "importLede": "Fügen Sie den Link zu einem Rezept ein. Quookly liest Zutaten und Zubereitung heraus und lässt die Lebensgeschichte zurück.",
+    "importFieldUrl": "Adresse des Rezepts",
+    "importWorking": "Seite wird gelesen …",
+    "importSubmit": "Importieren",
+    "importWaiting": "Seiten, die ihre Rezepte sauber veröffentlichen, sind sofort gelesen. Eine, die das nicht tut, muss durchgelesen werden – das dauert etwas länger.",
+    "importDone": "Importiert.",
+    "importIngredients": "Zutaten",
+    "importSteps": "Schritte",
+    "importMakes": "Ergibt",
+    "importReadByModel": "Diese Seite veröffentlicht keine Rezeptdaten, sie wurde von einem Modell durchgelesen. Ein Blick darauf lohnt sich, bevor Sie danach kochen.",
+    "importNewIngredients": "Diese Zutaten waren noch nicht in Ihrer Zutatenliste; über ihren Inhalt ist deshalb nichts bekannt. Rezepte damit lassen sich erst dann auf Ihren Haushalt prüfen, wenn Sie es erfassen.",
+    "importOpen": "Rezept öffnen",
+    "importFailedUnknown": "Das hat nicht geklappt. Bitte versuchen Sie es erneut.",
+    "recipesImport": "Aus einem Link importieren"
   }
 }

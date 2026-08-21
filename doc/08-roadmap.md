@@ -110,6 +110,7 @@ claims; having the structural judge already in place removes the temptation and 
   domain could not store a line real pages are full of, see [the domain model](06-domain-model.md#a-line-without-a-quantity)
 - ~~`InterpretationEngine`: content to canonical recipe (V2)~~ **Built** — metadata first, a model over the prose otherwise; verified against live pages and a local Qwen3.6
 - ~~URL import (UC-1.3), validation and failure reporting (FR-9)~~ **Built** — verified against live pages ([ADR-029](07-decisions.md#adr-029-an-ingredient-the-registry-does-not-know-is-recorded-and-reported), [ADR-030](07-decisions.md#adr-030-a-recipe-whose-yield-cannot-be-read-is-refused)); the screen for it follows
+- ~~The screen for it: paste a link, see what came back and what needs a look~~ **Built**
 - Provider configuration in settings and via CLI (UC-8.2)
 
 **Done when:** pasting a recipe URL yields a structured recipe with resolved ingredients, or an

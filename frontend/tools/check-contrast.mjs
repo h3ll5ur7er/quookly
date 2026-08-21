@@ -21,6 +21,8 @@ const PAIRS = [
   ['--on-surface', '--surface-sunken', AA_TEXT],
   ['--on-surface-muted', '--surface', AA_TEXT],
   ['--on-surface-muted', '--surface-raised', AA_TEXT],
+  // A disabled button: neutral rather than a faded accent, so it has its own pair.
+  ['--on-surface-muted', '--surface-sunken', AA_TEXT],
   ['--on-surface-subtle', '--surface', AA_LARGE_OR_NON_TEXT],
   // WCAG 1.4.11 applies to the visible boundary of a control, not to decorative
   // dividers — which is why --border and --border-strong are separate tokens.
