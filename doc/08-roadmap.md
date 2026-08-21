@@ -183,6 +183,28 @@ is about to expire.
 Last on purpose. It is the most volatile area, the least consequential when it changes, and the one
 whose absence costs the product least.
 
+## Phase 8b — Reading a recipe in your own language
+
+**Goal:** a recipe written in one language is read in another, without losing the original.
+
+**Status: proposed**, see [ADR-032](07-decisions.md#adr-032-proposed-recipes-are-stored-in-their-own-language-and-read-in-yours)
+and [V17](03-volatility-analysis.md#v17-content-translation).
+
+Most of it already exists. Quantities, durations and temperatures are language-neutral by
+construction, and ingredient names resolve per locale through the registry. What is missing:
+
+- Serve recipes in the **cook's** language rather than a hardcoded `en-GB` — the plumbing is built,
+  the routes simply do not pass it yet. This is small and worth doing on its own.
+- Record the language a recipe is written in
+- `TranslationEngine` — a capability engine over `ModelAccess`, the same shape as
+  `InterpretationEngine`
+- Translations stored beside the original, derived lazily on first request for a language
+- Per-locale names for ingredients an import created, so a foreign import is as readable as a
+  seeded one
+
+Placed here rather than earlier because it is worth having only once there is a corpus worth
+reading, and because it depends on nothing in Phase 9.
+
 ## Phase 9 — Self-hosting polish
 
 **Goal:** someone other than us runs it.

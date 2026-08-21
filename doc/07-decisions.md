@@ -1010,3 +1010,67 @@ translations are added rather than overwritten.
 *Eigelb* and *Eiweiss* to "egg" printed "3 egg" twice on a recipe using three eggs, which reads as
 six. `egg-yolk` and `egg-white` are now seeded ingredients in their own right, both classified as
 containing eggs.
+
+---
+
+## ADR-032 (Proposed) Recipes are stored in their own language and read in yours
+
+**Status: Proposed. Not built.** Recorded now because Phase 3 made the question unavoidable: an
+import from swissmilk.ch produces a recipe whose ingredient names resolve into any language and
+whose *steps* are German forever.
+
+**Context.** Quookly ships in three languages and imports from the whole web. Four kinds of text
+live in a recipe, and they are in very different positions.
+
+| | Language-neutral already? |
+| --- | --- |
+| Quantities — magnitude and a `Unit` | Yes. Rendered per cook. |
+| Durations and temperatures | Yes. Columns, not prose. A timer works in any language. |
+| Ingredient names | **Yes, already built.** The registry is defined in English and named per locale; `RecipeAccess.fetch(recipe_id, locale)` resolves names for the reader. |
+| Step instructions, title, summary | **No.** Stored exactly as written. |
+
+So most of this is done. What remains is prose.
+
+**Decision (proposed).** Three parts.
+
+**1. A recipe records the language it is written in.** Imported from `<html lang>`, chosen when
+authored. Without it nothing downstream can tell a German recipe from an English one.
+
+**2. The original text is never replaced.** A canonical English rendering is stored *alongside* it,
+and other languages are derived from that — 1→N rather than N→N, which is the real argument for
+normalising. But the author's words stay.
+
+This is where the proposal departs from "normalise to English on import". Discarding the source
+makes every translation error permanent and unverifiable, and takes a German cook's own recipe away
+from them in their own kitchen. Keeping the original costs a column and makes every translation
+re-derivable when the model improves — which it will, faster than the recipes change.
+
+**3. Translation is lazy and cached.** Rendered on first request for a language and stored, not
+eagerly at import. Eager translation spends three model round trips on content nobody may read, and
+makes adding a fourth language a migration over every recipe ever imported instead of a no-op.
+
+**Rationale.** The pieces are already in place. `ModelAccess` reaches a model; `InterpretationEngine`
+established the capability-engine shape and the import-linter contract that keeps it honest; the
+registry already answers in three languages. `TranslationEngine` is the same shape as
+`InterpretationEngine` pointed at a different question.
+
+**The safety line is unaffected, and that is not an accident.** Allergen and suitability conclusions
+come from the structured ingredient set, never from prose (ADR-006). A translation cannot make a
+recipe read as safe, because no verdict has ever consulted prose. This is the first real dividend of
+that rule: an entire feature can be built over machine-generated text without any of it touching the
+safety path.
+
+**Open questions, to be settled when this is built.**
+
+- What happens to a translation when its source step is edited? The cheap answer is to drop it and
+  re-derive; the honest one may be to mark it stale and show the original meanwhile.
+- Can a cook correct a translation, and does that correction survive a re-derivation? A human
+  correction that a model silently overwrites is worse than no correction.
+- Does a shared or published recipe (Phase 8) carry its translations, or does each instance derive
+  its own? Carrying them spreads one instance's model quality to everybody.
+- Does the interchange format carry them? It does not yet carry the registry's per-locale names
+  either, which is the same gap one layer down.
+
+**Cost.** A table of translations, a per-request cache decision, and a dependency on a model for
+something a cook may reasonably expect to work offline. An instance with no model configured must
+degrade to showing the original — which is exactly what it does today, and is not a failure.

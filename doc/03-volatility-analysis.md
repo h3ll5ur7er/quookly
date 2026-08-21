@@ -269,6 +269,27 @@ Instance bootstrap — creating the first admin on a fresh server — is a diffe
 similar clothes. It is an instance lifecycle concern, handled by the `Security` utility and closed
 permanently once any user exists (FR-16).
 
+### V17 Content translation
+
+**Status: not built.** Recorded because Phase 3 made it unavoidable — see
+[ADR-032](07-decisions.md#adr-032-proposed-recipes-are-stored-in-their-own-language-and-read-in-yours).
+
+**Question:** how does a recipe written in one language get read in another?
+**Varies:** which languages, whether a machine or a person does it, which model, whether a
+translation is reviewed, whether it is done eagerly or on first request, and how a correction is
+kept when the source changes.
+**Stable:** a recipe holds text in the language it was written in, and a reader wants it in theirs.
+**Encapsulated by:** `TranslationEngine` — a capability engine over `ModelAccess`, like
+`InterpretationEngine`.
+
+Deliberately not V14. That volatility is about *interface* strings: authored by us, shipped as
+catalogues, fixed at build time. This is user content translated at runtime, and the two change for
+entirely different reasons — a new interface string is a commit, a new recipe is a Tuesday.
+
+Deliberately not V2 either. Interpretation turns *unstructured* content into structure. Translation
+takes structure and renders it in another language. A recipe that has already been read correctly
+still needs this, and a recipe nobody translates is still perfectly usable.
+
 ## Volatility to service map
 
 ```mermaid
@@ -290,6 +311,7 @@ flowchart LR
   V15["V15 Execution guidance"] --> EE["ExecutionEngine"]
   V15 --> CM["CookingManager"]
   V16["V16 Guided setup"] --> OE["OnboardingEngine"]
+  V17["V17 Content translation"] --> TE["TranslationEngine"]
 ```
 
 ## What is deliberately not a service
