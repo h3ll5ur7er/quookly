@@ -93,6 +93,65 @@ async def register(
         return _to_contract(row, canonical, allergens or frozenset())
 
 
+async def name_in(slug: str, locale: str, spellings: list[str]) -> int:
+    """Teach the registry what an entry is called in another language. Returns how many
+    names were new.
+
+    Additive and repeatable: a name already recorded is left alone, so start-up can run
+    this every time without accumulating duplicates. It never touches the entry itself —
+    a translation is a name, not a claim about density or allergens.
+    """
+    if not spellings:
+        return 0
+    async with session() as active:
+        row = (
+            await active.exec(select(IngredientRow).where(col(IngredientRow.slug) == slug))
+        ).first()
+        if row is None or row.id is None:
+            return 0
+
+        existing = {
+            name.normalised
+            for name in (
+                await active.exec(
+                    select(IngredientNameRow).where(
+                        col(IngredientNameRow.ingredient_id) == row.id,
+                        col(IngredientNameRow.locale) == locale,
+                    )
+                )
+            ).all()
+        }
+
+        added = 0
+        for position, spelling in enumerate(spellings):
+            wanted = normalise(spelling)
+            if wanted in existing:
+                continue
+            active.add(
+                IngredientNameRow(
+                    ingredient_id=row.id,
+                    locale=locale,
+                    name=spelling,
+                    normalised=wanted,
+                    # The first spelling is what this language calls the thing; the rest
+                    # are spellings a recipe might use.
+                    is_canonical=position == 0 and not existing,
+                )
+            )
+            existing.add(wanted)
+            added += 1
+
+        try:
+            await active.commit()
+        except IntegrityError:
+            # Another entry already claims this spelling in this locale. The unique index
+            # is on (locale, normalised) so a name means one thing per language, and the
+            # first claim wins rather than the last.
+            await active.rollback()
+            return 0
+        return added
+
+
 async def resolve(name: str, locale: str) -> Ingredient | None:
     """Find the ingredient a typed name refers to, or None.
 

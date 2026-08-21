@@ -1,404 +1,430 @@
 {
-  "quookly": 1,
-  "exported_at": "2026-08-20T00:00:00Z",
-  "locale": "en-GB",
-  "ingredients": [
+ "quookly": 1,
+ "exported_at": "2026-08-20T00:00:00Z",
+ "locale": "en-GB",
+ "ingredients": [
+  {
+   "slug": "plain-flour",
+   "kind": "powder",
+   "density": "0.53",
+   "names": [
+    "plain flour",
+    "all-purpose flour",
+    "white flour"
+   ],
+   "allergens": [
+    "gluten"
+   ]
+  },
+  {
+   "slug": "wholemeal-flour",
+   "kind": "powder",
+   "density": "0.55",
+   "names": [
+    "wholemeal flour",
+    "whole wheat flour"
+   ],
+   "allergens": [
+    "gluten"
+   ]
+  },
+  {
+   "slug": "cornflour",
+   "kind": "powder",
+   "density": "0.63",
+   "names": [
+    "cornflour",
+    "cornstarch"
+   ],
+   "allergens": []
+  },
+  {
+   "slug": "caster-sugar",
+   "kind": "powder",
+   "density": "0.85",
+   "names": [
+    "caster sugar",
+    "superfine sugar"
+   ],
+   "allergens": []
+  },
+  {
+   "slug": "granulated-sugar",
+   "kind": "powder",
+   "density": "0.85",
+   "names": [
+    "granulated sugar",
+    "white sugar"
+   ],
+   "allergens": []
+  },
+  {
+   "slug": "icing-sugar",
+   "kind": "powder",
+   "density": "0.56",
+   "names": [
+    "icing sugar",
+    "powdered sugar"
+   ],
+   "allergens": []
+  },
+  {
+   "slug": "brown-sugar",
+   "kind": "powder",
+   "density": "0.90",
+   "names": [
+    "brown sugar"
+   ],
+   "allergens": []
+  },
+  {
+   "slug": "fine-salt",
+   "kind": "powder",
+   "density": "1.20",
+   "names": [
+    "fine salt",
+    "table salt",
+    "salt"
+   ],
+   "allergens": []
+  },
+  {
+   "slug": "baking-powder",
+   "kind": "powder",
+   "density": "0.90",
+   "names": [
+    "baking powder"
+   ],
+   "allergens": []
+  },
+  {
+   "slug": "bicarbonate-of-soda",
+   "kind": "powder",
+   "density": "0.95",
+   "names": [
+    "bicarbonate of soda",
+    "baking soda"
+   ],
+   "allergens": []
+  },
+  {
+   "slug": "cocoa-powder",
+   "kind": "powder",
+   "density": "0.45",
+   "names": [
+    "cocoa powder"
+   ],
+   "allergens": []
+  },
+  {
+   "slug": "ground-almonds",
+   "kind": "powder",
+   "density": "0.42",
+   "names": [
+    "ground almonds",
+    "almond flour"
+   ],
+   "allergens": [
+    "tree_nuts"
+   ]
+  },
+  {
+   "slug": "rolled-oats",
+   "kind": "powder",
+   "density": "0.38",
+   "names": [
+    "rolled oats",
+    "porridge oats"
+   ],
+   "allergens": [
+    "gluten"
+   ]
+  },
+  {
+   "slug": "rice",
+   "kind": "powder",
+   "density": "0.85",
+   "names": [
+    "rice",
+    "long-grain rice"
+   ],
+   "allergens": []
+  },
+  {
+   "slug": "water",
+   "kind": "liquid",
+   "density": "1.00",
+   "names": [
+    "water"
+   ],
+   "allergens": []
+  },
+  {
+   "slug": "whole-milk",
+   "kind": "liquid",
+   "density": "1.03",
+   "names": [
+    "whole milk",
+    "milk",
+    "full-fat milk"
+   ],
+   "allergens": [
+    "milk"
+   ]
+  },
+  {
+   "slug": "double-cream",
+   "kind": "liquid",
+   "density": "0.99",
+   "names": [
+    "double cream",
+    "heavy cream"
+   ],
+   "allergens": [
+    "milk"
+   ]
+  },
+  {
+   "slug": "olive-oil",
+   "kind": "liquid",
+   "density": "0.91",
+   "names": [
+    "olive oil"
+   ],
+   "allergens": []
+  },
+  {
+   "slug": "vegetable-oil",
+   "kind": "liquid",
+   "density": "0.92",
+   "names": [
+    "vegetable oil",
+    "sunflower oil"
+   ],
+   "allergens": []
+  },
+  {
+   "slug": "honey",
+   "kind": "liquid",
+   "density": "1.42",
+   "names": [
+    "honey"
+   ],
+   "allergens": []
+  },
+  {
+   "slug": "white-wine",
+   "kind": "liquid",
+   "density": "0.99",
+   "names": [
+    "white wine"
+   ],
+   "allergens": [
+    "sulphites"
+   ]
+  },
+  {
+   "slug": "unsalted-butter",
+   "kind": "solid",
+   "density": "0.911",
+   "names": [
+    "unsalted butter",
+    "sweet butter",
+    "butter"
+   ],
+   "allergens": [
+    "milk"
+   ]
+  },
+  {
+   "slug": "plain-yoghurt",
+   "kind": "solid",
+   "density": "1.03",
+   "names": [
+    "plain yoghurt",
+    "natural yoghurt"
+   ],
+   "allergens": [
+    "milk"
+   ]
+  },
+  {
+   "slug": "egg",
+   "kind": "countable",
+   "density": null,
+   "names": [
+    "egg",
+    "eggs"
+   ],
+   "allergens": [
+    "eggs"
+   ]
+  },
+  {
+   "slug": "egg-yolk",
+   "kind": "countable",
+   "density": null,
+   "names": [
+    "egg yolk",
+    "egg yolks",
+    "yolk"
+   ],
+   "allergens": [
+    "eggs"
+   ]
+  },
+  {
+   "slug": "egg-white",
+   "kind": "countable",
+   "density": null,
+   "names": [
+    "egg white",
+    "egg whites",
+    "white"
+   ],
+   "allergens": [
+    "eggs"
+   ]
+  },
+  {
+   "slug": "onion",
+   "kind": "countable",
+   "density": null,
+   "names": [
+    "onion"
+   ],
+   "allergens": []
+  },
+  {
+   "slug": "garlic-clove",
+   "kind": "countable",
+   "density": null,
+   "names": [
+    "garlic clove",
+    "clove of garlic"
+   ],
+   "allergens": []
+  },
+  {
+   "slug": "lemon",
+   "kind": "countable",
+   "density": null,
+   "names": [
+    "lemon"
+   ],
+   "allergens": []
+  }
+ ],
+ "recipes": [
+  {
+   "title": "Buttermilk Pancakes",
+   "summary": "A first recipe to look at, change, and cook.",
+   "yield_magnitude": "12",
+   "yield_unit": "piece",
+   "provenance": "authored",
+   "lines": [
     {
-      "slug": "plain-flour",
-      "kind": "powder",
-      "density": "0.53",
-      "names": [
-        "plain flour",
-        "all-purpose flour",
-        "white flour"
-      ],
-      "allergens": [
-        "gluten"
-      ]
+     "ingredient": "plain-flour",
+     "magnitude": "225",
+     "unit": "g",
+     "preparation": "sifted"
     },
     {
-      "slug": "wholemeal-flour",
-      "kind": "powder",
-      "density": "0.55",
-      "names": [
-        "wholemeal flour",
-        "whole wheat flour"
-      ],
-      "allergens": [
-        "gluten"
-      ]
+     "ingredient": "baking-powder",
+     "magnitude": "2",
+     "unit": "tsp"
     },
     {
-      "slug": "cornflour",
-      "kind": "powder",
-      "density": "0.63",
-      "names": [
-        "cornflour",
-        "cornstarch"
-      ],
-      "allergens": []
+     "ingredient": "caster-sugar",
+     "magnitude": "2",
+     "unit": "tbsp"
     },
     {
-      "slug": "caster-sugar",
-      "kind": "powder",
-      "density": "0.85",
-      "names": [
-        "caster sugar",
-        "superfine sugar"
-      ],
-      "allergens": []
+     "ingredient": "fine-salt",
+     "magnitude": "0.5",
+     "unit": "tsp"
     },
     {
-      "slug": "granulated-sugar",
-      "kind": "powder",
-      "density": "0.85",
-      "names": [
-        "granulated sugar",
-        "white sugar"
-      ],
-      "allergens": []
+     "ingredient": "whole-milk",
+     "magnitude": "300",
+     "unit": "ml"
     },
     {
-      "slug": "icing-sugar",
-      "kind": "powder",
-      "density": "0.56",
-      "names": [
-        "icing sugar",
-        "powdered sugar"
-      ],
-      "allergens": []
+     "ingredient": "egg",
+     "magnitude": "2",
+     "unit": "piece"
     },
     {
-      "slug": "brown-sugar",
-      "kind": "powder",
-      "density": "0.90",
-      "names": [
-        "brown sugar"
-      ],
-      "allergens": []
-    },
-    {
-      "slug": "fine-salt",
-      "kind": "powder",
-      "density": "1.20",
-      "names": [
-        "fine salt",
-        "table salt",
-        "salt"
-      ],
-      "allergens": []
-    },
-    {
-      "slug": "baking-powder",
-      "kind": "powder",
-      "density": "0.90",
-      "names": [
-        "baking powder"
-      ],
-      "allergens": []
-    },
-    {
-      "slug": "bicarbonate-of-soda",
-      "kind": "powder",
-      "density": "0.95",
-      "names": [
-        "bicarbonate of soda",
-        "baking soda"
-      ],
-      "allergens": []
-    },
-    {
-      "slug": "cocoa-powder",
-      "kind": "powder",
-      "density": "0.45",
-      "names": [
-        "cocoa powder"
-      ],
-      "allergens": []
-    },
-    {
-      "slug": "ground-almonds",
-      "kind": "powder",
-      "density": "0.42",
-      "names": [
-        "ground almonds",
-        "almond flour"
-      ],
-      "allergens": [
-        "tree_nuts"
-      ]
-    },
-    {
-      "slug": "rolled-oats",
-      "kind": "powder",
-      "density": "0.38",
-      "names": [
-        "rolled oats",
-        "porridge oats"
-      ],
-      "allergens": [
-        "gluten"
-      ]
-    },
-    {
-      "slug": "rice",
-      "kind": "powder",
-      "density": "0.85",
-      "names": [
-        "rice",
-        "long-grain rice"
-      ],
-      "allergens": []
-    },
-    {
-      "slug": "water",
-      "kind": "liquid",
-      "density": "1.00",
-      "names": [
-        "water"
-      ],
-      "allergens": []
-    },
-    {
-      "slug": "whole-milk",
-      "kind": "liquid",
-      "density": "1.03",
-      "names": [
-        "whole milk",
-        "milk",
-        "full-fat milk"
-      ],
-      "allergens": [
-        "milk"
-      ]
-    },
-    {
-      "slug": "double-cream",
-      "kind": "liquid",
-      "density": "0.99",
-      "names": [
-        "double cream",
-        "heavy cream"
-      ],
-      "allergens": [
-        "milk"
-      ]
-    },
-    {
-      "slug": "olive-oil",
-      "kind": "liquid",
-      "density": "0.91",
-      "names": [
-        "olive oil"
-      ],
-      "allergens": []
-    },
-    {
-      "slug": "vegetable-oil",
-      "kind": "liquid",
-      "density": "0.92",
-      "names": [
-        "vegetable oil",
-        "sunflower oil"
-      ],
-      "allergens": []
-    },
-    {
-      "slug": "honey",
-      "kind": "liquid",
-      "density": "1.42",
-      "names": [
-        "honey"
-      ],
-      "allergens": []
-    },
-    {
-      "slug": "white-wine",
-      "kind": "liquid",
-      "density": "0.99",
-      "names": [
-        "white wine"
-      ],
-      "allergens": [
-        "sulphites"
-      ]
-    },
-    {
-      "slug": "unsalted-butter",
-      "kind": "solid",
-      "density": "0.911",
-      "names": [
-        "unsalted butter",
-        "sweet butter",
-        "butter"
-      ],
-      "allergens": [
-        "milk"
-      ]
-    },
-    {
-      "slug": "plain-yoghurt",
-      "kind": "solid",
-      "density": "1.03",
-      "names": [
-        "plain yoghurt",
-        "natural yoghurt"
-      ],
-      "allergens": [
-        "milk"
-      ]
-    },
-    {
-      "slug": "egg",
-      "kind": "countable",
-      "density": null,
-      "names": [
-        "egg",
-        "eggs"
-      ],
-      "allergens": [
-        "eggs"
-      ]
-    },
-    {
-      "slug": "onion",
-      "kind": "countable",
-      "density": null,
-      "names": [
-        "onion"
-      ],
-      "allergens": []
-    },
-    {
-      "slug": "garlic-clove",
-      "kind": "countable",
-      "density": null,
-      "names": [
-        "garlic clove",
-        "clove of garlic"
-      ],
-      "allergens": []
-    },
-    {
-      "slug": "lemon",
-      "kind": "countable",
-      "density": null,
-      "names": [
-        "lemon"
-      ],
-      "allergens": []
+     "ingredient": "unsalted-butter",
+     "magnitude": "40",
+     "unit": "g",
+     "preparation": "melted, plus more for the pan"
     }
-  ],
-  "recipes": [
+   ],
+   "steps": [
     {
-      "title": "Buttermilk Pancakes",
-      "summary": "A first recipe to look at, change, and cook.",
-      "yield_magnitude": "12",
-      "yield_unit": "piece",
-      "provenance": "authored",
-      "lines": [
-        {
-          "ingredient": "plain-flour",
-          "magnitude": "225",
-          "unit": "g",
-          "preparation": "sifted"
-        },
-        {
-          "ingredient": "baking-powder",
-          "magnitude": "2",
-          "unit": "tsp"
-        },
-        {
-          "ingredient": "caster-sugar",
-          "magnitude": "2",
-          "unit": "tbsp"
-        },
-        {
-          "ingredient": "fine-salt",
-          "magnitude": "0.5",
-          "unit": "tsp"
-        },
-        {
-          "ingredient": "whole-milk",
-          "magnitude": "300",
-          "unit": "ml"
-        },
-        {
-          "ingredient": "egg",
-          "magnitude": "2",
-          "unit": "piece"
-        },
-        {
-          "ingredient": "unsalted-butter",
-          "magnitude": "40",
-          "unit": "g",
-          "preparation": "melted, plus more for the pan"
-        }
-      ],
-      "steps": [
-        {
-          "instruction": "Whisk the flour, baking powder, sugar and salt together."
-        },
-        {
-          "instruction": "Beat in the milk, eggs and melted butter until just combined; a few lumps are fine."
-        },
-        {
-          "instruction": "Rest the batter \u2014 this is what makes them tender.",
-          "duration_seconds": 1800
-        },
-        {
-          "instruction": "Fry in a buttered pan until the edges set and the bubbles hold.",
-          "temperature_celsius": 180
-        }
-      ]
+     "instruction": "Whisk the flour, baking powder, sugar and salt together."
     },
     {
-      "title": "Shortbread",
-      "summary": "Three ingredients, one bowl, no mixer.",
-      "yield_magnitude": "16",
-      "yield_unit": "piece",
-      "provenance": "authored",
-      "lines": [
-        {
-          "ingredient": "unsalted-butter",
-          "magnitude": "225",
-          "unit": "g",
-          "preparation": "softened"
-        },
-        {
-          "ingredient": "caster-sugar",
-          "magnitude": "110",
-          "unit": "g"
-        },
-        {
-          "ingredient": "plain-flour",
-          "magnitude": "340",
-          "unit": "g"
-        },
-        {
-          "ingredient": "fine-salt",
-          "magnitude": "0.25",
-          "unit": "tsp",
-          "optional": true
-        }
-      ],
-      "steps": [
-        {
-          "instruction": "Cream the butter and sugar until pale."
-        },
-        {
-          "instruction": "Work in the flour and salt until it just comes together. Do not knead it."
-        },
-        {
-          "instruction": "Press into a tin, prick all over, and chill until firm.",
-          "duration_seconds": 1800
-        },
-        {
-          "instruction": "Bake until the palest gold, then cut while still warm.",
-          "duration_seconds": 2400,
-          "temperature_celsius": 160
-        }
-      ]
+     "instruction": "Beat in the milk, eggs and melted butter until just combined; a few lumps are fine."
+    },
+    {
+     "instruction": "Rest the batter — this is what makes them tender.",
+     "duration_seconds": 1800
+    },
+    {
+     "instruction": "Fry in a buttered pan until the edges set and the bubbles hold.",
+     "temperature_celsius": 180
     }
-  ]
+   ]
+  },
+  {
+   "title": "Shortbread",
+   "summary": "Three ingredients, one bowl, no mixer.",
+   "yield_magnitude": "16",
+   "yield_unit": "piece",
+   "provenance": "authored",
+   "lines": [
+    {
+     "ingredient": "unsalted-butter",
+     "magnitude": "225",
+     "unit": "g",
+     "preparation": "softened"
+    },
+    {
+     "ingredient": "caster-sugar",
+     "magnitude": "110",
+     "unit": "g"
+    },
+    {
+     "ingredient": "plain-flour",
+     "magnitude": "340",
+     "unit": "g"
+    },
+    {
+     "ingredient": "fine-salt",
+     "magnitude": "0.25",
+     "unit": "tsp",
+     "optional": true
+    }
+   ],
+   "steps": [
+    {
+     "instruction": "Cream the butter and sugar until pale."
+    },
+    {
+     "instruction": "Work in the flour and salt until it just comes together. Do not knead it."
+    },
+    {
+     "instruction": "Press into a tin, prick all over, and chill until firm.",
+     "duration_seconds": 1800
+    },
+    {
+     "instruction": "Bake until the palest gold, then cut while still warm.",
+     "duration_seconds": 2400,
+     "temperature_celsius": 160
+    }
+   ]
+  }
+ ]
 }

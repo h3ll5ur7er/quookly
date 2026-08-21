@@ -975,3 +975,38 @@ see. Refusing is the honest answer, and against five live pages it did not fire 
 remedy is the same shape as the one made for unmeasured lines: let a recipe record that it does not
 know its own yield. That is a wider change — scaling, planning and the shopping list all assume a
 yield exists — and it waits until something makes it worth doing.
+
+---
+
+## ADR-031 An imported recipe is resolved in the page's own language
+
+**Status:** Accepted
+
+**Context.** Quookly ships in en-GB, de-CH and fr-CH, and a Swiss cook pasting a link to a Swiss
+recipe site is the ordinary case. The registry is *defined* in English — slugs, densities, allergen
+classifications — and until now it was only *named* in English.
+
+**Decision.** The registry carries names in every locale Quookly ships (`seed/names.<locale>.json`),
+and an import resolves ingredients in the page's own language: what `<html lang>` declares, else the
+cook's chosen language, else English.
+
+**Rationale.** This is a safety matter rather than a convenience. Asked in English, "Mehl" resolves
+to nothing, is recorded as a new entry nobody has classified, and the recipe silently loses the
+gluten the registry knew about. A German recipe made of flour, milk and eggs would carry no allergen
+judgement at all — while looking exactly like one that had been judged and found clear.
+
+The language is taken from the page rather than guessed from the words: the page knows, and guessing
+from a short ingredient list would be a coin toss.
+
+**Cost.** Translations are curated by hand and can be wrong or missing, and a missing one fails
+quietly — the ingredient simply does not resolve. A test asserts every seeded ingredient is named in
+every shipped language, which turns the silent case into a loud one.
+
+A name means one thing per language: the unique index is on locale and spelling, so the first entry
+to claim a word keeps it. That is why "Milch" is whole milk rather than being shared, and why
+translations are added rather than overwritten.
+
+**A related correction.** Separated eggs turned out to need their own entries. Resolving both
+*Eigelb* and *Eiweiss* to "egg" printed "3 egg" twice on a recipe using three eggs, which reads as
+six. `egg-yolk` and `egg-white` are now seeded ingredients in their own right, both classified as
+containing eggs.

@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
+from quookly.access import cook as cook_access
 from quookly.access import eater as eater_access
 from quookly.access import ingredient as registry
 from quookly.access import preferences as preference_access
@@ -35,6 +36,7 @@ from quookly.contracts.recipe import (
     StepDraft,
 )
 from quookly.contracts.suitability import FindingView, JudgedLine, Outcome, VerdictView
+from quookly.contracts.web import ReadableContent
 from quookly.engines import exchange, interpretation, measure, suitability
 
 _UNITS_BY_SYMBOL = {unit.symbol: unit for unit in Unit}
@@ -390,6 +392,32 @@ async def _resolve(lines: list[InterpretedLine], locale: str) -> tuple[dict[str,
     return resolved, added
 
 
+#: Which of Quookly's locales a page's declared language maps to. A page saying `de` is
+#: German whether it was written in Zurich or Hamburg, and the registry's German names are
+#: the ones worth asking with.
+_LOCALE_FOR_LANGUAGE = {"de": "de-CH", "fr": "fr-CH", "en": "en-GB"}
+
+
+async def _reading_locale(content: ReadableContent, cook_id: int, fallback: str) -> str:
+    """Which language to resolve this page's ingredients in.
+
+    The page's own declaration first: it knows, and a guess from a short ingredient list
+    would be a coin toss. Then the cook's own language, because somebody who reads
+    Quookly in German is likely importing German recipes even from a page that does not
+    say. English last, which is where the registry is defined.
+
+    Getting this wrong is not a cosmetic failure. "Mehl" asked for in English resolves to
+    nothing, becomes a new entry nobody has classified, and the recipe loses the gluten
+    the registry knew about.
+    """
+    if content.language and content.language in _LOCALE_FOR_LANGUAGE:
+        return _LOCALE_FOR_LANGUAGE[content.language]
+    account = await cook_access.fetch(cook_id)
+    if account is not None and account.locale:
+        return account.locale
+    return fallback
+
+
 async def import_from_url(url: str, cook_id: int, locale: str) -> ImportedRecipe:
     """Read a recipe off a page and store it (UC-1.3) — the founding use case.
 
@@ -400,11 +428,12 @@ async def import_from_url(url: str, cook_id: int, locale: str) -> ImportedRecipe
     """
     content = await web.fetch_readable(url)
     read = await interpretation.read_page(content)
+    reading_locale = await _reading_locale(content, cook_id, locale)
 
     if read.yield_magnitude is None or read.yield_unit is None:
         raise YieldUnknown(f"{content.url} does not say how much this makes")
 
-    resolved, added = await _resolve(read.lines, locale)
+    resolved, added = await _resolve(read.lines, reading_locale)
     draft = RecipeDraft(
         title=read.title,
         summary=read.summary,

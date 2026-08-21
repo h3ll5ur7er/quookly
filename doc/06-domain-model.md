@@ -268,6 +268,12 @@ servings, and the recipe then refuses to scale to a household.
 Vague measures are the same problem in a third language: a Prise, a pincée and a pinch are all
 judgements, and all three keep their words and refuse a number.
 
+**Names are the part that matters most.** The registry is defined in English and *named* in every
+shipped language. Asked in the wrong one, "Mehl" resolves to nothing, becomes an entry nobody has
+classified, and the recipe loses the gluten the registry knew about — while looking exactly like a
+recipe that had been judged and found clear. See
+[ADR-031](07-decisions.md#adr-031-an-imported-recipe-is-resolved-in-the-pages-own-language).
+
 ### Units that quietly disagree
 
 A US cup is 236.6 ml; a metric cup is 250 ml. A US tablespoon is 14.8 ml; a metric one is 15 ml. US

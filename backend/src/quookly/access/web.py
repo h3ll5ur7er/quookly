@@ -216,5 +216,25 @@ async def fetch_readable(url: str) -> ReadableContent:
         url=str(response.url),
         text=(text or "").strip(),
         title=getattr(metadata, "title", None) if metadata else None,
+        language=_declared_language(markup),
         structured=structured,
     )
+
+
+def _declared_language(markup: str) -> str | None:
+    """What the page says it is written in, from `<html lang>`.
+
+    Taken from the page rather than guessed from the words, because the page knows and a
+    guess about a short ingredient list would be a coin toss. Reduced to the language:
+    `de-CH`, `de-DE` and `de` all mean the recipe is in German, and a Swiss instance
+    should read a German page as readily as a Swiss one.
+    """
+    try:
+        tree = lxml_html.fromstring(markup)
+    except (ValueError, etree.ParserError):
+        return None
+    declared = tree.get("lang") or tree.get("{http://www.w3.org/XML/1998/namespace}lang")
+    if not declared:
+        return None
+    language = str(declared).strip().lower().split("-")[0]
+    return language or None

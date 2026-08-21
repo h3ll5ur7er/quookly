@@ -20,4 +20,8 @@ class ReadableContent:
     url: str
     text: str
     title: str | None = None
+    #: What the page says it is written in, from `<html lang>`. A two-letter code, or
+    #: None where the page does not say. Absent is common enough that nothing may depend
+    #: on it being present.
+    language: str | None = None
     structured: list[dict[str, Any]] = field(default_factory=list)

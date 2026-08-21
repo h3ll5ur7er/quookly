@@ -34,6 +34,39 @@ def read_seed_file(locale: str = DEFAULT_SEED_LOCALE) -> dict[str, Any]:
     return document
 
 
+#: The languages the shipped ingredients are named in, beyond the one they are defined in.
+#: Without these a German recipe resolves nothing: every ingredient becomes a new entry
+#: nobody has classified, and a recipe made of flour, milk and eggs loses its allergens
+#: entirely — the registry knew the answer and was asked the wrong word (FR-10).
+TRANSLATED_LOCALES = ("de-CH", "fr-CH")
+
+
+def read_names_file(locale: str) -> dict[str, list[str]]:
+    """What the seeded ingredients are called in one language."""
+    path = SEED_DIRECTORY / f"names.{locale}.json"
+    if not path.exists():
+        return {}
+    document: dict[str, Any] = json.loads(path.read_text(encoding="utf8"))
+    names: dict[str, list[str]] = document.get("names", {})
+    return names
+
+
+async def name_ingredients() -> int:
+    """Teach the registry the other languages it ships in. Returns how many names were new.
+
+    Runs at every start-up alongside stocking, and is additive: an entry keeps whatever
+    names it already has. A translation is a name and nothing more — it never touches a
+    density or an allergen classification.
+    """
+    added = 0
+    for locale in TRANSLATED_LOCALES:
+        for slug, spellings in read_names_file(locale).items():
+            added += await registry.name_in(slug, locale, spellings)
+    if added:
+        log.info("named the registry in %s languages", len(TRANSLATED_LOCALES))
+    return added
+
+
 async def stock_registry(locale: str = DEFAULT_SEED_LOCALE) -> int:
     """Add the seeded ingredients this instance does not have. Returns how many.
 
@@ -60,6 +93,7 @@ async def stock_registry(locale: str = DEFAULT_SEED_LOCALE) -> int:
 
     if added:
         log.info("stocked the registry with %s ingredients", added, extra={"added": added})
+    await name_ingredients()
     return added
 
 

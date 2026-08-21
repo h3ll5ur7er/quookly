@@ -1,0 +1,137 @@
+{
+ "quookly": 1,
+ "locale": "de-CH",
+ "note": "What the seeded ingredients are called in this language. Names only — the ingredients themselves, with their densities and allergens, are in starter.en-GB.json. The first name is the canonical one; the rest are spellings a recipe might use.",
+ "names": {
+  "plain-flour": [
+   "Weissmehl",
+   "Mehl",
+   "Weizenmehl",
+   "helles Mehl"
+  ],
+  "wholemeal-flour": [
+   "Vollkornmehl",
+   "Ruchmehl",
+   "Vollmehl"
+  ],
+  "cornflour": [
+   "Maisstärke",
+   "Maizena",
+   "Speisestärke",
+   "Stärke"
+  ],
+  "caster-sugar": [
+   "feiner Zucker",
+   "Zucker",
+   "Kristallzucker"
+  ],
+  "granulated-sugar": [
+   "Kristallzucker",
+   "weisser Zucker"
+  ],
+  "icing-sugar": [
+   "Puderzucker",
+   "Staubzucker"
+  ],
+  "brown-sugar": [
+   "brauner Zucker",
+   "Rohrzucker"
+  ],
+  "fine-salt": [
+   "Salz",
+   "Kochsalz",
+   "feines Salz",
+   "Tafelsalz"
+  ],
+  "baking-powder": [
+   "Backpulver"
+  ],
+  "bicarbonate-of-soda": [
+   "Natron",
+   "Backsoda",
+   "Speisenatron"
+  ],
+  "cocoa-powder": [
+   "Kakaopulver",
+   "Kakao"
+  ],
+  "ground-almonds": [
+   "gemahlene Mandeln",
+   "Mandelmehl"
+  ],
+  "rolled-oats": [
+   "Haferflocken"
+  ],
+  "rice": [
+   "Reis",
+   "Langkornreis"
+  ],
+  "water": [
+   "Wasser"
+  ],
+  "whole-milk": [
+   "Vollmilch",
+   "Milch"
+  ],
+  "double-cream": [
+   "Vollrahm",
+   "Rahm",
+   "Schlagrahm",
+   "Sahne",
+   "Schlagsahne"
+  ],
+  "olive-oil": [
+   "Olivenöl"
+  ],
+  "vegetable-oil": [
+   "Bratbutter",
+   "Pflanzenöl",
+   "Sonnenblumenöl",
+   "Rapsöl",
+   "Öl"
+  ],
+  "honey": [
+   "Honig",
+   "flüssiger Honig"
+  ],
+  "white-wine": [
+   "Weisswein",
+   "Weißwein"
+  ],
+  "unsalted-butter": [
+   "Butter",
+   "ungesalzene Butter",
+   "Butterflocken"
+  ],
+  "plain-yoghurt": [
+   "Naturjoghurt",
+   "Joghurt"
+  ],
+  "egg": [
+   "Ei",
+   "Eier"
+  ],
+  "onion": [
+   "Zwiebel",
+   "Zwiebeln"
+  ],
+  "garlic-clove": [
+   "Knoblauchzehe",
+   "Knoblauch"
+  ],
+  "lemon": [
+   "Zitrone",
+   "Zitronen"
+  ],
+  "egg-yolk": [
+   "Eigelb",
+   "Eidotter",
+   "Dotter"
+  ],
+  "egg-white": [
+   "Eiweiss",
+   "Eiklar",
+   "Eischnee"
+  ]
+ }
+}

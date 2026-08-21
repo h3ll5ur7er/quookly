@@ -28,6 +28,7 @@ from quookly.api import app
 from quookly.contracts.errors import ContentRefused, ContentUnreachable, InferenceNotConfigured
 from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.contracts.web import ReadableContent
+from quookly.managers import seed
 from quookly.utilities.configuration import get_settings
 
 ENGLISH = "en-GB"
@@ -114,12 +115,15 @@ def serving(
     *,
     structured: list[dict[str, Any]] = _NOT_GIVEN,
     text: str = "some readable prose",
+    language: str | None = None,
 ) -> None:
     """Answer the fetch with this page. An empty `structured` means a page with no
     metadata at all, which is the blog case — so it must not fall back to the default."""
 
     async def fetched(url: str) -> ReadableContent:
-        return ReadableContent(url=url, text=text, title="A page", structured=structured)
+        return ReadableContent(
+            url=url, text=text, title="A page", structured=structured, language=language
+        )
 
     monkeypatch.setattr(web, "fetch_readable", fetched)
 
@@ -302,6 +306,85 @@ class TestResolvingAgainstTheRegistry:
     ) -> None:
         serving(
             monkeypatch, structured=[{**RECIPE_BLOCK, "recipeIngredient": ["100g plain flour"]}]
+        )
+        outcome = (await client.post(IMPORT, json={"url": PAGE}, headers=cook)).json()
+        assert outcome["ingredients_added"] == []
+
+
+class TestAPageInAnotherLanguage:
+    """A Swiss cook pasting a link to a Swiss site is the ordinary case (FR-10)."""
+
+    async def test_a_german_ingredient_reaches_the_registry(
+        self, client: AsyncClient, cook: dict[str, str], monkeypatch: MonkeyPatch
+    ) -> None:
+        """Asked in English, "Mehl" resolves to nothing and becomes a new entry nobody has
+        classified — and the recipe loses the gluten the registry knew about."""
+        await seed.stock_registry()
+        serving(
+            monkeypatch,
+            language="de",
+            structured=[
+                {
+                    **RECIPE_BLOCK,
+                    "name": "Pfannkuchen",
+                    "recipeYield": "4 Portionen",
+                    "recipeIngredient": ["150 g Mehl", "2,5 dl Milch", "3 Eier"],
+                }
+            ],
+        )
+        outcome = (await client.post(IMPORT, json={"url": PAGE}, headers=cook)).json()
+        assert outcome["ingredients_added"] == []
+
+    async def test_the_allergens_survive_the_translation(
+        self, client: AsyncClient, cook: dict[str, str], monkeypatch: MonkeyPatch
+    ) -> None:
+        """The point of the whole exercise. A recipe of Mehl, Milch and Eier is not an
+        unknown quantity — it is flour, milk and eggs, and the registry has classified all
+        three."""
+        await seed.stock_registry()
+        serving(
+            monkeypatch,
+            language="de",
+            structured=[
+                {
+                    **RECIPE_BLOCK,
+                    "recipeYield": "4 Portionen",
+                    "recipeIngredient": ["150 g Mehl", "2,5 dl Milch", "3 Eier"],
+                }
+            ],
+        )
+        await client.post(IMPORT, json={"url": PAGE}, headers=cook)
+        await client.post(
+            "/api/v1/eaters",
+            json={
+                "name": "Mira",
+                "age_band": "child",
+                "constraints": [
+                    {"allergen": "gluten", "ingredient_slug": None, "severity": "medical"}
+                ],
+            },
+            headers=cook,
+        )
+        listed = (await client.get(RECIPES, headers=cook)).json()
+        assert listed[0]["suitability"] == "unsuitable"
+
+    async def test_a_page_that_does_not_say_falls_back_to_the_cooks_language(
+        self, client: AsyncClient, cook: dict[str, str], monkeypatch: MonkeyPatch
+    ) -> None:
+        """Somebody who reads Quookly in German is likely importing German recipes, even
+        from a page whose markup forgot to say so."""
+        await seed.stock_registry()
+        await client.put("/api/v1/setup/locale", json={"locale": "de-CH"}, headers=cook)
+        serving(
+            monkeypatch,
+            language=None,
+            structured=[
+                {
+                    **RECIPE_BLOCK,
+                    "recipeYield": "4 Portionen",
+                    "recipeIngredient": ["150 g Mehl"],
+                }
+            ],
         )
         outcome = (await client.post(IMPORT, json={"url": PAGE}, headers=cook)).json()
         assert outcome["ingredients_added"] == []

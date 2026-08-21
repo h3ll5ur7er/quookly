@@ -1,0 +1,134 @@
+{
+ "quookly": 1,
+ "locale": "fr-CH",
+ "note": "What the seeded ingredients are called in this language. Names only — the ingredients themselves, with their densities and allergens, are in starter.en-GB.json. The first name is the canonical one; the rest are spellings a recipe might use.",
+ "names": {
+  "plain-flour": [
+   "farine",
+   "farine blanche",
+   "farine de blé",
+   "farine tout usage"
+  ],
+  "wholemeal-flour": [
+   "farine complète",
+   "farine intégrale"
+  ],
+  "cornflour": [
+   "fécule de maïs",
+   "maïzena",
+   "fécule"
+  ],
+  "caster-sugar": [
+   "sucre fin",
+   "sucre",
+   "sucre cristallisé"
+  ],
+  "granulated-sugar": [
+   "sucre cristallisé",
+   "sucre blanc"
+  ],
+  "icing-sugar": [
+   "sucre glace"
+  ],
+  "brown-sugar": [
+   "sucre roux",
+   "cassonade"
+  ],
+  "fine-salt": [
+   "sel",
+   "sel fin",
+   "sel de table"
+  ],
+  "baking-powder": [
+   "levure chimique",
+   "poudre à lever"
+  ],
+  "bicarbonate-of-soda": [
+   "bicarbonate de soude",
+   "bicarbonate"
+  ],
+  "cocoa-powder": [
+   "cacao en poudre",
+   "cacao"
+  ],
+  "ground-almonds": [
+   "amandes moulues",
+   "poudre d'amandes"
+  ],
+  "rolled-oats": [
+   "flocons d'avoine"
+  ],
+  "rice": [
+   "riz",
+   "riz long"
+  ],
+  "water": [
+   "eau"
+  ],
+  "whole-milk": [
+   "lait entier",
+   "lait"
+  ],
+  "double-cream": [
+   "crème entière",
+   "crème",
+   "crème fraîche",
+   "crème à fouetter"
+  ],
+  "olive-oil": [
+   "huile d'olive"
+  ],
+  "vegetable-oil": [
+   "huile végétale",
+   "huile de tournesol",
+   "huile de colza",
+   "huile"
+  ],
+  "honey": [
+   "miel",
+   "miel liquide"
+  ],
+  "white-wine": [
+   "vin blanc"
+  ],
+  "unsalted-butter": [
+   "beurre",
+   "beurre doux",
+   "beurre non salé"
+  ],
+  "plain-yoghurt": [
+   "yogourt nature",
+   "yaourt nature",
+   "yogourt",
+   "yaourt"
+  ],
+  "egg": [
+   "œuf",
+   "œufs",
+   "oeuf",
+   "oeufs"
+  ],
+  "onion": [
+   "oignon",
+   "oignons"
+  ],
+  "garlic-clove": [
+   "gousse d'ail",
+   "ail"
+  ],
+  "lemon": [
+   "citron",
+   "citrons"
+  ],
+  "egg-yolk": [
+   "jaune d'œuf",
+   "jaunes d'œufs",
+   "jaune d'oeuf"
+  ],
+  "egg-white": [
+   "blanc d'œuf",
+   "blancs d'œufs",
+   "blanc d'oeuf"
+  ]
+ }
+}
