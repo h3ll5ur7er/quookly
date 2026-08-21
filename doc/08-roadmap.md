@@ -84,7 +84,7 @@ handling into working features is the change this architecture exists to avoid.
 
 - ~~Eater profiles, dietary constraints with severity, age bands (UC-6.3, UC-6.4)~~ **Built**
 - ~~Appetite multipliers, summed to required yield (UC-6.5, FR-18)~~ **Built** — in `MeasureEngine`, because portion sizing is V4
-- `OnboardingEngine` and the new-cook setup flow (UC-10.2, UC-10.3, V16)
+- ~~`OnboardingEngine` and the new-cook setup flow (UC-10.2, UC-10.3, V16)~~ **Built** — including unit-preference and language endpoints, which setup needed and Phase 1 had only built as far as the access layer
 - ~~Household screens: recording eaters, their constraints, and what the table adds up to~~ **Built**
 - ~~Allergen classification in the ingredient registry~~ **Built**
 - ~~`SuitabilityEngine` — pure, exhaustively tested (V5, [ADR-006](07-decisions.md#adr-006-allergen-determination-is-structural))~~ **Built**
@@ -92,6 +92,7 @@ handling into working features is the change this architecture exists to avoid.
 
 **Done when:** a recipe can be evaluated against a named set of eaters and explains every verdict by
 naming the ingredient responsible, and a new cook is walked from empty profile to ready household.
+**Met.**
 
 Onboarding lands here because this is the phase where there is finally something worth setting up.
 Placed earlier it would collect preferences nothing yet consumes.

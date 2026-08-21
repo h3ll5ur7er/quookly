@@ -1,0 +1,155 @@
+import AxeBuilder from '@axe-core/playwright';
+import { expect, test } from '@playwright/test';
+
+/**
+ * Guided setup (UC-10.2, UC-10.3), against a real instance.
+ *
+ * The property worth proving here is that nothing stores progress: the checklist is
+ * worked out from the profile every time it is asked for (ADR-014). So these tests change
+ * the profile through other screens and check that setup notices — including noticing
+ * that something has been undone.
+ */
+
+const COOK = {
+  email: 'chef@example.com',
+  display_name: 'Emanuel',
+  password: 'a-sufficiently-long-password',
+};
+
+let token: string;
+
+test.describe.configure({ mode: 'serial' });
+
+test.beforeAll(async ({ request }) => {
+  const signIn = await request.post('/api/v1/accounts/sign-in', {
+    data: { email: COOK.email, password: COOK.password },
+  });
+  token = (await signIn.json()).token;
+
+  // Earlier files leave a household behind; setup is about a profile that has none.
+  const auth = { Authorization: `Bearer ${token}` };
+  for (const person of await (await request.get('/api/v1/eaters', { headers: auth })).json()) {
+    await request.delete(`/api/v1/eaters/${person.id}`, { headers: auth });
+  }
+});
+
+test.beforeEach(async ({ page }) => {
+  await page.goto('/sign-in');
+  await page.getByLabel('Email').fill(COOK.email);
+  await page.getByLabel('Password').fill(COOK.password);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL(/\/recipes$/);
+});
+
+function stepFor(page: import('@playwright/test').Page, title: string) {
+  return page.locator('.setup__step').filter({ hasText: title });
+}
+
+test.describe('the checklist', () => {
+  test('shows the whole road rather than one door at a time', async ({ page }) => {
+    await page.goto('/setup');
+    await expect(page.locator('.setup__step')).toHaveCount(4);
+  });
+
+  test('says why each step is worth doing', async ({ page }) => {
+    await page.goto('/setup');
+    await expect(page.getByText(/scaled to the people at your table/)).toBeVisible();
+  });
+
+  test('has no accessibility violations', async ({ page }) => {
+    await page.goto('/setup');
+    await expect(page.locator('.setup__step').first()).toBeVisible();
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toEqual([]);
+  });
+
+  test('looks like this', async ({ page }) => {
+    await page.goto('/setup');
+    await expect(page.locator('.setup__step').first()).toBeVisible();
+    await page.screenshot({ path: 'e2e/screenshots/setup.png', fullPage: true });
+  });
+});
+
+test.describe('doing the work settles a step', () => {
+  test('recording somebody settles the household', async ({ page }) => {
+    await page.goto('/setup');
+    await expect(stepFor(page, 'Who you cook for')).not.toHaveClass(/setup__step--done/);
+
+    await stepFor(page, 'Who you cook for').getByRole('link', { name: 'Add someone' }).click();
+    await page.getByLabel('Name', { exact: true }).fill('Ada');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page).toHaveURL(/\/household$/);
+
+    await page.goto('/setup');
+    await expect(stepFor(page, 'Who you cook for')).toHaveClass(/setup__step--done/);
+  });
+
+  test('a household with nobody restricted is still asked about constraints', async ({ page }) => {
+    /* The distinction the design rests on: silence could mean either thing. */
+    await page.goto('/setup');
+    await expect(stepFor(page, 'What they avoid')).not.toHaveClass(/setup__step--done/);
+  });
+
+  test('choosing a unit settles the units step', async ({ page }) => {
+    await page.goto('/settings');
+    await page.getByLabel('Liquids').selectOption('dl');
+    await page.goto('/setup');
+    await expect(stepFor(page, 'How you measure')).toHaveClass(/setup__step--done/);
+  });
+});
+
+test.describe('answering with nothing', () => {
+  test('settles the step, and says which answer settled it', async ({ page }) => {
+    await page.goto('/setup');
+    await stepFor(page, 'What they avoid')
+      .getByRole('button', { name: 'Nobody avoids anything' })
+      .click();
+    await expect(stepFor(page, 'What they avoid')).toHaveClass(/setup__step--done/);
+    await expect(page.getByText('You said nobody avoids anything')).toBeVisible();
+  });
+
+  test('survives a reload, because it was recorded rather than remembered', async ({ page }) => {
+    await page.goto('/setup');
+    await expect(page.getByText('You said nobody avoids anything')).toBeVisible();
+  });
+});
+
+test.describe('finishing', () => {
+  test('says so once nothing is outstanding, and points somewhere useful', async ({ page }) => {
+    await page.goto('/setup');
+    await stepFor(page, 'Your language')
+      .getByRole('button', { name: 'The current language suits me' })
+      .click();
+    await expect(page.getByText('Everything is set')).toBeVisible();
+    await page.getByRole('link', { name: 'See your recipes' }).click();
+    await expect(page).toHaveURL(/\/recipes$/);
+  });
+
+  test('looks like this when it is done', async ({ page }) => {
+    await page.goto('/setup');
+    await expect(page.getByText('Everything is set')).toBeVisible();
+    await page.screenshot({ path: 'e2e/screenshots/setup-complete.png', fullPage: true });
+  });
+});
+
+test.describe('it stays true', () => {
+  test('removing everybody reopens the household step', async ({ page, request }) => {
+    /*
+     * The whole reason nothing is stored. A completion flag would still say the household
+     * was set up, and setup would be lying about a profile it could simply have read.
+     */
+    const auth = { Authorization: `Bearer ${token}` };
+    for (const person of await (await request.get('/api/v1/eaters', { headers: auth })).json()) {
+      await request.delete(`/api/v1/eaters/${person.id}`, { headers: auth });
+    }
+    await page.goto('/setup');
+    await expect(stepFor(page, 'Who you cook for')).not.toHaveClass(/setup__step--done/);
+    await expect(page.getByText('Everything is set')).toHaveCount(0);
+  });
+
+  test('but a question that was answered stays answered', async ({ page }) => {
+    /* They were asked and they answered. Emptying the household does not unask it. */
+    await page.goto('/setup');
+    await expect(stepFor(page, 'What they avoid')).toHaveClass(/setup__step--done/);
+  });
+});

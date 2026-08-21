@@ -64,14 +64,18 @@ describe('BootstrapComponent', () => {
     backend.expectNone('/api/v1/accounts/bootstrap');
   });
 
-  it('creates the administrator and continues to the recipes', async () => {
+  it('creates the administrator and walks them into setup', async () => {
+    /*
+     * Not the recipe list. A fresh instance has nobody to cook for, so every recipe there
+     * would be unjudged — and an empty kitchen teaches nothing about what to do next.
+     */
     fill('a-sufficiently-long-password');
     submit();
     backend.expectOne('/api/v1/accounts/bootstrap').flush(ADMIN);
     await fixture.whenStable();
 
     expect(TestBed.inject(AuthStore).isAdmin()).toBe(true);
-    expect(navigate).toHaveBeenCalledWith('/recipes');
+    expect(navigate).toHaveBeenCalledWith('/setup');
   });
 
   it('explains a claimed instance rather than failing silently', async () => {

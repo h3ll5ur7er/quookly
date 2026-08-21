@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { SetupService } from '@api';
+import { AuthStore } from '../auth/auth.store';
 import { LOCALES, preferredLocale, storeLocale } from './locale.store';
 
 @Component({
@@ -40,6 +42,9 @@ import { LOCALES, preferredLocale, storeLocale } from './locale.store';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LocalePickerComponent {
+  private readonly auth = inject(AuthStore);
+  private readonly setup = inject(SetupService);
+
   protected readonly locales = LOCALES;
   protected readonly current = preferredLocale();
 
@@ -47,6 +52,10 @@ export class LocalePickerComponent {
    * Catalogues load once before bootstrap, so a change takes effect on reload (ADR-025).
    * Reloading immediately is clearer than leaving the page in the old language with a
    * new value in the picker.
+   *
+   * A signed-in cook also has the choice kept on their account, so it follows them to
+   * their next device. The reload happens either way: a language that failed to save
+   * should still take effect here rather than leaving the picker apparently stuck.
    */
   protected pick(event: Event): void {
     const chosen = (event.target as HTMLSelectElement).value;
@@ -54,6 +63,13 @@ export class LocalePickerComponent {
       return;
     }
     storeLocale(chosen);
-    location.reload();
+    if (!this.auth.isSignedIn()) {
+      location.reload();
+      return;
+    }
+    this.setup.chooseLocale({ locale: chosen }).subscribe({
+      next: () => location.reload(),
+      error: () => location.reload(),
+    });
   }
 }

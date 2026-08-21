@@ -1,0 +1,132 @@
+@use '../../../styles/page';
+
+.setup__lede {
+  color: var(--on-surface-muted);
+}
+
+.setup__steps {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.setup__step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+
+/* A tick or a number, never a colour alone: which steps are behind you has to survive
+   being printed in black and white. */
+.setup__mark {
+  counter-increment: step;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1;
+
+  &::before {
+    content: counter(step);
+  }
+}
+
+.setup__step--done {
+  background: none;
+
+  .setup__mark {
+    border-color: var(--success);
+    color: var(--success);
+
+    &::before {
+      content: '✓';
+    }
+  }
+
+  .setup__title {
+    color: var(--on-surface-muted);
+  }
+}
+
+.setup__title {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.setup__why {
+  margin: var(--space-1) 0 0;
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
+.setup__answer {
+  margin: var(--space-2) 0 0;
+  color: var(--on-surface-subtle);
+  font-size: var(--text-sm);
+}
+
+.setup__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.setup__go {
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  padding-inline: var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--on-surface);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    background: var(--surface-sunken);
+  }
+}
+
+/* The one place to start. Everything else outstanding stays outlined — a screen with four
+   filled buttons has told a cook nothing about which to press. */
+.setup__go--now {
+  border-color: transparent;
+  background: var(--primary);
+  color: var(--on-primary);
+
+  &:hover {
+    background: var(--primary-hover);
+  }
+}
+
+/* Declining is an answer, not a dismissal, so it is offered plainly rather than hidden
+   behind a "skip" in the corner. Quiet, because it is not the recommended path. */
+.setup__skip {
+  min-height: 44px;
+  padding-inline: var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--surface-sunken);
+    color: var(--on-surface);
+  }
+}

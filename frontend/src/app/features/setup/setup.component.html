@@ -1,0 +1,62 @@
+<main class="page setup">
+  <h1 i18n="@@setupHeading">Set up your kitchen</h1>
+
+  @if (failed()) {
+    <p class="notice notice--danger" role="alert" i18n="@@setupFailed">
+      Could not load your setup. Please try again.
+    </p>
+  } @else if (progress(); as setup) {
+    @if (setup.complete) {
+      <p class="setup__lede" i18n="@@setupComplete">
+        Everything is set. Quookly will check each recipe against your table.
+      </p>
+    } @else {
+      <p class="setup__lede" i18n="@@setupLede">
+        None of this is required, and you can stop and come back. Nothing is remembered as progress
+        — this list is worked out from what you have actually recorded.
+      </p>
+    }
+
+    <ol class="setup__steps">
+      @for (status of setup.steps; track status.step) {
+        <li class="setup__step" [class.setup__step--done]="status.done">
+          <span class="setup__mark" aria-hidden="true"></span>
+          <div>
+            <h2 class="setup__title">{{ stepTitle(status.step) }}</h2>
+            <p class="setup__why">{{ stepWhy(status.step) }}</p>
+
+            @if (status.done) {
+              @if (status.declared) {
+                <p class="setup__answer">{{ stepDeclared(status.step) }}</p>
+              } @else {
+                <p class="setup__answer" i18n="@@setupStepDone">Done.</p>
+              }
+            } @else {
+              <div class="setup__actions">
+                <!-- Only what to do *now* is filled. Four primary buttons down a page
+                     compete with each other and answer nothing; one says where to start,
+                     which is what `next_step` is for. -->
+                <a
+                  class="setup__go"
+                  [class.setup__go--now]="status.step === setup.next_step"
+                  [routerLink]="stepRoute(status.step)"
+                >
+                  {{ stepAction(status.step) }}
+                </a>
+                <button type="button" class="setup__skip" (click)="decline(status.step)">
+                  {{ stepDecline(status.step) }}
+                </button>
+              </div>
+            }
+          </div>
+        </li>
+      }
+    </ol>
+
+    @if (setup.complete) {
+      <a class="action" routerLink="/recipes" i18n="@@setupToRecipes">See your recipes</a>
+    }
+  } @else {
+    <p i18n="@@setupLoading">Loading…</p>
+  }
+</main>

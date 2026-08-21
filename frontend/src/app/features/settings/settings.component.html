@@ -1,0 +1,46 @@
+<main class="page settings">
+  <h1 i18n="@@settingsHeading">Settings</h1>
+
+  <section aria-labelledby="language-heading">
+    <h2 id="language-heading" i18n="@@settingsLanguage">Language</h2>
+    <p class="settings__why" i18n="@@settingsLanguageWhy">
+      Kept with your account, so it follows you to your next device. Changing it reloads the page.
+    </p>
+    <app-locale-picker />
+  </section>
+
+  <section aria-labelledby="units-heading">
+    <h2 id="units-heading" i18n="@@settingsUnits">Units</h2>
+    <p class="settings__why" i18n="@@settingsUnitsWhy">
+      Chosen per kind of ingredient rather than per system — powders in grams and liquids in
+      decilitres is a perfectly ordinary way to cook.
+    </p>
+
+    @if (failed()) {
+      <p class="notice notice--danger" role="alert" i18n="@@settingsFailed">
+        Could not save that. Please try again.
+      </p>
+    }
+
+    @if (units(); as preferences) {
+      <div class="settings__units">
+        @for (preference of preferences; track preference.kind) {
+          <label class="settings__unit">
+            <span>{{ kindLabel(preference.kind) }}</span>
+            <select
+              [value]="preference.unit"
+              (change)="choose(preference.kind, $event)"
+              [disabled]="optionsFor(preference.kind).length < 2"
+            >
+              @for (option of optionsFor(preference.kind); track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </label>
+        }
+      </div>
+    } @else {
+      <p i18n="@@settingsLoading">Loading…</p>
+    }
+  </section>
+</main>

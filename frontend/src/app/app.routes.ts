@@ -46,6 +46,17 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/household/eater-form.component').then((m) => m.EaterFormComponent),
   },
+  {
+    path: 'setup',
+    canActivate: [requireSignedIn],
+    loadComponent: () => import('./features/setup/setup.component').then((m) => m.SetupComponent),
+  },
+  {
+    path: 'settings',
+    canActivate: [requireSignedIn],
+    loadComponent: () =>
+      import('./features/settings/settings.component').then((m) => m.SettingsComponent),
+  },
   { path: '', redirectTo: 'recipes', pathMatch: 'full' },
   { path: '**', redirectTo: 'recipes' },
 ];

@@ -338,37 +338,43 @@ nothing. The manager owns only the order.
 sequenceDiagram
   actor NewCook
   participant API as "API route"
-  participant RM as "RecipeManager"
+  participant OBM as "OnboardingManager"
   participant EAT as "EaterAccess"
+  participant SET as "SetupAccess"
   participant OBE as "OnboardingEngine"
 
   NewCook->>API: signed up, what now
-  API->>EAT: fetch_cook(principal)
-  EAT-->>API: profile, eaters, preferences
-  API->>OBE: next_step(profile state)
-  OBE-->>API: missing items and the next step
-  API-->>NewCook: set up your household
-  NewCook->>API: add eaters and constraints
-  API->>EAT: store eaters and constraints
-  API->>OBE: next_step(updated state)
-  OBE-->>API: remaining items
-  API-->>NewCook: set your preferred units
-  NewCook->>API: preferences
-  API->>EAT: store unit preferences
-  API->>OBE: next_step(updated state)
-  OBE-->>API: setup complete
-  API->>RM: suggest_from_seed(cook)
-  RM-->>API: starter recipes
-  API-->>NewCook: here is your kitchen
+  API->>OBM: assess(cook)
+  OBM->>EAT: list_for_cook(cook)
+  EAT-->>OBM: eaters and their constraints
+  OBM->>SET: declarations_for(cook)
+  SET-->>OBM: questions already answered
+  OBM->>OBE: assess(profile state)
+  OBE-->>OBM: every step, what is missing, what is next
+  OBM-->>API: progress
+  API-->>NewCook: the checklist, starting with your household
+  NewCook->>API: nobody avoids anything
+  API->>OBM: declare(cook, constraints)
+  OBM->>SET: declare(cook, constraints)
+  OBM->>OBE: assess(updated state)
+  OBE-->>OBM: remaining items
+  OBM-->>API: progress
+  API-->>NewCook: what is left
 ```
+
+An earlier version of this diagram had the route calling `EaterAccess` itself. That is a
+Client reaching Resource Access, which the call rules forbid and which
+[an import-linter contract](04-architecture.md#call-rules) now rejects at build time. The
+manager is not ceremony: gathering a profile spans three access services, and none of them
+should know the others exist.
 
 Nothing stores "step 2 of 4 complete". `OnboardingEngine` reads the profile and derives what is
 missing ([ADR-014](07-decisions.md#adr-014-onboarding-progress-is-derived-not-stored)), which is why
 UC-10.3 — resume later, see what is outstanding — needs no extra machinery, and why a cook who
 deletes all their eaters is correctly told their household is unset again.
 
-The last exchange is UC-10.4 doing its job: the new cook lands on seeded recipes rather than an
-empty list.
+A completed checklist ends by pointing at the recipes, which is UC-10.4 doing its job: the new cook
+lands on seeded content rather than an empty list.
 
 ## Reading these diagrams
 

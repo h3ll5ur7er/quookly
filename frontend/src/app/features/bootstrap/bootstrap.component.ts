@@ -39,7 +39,9 @@ export class BootstrapComponent {
     this.accounts.bootstrapAdmin(this.form.getRawValue()).subscribe({
       next: (authenticated) => {
         this.auth.signIn(authenticated);
-        void this.router.navigateByUrl('/recipes');
+        // Straight into setup: the first thing a new instance needs is somebody to
+        // cook for, and an empty recipe list teaches nothing about what to do next.
+        void this.router.navigateByUrl('/setup');
       },
       error: (response: { status?: number }) => {
         this.submitting.set(false);

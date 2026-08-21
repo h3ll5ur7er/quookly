@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { AccountsService } from '@api';
 import { AuthStore } from '../../core/auth/auth.store';
+import { isLocale, preferredLocale, storeLocale } from '../../core/locale/locale.store';
 
 @Component({
   selector: 'app-sign-in',
@@ -37,6 +38,15 @@ export class SignInComponent {
       next: (authenticated) => {
         this.auth.signIn(authenticated);
         const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/recipes';
+        const theirs = authenticated.cook.locale;
+        if (isLocale(theirs) && theirs !== preferredLocale()) {
+          // Their language, not this device's. Catalogues are fixed for the life of the
+          // application (ADR-025), so adopting one means loading the page again — done as
+          // a navigation so they still land where they were going.
+          storeLocale(theirs);
+          location.assign(returnUrl);
+          return;
+        }
         void this.router.navigateByUrl(returnUrl);
       },
       error: () => {

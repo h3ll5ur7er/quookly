@@ -80,14 +80,20 @@ test.describe('an unclaimed instance', () => {
 });
 
 test.describe('claiming the instance', () => {
-  test('creates the administrator and lands on the recipes', async ({ page }) => {
+  test('creates the administrator and walks them into setup', async ({ page }) => {
+    /*
+     * Not the recipe list. A fresh instance has nobody to cook for, so nothing there
+     * would be checked against anybody, and an empty kitchen teaches nothing about what
+     * to do next (UC-10.2).
+     */
     await page.goto('/bootstrap');
     await page.getByLabel('Your name').fill(ADMIN.name);
     await page.getByLabel('Email').fill(ADMIN.email);
     await page.getByLabel('Password').fill(ADMIN.password);
     await page.getByRole('button', { name: 'Create administrator' }).click();
 
-    await expect(page).toHaveURL(/\/recipes$/);
+    await expect(page).toHaveURL(/\/setup$/);
+    await expect(page.getByRole('heading', { name: 'Set up your kitchen' })).toBeVisible();
   });
 
   test('the instance is now claimed, so the bootstrap form is gone', async ({ page }) => {
