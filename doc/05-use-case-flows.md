@@ -183,8 +183,8 @@ sequenceDiagram
   ING-->>CKM: densities
   CKM->>ME: render(recipe, yield=sum of multipliers, preferences, densities)
   ME-->>CKM: scaled recipe
-  CKM->>EXE: plan(scaled recipe)
-  EXE-->>CKM: mise-en-place groups, ordered steps, timer specs
+  CKM->>EXE: plan(lines, steps)
+  EXE-->>CKM: mise-en-place groups, the lines each step names, the lead
   CKM->>SES: open_session(plan)
   SES-->>CKM: session
   CKM-->>API: session with mise-en-place
@@ -194,9 +194,16 @@ sequenceDiagram
 The yield is the **sum of the attending eaters' appetite multipliers**, not the head count (FR-18).
 Four adults where one eats half portions is 3.5, and the mise-en-place quantities follow.
 
-`ExecutionEngine` receives an already-scaled recipe. It never scales anything itself — that is V4
-and lives in `MeasureEngine`. Keeping the split means appetite handling has exactly one
-implementation, used identically by planning, shopping, and cooking.
+`ExecutionEngine` answers in **positions**, not content: everything it says about ingredient lines it
+says as an index into the recipe's own list. The manager pairs those with the quantities
+`MeasureEngine` already rendered.
+
+That is stronger than the rule it replaces. This flow used to hand the engine an already-scaled
+recipe with a note saying it must never scale one; an engine that returns indices *cannot*, so V4
+stays in one place by construction rather than by a promise
+([ADR-040](07-decisions.md#adr-040-a-steps-ingredients-are-read-out-of-its-words-not-tagged)).
+Appetite handling therefore has exactly one implementation, used identically by planning, shopping
+and cooking.
 
 ### UC-9.6 Complete the session
 

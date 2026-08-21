@@ -64,6 +64,49 @@ class Timing:
     ahead: Span | None
 
 
+@dataclass(frozen=True, slots=True)
+class PrepGroup:
+    """Ingredient lines that want the same work doing to them before anything starts.
+
+    `lines` are **positions in the recipe's own line list**, not content. That is what
+    keeps execution guidance out of the measurement business: an engine that returns
+    indices cannot scale, convert or round anything, so V4 stays in one place by
+    construction rather than by a rule somebody has to remember (see `plan`).
+    """
+
+    #: The work — "finely chopped", "softened". Absent for the group that wants nothing
+    #: doing to it, which is the one a cook simply weighs out.
+    preparation: str | None
+    lines: list[int]
+
+
+@dataclass(frozen=True, slots=True)
+class PlannedStep:
+    """One step, with the ingredient lines it names.
+
+    `lines` is what makes a step readable at the hob without scrolling back: the cook sees
+    "225 g plain flour" beside the instruction that asks for it. Empty where nothing could
+    be matched with confidence, which is the honest answer — a step pointing at the wrong
+    ingredient is worse than one pointing at none.
+    """
+
+    position: int
+    lines: list[int]
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionPlan:
+    """A recipe arranged for doing rather than for reading (V15)."""
+
+    #: Everything to have ready, grouped by the work it wants.
+    mise_en_place: list[PrepGroup]
+    #: What has to happen before the cook can start at all — soaking, proving overnight.
+    #: The leading run only; see `plan`.
+    ahead: list[PlannedStep]
+    #: The method, in order, with the lead already taken off the front.
+    steps: list[PlannedStep]
+
+
 # What leaves the API.
 
 

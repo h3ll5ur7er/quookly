@@ -1495,3 +1495,91 @@ process against one SQLite file, a durable queue would be machinery without a pr
 listener does I/O that can fail independently of the publisher — an email, a push, an index — that is
 the moment to add persistence, and it will be an addition rather than a rewrite: the publisher's side
 of the contract does not change.
+
+---
+
+## ADR-040 A step's ingredients are read out of its words, not tagged
+
+**Status:** Accepted
+
+**Context.** Cooking mode shows one step at a time (UC-9.3), and a cook standing at the hob needs the
+quantities that step asks for without scrolling back to the ingredient list. Something has to say
+which lines a step uses. The domain model has carried a note since Phase 1 that step-to-line
+references "arrive with cooking mode" — this is that decision.
+
+The obvious implementation is a join table, filled in by whoever authors the recipe.
+
+**Decision.** `ExecutionEngine` derives the references by matching ingredient names against the
+instruction text. Nothing is stored, and no author is asked.
+
+The rule, in order:
+
+1. The ingredient's **full name** appearing in the instruction is a reference.
+2. Otherwise the **last word** of the name — "the flour", for *plain flour* — but only where exactly
+   one line in this recipe answers to it.
+3. Otherwise nothing.
+
+Matching is case-insensitive, bounded by whole words, and tolerant of a trailing English plural.
+
+**Rationale.** A tagged reference is a field nobody fills in. Recipes arrive here four ways
+([V1](03-volatility-analysis.md#v1-recipe-provenance)) and three of them have no author present to
+ask: an imported page carries no tags, a generated recipe would have to invent them, and the starter
+set would need them written by hand. A feature that only works for hand-authored recipes is a feature
+most of the collection does not have.
+
+The names are already in the instruction. "Whisk the flour, baking powder, sugar and salt together"
+names four of them in the words a cook would use, and reading that is exactly the kind of judgement
+about steps that [V15](03-volatility-analysis.md#v15-execution-guidance) exists to encapsulate.
+
+**Ambiguity resolves to nothing.** A recipe with plain flour and rye flour cannot say which one "the
+flour" means, so it says neither. The failure to avoid here is not a missed reference — it is a
+claimed one: a step pointing at an ingredient it does not use is a step a cook stops trusting, and
+one wrong pairing costs more than ten absences. Same rule as an unclassified allergen
+([ADR-006](#adr-006-allergen-determination-is-structural)) and an unreadable yield
+([ADR-030](#adr-030-a-recipe-whose-yield-cannot-be-read-is-refused)).
+
+**The engine returns positions, not content.** Everything it says about lines it says as an index
+into the recipe's own list. That is what keeps measurement out of execution guidance: an engine that
+hands back indices *cannot* scale, convert or round anything, so V4 stays in one place by
+construction rather than by a rule somebody has to remember. The original sequence had
+`ExecutionEngine` receiving an already-scaled recipe and a note saying it must never scale one; with
+indices, the note is unnecessary.
+
+**Cost.** It is a heuristic, and it is English-shaped. The head-word rule assumes a name whose last
+word is its noun, and the plural tolerance assumes a trailing letter — a German compound
+(*Weizenmehl* where the step says *Mehl*) matches nothing. Both degrade to showing no reference,
+which is the safe direction, and both improve without a migration because nothing was stored.
+
+An author who wants to be certain always has one lever: name the ingredient in full in the step.
+
+---
+
+## ADR-041 Work done the day before is lifted out only from the front
+
+**Status:** Accepted
+
+**Context.** A step marked *ahead* ([ADR-037](#adr-037-how-long-a-recipe-takes-is-two-numbers-both-derived))
+happens without the cook — soaking beans, proving overnight, chilling dough. Cooking mode has to
+surface it before the cook starts, or somebody begins dinner at six and discovers the beans wanted
+starting yesterday.
+
+The obvious implementation lifts every ahead step to the front as a "the day before" list.
+
+**Decision.** Only the **leading run** is lifted. An ahead step anywhere else stays exactly where it
+is in the method.
+
+**Rationale.** You cannot chill dough you have not made. A shortbread that says *work the dough, chill
+overnight, roll and bake* has its ahead step in the middle, and pulling it forward produces an order
+nobody could follow — worse than not surfacing it, because it reads as instructions and is not.
+
+The two cases are genuinely different facts. A leading ahead step is a **precondition**: do this
+before you begin. A middle one is a **break**: the recipe spans two days, and the cook needs to know
+where the seam is rather than to do it first. Cooking mode can offer "come back tomorrow" at a break;
+it cannot offer anything sensible about a precondition it has scrambled into the method.
+
+**Cost.** A recipe whose lead is written second — *cream the butter, but soak the beans the night
+before* — does not get its lead surfaced. That is the author writing the steps out of order, and the
+fix is to write them in order. Guessing which mid-recipe ahead steps were "really" preconditions
+would be inventing an order the author did not write, in the one place where a wrong order is
+actionable.
+

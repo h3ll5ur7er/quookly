@@ -316,7 +316,7 @@ what allows scoring rules to change without touching a single line in recipe or 
 | `ReplenishmentEngine` | V8 | Nets requirement against availability; aggregates and rounds a shopping list. **Built** — netting, aggregation, and rounding a countable up to something a shop will sell. Rounding to pack sizes waits for pack-size data. |
 | `RankingEngine` | V10 | Orders candidate recipes by relevance, pantry coverage, and expiry urgency. |
 | `ScoringEngine` | V11 | Applies point and badge rules to activity. |
-| `ExecutionEngine` | V15 | Turns a scaled recipe into an execution plan: mise-en-place groups, ordered steps, timer specifications, technique links. **Built** — how long a recipe takes, as hands-on and total time derived from each step's attention ([ADR-037](07-decisions.md#adr-037-how-long-a-recipe-takes-is-two-numbers-both-derived)). The rest arrives with cooking mode. |
+| `ExecutionEngine` | V15 | Turns a recipe into an execution plan: mise-en-place groups, the lines each step names, work to be done the day before, and how long the whole thing takes. **Built** ([ADR-037](07-decisions.md#adr-037-how-long-a-recipe-takes-is-two-numbers-both-derived), [ADR-040](07-decisions.md#adr-040-a-steps-ingredients-are-read-out-of-its-words-not-tagged), [ADR-041](07-decisions.md#adr-041-work-done-the-day-before-is-lifted-out-only-from-the-front)). Timer specifications and technique links arrive with cooking mode. It returns **positions, not content** — an engine handing back indices cannot scale anything, so V4 stays in one place by construction. |
 | `OnboardingEngine` | V16 | Given a profile's current state, reports what is missing and what comes next. |
 
 Every engine is **stateless**. Beyond that they divide into two kinds, and the distinction is

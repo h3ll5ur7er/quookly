@@ -51,7 +51,9 @@ components authored for the desktop is a rewrite, not an adjustment — the same
 **Goal:** structured recipes exist and can be read the way the product promises.
 
 - ~~Domain model for recipe, ingredient line, step~~ **Built** — technique references arrive with
-  the Academy (Phase 7); step-to-line references with cooking mode (Phase 5)
+  the Academy (Phase 7). Step-to-line references landed in Phase 5 and turned out to want no model
+  at all: they are read out of the instruction's own words
+  ([ADR-040](07-decisions.md#adr-040-a-steps-ingredients-are-read-out-of-its-words-not-tagged))
 - ~~Ingredient registry with locale-aware names~~ **Built**
   ([ADR-007](07-decisions.md#adr-007-nutrition-data-usda-fooddata-central-as-the-base))
 - ~~`RecipeAccess`, `IngredientAccess`~~ **Built**; `EaterAccess` arrives with eaters (Phase 2)
@@ -159,8 +161,10 @@ a correct shopping list, and cooking a meal updates the pantry. **Met.**
 
 **Goal:** the app is useful while standing at the hob, not just while planning at a desk.
 
-- `ExecutionEngine`: mise-en-place grouping, step ordering, long-lead work brought forward,
-  timer specs (V15)
+- ~~`ExecutionEngine`: mise-en-place grouping, the lines each step names, long-lead work brought
+  forward (V15, [ADR-040](07-decisions.md#adr-040-a-steps-ingredients-are-read-out-of-its-words-not-tagged),
+  [ADR-041](07-decisions.md#adr-041-work-done-the-day-before-is-lifted-out-only-from-the-front))~~
+  **Built.** Timer specs are the steps' own durations, so there was nothing left to specify
 - ~~Per-step attention, and a recipe's hands-on and total time derived from it (UC-2.6, FR-23,
   [ADR-037](07-decisions.md#adr-037-how-long-a-recipe-takes-is-two-numbers-both-derived))~~
   **Built.** Overlap turned out not to want inferring: a recipe never says which steps run together,

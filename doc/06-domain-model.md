@@ -15,7 +15,7 @@ of it. Concretely, a recipe is:
 | --- | --- |
 | **Yield** | What the quantities produce — servings, or a mass or volume. Every quantity is relative to this. |
 | **Ingredient lines** | An ordered set of (ingredient, quantity, unit, preparation note, optionality). |
-| **Steps** | An ordered set of actions, with timings, temperatures, and equipment. *Built*, including each step's *attention* — hands-on, waiting, or ahead ([ADR-037](07-decisions.md#adr-037-how-long-a-recipe-takes-is-two-numbers-both-derived)). References to the ingredient lines a step consumes arrive with cooking mode, which is what needs them. |
+| **Steps** | An ordered set of actions, with timings, temperatures, and equipment. *Built*, including each step's *attention* — hands-on, waiting, or ahead ([ADR-037](07-decisions.md#adr-037-how-long-a-recipe-takes-is-two-numbers-both-derived)). The ingredient lines a step uses are **derived from its words** rather than tagged ([ADR-040](07-decisions.md#adr-040-a-steps-ingredients-are-read-out-of-its-words-not-tagged)): nothing is stored, and an imported recipe gets them for nothing. |
 | **Technique references** | Links from steps into the Academy, so an unfamiliar term is one click from its definition. *Planned with the Academy.* |
 | **Provenance** | How this recipe came to exist: authored, imported from JSON, scraped from a URL, generated, or derived. |
 | **Visibility** | Private by default; explicitly published. |
