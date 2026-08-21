@@ -1,10 +1,11 @@
 """Recipe endpoints."""
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel
 
+from quookly.contracts.discovery import SuggestionView
 from quookly.contracts.errors import (
     AddressNotAllowed,
     ContentRefused,
@@ -39,6 +40,23 @@ router = APIRouter()
 #: defined in — so an English export is the one that resolves on any instance. Exporting a
 #: cook's own language would make a document readable on fewer instances rather than more.
 EXPORT_LOCALE = "en-GB"
+
+
+@router.get("/recipes/suggestions", response_model=list[SuggestionView])
+async def suggest_recipes(
+    cook: CurrentCook,
+    q: Annotated[str | None, Query(max_length=200, description="Words to search for.")] = None,
+) -> list[SuggestionView]:
+    """What to cook, best first, and why (UC-3.1, UC-3.3, UC-3.4).
+
+    With words, a search: only what matched, in the order it matched, with the kitchen
+    breaking ties. Without them, a suggestion: everything the cook has, ordered by what it
+    would save — food about to go off first, then what needs no shopping trip.
+
+    Each answer carries its reasons. A list that only reordered itself would be asking to
+    be trusted rather than earning it.
+    """
+    return await recipe_manager.suggest(cook.cook_id, q)
 
 
 @router.get("/recipes", response_model=list[RecipeSummaryView])

@@ -73,6 +73,13 @@ asyncio_mode = "auto"
 # Tests that need a real inference provider. Excluded by default: a suite that needs
 # a running model is a suite nobody runs. Enable with `-m live`.
 markers = ["live: needs a real inference provider"]
+# SQLModel's `execute` warns and points at its typed `exec`. The search index is an FTS5
+# virtual table, which has no typed form — raw SQL is the only way to reach it, and this is
+# the one module allowed to. Silenced narrowly rather than globally so the advice still
+# lands everywhere it applies.
+filterwarnings = [
+    "ignore::DeprecationWarning:quookly.access.search",
+]
 addopts = "-m 'not live'"
 
 [tool.importlinter]

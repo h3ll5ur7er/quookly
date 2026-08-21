@@ -5,16 +5,21 @@ Sequences the steps and owns none of the rules. Storage is `RecipeAccess`, prefe
 """
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, replace
+from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
 from quookly.access import cook as cook_access
 from quookly.access import eater as eater_access
 from quookly.access import ingredient as registry
+from quookly.access import pantry as pantry_access
 from quookly.access import preferences as preference_access
 from quookly.access import recipe as recipe_access
-from quookly.access import web
+from quookly.access import search, web
+from quookly.access.ingredient import SOURCE_LOCALE
+from quookly.contracts.discovery import Candidate, SuggestionView
 from quookly.contracts.errors import UnsupportedDocument, YieldUnknown
 from quookly.contracts.exchange import ExchangeDocument
 from quookly.contracts.execution import TimingView
@@ -39,7 +44,9 @@ from quookly.contracts.recipe import (
     Recipe,
     RecipeDraft,
     RecipeInput,
+    RecipeSummary,
     RecipeSummaryView,
+    Step,
     StepDraft,
 )
 from quookly.contracts.suitability import JudgedLine, Outcome, VerdictView
@@ -50,6 +57,7 @@ from quookly.engines import (
     interpretation,
     measure,
     nutrition,
+    ranking,
     suitability,
 )
 from quookly.utilities.configuration import preferred_sources
@@ -98,6 +106,12 @@ async def author(
     return await _present(stored, await preference_access.for_cook(cook_id), None, cook_id)
 
 
+#: How near a date has to be before a recipe using it is worth suggesting. The same
+#: three days the pantry marks a packet at: one number for "soon", so the shelf and the
+#: suggestion cannot come to disagree about which bag is urgent.
+PRESSING_DAYS = 3
+
+
 def _facts(line: JudgedLine) -> suitability.IngredientFacts:
     return suitability.IngredientFacts(
         slug=line.slug,
@@ -135,19 +149,119 @@ async def list_for(cook_id: int, locale: str | None = None) -> list[RecipeSummar
     summaries = await recipe_access.list_for_cook(cook_id)
     outcomes = await _outcomes_for(cook_id, locale)
     steps = await recipe_access.steps_for_cook(cook_id)
-    return [
-        RecipeSummaryView(
-            id=summary.id,
-            title=summary.title,
-            summary=summary.summary,
-            yield_quantity=measure.viewed(summary.yield_quantity),
-            serves=measure.servings_of(summary.serves, Decimal(1)),
-            visibility=summary.visibility,
-            suitability=outcomes.get(summary.id),
-            timing=TimingView.of(execution.timing(steps.get(summary.id, []))),
+    return [_summary_view(summary, outcomes, steps) for summary in summaries]
+
+
+def _summary_view(
+    summary: RecipeSummary,
+    outcomes: Mapping[int, Outcome],
+    steps: Mapping[int, list[Step]],
+) -> RecipeSummaryView:
+    """One row of a list, wherever the list came from.
+
+    Shared by the plain listing and by discovery so a recipe reads the same in both. Two
+    copies of this drifted apart the moment one of them learned about timing.
+    """
+    return RecipeSummaryView(
+        id=summary.id,
+        title=summary.title,
+        summary=summary.summary,
+        yield_quantity=measure.viewed(summary.yield_quantity),
+        serves=measure.servings_of(summary.serves, Decimal(1)),
+        visibility=summary.visibility,
+        suitability=outcomes.get(summary.id),
+        timing=TimingView.of(execution.timing(steps.get(summary.id, []))),
+    )
+
+
+async def suggest(
+    cook_id: int, written: str | None = None, locale: str | None = None
+) -> list[SuggestionView]:
+    """What to cook, best first, and why (UC-3.1, UC-3.3, UC-3.4).
+
+    The read side of discovery, and the sequence it needs is the reason it lives in a
+    manager rather than anywhere else: what the index matched, what the pantry holds, what
+    is going off, and what the household can eat all have to be gathered before a rule
+    engine can put them in an order.
+
+    Discovery is here rather than in a manager of its own because finding a recipe does not
+    vary independently of recipes. What *does* vary independently is the order, and that is
+    `RankingEngine` (V10).
+    """
+    reading = locale or await cook_access.locale_for(cook_id)
+    summaries = await recipe_access.list_for_cook(cook_id)
+    by_id = {summary.id: summary for summary in summaries}
+
+    matched: dict[int, Decimal] | None = None
+    if written and written.strip():
+        hits = await search.query(written, cook_id)
+        matched = {hit.recipe_id: hit.score for hit in hits}
+        # A search is a question with an answer set. Suggestions are not: with nothing
+        # typed, every recipe is a candidate.
+        by_id = {recipe_id: by_id[recipe_id] for recipe_id in matched if recipe_id in by_id}
+
+    if not by_id:
+        return []
+
+    outcomes = await _outcomes_for(cook_id, reading)
+    steps = await recipe_access.steps_for_cook(cook_id)
+    lines = await recipe_access.lines_to_judge(cook_id, reading)
+    stocked, pressing = await _what_the_kitchen_holds(cook_id)
+
+    candidates = []
+    for recipe_id in by_id:
+        # Only the lines a cook has to have. An optional one missing is not a shopping
+        # trip, and counting it would make every recipe look further out of reach than it
+        # is — the same reading the shopping list takes.
+        needed = {line.slug for line in lines if line.recipe_id == recipe_id and not line.optional}
+        outcome = outcomes.get(recipe_id)
+        candidates.append(
+            Candidate(
+                recipe_id=recipe_id,
+                have=len(needed & stocked),
+                needs=len(needed),
+                pressing=sorted(name for slug, name in pressing.items() if slug in needed),
+                suitable=None if outcome is None else outcome is Outcome.SUITABLE,
+                relevance=None if matched is None else matched.get(recipe_id),
+            )
         )
-        for summary in summaries
+
+    return [
+        SuggestionView(
+            recipe=_summary_view(by_id[ranked.recipe_id], outcomes, steps),
+            reasons=ranked.reasons,
+            pressing=ranked.pressing,
+            missing=ranked.missing,
+        )
+        for ranked in ranking.rank(candidates)
     ]
+
+
+async def _what_the_kitchen_holds(cook_id: int) -> tuple[set[str], dict[str, str]]:
+    """Which ingredients are in the pantry, and which of those want eating.
+
+    By slug rather than by id, because that is what a judged line carries — and the slug is
+    the same thing in every language, which the name is not.
+    """
+    held = await pantry_access.list_for_cook(cook_id)
+    if not held:
+        return set(), {}
+
+    entries = await registry.for_ids(sorted({lot.ingredient_id for lot in held}), SOURCE_LOCALE)
+    stocked = {entries[lot.ingredient_id].slug for lot in held if lot.ingredient_id in entries}
+
+    cutoff = _today() + timedelta(days=PRESSING_DAYS)
+    soon = await pantry_access.expiring_before(cook_id, cutoff)
+    return stocked, {
+        entries[lot.ingredient_id].slug: entries[lot.ingredient_id].name
+        for lot in soon
+        if lot.ingredient_id in entries
+    }
+
+
+def _today() -> date:
+    """Today, as a value the tests can hold still. What is pressing is a claim about now."""
+    return date.today()
 
 
 async def present(

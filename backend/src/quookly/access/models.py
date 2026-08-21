@@ -7,7 +7,7 @@ These types never leave the access layer — an import-linter contract enforces 
 from datetime import UTC, date, datetime
 from decimal import Decimal
 
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import DDL, UniqueConstraint, event
 from sqlmodel import Field, SQLModel
 
 from quookly.contracts.cooking import SessionOutcome
@@ -420,3 +420,37 @@ class CookingTimerRow(SQLModel, table=True):
     step_position: int
     running_since: datetime | None = Field(default=None)
     elapsed_seconds: int = Field(default=0)
+
+
+#: The full-text index over recipes, as SQLite FTS5 (V10, ADR-009).
+#:
+#: A virtual table, so SQLModel cannot declare it and alembic cannot autogenerate it. It is
+#: written twice on purpose: the migration records what the schema was at that revision, and
+#: this records what it is now — which is the same division every other table already has.
+#:
+#: Hung off `after_create` so that anything building a schema from this metadata gets it.
+#: Without that, every test that makes its tables from the models would have an application
+#: that indexes into a table which is not there.
+SEARCH_INDEX = """
+CREATE VIRTUAL TABLE IF NOT EXISTS recipe_search USING fts5(
+    recipe_id UNINDEXED,
+    cook_id UNINDEXED,
+    title,
+    ingredients,
+    summary,
+    tokenize = 'unicode61 remove_diacritics 2'
+)
+"""
+
+event.listen(SQLModel.metadata, "after_create", DDL(SEARCH_INDEX))  # type: ignore[no-untyped-call]
+
+#: The index and the shadow tables FTS5 keeps beside it. Alembic must be told to leave them
+#: alone: they are not in the metadata, so autogenerate would offer to drop them — and a
+#: migration that drops the search index every time somebody adds a column is a trap that
+#: goes off later, quietly, in production.
+SEARCH_TABLES = "recipe_search"
+
+
+def hand_managed(name: str | None) -> bool:
+    """Whether a table is one nothing derives from the models."""
+    return name is not None and name.startswith(SEARCH_TABLES)

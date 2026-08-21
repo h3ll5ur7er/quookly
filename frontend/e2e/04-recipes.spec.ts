@@ -337,3 +337,66 @@ test.describe('what a recipe does not say it contains', () => {
     await expect(gap).toContainText('baking powder');
   });
 });
+
+test.describe('finding something to cook', () => {
+  /*
+   * Phase 6's "done when", on screen: what should I cook, answered with something that uses
+   * up what is about to go off (UC-3.1, UC-3.3, UC-3.4).
+   */
+  test('searching finds a recipe by its title', async ({ page }) => {
+    await page.getByLabel('Search your recipes').fill('shortbread');
+    await expect(page.locator('.recipes__item')).toHaveCount(1);
+    await expect(page.locator('.recipes__item')).toContainText('Shortbread');
+  });
+
+  test('searching finds a recipe by what is in it', async ({ page }) => {
+    /* "What can I do with buttermilk" is a question about ingredients, not titles. */
+    await page.getByLabel('Search your recipes').fill('caster sugar');
+    await expect(page.locator('.recipes__item').first()).toContainText('Shortbread');
+  });
+
+  test('half a word is enough', async ({ page }) => {
+    await page.getByLabel('Search your recipes').fill('short');
+    await expect(page.locator('.recipes__item').first()).toContainText('Shortbread');
+  });
+
+  test('says so when nothing matches rather than looking broken', async ({ page }) => {
+    await page.getByLabel('Search your recipes').fill('lobster thermidor');
+    await expect(page.getByText('Nothing here matches that')).toBeVisible();
+  });
+
+  test('the alphabet is the default, and the other order is a choice', async ({ page }) => {
+    /* A cook who came to find a recipe they already have in mind wants the alphabet. */
+    await expect(page.getByRole('button', { name: 'A–Z' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await page.getByRole('button', { name: 'Worth cooking' }).click();
+    await expect(page.getByRole('button', { name: 'Worth cooking' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  test('an empty kitchen still gets an answer, just not a reason', async ({ page }) => {
+    /* Nothing is in the pantry this early in the suite, so nothing has anything to claim.
+       The list still comes back — a cook with an empty cupboard is not shown an empty
+       screen. What a reason looks like is checked where there is stock, in 09. */
+    await page.getByRole('button', { name: 'Worth cooking' }).click();
+    await expect(page.locator('.recipes__item').first()).toBeVisible();
+    await expect(page.locator('.recipes__reason')).toHaveCount(0);
+  });
+
+  test('has no accessibility violations', async ({ page }) => {
+    await page.getByRole('button', { name: 'Worth cooking' }).click();
+    await expect(page.locator('.recipes__item').first()).toBeVisible();
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toEqual([]);
+  });
+
+  test('looks like this', async ({ page }) => {
+    await page.getByRole('button', { name: 'Worth cooking' }).click();
+    await expect(page.locator('.recipes__item').first()).toBeVisible();
+    await page.screenshot({ path: 'e2e/screenshots/recipe-discovery.png', fullPage: true });
+  });
+});

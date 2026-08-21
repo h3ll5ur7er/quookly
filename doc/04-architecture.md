@@ -323,7 +323,7 @@ what allows scoring rules to change without touching a single line in recipe or 
 | `NutritionEngine` | V6 | Aggregates nutrient profiles; per-serving and per-recipe bases. **Built** — weighs each line against the first published table this instance believes, and names what it could not count ([ADR-045](07-decisions.md#adr-045-composition-data-is-tried-in-a-configured-order-nearest-table-first)). |
 | `PlanningEngine` | V7 | Sizes each planned meal to the people at it, and says how sure it is. **Built.** Proposing assignments arrives with generation (Phase 6). |
 | `ReplenishmentEngine` | V8 | Nets requirement against availability; aggregates and rounds a shopping list. **Built** — netting, aggregation, and rounding a countable up to something a shop will sell. Rounding to pack sizes waits for pack-size data. |
-| `RankingEngine` | V10 | Orders candidate recipes by relevance, pantry coverage, and expiry urgency. |
+| `RankingEngine` | V10 | Orders candidate recipes by relevance, pantry coverage, and expiry urgency. **Built** — and it says *why*, because a list that only reordered itself would be asking to be trusted rather than earning it ([ADR-046](07-decisions.md#adr-046-a-suggestion-earns-its-place-by-saving-something)). |
 | `ScoringEngine` | V11 | Applies point and badge rules to activity. |
 | `ExecutionEngine` | V15 | Turns a recipe into an execution plan: mise-en-place groups, the lines each step names, work to be done the day before, and how long the whole thing takes. **Built** ([ADR-037](07-decisions.md#adr-037-how-long-a-recipe-takes-is-two-numbers-both-derived), [ADR-040](07-decisions.md#adr-040-a-steps-ingredients-are-read-out-of-its-words-not-tagged), [ADR-041](07-decisions.md#adr-041-work-done-the-day-before-is-lifted-out-only-from-the-front)). Timer specifications and technique links arrive with cooking mode. It returns **positions, not content** — an engine handing back indices cannot scale anything, so V4 stays in one place by construction. |
 | `OnboardingEngine` | V16 | Given a profile's current state, reports what is missing and what comes next. |
@@ -364,7 +364,7 @@ Each service exposes atomic business verbs. Illustrative, not exhaustive:
 | `ModelAccess` | Inference backend | `complete`, `complete_structured`, `describe`, `reachable` ([ADR-026](07-decisions.md#adr-026-one-openai-shaped-wire-format-not-a-provider-plugin-system)) |
 | `WebContentAccess` | External websites | `fetch_readable` — prose and embedded metadata, neither preferred ([ADR-027](07-decisions.md#adr-027-an-instance-will-not-fetch-its-own-network), [ADR-028](07-decisions.md#adr-028-structured-metadata-is-fetched-not-preferred)) |
 | `MediaAccess` | Media store | `store_image`, `fetch_image`, `delete_image` |
-| `SearchIndexAccess` | Index | `index_recipe`, `query`, `remove` |
+| `SearchIndexAccess` | Index | `index_recipe`, `query`, `remove`, `reindex` — **Built** over SQLite FTS5. The index is derived, so it is rebuilt at start-up rather than migrated, and recipes are indexed where they are stored so no path can forget ([ADR-046](07-decisions.md#adr-046-a-suggestion-earns-its-place-by-saving-something)) |
 | `CookingSessionAccess` | Database | `open_session`, `fetch`, `open_for_slot`, `open_for_cook`, `advance_step`, `record_timer`, `close_session` — **Built** ([ADR-013](07-decisions.md#adr-013-cooking-sessions-are-server-side-state-timers-store-instants)) |
 
 `ModelAccess` is where V3 dies. One implementation per provider behind one interface; the choice is

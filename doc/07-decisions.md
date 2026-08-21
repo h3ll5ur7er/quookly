@@ -1869,3 +1869,69 @@ That is deliberate: the Swiss table has four wheat flours by ash content, and ch
 "plain flour" is a judgement somebody should make on purpose rather than a name match. Each mapping
 records the row it came from, so any number on a screen can be traced to a published one.
 
+---
+
+## ADR-046 A suggestion earns its place by saving something
+
+**Status:** Accepted
+
+**Context.** "What should I cook this week" is the question Phase 6 exists to answer, and any
+ordering answers it somehow. The obvious ordering is by how much of a recipe is already in the
+cupboard. That is the wrong first question.
+
+**Decision.** Recipes are ordered by four things, most important first:
+
+1. **Whether the household can eat it.** Anything somebody cannot eat goes last.
+2. **What the cook asked**, where they asked anything. A search is a question and it gets answered.
+3. **What it saves** — each ingredient about to go off outweighs any amount of convenience, and
+   coverage of the cupboard breaks the remaining ties.
+4. **The recipe's own id**, purely as a tiebreak.
+
+Every suggestion carries its **reasons**, and what needs eating is **named** rather than counted.
+
+**Rationale.** A full cupboard gives a cook plenty of options. The spinach going off on Thursday is
+the one thing that costs money if it is ignored — reducing that waste is a founding goal of this
+product, so it is what the ordering optimises. Convenience is a tiebreak, not the objective.
+
+**Coverage is a proportion, not a count**, so a large recipe is not punished for being large. Ten
+ingredients of twelve is a better answer than two of two, which is a cup of tea.
+
+**Nothing is hidden.** A dish somebody at the table cannot eat is ranked last and says so. Leaving it
+out would be the interface making a decision about an allergy on the cook's behalf, which is what
+[ADR-010](#adr-010-the-frontend-never-decides-suitability) forbids — and a cook may well be cooking
+for themselves tonight.
+
+**The reasons are not decoration.** A ranked list that only reordered itself would be asking to be
+trusted rather than earning it. "Uses something up — caster sugar, plain flour" is checkable at a
+glance; "2 ingredients need eating" is not, and a cook cannot act on it.
+
+**Ordering is explicit, not automatic.** The list opens alphabetically. A cook who came to find a
+recipe they already have in mind wants the alphabet, and a list that quietly rearranges itself around
+the spinach is one they cannot learn the shape of. *Worth cooking* is one tap away and says what it is.
+
+### The index behind it
+
+Retrieval is separate from ranking — [V10](03-volatility-analysis.md#v10-discovery) splits them
+because the index technology and the ranking policy change for different reasons at different rates.
+Two decisions about the index are worth recording.
+
+**It is rebuilt, not migrated.** The index is derived from the recipes, so it is not a source of
+truth and is not treated as one: the whole thing is rebuilt at start-up in three queries. That means a
+change to *what* is indexed needs no migration, no version marker, and has no way to be half-applied —
+and an index that somehow fell behind heals itself rather than needing a repair tool.
+
+**Recipes are indexed where they are stored,** in `RecipeAccess.store`, not by each caller. Four paths
+store a recipe — authored, imported from a document, imported from a page, seeded — and "remember to
+index it too" is precisely the shape of mistake that already cost the starter recipes their `serves`
+once ([ADR-012](#adr-012-one-interchange-format-for-import-and-export)). A recipe imported at ten
+o'clock should be findable at one minute past.
+
+**Cost.** The ranking weights are a judgement with numbers in it, and numbers in a judgement invite
+tuning by feel. They are kept as named constants with the reasoning attached, and the engine is pure,
+so a change of policy is a change to a table of cases rather than an experiment in production.
+
+Search is SQLite FTS5, which [ADR-009](#adr-009-sqlite-only-to-begin-with) already named as the place
+the SQLite decision will strain first. It is a virtual table, so alembic can neither generate it nor
+be allowed to see it — both the migration and the model metadata declare it, and autogenerate is told
+to leave it alone. Without that last part every future migration would offer to drop the search index.
+

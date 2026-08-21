@@ -87,6 +87,10 @@ describe('RecipeListComponent', () => {
 
   async function show(body: unknown[]): Promise<void> {
     backend.expectOne('/api/v1/recipes').flush(body);
+    await settle();
+  }
+
+  async function settle(): Promise<void> {
     await fixture.whenStable();
     fixture.detectChanges();
   }
@@ -140,5 +144,79 @@ describe('RecipeListComponent', () => {
     await show([{ ...PANCAKES, timing: null }]);
 
     expect(fixture.nativeElement.querySelector('app-timing')).toBeNull();
+  });
+
+  describe('finding something to cook', () => {
+    function suggestion(title: string, extra: Record<string, unknown> = {}) {
+      return {
+        recipe: { ...PANCAKES, title },
+        reasons: [],
+        pressing: [],
+        missing: 0,
+        ...extra,
+      };
+    }
+
+    it('does not ask the server until something is typed', async () => {
+      // A plain listing is the common case, and a search box that fires on load asks a
+      // question nobody put.
+      await show([PANCAKES]);
+      expect(backend.match((request) => request.url.includes('suggestions')).length).toBe(0);
+    });
+
+    it('asks what is worth cooking when the order says so', async () => {
+      await show([PANCAKES]);
+      fixture.nativeElement.querySelectorAll('.recipes__order-choice')[1].click();
+
+      const asked = backend.expectOne('/api/v1/recipes/suggestions');
+      asked.flush([suggestion('Spinach Pie', { reasons: ['uses_soon'], pressing: ['spinach'] })]);
+      await settle();
+
+      expect(text()).toContain('Spinach Pie');
+    });
+
+    it('says why a recipe is where it is', async () => {
+      await show([PANCAKES]);
+      fixture.nativeElement.querySelectorAll('.recipes__order-choice')[1].click();
+      backend
+        .expectOne('/api/v1/recipes/suggestions')
+        .flush([suggestion('Spinach Pie', { reasons: ['uses_soon'], pressing: ['spinach'] })]);
+      await settle();
+
+      expect(text()).toContain('uses something up');
+      expect(text()).toContain('spinach');
+    });
+
+    it('marks the one reason that is a warning rather than an encouragement', async () => {
+      await show([PANCAKES]);
+      fixture.nativeElement.querySelectorAll('.recipes__order-choice')[1].click();
+      backend
+        .expectOne('/api/v1/recipes/suggestions')
+        .flush([suggestion('Flour Pudding', { reasons: ['not_for_everyone'] })]);
+      await settle();
+
+      expect(fixture.nativeElement.querySelector('.recipes__reason--warn')).not.toBeNull();
+      expect(text()).toContain('not for everyone');
+    });
+
+    it('shows no reasons when the list is simply the alphabet', async () => {
+      await show([PANCAKES]);
+      expect(fixture.nativeElement.querySelector('.recipes__reason')).toBeNull();
+    });
+
+    it('offers no ordering choice while something is being searched for', async () => {
+      // The answer to a question has an order of its own: how well it matched.
+      await show([PANCAKES]);
+      expect(fixture.nativeElement.querySelector('.recipes__order')).not.toBeNull();
+    });
+
+    it('says so when nothing matches, rather than looking empty', async () => {
+      await show([PANCAKES]);
+      fixture.nativeElement.querySelectorAll('.recipes__order-choice')[1].click();
+      backend.expectOne('/api/v1/recipes/suggestions').flush([]);
+      await settle();
+
+      expect(text()).toContain('No recipes yet');
+    });
   });
 });

@@ -194,6 +194,63 @@
         }
       }
     },
+    "/api/v1/recipes/suggestions": {
+      "get": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Suggest Recipes",
+        "description": "What to cook, best first, and why (UC-3.1, UC-3.3, UC-3.4).\n\nWith words, a search: only what matched, in the order it matched, with the kitchen\nbreaking ties. Without them, a suggestion: everything the cook has, ordered by what it\nwould save \u2014 food about to go off first, then what needs no shopping trip.\n\nEach answer carries its reasons. A list that only reordered itself would be asking to\nbe trusted rather than earning it.",
+        "operationId": "suggestRecipes",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Words to search for.",
+              "title": "Q"
+            },
+            "description": "Words to search for."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SuggestionView"
+                  },
+                  "title": "Response Suggestrecipes"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/recipes": {
       "get": {
         "tags": [
@@ -3311,6 +3368,17 @@
         "title": "QuantityView",
         "description": "A quantity as a client reads it.\n\n`magnitude` is a string. JSON numbers are binary floats in a browser, and 0.1 of a\ngram is not worth losing to that; `display` is what a screen actually shows."
       },
+      "Reason": {
+        "type": "string",
+        "enum": [
+          "have_everything",
+          "have_most",
+          "uses_soon",
+          "not_for_everyone"
+        ],
+        "title": "Reason",
+        "description": "Why a recipe is where it is in the list."
+      },
       "ReceiveInput": {
         "properties": {
           "ingredient_id": {
@@ -4084,6 +4152,40 @@
         ],
         "title": "StockLotView",
         "description": "One lot as a client reads it."
+      },
+      "SuggestionView": {
+        "properties": {
+          "recipe": {
+            "$ref": "#/components/schemas/RecipeSummaryView"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/Reason"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "pressing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Pressing"
+          },
+          "missing": {
+            "type": "integer",
+            "title": "Missing"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipe",
+          "reasons",
+          "pressing",
+          "missing"
+        ],
+        "title": "SuggestionView",
+        "description": "A recipe worth cooking, and why it is worth cooking."
       },
       "TimerView": {
         "properties": {

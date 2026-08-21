@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from quookly.access import search
 from quookly.access.database import session
 from quookly.access.ingredient import allergens_within, canonical_names_within
 from quookly.access.models import IngredientLineRow, IngredientRow, RecipeRow, StepRow
@@ -71,6 +72,12 @@ async def store(draft: RecipeDraft, cook_id: int) -> Recipe:
             # A line pointing at an ingredient that is not in the registry (FR-9).
             raise IngredientNotRegistered(str(exc.orig)) from exc
         recipe_id = row.id
+
+    # Indexed here rather than by each caller. Four paths store a recipe — authored,
+    # imported from a document, imported from a page, seeded — and "remember to index it
+    # too" is the shape of mistake that already cost the starter recipes their `serves`.
+    # A recipe imported at ten o'clock should be findable at one minute past.
+    await search.index_recipe(recipe_id)
 
     stored = await fetch(recipe_id, "en-GB")
     assert stored is not None, "a recipe just written must be readable"

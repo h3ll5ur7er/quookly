@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.routing import APIRoute
 
+from .access import search
 from .access.database import dispose_engine
 from .contracts.events import MealCooked
 from .managers import pantry
@@ -74,6 +75,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     wire_subscriptions()
     await stock_registry()
     await stock_nutrition()
+    # Derived, so it is rebuilt rather than migrated: a change to what is indexed then
+    # costs nothing to roll out and cannot be half-applied.
+    await search.reindex()
     yield
     await dispose_engine()
 

@@ -19,6 +19,7 @@ from sqlmodel import SQLModel
 
 from alembic import command
 from quookly.access.database import get_engine
+from quookly.access.models import hand_managed
 from quookly.utilities.configuration import get_settings
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
@@ -37,6 +38,10 @@ def migrated_database(tmp_path: Path, monkeypatch: MonkeyPatch) -> Path:
     return database
 
 
+def _about_the_search_index(difference: object) -> bool:
+    return isinstance(difference, tuple) and hand_managed(getattr(difference[1], "name", None))
+
+
 class TestMigrations:
     def test_upgrading_a_fresh_database_creates_the_schema(self, migrated_database: Path) -> None:
         engine = create_engine(f"sqlite:///{migrated_database}")
@@ -51,7 +56,13 @@ class TestMigrations:
         try:
             with engine.connect() as connection:
                 context = MigrationContext.configure(connection)
-                differences = compare_metadata(context, SQLModel.metadata)
+                differences = [
+                    difference
+                    for difference in compare_metadata(context, SQLModel.metadata)
+                    # The search index and FTS5's shadow tables are hand-managed, and
+                    # autogenerate would offer to drop them on every future migration.
+                    if not _about_the_search_index(difference)
+                ]
         finally:
             engine.dispose()
         assert differences == [], (

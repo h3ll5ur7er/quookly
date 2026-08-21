@@ -315,6 +315,16 @@
     "nutritionPerRecipe": "Recette entière",
     "nutritionAtLeast": "Au moins autant – rien n’est publié pour",
     "nutritionNothing": "Impossible à calculer. Rien n’est publié pour",
-    "nutritionMeasuredBy": "Mesuré par"
+    "nutritionMeasuredBy": "Mesuré par",
+    "reasonUsesSoon": "utilise quelque chose",
+    "reasonHaveEverything": "vous avez tout",
+    "reasonHaveMost": "vous avez presque tout",
+    "reasonNotForEveryone": "pas pour tout le monde",
+    "recipesByName": "A–Z",
+    "recipesByWorth": "Ça vaut la peine",
+    "recipesNoMatch": "Rien ici ne correspond. Essayez moins de mots, ou un ingrédient.",
+    "recipesOrder": "Ordre",
+    "recipesSearchLabel": "Chercher dans vos recettes",
+    "recipesSearchPlaceholder": "Un plat, ou quelque chose à écouler"
   }
 }

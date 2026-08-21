@@ -1,13 +1,61 @@
 <main class="page recipes">
   <h1 i18n="@@recipesHeading">Recipes</h1>
 
+  <div class="recipes__find">
+    <label class="visually-hidden" for="search" i18n="@@recipesSearchLabel">
+      Search your recipes
+    </label>
+    <input
+      id="search"
+      type="search"
+      class="recipes__search"
+      [formControl]="search"
+      i18n-placeholder="@@recipesSearchPlaceholder"
+      placeholder="A dish, or something to use up"
+    />
+
+    <!-- Explicit rather than automatic. A cook who came to find a recipe they already have
+         in mind wants the alphabet, and a list that quietly reorders itself around the
+         spinach is one they cannot learn the shape of. -->
+    @if (!asking()) {
+      <div class="recipes__order" role="group" i18n-aria-label="@@recipesOrder" aria-label="Order">
+        <button
+          type="button"
+          class="recipes__order-choice"
+          [class.recipes__order-choice--on]="order() === 'name'"
+          [attr.aria-pressed]="order() === 'name'"
+          (click)="orderBy('name')"
+          i18n="@@recipesByName"
+        >
+          A–Z
+        </button>
+        <button
+          type="button"
+          class="recipes__order-choice"
+          [class.recipes__order-choice--on]="order() === 'worth'"
+          [attr.aria-pressed]="order() === 'worth'"
+          (click)="orderBy('worth')"
+          i18n="@@recipesByWorth"
+        >
+          Worth cooking
+        </button>
+      </div>
+    }
+  </div>
+
   @if (failed()) {
     <p class="notice notice--danger" role="alert" i18n="@@recipesFailed">
       Could not load your recipes. Please try again.
     </p>
-  } @else if (recipes(); as found) {
+  } @else if (rows(); as found) {
     @if (found.length === 0) {
-      <p class="recipes__empty" i18n="@@recipesEmpty">No recipes yet.</p>
+      @if (asking()) {
+        <p class="recipes__empty" i18n="@@recipesNoMatch">
+          Nothing here matches that. Try fewer words, or an ingredient.
+        </p>
+      } @else {
+        <p class="recipes__empty" i18n="@@recipesEmpty">No recipes yet.</p>
+      }
     } @else {
       @if (!judged()) {
         <p class="recipes__prompt">
@@ -18,14 +66,14 @@
         </p>
       }
       <ul class="recipes__list">
-        @for (recipe of found; track recipe.id) {
+        @for (row of found; track row.recipe.id) {
           <li class="recipes__item">
-            <a class="recipes__link" [routerLink]="['/recipes', recipe.id]">
-              <span class="recipes__title">{{ recipe.title }}</span>
-              @if (recipe.summary) {
-                <span class="recipes__summary">{{ recipe.summary }}</span>
+            <a class="recipes__link" [routerLink]="['/recipes', row.recipe.id]">
+              <span class="recipes__title">{{ row.recipe.title }}</span>
+              @if (row.recipe.summary) {
+                <span class="recipes__summary">{{ row.recipe.summary }}</span>
               }
-              @if (worthMarking(recipe.suitability); as outcome) {
+              @if (worthMarking(row.recipe.suitability); as outcome) {
                 <span class="badge badge--{{ outcome }}">
                   <span class="badge__mark" aria-hidden="true"></span>
                   {{ outcomeBadge(outcome) }}
@@ -33,18 +81,35 @@
               }
               <!-- Beside the yield, because they are the same kind of fact: what a cook
                    weighs up before opening a recipe rather than after. -->
-              @if (recipe.timing; as timing) {
+              @if (row.recipe.timing; as timing) {
                 <app-timing [timing]="timing" [compact]="true" />
               }
               <span class="recipes__yield">
                 <span i18n="@@recipeMakes">Makes</span>
-                <span class="numeric">{{ recipe.yield_quantity.display }}</span>
-                @if (recipe.serves; as serves) {
+                <span class="numeric">{{ row.recipe.yield_quantity.display }}</span>
+                @if (row.recipe.serves; as serves) {
                   <span aria-hidden="true">·</span>
                   <span i18n="@@recipeServes">Serves</span>
                   <span class="numeric">{{ serves }}</span>
                 }
               </span>
+
+              <!-- Why this one is here. A ranked list that only reordered itself would be
+                   asking to be trusted rather than earning it. -->
+              @if (row.reasons.length > 0) {
+                <span class="recipes__reasons">
+                  @for (reason of row.reasons; track reason) {
+                    <span class="recipes__reason" [class.recipes__reason--warn]="isWarning(reason)">
+                      {{ reasonLabel(reason) }}
+                    </span>
+                  }
+                  <!-- Named, not counted: "uses 2 things that need eating" does not tell a
+                       cook whether to bother. -->
+                  @if (row.pressing.length > 0) {
+                    <span class="recipes__pressing">{{ row.pressing.join(', ') }}</span>
+                  }
+                </span>
+              }
             </a>
           </li>
         }

@@ -1,19 +1,37 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { RecipeSummaryView, RecipesService } from '@api';
+import { RecipeSummaryView, RecipesService, SuggestionView } from '@api';
+import { debounceTime, distinctUntilChanged, startWith, switchMap } from 'rxjs';
+import { isWarning, reasonLabel } from '../../core/discovery/labels';
 import { outcomeBadge, worthMarking } from '../../core/dietary/labels';
 import { TimingComponent } from '../../core/time/timing.component';
 
+/** How the list is ordered when nothing has been typed. */
+type Order = 'name' | 'worth';
+
+/** Long enough that a phone keyboard is not searched at, short enough to feel immediate. */
+const SETTLE = 200;
+
 @Component({
   selector: 'app-recipe-list',
-  imports: [RouterLink, TimingComponent],
+  imports: [ReactiveFormsModule, RouterLink, TimingComponent],
   templateUrl: './recipe-list.component.html',
   styleUrl: './recipe-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecipeListComponent {
+  private readonly service = inject(RecipesService);
+
   protected readonly recipes = signal<RecipeSummaryView[] | null>(null);
   protected readonly failed = signal(false);
+
+  protected readonly search = new FormControl('', { nonNullable: true });
+  protected readonly order = signal<Order>('name');
+
+  protected readonly reasonLabel = reasonLabel;
+  protected readonly isWarning = isWarning;
 
   protected readonly outcomeBadge = outcomeBadge;
   protected readonly worthMarking = worthMarking;
@@ -27,17 +45,73 @@ export class RecipeListComponent {
    * are seeing none rather than left to read the silence as approval.
    */
   protected readonly judged = computed(() =>
-    (this.recipes() ?? []).some((recipe) => recipe.suitability != null),
+    (this.rows() ?? []).some((row) => row.recipe.suitability != null),
   );
 
+  /** What the cook has typed, as a signal, so the screen can tell asking from browsing. */
+  private readonly typed = toSignal(this.search.valueChanges.pipe(startWith(this.search.value)), {
+    initialValue: '',
+  });
+
+  protected readonly asking = computed(() => this.typed().trim().length > 0);
+
+  /** Suggestions, which only arrive when something was asked or the order calls for them. */
+  private readonly suggestions = signal<SuggestionView[] | null>(null);
+
+  /**
+   * The list, however it was arrived at.
+   *
+   * A plain listing is a set of recipes and a suggestion is a recipe with reasons, so the
+   * plain one is widened rather than the two being drawn separately: a recipe should read
+   * the same whichever question brought it up.
+   */
+  protected readonly rows = computed<SuggestionView[] | null>(() => {
+    if (this.asking() || this.order() === 'worth') {
+      return this.suggestions();
+    }
+    const listed = this.recipes();
+    return listed === null
+      ? null
+      : listed.map((recipe) => ({ recipe, reasons: [], pressing: [], missing: 0 }));
+  });
+
   constructor() {
-    inject(RecipesService)
-      .listRecipes()
+    this.service.listRecipes().subscribe({
+      // An empty list and a failed request look identical on screen unless one of them says
+      // so, and "you have no recipes" is a bad thing to tell someone untruthfully.
+      next: (recipes) => this.recipes.set(recipes),
+      error: () => this.failed.set(true),
+    });
+
+    // Settled before asking, because a search box that fires on every keystroke asks the
+    // server about "p", "pa" and "pan" to answer a question about pancakes.
+    this.search.valueChanges
+      .pipe(
+        debounceTime(SETTLE),
+        distinctUntilChanged(),
+        switchMap((written) => this.service.suggestRecipes(written.trim() || undefined)),
+        takeUntilDestroyed(),
+      )
       .subscribe({
-        next: (recipes) => this.recipes.set(recipes),
-        // An empty list and a failed request look identical on screen unless one of them
-        // says so, and "you have no recipes" is a bad thing to tell someone untruthfully.
+        next: (found) => this.suggestions.set(found),
         error: () => this.failed.set(true),
       });
+  }
+
+  /**
+   * Order the list by what is worth cooking, or back to the alphabet.
+   *
+   * Explicit rather than automatic. A cook who came to find a recipe they already have in
+   * mind wants the alphabet, and a list that quietly reorders itself around the spinach is
+   * a list they cannot learn the shape of.
+   */
+  protected orderBy(order: Order): void {
+    this.order.set(order);
+    if (order === 'worth' && this.suggestions() === null) {
+      this.service.suggestRecipes().subscribe({
+        next: (found) => this.suggestions.set(found),
+        error: () => this.failed.set(true),
+      });
+    }
   }
 }

@@ -190,7 +190,9 @@ cooking consumes. Conflating the two makes stock lie.
 **Varies:** keyword search, filtering, semantic similarity, hybrid ranking, ranking by pantry
 coverage, by expiry urgency, by eater suitability, by personal history.
 **Stable:** a query and a context produce an ordered set of recipes.
-**Encapsulated by:** `RankingEngine` for order, `SearchIndexAccess` for retrieval.
+**Encapsulated by:** `RankingEngine` for order, `SearchIndexAccess` for retrieval. Both **built**
+([ADR-046](07-decisions.md#adr-046-a-suggestion-earns-its-place-by-saving-something)); semantic
+similarity and personal history are additions to one of them rather than changes to both.
 
 Split deliberately: the index technology and the ranking policy change for entirely different
 reasons and at entirely different rates.

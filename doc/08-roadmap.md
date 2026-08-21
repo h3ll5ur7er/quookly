@@ -200,8 +200,13 @@ which lands after the Academy without blocking anything here.
 
 - `GenerationEngine`: from ingredients, name, description, tags, photograph (UC-1.4–1.6)
 - Variant derivation (UC-1.7)
-- `SearchIndexAccess` and full-text search (UC-3.1, UC-3.2)
-- `RankingEngine`: pantry coverage and expiry urgency (UC-3.3, UC-3.4)
+- ~~`SearchIndexAccess` and full-text search (UC-3.1)~~ **Built** over SQLite FTS5: titles, the
+  ingredients in every language the registry knows them by, and summaries. UC-3.2's filters by tag,
+  cuisine and difficulty wait for a recipe to have those fields; time and dietary suitability are
+  already on the row
+- ~~`RankingEngine`: pantry coverage and expiry urgency (UC-3.3, UC-3.4)~~ **Built**
+  ([ADR-046](07-decisions.md#adr-046-a-suggestion-earns-its-place-by-saving-something)). What is about
+  to go off outweighs a full cupboard, and every suggestion says why it is where it is
 - ~~`NutritionEngine` and nutrition display (UC-2.3)~~ **Built**, over the **Swiss Food Composition
   Database** with a configured cascade behind it
   ([ADR-045](07-decisions.md#adr-045-composition-data-is-tried-in-a-configured-order-nearest-table-first)).
