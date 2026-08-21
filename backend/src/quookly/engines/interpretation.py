@@ -63,7 +63,66 @@ _UNITS: dict[str, Unit] = {
     "fl oz": Unit.FLUID_OUNCE_US,
     "fluid ounce": Unit.FLUID_OUNCE_US,
     "piece": Unit.PIECE,
+    # German, which is how a Swiss recipe site writes a spoonful. `TL` and `EL` are
+    # Teelöffel and Esslöffel, and both are metric — this is the German-speaking world,
+    # not the American one.
+    "tl": Unit.TEASPOON_METRIC,
+    "teelöffel": Unit.TEASPOON_METRIC,
+    "el": Unit.TABLESPOON_METRIC,
+    "esslöffel": Unit.TABLESPOON_METRIC,
+    "gramm": Unit.GRAM,
+    "kilogramm": Unit.KILOGRAM,
+    "deziliter": Unit.DECILITRE,
+    "stück": Unit.PIECE,
+    "stk": Unit.PIECE,
+    # French. The abbreviations "cs" and "cc" are left out deliberately: two letters that
+    # common are as likely to be the start of an ingredient as a measure.
+    # Listed in the plural too: French pluralises the first word — "cuillères à café" —
+    # and the general "add an s at the end" rule cannot reach it.
+    "cuillère à soupe": Unit.TABLESPOON_METRIC,
+    "cuillères à soupe": Unit.TABLESPOON_METRIC,
+    "cuillere à soupe": Unit.TABLESPOON_METRIC,
+    "cuilleres à soupe": Unit.TABLESPOON_METRIC,
+    "c. à s.": Unit.TABLESPOON_METRIC,
+    "cuillère à café": Unit.TEASPOON_METRIC,
+    "cuillères à café": Unit.TEASPOON_METRIC,
+    "cuillere à café": Unit.TEASPOON_METRIC,
+    "cuilleres à café": Unit.TEASPOON_METRIC,
+    "c. à c.": Unit.TEASPOON_METRIC,
 }
+
+# Measures that are judgements rather than amounts, in each language Quookly reads. A
+# pinch is a pinch whoever is pinching; turning one into grams would be a number a cook
+# cannot see is wrong.
+_VAGUE_UNITS = frozenset(
+    {
+        "pinch",
+        "pinches",
+        "knob",
+        "handful",
+        "dash",
+        "splash",
+        "drizzle",
+        "prise",
+        "prisen",
+        "msp",
+        "msp.",
+        "messerspitze",
+        "schuss",
+        "handvoll",
+        "bund",
+        "päckchen",
+        "päckli",
+        "spritzer",
+        "pincée",
+        "pincee",
+        "poignée",
+        "poignee",
+        "trait",
+        "sachet",
+        "filet",
+    }
+)
 
 # Amounts that are judgements rather than measurements. V2 names this case by example —
 # "a knob of butter" — and the honest reading keeps the words and refuses a number.
@@ -111,7 +170,18 @@ _AMOUNT = re.compile(
 
 _UNIT_PATTERN = re.compile(
     rf"^(?P<unit>{'|'.join(sorted((re.escape(name) for name in _UNITS), key=len, reverse=True))})"
-    r"(?:s|es)?\b\.?\s*(?:of\s+)?(?P<rest>.*)$",
+    r"(?:s|es)?\b\.?\s*(?:of|de|d'|du|des)\s+(?P<rest>.*)$|"
+    rf"^(?P<unit2>{'|'.join(sorted((re.escape(name) for name in _UNITS), key=len, reverse=True))})"
+    r"(?:s|es)?\b\.?\s*(?P<rest2>.*)$",
+    re.IGNORECASE,
+)
+
+# The same, for a measure that is a judgement: "1 Prise Salz", "2 pinches salt".
+_VAGUE_UNIT_PATTERN = re.compile(
+    r"^(?P<unit>"
+    + "|".join(sorted((re.escape(name) for name in _VAGUE_UNITS), key=len, reverse=True))
+    + r")"
+    r"\b\.?\s*(?:of|de|d'|du|des)?\s*(?P<rest>.*)$",
     re.IGNORECASE,
 )
 
@@ -120,6 +190,10 @@ _OPTIONAL = re.compile(
 )
 
 _WHITESPACE = re.compile(r"\s+")
+
+#: A comma that separates a note from an ingredient, as opposed to one inside a number.
+#: Half of Europe writes 2,5 where the other half writes 2.5.
+_SEPARATING_COMMA = re.compile(r"(?<!\d),|,(?!\d)")
 
 #: U+2044, which is what NFKD decomposition of ½ and its relatives uses.
 FRACTION_SLASH = "\u2044"
@@ -208,11 +282,23 @@ def read_ingredient(written: str) -> InterpretedLine | None:
 
     magnitude = _amount(amount.group("amount"))
     rest = amount.group("rest").strip()
+    vague_unit = _VAGUE_UNIT_PATTERN.match(rest)
+    if vague_unit and vague_unit.group("rest").strip():
+        # "1 Prise Salz", "2 pinches salt". The measure is a judgement, so the line keeps
+        # its words and refuses a number — in whatever language it was judged in.
+        return InterpretedLine(
+            ingredient=_tidy(vague_unit.group("rest")),
+            preparation=f"{amount.group('amount').strip()} {vague_unit.group('unit')}".strip(),
+            optional=optional,
+            written=original,
+        )
+
     unit_match = _UNIT_PATTERN.match(rest)
 
     if unit_match:
-        unit = _UNITS[unit_match.group("unit").lower()]
-        name = unit_match.group("rest")
+        matched = unit_match.group("unit") or unit_match.group("unit2")
+        unit = _UNITS[matched.lower()]
+        name = unit_match.group("rest") or unit_match.group("rest2") or ""
     elif _looks_like_a_unit(rest):
         # A number followed by a word that behaves like a unit but is not one Quookly
         # knows — "2 wineglasses of sherry". Guessing would be a wrong number; the line
@@ -263,9 +349,13 @@ def _split_note(body: str) -> tuple[str, str | None]:
     or without the comma: "butter for the pan" is butter, and it is the only one of the
     two that will ever resolve against a registry.
     """
-    head, separator, tail = body.partition(",")
-    if separator and tail.strip():
-        return head.strip(), _WHITESPACE.sub(" ", tail).strip()
+    # Not a comma between two digits. "2,5 dl Milch" is two and a half decilitres, and
+    # splitting it here turned a quantity into "2" with a note reading "5 dl Milch".
+    comma = _SEPARATING_COMMA.search(body)
+    if comma:
+        head, tail = body[: comma.start()], body[comma.end() :]
+        if tail.strip():
+            return head.strip(), _WHITESPACE.sub(" ", tail).strip()
 
     purpose = _PURPOSE.match(body.strip())
     if purpose and purpose.group("purpose").lower().split(maxsplit=1)[-1] in _PURPOSE_WORDS:
@@ -291,8 +381,22 @@ _ISO_DURATION = re.compile(r"^P(?:T)?(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?"
 # to a household, which a cook sees. Calling pieces "portions" makes it scale — silently,
 # and wrongly, to a fraction of the batter.
 _YIELD = re.compile(r"(?P<magnitude>\d+(?:[.,]\d+)?)\s*(?P<noun>[a-z]+)?", re.IGNORECASE)
-_PORTION_WORDS = ("serving", "servings", "portion", "portions", "person", "people")
-_COUNTING_VERBS = ("makes", "yields", "gives")
+_PORTION_WORDS = (
+    "serving",
+    "servings",
+    "portion",
+    "portions",
+    "person",
+    "people",
+    # German and French, because "4 Portionen" and "4 personnes" are how the sites a Swiss
+    # cook reads say it (FR-10).
+    "portionen",
+    "personen",
+    "personnes",
+    "parts",
+    "part",
+)
+_COUNTING_VERBS = ("makes", "yields", "gives", "ergibt", "ergeben", "donne")
 
 
 def _types(block: dict[str, Any]) -> list[str]:

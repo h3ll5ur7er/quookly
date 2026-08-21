@@ -248,6 +248,26 @@ Closing it means a recipe carrying **`serves`** alongside its yield: makes 12, s
 schema change, and it lands in Phase 4 where planning is the first thing that consumes it. Until
 then, scaling to a household works for recipes whose yield is already stated in servings.
 
+### Reading a recipe that is not in English
+
+Quookly ships in en-GB, de-CH and fr-CH (FR-10), so a Swiss cook pasting a link to a Swiss recipe
+site is the ordinary case rather than an edge one. Three things differ, and all three change the
+number a cook ends up cooking with.
+
+**The decimal separator is a comma.** "2,5 dl Milch" is two and a half decilitres. A reader that
+treats every comma as the start of a note turns that into "2", with "5 dl Milch" as a remark.
+
+**Spoons are abbreviations of local words.** `TL` and `EL` are Teelöffel and Esslöffel; `c. à s.`
+and `c. à c.` are the French pair. Both are metric — this is the German- and French-speaking world,
+not the American one, and the cup exception does not apply.
+
+**A yield counts Portionen, Personen or parts.** A yield word that is not recognised falls through
+to being read as a count of things, so "4 Portionen" becomes four pancakes rather than four
+servings, and the recipe then refuses to scale to a household.
+
+Vague measures are the same problem in a third language: a Prise, a pincée and a pinch are all
+judgements, and all three keep their words and refuse a number.
+
 ### Units that quietly disagree
 
 A US cup is 236.6 ml; a metric cup is 250 ml. A US tablespoon is 14.8 ml; a metric one is 15 ml. US
