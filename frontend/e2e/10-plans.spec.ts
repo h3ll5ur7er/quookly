@@ -227,6 +227,54 @@ test.describe('what it comes to', () => {
   });
 });
 
+test.describe('cooking it', () => {
+  test('takes what the meal was holding out of the pantry', async ({ page }) => {
+    /* UC-4.5 through the whole stack. The plan states that a meal was cooked; the pantry
+       hears it and consumes. Neither screen knows about the other. */
+    await page.goto('/pantry');
+    const before = await page
+      .locator('.pantry__entry')
+      .filter({ hasText: 'plain flour' })
+      .locator('.pantry__total')
+      .textContent();
+
+    await week(page);
+    await page
+      .getByRole('link', { name: /Buttermilk Pancakes/ })
+      .first()
+      .click();
+    await page.getByRole('button', { name: 'I cooked this' }).click();
+    await expect(page).toHaveURL(/\/plans\/\d+$/);
+    await expect(page.locator('.week__meal--cooked')).toHaveCount(1);
+
+    await page.goto('/pantry');
+    const after = page
+      .locator('.pantry__entry')
+      .filter({ hasText: 'plain flour' })
+      .locator('.pantry__total');
+    await expect(after).not.toHaveText(before ?? '');
+  });
+
+  test('is a record afterwards, not a plan', async ({ page }) => {
+    await week(page);
+    await page.locator('.week__meal--cooked').click();
+    await expect(page.getByText('You cooked this')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Save this meal' })).toHaveCount(0);
+    await expect(page.locator('#recipe_id')).toBeDisabled();
+    await page.screenshot({ path: 'e2e/screenshots/plan-cooked.png', fullPage: true });
+  });
+
+  test('drops out of the shopping list', async ({ page }) => {
+    /* The food is eaten. A cooked meal is out of the sizing and out of the list — the
+       week still needs shopping for the meal that has not happened yet.
+
+       Two eggs for Tuesday, where before it was three for both meals together. */
+    await week(page);
+    await expect(line(page, 'egg')).toContainText('2');
+    await expect(line(page, 'egg')).not.toContainText('3');
+  });
+});
+
 test.describe('changing your mind', () => {
   test('takes a meal off the plan', async ({ page }) => {
     await week(page);
@@ -249,7 +297,8 @@ test.describe('changing your mind', () => {
   test('gives back the stock it was holding', async ({ page }) => {
     /* A missed release is stock that is invisible forever, which is the waste this
        product exists to reduce. Visible here: the flour card said some of it was planned
-       for a meal, and now says nothing, because nothing is claiming it. */
+       for a meal, and now says nothing, because nothing is claiming it. The cooked meal
+       claims nothing either — it consumed what it held. */
     await page.goto('/pantry');
     const flour = page.locator('.pantry__entry').filter({ hasText: 'plain flour' });
     await expect(flour.locator('.pantry__claimed')).toHaveCount(0);

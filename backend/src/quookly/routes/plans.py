@@ -48,6 +48,20 @@ async def place_slot(plan_id: int, submitted: SlotInput, cook: CurrentCook) -> P
     return placed
 
 
+@router.post("/plans/{plan_id}/slots/{slot_id}/cooked", response_model=PlanView)
+async def mark_cooked(plan_id: int, slot_id: int, cook: CurrentCook) -> PlanView:
+    """Record that a planned meal was cooked, consuming what it held (UC-4.5, FR-19).
+
+    One way. Un-marking would mean re-adding stock that never came back, which is the
+    path ADR-004 was written to avoid; a mistake is corrected in the pantry, where
+    quantities are restated anyway.
+    """
+    cooked = await plan_manager.mark_cooked(plan_id, slot_id, cook.cook_id)
+    if cooked is None:
+        raise NOT_FOUND
+    return cooked
+
+
 @router.delete("/plans/{plan_id}/slots/{slot_id}", response_model=PlanView)
 async def clear_slot(plan_id: int, slot_id: int, cook: CurrentCook) -> PlanView:
     """Take a meal off the plan, releasing what it was holding.

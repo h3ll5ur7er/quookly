@@ -372,7 +372,7 @@ to the engine — otherwise scraping quirks would leak into business logic.
 | `Security` | Token issue and verification; principal resolution; visibility predicates |
 | `Configuration` | Typed settings from environment and config file; provider credentials |
 | `Diagnostics` | Structured logging, tracing, health |
-| `EventBus` | Publish and subscribe for activity events |
+| `EventBus` | Publish and subscribe for activity events. **Built** — in-process, awaited, failures propagate ([ADR-039](07-decisions.md#adr-039-events-are-published-in-this-process-and-awaited)) |
 | `Localisation` | Message catalogues, locale resolution, unit conventions per locale |
 
 ### The event bus and why it exists
@@ -381,7 +381,8 @@ The bus is not decoration. It is the mechanism that makes the Manager→Manager 
 survivable, and it earns its place in exactly the cases where a naive design would reach sideways:
 
 - A recipe is published → engagement awards points.
-- A meal is cooked → pantry consumes reserved stock; engagement awards points.
+- A meal is cooked → pantry consumes reserved stock; engagement awards points. **Built**, minus the
+  points: `PlanningManager` publishes `MealCooked` and `PantryManager` listens.
 - Stock nears expiry → discovery surfaces recipes that would use it.
 
 Without the bus, `RecipeManager` would call `EngagementManager`, and scoring would become a
@@ -498,6 +499,7 @@ backend/src/quookly/
 │   └── cook.py             # cook accounts, in domain verbs (Built)
 ├── utilities/
 │   ├── configuration.py    # typed settings (Built)
+│   ├── events.py           # publish and subscribe, in this process (Built)
 │   ├── security.py         # password hashing, bearer tokens (Built)
 │   └── diagnostics.py      # structured logging, request correlation (Built)
 ├── contracts/

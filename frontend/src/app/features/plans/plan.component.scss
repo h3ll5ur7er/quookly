@@ -71,11 +71,23 @@
 }
 
 .week__when {
+  display: flex;
+  gap: var(--space-2);
   color: var(--on-surface-muted);
   font-size: var(--text-xs);
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+/* Done, and quietly so. A cooked meal is a record: it should read as settled rather than
+   as an achievement, and it must not draw the eye away from what is still to come. */
+.week__meal--cooked {
+  background: var(--surface-sunken);
+}
+
+.week__done {
+  color: var(--success);
 }
 
 .week__recipe {

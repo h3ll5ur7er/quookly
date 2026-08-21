@@ -2,6 +2,10 @@
 @use '../../../styles/controls';
 @use '../../../styles/form';
 
+.meal__cooked {
+  margin-top: var(--space-5);
+}
+
 .meal__lede {
   color: var(--on-surface-muted);
 }

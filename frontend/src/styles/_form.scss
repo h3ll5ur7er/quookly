@@ -31,7 +31,8 @@ form > label:first-child {
   margin-top: 0;
 }
 
-label {
+label,
+legend {
   color: var(--on-surface-muted);
   font-size: var(--text-sm);
   font-weight: 600;
@@ -51,6 +52,20 @@ select {
   &:focus-visible {
     border-color: var(--primary);
   }
+
+  /* Neutral rather than a faded version of itself, for the same reason a disabled button
+     is (ADR-024): a washed-out field still reads as one you can type in. */
+  &:disabled {
+    border-color: var(--border);
+    background: var(--surface-sunken);
+    color: var(--on-surface-muted);
+    cursor: not-allowed;
+  }
+}
+
+input[type='checkbox']:disabled {
+  accent-color: var(--border-strong);
+  cursor: not-allowed;
 }
 
 /* Why a field is worth answering, or what happens if it is left alone. Quieter than the

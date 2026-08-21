@@ -17,6 +17,7 @@ from quookly.access import cook as cook_access
 from quookly.access import ingredient as registry
 from quookly.access import pantry as pantry_access
 from quookly.contracts.errors import DensityRequired, IncompatibleUnits
+from quookly.contracts.events import MealCooked
 from quookly.contracts.ingredient import Ingredient
 from quookly.contracts.measure import Quantity
 from quookly.contracts.pantry import (
@@ -29,6 +30,9 @@ from quookly.contracts.pantry import (
     WasteInput,
 )
 from quookly.engines import measure
+from quookly.utilities.diagnostics import get_logger
+
+_log = get_logger("pantry")
 
 #: How near a date has to be before a packet is worth pointing at. Three days is roughly
 #: a shopping trip away: long enough to plan a meal around it, short enough that the
@@ -260,3 +264,25 @@ async def discard(stock_item_id: int, cook_id: int) -> bool:
     if lot is None:
         return False
     return await pantry_access.remove(stock_item_id)
+
+
+async def on_meal_cooked(fact: MealCooked) -> None:
+    """Turn what a meal was holding into stock that has gone (UC-4.5, FR-19).
+
+    Subscribed rather than called. `PlanningManager` states that a meal was cooked and
+    does not know that stock accounting exists; this manager owns inventory truth (V9)
+    and does not know where the meal came from. That is the Manager-must-not-call-Manager
+    rule doing useful work rather than merely being obeyed — and it is what will let a
+    cooking session publish the same fact without either of them learning about the other.
+
+    Idempotent by construction: a meal whose claims are already consumed holds none, and
+    consuming none consumes nothing. That is what makes it safe for a publisher to
+    re-state the fact after a failure part-way through.
+    """
+    taken = await pantry_access.consume_for_slot(fact.plan_slot_id)
+    _log.info(
+        "meal %s cooked: %d %s consumed",
+        fact.plan_slot_id,
+        len(taken),
+        "reservation" if len(taken) == 1 else "reservations",
+    )

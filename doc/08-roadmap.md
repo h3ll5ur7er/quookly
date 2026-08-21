@@ -146,11 +146,14 @@ This is the phase that determines whether the product is worth using.
   [format 2](07-decisions.md#adr-012-export-format-is-the-import-format) of the interchange document
 - ~~`ReplenishmentEngine`: shopping list net of stock (UC-4.4, V8)~~ **Built** — the packet going off
   first is the one drawn from, and the shopping list is what could not be drawn
-- Cook a meal, consume reservations (UC-4.5)
-- `EventBus` and the first events
+- ~~Cook a meal, consume reservations (UC-4.5)~~ **Built** — one way, and idempotent: the food is
+  eaten, and un-marking would mean re-adding stock that never came back
+- ~~`EventBus` and the first events~~ **Built** — in-process and awaited
+  ([ADR-039](07-decisions.md#adr-039-events-are-published-in-this-process-and-awaited)); `MealCooked`
+  is the first, and the pantry is the first listener
 
 **Done when:** a week can be planned for a household including a guest with a restriction, producing
-a correct shopping list, and cooking a meal updates the pantry.
+a correct shopping list, and cooking a meal updates the pantry. **Met.**
 
 ## Phase 5 — Cooking mode
 

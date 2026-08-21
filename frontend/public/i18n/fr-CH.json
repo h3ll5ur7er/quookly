@@ -264,6 +264,9 @@
     "mealDinner": "Dîner",
     "mealSnack": "Collation",
     "pantrySpokenFor": "est prévu pour un repas",
-    "mealLoading": "Chargement …"
+    "mealLoading": "Chargement …",
+    "planCooked": "Cuisiné",
+    "mealCooked": "J’ai cuisiné ce repas",
+    "mealAlreadyCooked": "Vous avez cuisiné ce repas. Ce qui était réservé pour lui a été retiré de votre garde-manger : c’est désormais un enregistrement, plus un plan."
   }
 }

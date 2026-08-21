@@ -264,6 +264,9 @@
     "mealDinner": "Abendessen",
     "mealSnack": "Zwischenmahlzeit",
     "pantrySpokenFor": "ist für eine Mahlzeit eingeplant",
-    "mealLoading": "Wird geladen …"
+    "mealLoading": "Wird geladen …",
+    "planCooked": "Gekocht",
+    "mealCooked": "Das habe ich gekocht",
+    "mealAlreadyCooked": "Sie haben das gekocht. Was dafür zurückgelegt war, ist aus Ihrem Vorrat abgezogen — es ist jetzt ein Eintrag und kein Plan mehr."
   }
 }

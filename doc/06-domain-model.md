@@ -226,6 +226,16 @@ Correcting a quantity is a different act from wasting it. Adjusting says the num
 wasting says food left the kitchen. Only the second belongs in the figure the cook is trying to
 bring down.
 
+### A meal that was cooked
+
+A plan slot records **when** it was cooked, and that is one way. Un-marking would mean re-adding
+stock that never came back — the path
+[ADR-004](07-decisions.md#adr-004-plans-reserve-stock-cooking-consumes-it) was written to avoid — so
+a mistake is corrected in the pantry, where quantities are restated anyway.
+
+A cooked meal is a **record rather than a plan**: it holds no stock, needs no shopping, and is not
+edited. It stays in the week, saying what was cooked and who was there.
+
 ### How long it takes
 
 *Proposed — see [ADR-037](07-decisions.md#adr-037-proposed-how-long-a-recipe-takes-is-two-numbers-both-derived).*

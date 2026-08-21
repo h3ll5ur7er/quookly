@@ -287,6 +287,11 @@ class PlanSlotRow(SQLModel, table=True):
     on_date: date = Field(index=True)
     meal: Meal
     recipe_id: int | None = Field(default=None, foreign_key="recipe.id", index=True)
+    # When this meal was cooked, if it was. One way: the food is eaten, and un-marking it
+    # would mean re-adding stock that never came back — the bug-prone path ADR-004 was
+    # written to avoid. A mistake is corrected in the pantry, where quantities are
+    # restated anyway.
+    cooked_at: datetime | None = Field(default=None)
 
 
 class SlotAttendeeRow(SQLModel, table=True):

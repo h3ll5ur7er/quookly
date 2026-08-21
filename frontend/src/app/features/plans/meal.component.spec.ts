@@ -42,6 +42,7 @@ function slot(overrides: object = {}): object {
     attendee_ids: [7],
     attendees: ['Ana'],
     factor: '1',
+    cooked: false,
     sizing: 'to_the_table',
     suitability: null,
     ...overrides,
@@ -328,5 +329,43 @@ describe('MealComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('#recipe_id')).not.toBeNull();
+  });
+
+  describe('cooking it', () => {
+    it('offers it once a dish has been chosen', async () => {
+      await open({ on: '2026-08-24', meal: 'dinner' });
+      expect(button('I cooked this')).not.toBeNull();
+    });
+
+    it('offers nothing to cook where no dish was chosen', async () => {
+      /* It was skipped, not cooked. Marking it would put a meal in the record nobody
+         ate. */
+      await open({ on: '2026-08-26', meal: 'lunch' });
+      expect(button('I cooked this')).toBeNull();
+    });
+
+    it('says so, and stops offering edits', async () => {
+      /* One way. Un-marking would mean re-adding stock that never came back. */
+      const eaten = { ...WEEK, slots: [slot({ cooked: true })] };
+      await open({ on: '2026-08-24', meal: 'dinner' }, eaten);
+
+      expect(text()).toContain('You cooked this');
+      expect(button('Save this meal')).toBeNull();
+      expect(button('Take this meal off')).toBeNull();
+      expect((field('recipe_id') as HTMLSelectElement).disabled).toBe(true);
+    });
+
+    it('records it and goes back to the week', async () => {
+      await open({ on: '2026-08-24', meal: 'dinner' });
+
+      button('I cooked this')!.click();
+      await fixture.whenStable();
+
+      const sent = backend.expectOne('/api/v1/plans/3/slots/5/cooked');
+      expect(sent.request.method).toBe('POST');
+      sent.flush(WEEK);
+      await fixture.whenStable();
+      expect(navigated).toHaveBeenCalledWith('/plans/3');
+    });
   });
 });

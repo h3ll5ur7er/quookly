@@ -82,6 +82,9 @@ export class MealComponent {
 
   protected readonly verdict = computed(() => this.existing()?.suitability ?? null);
 
+  /** A cooked meal is a record, not a plan: nothing about it can be changed. */
+  protected readonly cooked = computed(() => this.existing()?.cooked === true);
+
   constructor() {
     this.plans.getPlan(this.planId).subscribe({
       next: (plan) => {
@@ -121,7 +124,9 @@ export class MealComponent {
   }
 
   protected save(): void {
-    if (this.form.invalid || this.saving()) {
+    // A disabled form reports itself valid, so the cooked case is named rather than
+    // left to `invalid` — the screen offers no submit button, but Enter in a field would.
+    if (this.cooked() || this.form.invalid || this.saving()) {
       return;
     }
     this.saving.set(true);
@@ -141,6 +146,22 @@ export class MealComponent {
           this.failed.set(true);
         },
       });
+  }
+
+  protected cook(): void {
+    const slot = this.existing();
+    if (slot === null || this.saving()) {
+      return;
+    }
+    this.saving.set(true);
+    this.failed.set(false);
+    this.plans.markCooked(this.planId, slot.id).subscribe({
+      next: () => void this.router.navigateByUrl(`/plans/${this.planId}`),
+      error: () => {
+        this.saving.set(false);
+        this.failed.set(true);
+      },
+    });
   }
 
   protected clear(): void {
@@ -172,6 +193,27 @@ export class MealComponent {
     this.fill();
   }
 
+  /**
+   * Put the form beyond editing, or back within it.
+   *
+   * The *model*, not a `disabled` attribute on a wrapper: a `fieldset[disabled]` stops a
+   * control being used without making the control itself say it is disabled, so the two
+   * would disagree — and the form would still submit whatever it held.
+   */
+  private settleEditability(): void {
+    const beyondEditing = this.cooked();
+    if (beyondEditing === this.form.disabled) {
+      return;
+    }
+    // Silently: enabling and disabling both fire `valueChanges`, and reacting to that
+    // would be this method's own consequence coming back round.
+    if (beyondEditing) {
+      this.form.disable({ emitEvent: false });
+    } else {
+      this.form.enable({ emitEvent: false });
+    }
+  }
+
   private fill(): void {
     const slot = this.existing();
     this.form.patchValue({
@@ -181,5 +223,6 @@ export class MealComponent {
           : String(slot.recipe_id),
     });
     this.attending.set(slot === null ? [] : [...slot.attendee_ids]);
+    this.settleEditability();
   }
 }

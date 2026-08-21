@@ -9,7 +9,7 @@ editing a plan re-provisions it rather than accumulating claims, that reading it
 nothing, and that taking a meal off gives back what it was holding.
 """
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
 from datetime import date
 from decimal import Decimal
 
@@ -25,13 +25,16 @@ from quookly.access import preferences as preference_access
 from quookly.access import recipe as recipe_access
 from quookly.access.database import dispose_engine, get_engine
 from quookly.contracts.eater import AgeBand, Constraint, Severity
+from quookly.contracts.events import MealCooked
 from quookly.contracts.ingredient import Allergen, IngredientKind
 from quookly.contracts.measure import Quantity, Unit
 from quookly.contracts.plan import Meal, PlanInput, SlotInput
 from quookly.contracts.planning import Sizing
 from quookly.contracts.recipe import IngredientLineDraft, Provenance, RecipeDraft, StepDraft
 from quookly.contracts.suitability import Outcome
+from quookly.managers import pantry as pantry_manager
 from quookly.managers import plan as plan_manager
+from quookly.utilities import events
 from quookly.utilities.configuration import get_settings
 
 MONDAY = date(2026, 8, 24)
@@ -498,3 +501,152 @@ class TestWhoseWeekItIs:
 
         assert plan is not None
         assert plan.slots[0].attendee_ids == []
+
+
+class TestCookingAPlannedMeal:
+    """UC-4.5 and FR-19, and the first thing the event bus carries.
+
+    `PlanningManager` states that a meal was cooked; `PantryManager` listens and turns
+    that meal's claims into consumption. Neither knows the other exists — which is the
+    Manager-must-not-call-Manager rule doing useful work rather than merely being obeyed.
+    """
+
+    @pytest.fixture(autouse=True)
+    def listening(self) -> Iterator[None]:
+        events.forget_everything()
+        events.subscribe(MealCooked, pantry_manager.on_meal_cooked)
+        yield
+        events.forget_everything()
+
+    async def test_cooking_takes_what_the_meal_was_holding(
+        self, cook_id: int, pancakes: int, flour: int
+    ) -> None:
+        lot_id = await stock(cook_id, flour, "500")
+        plan_id = await a_week(cook_id)
+        placed = await plan_manager.place(
+            plan_id, SlotInput(on_date=MONDAY, meal=Meal.DINNER, recipe_id=pancakes), cook_id
+        )
+        assert placed is not None
+
+        plan = await plan_manager.mark_cooked(plan_id, placed.slots[0].id, cook_id)
+
+        assert plan is not None
+        assert plan.slots[0].cooked is True
+        remaining = await pantry_access.fetch(lot_id)
+        assert remaining is not None
+        assert remaining.quantity == Quantity(Decimal("300.0000"), Unit.GRAM)
+
+    async def test_a_cooked_meal_needs_no_shopping(self, cook_id: int, pancakes: int) -> None:
+        """It is a record rather than a plan. The food is eaten."""
+        plan_id = await a_week(cook_id)
+        placed = await plan_manager.place(
+            plan_id, SlotInput(on_date=MONDAY, meal=Meal.DINNER, recipe_id=pancakes), cook_id
+        )
+        assert placed is not None
+        assert placed.shopping != []
+
+        plan = await plan_manager.mark_cooked(plan_id, placed.slots[0].id, cook_id)
+
+        assert plan is not None
+        assert plan.shopping == []
+
+    async def test_a_cooked_meal_still_says_what_it_was(
+        self, cook_id: int, pancakes: int, ana: int
+    ) -> None:
+        """Out of the sizing, but not out of the week. A record with the dish missing
+        would be no record at all."""
+        plan_id = await a_week(cook_id)
+        placed = await plan_manager.place(
+            plan_id,
+            SlotInput(on_date=MONDAY, meal=Meal.DINNER, recipe_id=pancakes, attendee_ids=[ana]),
+            cook_id,
+        )
+        assert placed is not None
+
+        plan = await plan_manager.mark_cooked(plan_id, placed.slots[0].id, cook_id)
+
+        assert plan is not None
+        assert plan.slots[0].recipe_title == "Pancakes"
+        assert plan.slots[0].attendees == ["Ana"]
+
+    async def test_cooking_it_twice_does_not_take_it_twice(
+        self, cook_id: int, pancakes: int, flour: int
+    ) -> None:
+        """Idempotent by construction: a meal whose claims are consumed holds none, and
+        consuming none consumes nothing. That is what makes it safe to state the fact
+        again after a failure part-way through."""
+        lot_id = await stock(cook_id, flour, "500")
+        plan_id = await a_week(cook_id)
+        placed = await plan_manager.place(
+            plan_id, SlotInput(on_date=MONDAY, meal=Meal.DINNER, recipe_id=pancakes), cook_id
+        )
+        assert placed is not None
+
+        await plan_manager.mark_cooked(plan_id, placed.slots[0].id, cook_id)
+        await plan_manager.mark_cooked(plan_id, placed.slots[0].id, cook_id)
+
+        remaining = await pantry_access.fetch(lot_id)
+        assert remaining is not None
+        assert remaining.quantity == Quantity(Decimal("300.0000"), Unit.GRAM)
+
+    async def test_a_cooked_meal_is_not_edited(
+        self, cook_id: int, pancakes: int, flour: int
+    ) -> None:
+        """Editing one would re-reserve stock for food that has been eaten, and there is
+        no honest way to un-cook it."""
+        lot_id = await stock(cook_id, flour, "500")
+        plan_id = await a_week(cook_id)
+        placed = await plan_manager.place(
+            plan_id, SlotInput(on_date=MONDAY, meal=Meal.DINNER, recipe_id=pancakes), cook_id
+        )
+        assert placed is not None
+        await plan_manager.mark_cooked(plan_id, placed.slots[0].id, cook_id)
+
+        assert (
+            await plan_manager.place(plan_id, SlotInput(on_date=MONDAY, meal=Meal.DINNER), cook_id)
+            is None
+        )
+        assert await plan_manager.clear(plan_id, placed.slots[0].id, cook_id) is None
+
+        spare = next(one for one in await pantry_access.available(cook_id) if one.lot.id == lot_id)
+        assert spare.free == Quantity(Decimal("300.0000"), Unit.GRAM)
+
+    async def test_editing_another_meal_leaves_the_cooked_one_alone(
+        self, cook_id: int, pancakes: int, flour: int
+    ) -> None:
+        """Every change restates the plan's reservations (ADR-038). A cooked meal must
+        not be handed its stock back by somebody planning Thursday."""
+        lot_id = await stock(cook_id, flour, "500")
+        plan_id = await a_week(cook_id)
+        placed = await plan_manager.place(
+            plan_id, SlotInput(on_date=MONDAY, meal=Meal.DINNER, recipe_id=pancakes), cook_id
+        )
+        assert placed is not None
+        await plan_manager.mark_cooked(plan_id, placed.slots[0].id, cook_id)
+
+        await plan_manager.place(
+            plan_id, SlotInput(on_date=SUNDAY, meal=Meal.LUNCH, recipe_id=pancakes), cook_id
+        )
+
+        remaining = await pantry_access.fetch(lot_id)
+        assert remaining is not None
+        assert remaining.quantity == Quantity(Decimal("300.0000"), Unit.GRAM)
+        spare = next(one for one in await pantry_access.available(cook_id) if one.lot.id == lot_id)
+        assert spare.free == Quantity(Decimal("100.0000"), Unit.GRAM)
+
+    async def test_a_meal_with_no_dish_was_not_cooked(self, cook_id: int) -> None:
+        """It was skipped. Marking it would put a meal in the record nobody ate."""
+        plan_id = await a_week(cook_id)
+        placed = await plan_manager.place(
+            plan_id, SlotInput(on_date=MONDAY, meal=Meal.DINNER), cook_id
+        )
+        assert placed is not None
+
+        assert await plan_manager.mark_cooked(plan_id, placed.slots[0].id, cook_id) is None
+
+    async def test_another_cooks_meal_cannot_be_cooked(
+        self, cook_id: int, other_cook_id: int
+    ) -> None:
+        theirs = await a_week(other_cook_id)
+
+        assert await plan_manager.mark_cooked(theirs, 1, cook_id) is None

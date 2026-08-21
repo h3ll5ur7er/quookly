@@ -10,7 +10,7 @@ delete a slot that still holds any — see `close_slot`.
 """
 
 from collections.abc import Sequence
-from datetime import date
+from datetime import UTC, date, datetime
 
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, delete, select
@@ -30,6 +30,7 @@ def _slot_to_contract(row: PlanSlotRow, attendee_ids: list[int]) -> PlanSlot:
         meal=row.meal,
         recipe_id=row.recipe_id,
         attendee_ids=attendee_ids,
+        cooked_at=row.cooked_at,
     )
 
 
@@ -185,6 +186,27 @@ async def attend(slot_id: int, eater_ids: Sequence[int]) -> PlanSlot | None:
                 active.add(SlotAttendeeRow(slot_id=slot_id, eater_id=eater_id))
         await active.commit()
         return _slot_to_contract(row, kept)
+
+
+async def mark_cooked(slot_id: int) -> PlanSlot | None:
+    """Record that this meal was cooked (UC-4.5).
+
+    One way, and idempotent: a slot already cooked keeps the instant it was first marked.
+    Un-marking would mean re-adding stock that never came back, which is the path ADR-004
+    was written to avoid — a mistake is corrected in the pantry, where quantities are
+    restated anyway.
+    """
+    async with session() as active:
+        row = await active.get(PlanSlotRow, slot_id)
+        if row is None:
+            return None
+        if row.cooked_at is None:
+            row.cooked_at = datetime.now(UTC)
+            active.add(row)
+            await active.commit()
+            await active.refresh(row)
+        seated = await _attendance_for(active, [slot_id])
+        return _slot_to_contract(row, seated[slot_id])
 
 
 async def close_slot(slot_id: int) -> bool:

@@ -11,6 +11,8 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.routing import APIRoute
 
 from .access.database import dispose_engine
+from .contracts.events import MealCooked
+from .managers import pantry
 from .managers.seed import stock_registry
 from .routes import (
     accounts_router,
@@ -24,6 +26,7 @@ from .routes import (
     setup_router,
     status_router,
 )
+from .utilities import events
 from .utilities.diagnostics import configure_logging, get_logger, use_request_id
 
 REQUEST_ID_HEADER = "X-Request-ID"
@@ -52,9 +55,22 @@ def endpoint_name_generator(route: APIRoute) -> str:
     return f"{name}"
 
 
+def wire_subscriptions() -> None:
+    """Say who listens for what.
+
+    Here rather than at the bottom of a manager, because this is where the application is
+    assembled and a subscription made as an import side effect is a subscription nobody
+    can find. It is also the only place that knows about two managers at once — which is
+    exactly what the bus exists to keep out of the managers themselves.
+    """
+    events.forget_everything()
+    events.subscribe(MealCooked, pantry.on_meal_cooked)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     configure_logging()
+    wire_subscriptions()
     await stock_registry()
     yield
     await dispose_engine()

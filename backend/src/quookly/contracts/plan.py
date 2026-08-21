@@ -7,7 +7,7 @@ of us, something quick".
 """
 
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -44,6 +44,9 @@ class PlanSlot:
     meal: Meal
     recipe_id: int | None = None
     attendee_ids: list[int] = field(default_factory=list)
+    #: When it was cooked, if it was. A cooked meal is a record rather than a plan: it
+    #: holds no stock, needs no shopping, and is not edited.
+    cooked_at: datetime | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,6 +88,8 @@ class SlotView(BaseModel):
     recipe_title: str | None
     attendee_ids: list[int]
     attendees: list[str]
+    #: Whether it has been cooked. The instant is kept; a screen needs the fact.
+    cooked: bool
     #: How much of the recipe this meal makes: "1" is one batch, "1.5" is half again.
     #: Absent for a slot with no recipe in it.
     factor: str | None

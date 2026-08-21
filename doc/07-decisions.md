@@ -1420,3 +1420,57 @@ Between the release and the re-reserve, this plan's stock is briefly free. On a 
 instance nothing else is looking; on a shared one a concurrent plan could take it, and the shortfall
 would simply grow. Worth revisiting if households ever share a pantry — which is
 [an open question](06-domain-model.md#open-questions) already.
+
+---
+
+## ADR-039 Events are published in this process, and awaited
+
+**Status:** Accepted
+
+**Context.** Cooking a meal has to consume the stock that meal reserved. `PlanningManager` owns the
+plan and `PantryManager` owns inventory truth, and a Manager may not call a Manager
+([ADR-002](#adr-002-four-managers-not-one-per-entity)). The architecture named the `EventBus` as the
+answer before there was anything to carry.
+
+The question this record settles is not *whether* a bus, but what kind. A queue, a background task,
+and a plain function call dressed up are all in the space.
+
+**Decision.** An **in-process** bus. `publish` **awaits every listener** and **lets a failure
+propagate**. There is no persistence, no retry, and no ordering beyond registration order.
+
+Subscriptions are wired where the application is assembled — `api.py` — rather than as an import
+side effect of a manager.
+
+**Rationale.** Fire-and-forget would make publishing cheap and make the consequences invisible. A
+meal recorded as cooked whose stock was never consumed is stock reserved forever: neither free nor
+gone, which is exactly the failure
+[ADR-004](#adr-004-plans-reserve-stock-cooking-consumes-it) exists to prevent and exactly the waste
+the product exists to reduce. The publisher does not learn *who* failed — only that the fact could
+not be fully acted on, which is enough for it to refuse to pretend otherwise.
+
+Awaited and propagating makes the bus look like a function call with extra steps. What it buys is
+the thing that matters: `PlanningManager` does not import `PantryManager`, does not know stock
+accounting exists, and a cooking session (Phase 5) will publish the same `MealCooked` without either
+of them learning about the other. That independence is the point; the asynchrony is not.
+
+**Ordering, and what happens when a listener fails.** Listeners run in registration order and the
+first failure stops the rest. With one listener doing real accounting that is the safe reading. The
+day an advisory listener sits beside an essential one — engagement points beside stock — is the day
+this needs splitting into "must succeed" and "may fail", and not before. Recorded so the next person
+does not have to rediscover why it is this way.
+
+**The publisher states the fact before recording it.** Cooking publishes `MealCooked` and *then*
+marks the slot. If marking fails, the cook marks it again: the claims are already gone, consuming
+none consumes nothing, and the second attempt lands. The other order would leave a meal recorded as
+cooked whose stock was never taken. Idempotent listeners are what make this safe, and they are cheap
+here because "consume what this meal holds" is naturally empty the second time.
+
+**Wired at assembly** because a subscription made as an import side effect is a subscription nobody
+can find, and because that file is the only one that legitimately knows about two managers at once —
+which is what the bus exists to keep out of the managers themselves.
+
+**Cost.** Nothing survives a crash between publish and commit. For a household instance running one
+process against one SQLite file, a durable queue would be machinery without a problem. When a
+listener does I/O that can fail independently of the publisher — an email, a push, an index — that is
+the moment to add persistence, and it will be an addition rather than a rewrite: the publisher's side
+of the contract does not change.

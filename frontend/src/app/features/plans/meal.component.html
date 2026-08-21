@@ -68,7 +68,6 @@
           </p>
         }
       </fieldset>
-
       @if (verdict(); as judgement) {
         <app-verdict [verdict]="judgement" />
       }
@@ -77,17 +76,32 @@
         <p class="error" role="alert" i18n="@@mealFailed">Could not save that. Please try again.</p>
       }
 
-      <button type="submit" [disabled]="saving()">
-        @if (saving()) {
-          <span i18n="@@mealSaving">Saving…</span>
-        } @else {
-          <span i18n="@@mealSave">Save this meal</span>
-        }
-      </button>
-      @if (existing()) {
-        <button type="button" class="destructive" (click)="clear()" i18n="@@mealClear">
-          Take this meal off the plan
+      @if (cooked()) {
+        <!-- One way. Un-marking would mean re-adding stock that never came back, which
+             is the path ADR-004 was written to avoid; a mistake is corrected in the
+             pantry, where quantities are restated anyway. -->
+        <p class="notice notice--info meal__cooked" i18n="@@mealAlreadyCooked">
+          You cooked this. What it was holding has come out of your pantry, and it is a record now
+          rather than a plan.
+        </p>
+      } @else {
+        <button type="submit" [disabled]="saving()">
+          @if (saving()) {
+            <span i18n="@@mealSaving">Saving…</span>
+          } @else {
+            <span i18n="@@mealSave">Save this meal</span>
+          }
         </button>
+        @if (existing()?.recipe_id) {
+          <button type="button" class="secondary" [disabled]="saving()" (click)="cook()">
+            <span i18n="@@mealCooked">I cooked this</span>
+          </button>
+        }
+        @if (existing()) {
+          <button type="button" class="destructive" (click)="clear()" i18n="@@mealClear">
+            Take this meal off the plan
+          </button>
+        }
       }
     </form>
   }

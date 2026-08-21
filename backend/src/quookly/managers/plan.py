@@ -15,6 +15,7 @@ change what a cook has reserved.
 """
 
 from collections.abc import Sequence
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from quookly.access import cook as cook_access
@@ -25,7 +26,9 @@ from quookly.access import plan as plan_access
 from quookly.access import preferences as preference_access
 from quookly.access import recipe as recipe_access
 from quookly.contracts.eater import Eater
+from quookly.contracts.events import MealCooked
 from quookly.contracts.plan import (
+    Meal,
     MealPlan,
     PlanInput,
     PlanSummaryView,
@@ -39,6 +42,7 @@ from quookly.contracts.provisioning import Covered
 from quookly.contracts.recipe import Recipe
 from quookly.contracts.suitability import VerdictView
 from quookly.engines import measure, planning, replenishment, suitability
+from quookly.utilities import events
 
 
 def _tidy(value: Decimal) -> str:
@@ -47,7 +51,9 @@ def _tidy(value: Decimal) -> str:
     return text.rstrip("0").rstrip(".") if "." in text else text
 
 
-async def _meals_of(plan: MealPlan, locale: str) -> tuple[list[PlannedMeal], dict[int, Recipe]]:
+async def _meals_of(
+    plan: MealPlan, locale: str
+) -> tuple[list[PlannedMeal], dict[int, Recipe], dict[int, Eater]]:
     """The filled slots, with their recipes and the people at them.
 
     Recipes are fetched once each rather than once per slot: the same dish twice in a
@@ -66,6 +72,8 @@ async def _meals_of(plan: MealPlan, locale: str) -> tuple[list[PlannedMeal], dic
     )
     by_id = {eater.id: eater for eater in attending}
 
+    # Cooked meals are left out. They are a record rather than a plan: the food is eaten,
+    # so they need no stock held and nothing bought for them.
     meals = [
         PlannedMeal(
             plan_slot_id=slot.id,
@@ -73,9 +81,9 @@ async def _meals_of(plan: MealPlan, locale: str) -> tuple[list[PlannedMeal], dic
             eaters=[by_id[eater_id] for eater_id in slot.attendee_ids if eater_id in by_id],
         )
         for slot in plan.slots
-        if slot.recipe_id is not None and slot.recipe_id in recipes
+        if slot.recipe_id is not None and slot.recipe_id in recipes and slot.cooked_at is None
     ]
-    return meals, recipes
+    return meals, recipes, by_id
 
 
 async def _densities(needed: PlanRequirements) -> dict[int, Decimal | None]:
@@ -94,7 +102,7 @@ async def _reprovision(plan: MealPlan, locale: str) -> None:
     for slot in plan.slots:
         await pantry_access.release_for_slot(slot.id)
 
-    meals, _ = await _meals_of(plan, locale)
+    meals, _, _ = await _meals_of(plan, locale)
     needed = planning.requirements_for(meals)
     if not needed.requirements:
         return
@@ -135,6 +143,13 @@ async def _covered(plan: MealPlan) -> list[Covered]:
     return covered
 
 
+def _already_cooked(plan: MealPlan, on_date: date, meal: Meal) -> bool:
+    return any(
+        slot.on_date == on_date and slot.meal is meal and slot.cooked_at is not None
+        for slot in plan.slots
+    )
+
+
 def _judge(recipe: Recipe, eaters: Sequence[Eater]) -> VerdictView | None:
     """Whether the people coming can eat this (UC-4.3).
 
@@ -148,7 +163,7 @@ def _judge(recipe: Recipe, eaters: Sequence[Eater]) -> VerdictView | None:
 
 
 async def _view(plan: MealPlan, locale: str) -> PlanView:
-    meals, recipes = await _meals_of(plan, locale)
+    meals, recipes, people = await _meals_of(plan, locale)
     by_slot: dict[int, PlannedMeal] = {meal.plan_slot_id: meal for meal in meals}
     needed = planning.requirements_for(meals)
     sized: dict[int, SizedMeal] = {one.plan_slot_id: one for one in needed.meals}
@@ -182,15 +197,22 @@ async def _view(plan: MealPlan, locale: str) -> PlanView:
     for slot in plan.slots:
         meal = by_slot.get(slot.id)
         size = sized.get(slot.id)
+        # Read from the recipes and the household rather than from the meal, because a
+        # cooked slot has no meal — it is out of the sizing — and still has to say what
+        # was cooked and who was there.
+        dish = None if slot.recipe_id is None else recipes.get(slot.recipe_id)
         slots.append(
             SlotView(
                 id=slot.id,
                 on_date=slot.on_date,
                 meal=slot.meal,
                 recipe_id=slot.recipe_id,
-                recipe_title=None if meal is None else meal.recipe.title,
+                recipe_title=None if dish is None else dish.title,
                 attendee_ids=slot.attendee_ids,
-                attendees=[] if meal is None else [eater.name for eater in meal.eaters],
+                attendees=[
+                    people[eater_id].name for eater_id in slot.attendee_ids if eater_id in people
+                ],
+                cooked=slot.cooked_at is not None,
                 factor=None if size is None else _tidy(size.factor),
                 sizing=None if size is None else size.sizing,
                 suitability=None if meal is None else _judge(meal.recipe, meal.eaters),
@@ -247,7 +269,9 @@ async def place(
 ) -> PlanView | None:
     """State one meal whole: the day, the dish, and who is coming (UC-4.1, UC-4.2)."""
     plan = await _owned(plan_id, cook_id)
-    if plan is None:
+    if plan is None or _already_cooked(plan, submitted.on_date, submitted.meal):
+        # A cooked meal is a record. Editing one would re-reserve stock for food that has
+        # been eaten, and there is no honest way to un-cook it.
         return None
     reading = locale or await cook_access.locale_for(cook_id)
 
@@ -279,11 +303,51 @@ async def clear(
     is neither free nor gone.
     """
     plan = await _owned(plan_id, cook_id)
-    if plan is None or not any(slot.id == slot_id for slot in plan.slots):
+    kept = None if plan is None else next((one for one in plan.slots if one.id == slot_id), None)
+    if kept is None or kept.cooked_at is not None:
         return None
     await pantry_access.release_for_slot(slot_id)
     await plan_access.close_slot(slot_id)
     return await _restate(plan_id, cook_id, locale or await cook_access.locale_for(cook_id))
+
+
+async def mark_cooked(
+    plan_id: int, slot_id: int, cook_id: int, locale: str | None = None
+) -> PlanView | None:
+    """Record that a planned meal was cooked (UC-4.5, FR-19).
+
+    States the fact and lets whoever cares act on it. What actually happens to the stock
+    is the pantry's business, and this manager does not know that stock accounting exists
+    — which is what will let a cooking session (Phase 5) publish the same fact without
+    either of them learning about the other.
+
+    The fact is published *before* the slot is marked. If marking then fails, the cook
+    marks it again: the claims are already gone, consuming none consumes nothing, and the
+    second attempt lands. The other order would leave a meal recorded as cooked whose
+    stock was never taken — reserved forever, which is the failure ADR-004 exists to
+    prevent.
+    """
+    plan = await _owned(plan_id, cook_id)
+    if plan is None:
+        return None
+    slot = next((one for one in plan.slots if one.id == slot_id), None)
+    if slot is None or slot.recipe_id is None:
+        # A slot holding no dish was not cooked; it was skipped. Marking it would put a
+        # meal in the record that nobody ate.
+        return None
+
+    if slot.cooked_at is None:
+        await events.publish(
+            MealCooked(cook_id=cook_id, plan_slot_id=slot_id, at=datetime.now(UTC))
+        )
+        await plan_access.mark_cooked(slot_id)
+
+    reread = await _owned(plan_id, cook_id)
+    return (
+        None
+        if reread is None
+        else await _view(reread, locale or await cook_access.locale_for(cook_id))
+    )
 
 
 async def discard(plan_id: int, cook_id: int) -> bool:

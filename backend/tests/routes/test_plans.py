@@ -15,9 +15,14 @@ from pytest import MonkeyPatch
 from sqlmodel import SQLModel
 
 from quookly.access import ingredient as registry
+from quookly.access import pantry as pantry_access
 from quookly.access.database import dispose_engine, get_engine
 from quookly.api import app
+from quookly.contracts.events import MealCooked
 from quookly.contracts.ingredient import IngredientKind
+from quookly.contracts.measure import Quantity, Unit
+from quookly.managers import pantry as pantry_manager
+from quookly.utilities import events
 from quookly.utilities.configuration import get_settings
 
 PLANS = "/api/v1/plans"
@@ -234,3 +239,46 @@ async def test_a_period_longer_than_a_month_is_refused(
     )
 
     assert response.status_code == 422
+
+
+async def test_cooking_a_meal_consumes_what_it_held(
+    client: AsyncClient, cook: dict[str, str], flour: int
+) -> None:
+    """UC-4.5 through the API, with the bus wired the way the running application wires
+    it: the route knows nothing about the pantry, and the stock goes down anyway."""
+    events.forget_everything()
+    events.subscribe(MealCooked, pantry_manager.on_meal_cooked)
+    lot = await pantry_access.receive(
+        cook_id=1, ingredient_id=flour, quantity=Quantity(Decimal("500"), Unit.GRAM)
+    )
+    recipe_id = await a_recipe(client, cook, flour)
+    plan_id = await a_week(client, cook)
+    placed = await client.put(
+        f"{PLANS}/{plan_id}/slots", json=slot(recipe_id=recipe_id), headers=cook
+    )
+    slot_id = placed.json()["slots"][0]["id"]
+
+    cooked = await client.post(f"{PLANS}/{plan_id}/slots/{slot_id}/cooked", headers=cook)
+
+    assert cooked.status_code == 200
+    assert cooked.json()["slots"][0]["cooked"] is True
+    assert cooked.json()["shopping"] == []
+    remaining = await pantry_access.fetch(lot.id)
+    assert remaining is not None
+    assert remaining.quantity.magnitude == Decimal("300.0000")
+    events.forget_everything()
+
+
+async def test_a_meal_that_is_not_yours_cannot_be_cooked(
+    client: AsyncClient, cook: dict[str, str], neighbour: dict[str, str], flour: int
+) -> None:
+    recipe_id = await a_recipe(client, cook, flour)
+    plan_id = await a_week(client, cook)
+    placed = await client.put(
+        f"{PLANS}/{plan_id}/slots", json=slot(recipe_id=recipe_id), headers=cook
+    )
+    slot_id = placed.json()["slots"][0]["id"]
+
+    response = await client.post(f"{PLANS}/{plan_id}/slots/{slot_id}/cooked", headers=neighbour)
+
+    assert response.status_code == 404

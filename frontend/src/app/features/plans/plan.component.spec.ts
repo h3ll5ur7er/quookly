@@ -16,6 +16,7 @@ function slot(overrides: object = {}): object {
     attendee_ids: [2],
     attendees: ['Ana'],
     factor: '1',
+    cooked: false,
     sizing: 'to_the_table',
     suitability: null,
     ...overrides,
@@ -168,5 +169,11 @@ describe('PlanComponent', () => {
        always on stops being read. */
     await answer(week({ slots: [slot({ suitability: { outcome: 'suitable', findings: [] } })] }));
     expect(fixture.nativeElement.querySelector('.badge')).toBeNull();
+  });
+
+  it('marks a meal that has been cooked', async () => {
+    await answer(week({ slots: [slot({ cooked: true })] }));
+    expect(text()).toContain('Cooked');
+    expect(fixture.nativeElement.querySelector('.week__meal--cooked')).not.toBeNull();
   });
 });

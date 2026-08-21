@@ -28,10 +28,16 @@
                 <li>
                   <a
                     class="week__meal"
+                    [class.week__meal--cooked]="slot.cooked"
                     [routerLink]="['/plans', planId, 'meal']"
                     [queryParams]="{ on: slot.on_date, meal: slot.meal }"
                   >
-                    <span class="week__when">{{ mealLabel(slot.meal) }}</span>
+                    <span class="week__when">
+                      <span>{{ mealLabel(slot.meal) }}</span>
+                      @if (slot.cooked) {
+                        <span class="week__done" i18n="@@planCooked">Cooked</span>
+                      }
+                    </span>
                     <span class="week__recipe">{{ slot.recipe_title }}</span>
                     <span class="week__who">{{ attending(slot) }}</span>
                     @if (badge(slot); as outcome) {

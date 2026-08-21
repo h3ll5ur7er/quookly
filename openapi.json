@@ -1231,6 +1231,58 @@
         }
       }
     },
+    "/api/v1/plans/{plan_id}/slots/{slot_id}/cooked": {
+      "post": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Mark Cooked",
+        "description": "Record that a planned meal was cooked, consuming what it held (UC-4.5, FR-19).\n\nOne way. Un-marking would mean re-adding stock that never came back, which is the\npath ADR-004 was written to avoid; a mistake is corrected in the pantry, where\nquantities are restated anyway.",
+        "operationId": "markCooked",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Plan Id"
+            }
+          },
+          {
+            "name": "slot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Slot Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/plans/{plan_id}/slots/{slot_id}": {
       "delete": {
         "tags": [
@@ -2971,6 +3023,10 @@
             "type": "array",
             "title": "Attendees"
           },
+          "cooked": {
+            "type": "boolean",
+            "title": "Cooked"
+          },
           "factor": {
             "anyOf": [
               {
@@ -3012,6 +3068,7 @@
           "recipe_title",
           "attendee_ids",
           "attendees",
+          "cooked",
           "factor",
           "sizing",
           "suitability"
