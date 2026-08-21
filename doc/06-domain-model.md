@@ -302,6 +302,29 @@ A bracketed aside is always a note, never part of the name, and it is taken out 
 are looked at — a note in brackets nearly always contains one, and splitting there produced
 an ingredient called *"neutral oil ((such as vegetable"*.
 
+### What a recipe contains
+
+Nutrition is **derived, never stored on a recipe** — the same reasoning as the two times it takes
+([ADR-037](07-decisions.md#adr-037-how-long-a-recipe-takes-is-two-numbers-both-derived)): a stored
+total is wrong from the first quantity edited.
+
+Each figure comes from a **published composition table**, and which table answers is decided against
+the instance's configured order
+([ADR-045](07-decisions.md#adr-045-composition-data-is-tried-in-a-configured-order-nearest-table-first)).
+Composition data measures a food supply rather than an ingredient — US flour is fortified with folic
+acid and iron by law and Swiss flour is not — so the shipped order prefers the tables measured
+nearest the cook, and USDA is the last resort rather than the base. One table answers for one
+ingredient, whole; a value with its protein from one and its fibre from another is a number nobody
+measured.
+
+Tables publish per 100 g, so every line has to be **weighed**. A mass converts directly, a volume
+goes through the registry's density, and a countable goes through what one of them weighs. That last
+number is published by no table Quookly reads, so it ships unset — an egg goes uncounted until
+somebody says what one weighs, rather than being given an invented figure.
+
+A line that cannot be weighed, or that no table answers for, contributes nothing and is **named**.
+The totals are then floors. A figure that quietly leaves out the butter is worse than no figure.
+
 ### A line without a quantity
 
 "Salt, to taste." "Oil, for frying." "A pinch of nutmeg." These are ordinary lines in every

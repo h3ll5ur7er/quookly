@@ -2,13 +2,14 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { ActivatedRoute } from '@angular/router';
 import { PresentedLine, PresentedRecipe, PresentedStep, RecipesService } from '@api';
 import { VerdictComponent } from '../../core/dietary/verdict.component';
+import { NutritionComponent } from '../../core/nutrition/nutrition.component';
 import { minutes } from '../../core/time/duration';
 import { attentionNote } from '../../core/time/labels';
 import { TimingComponent } from '../../core/time/timing.component';
 
 @Component({
   selector: 'app-recipe-detail',
-  imports: [TimingComponent, VerdictComponent],
+  imports: [NutritionComponent, TimingComponent, VerdictComponent],
   templateUrl: './recipe-detail.component.html',
   styleUrl: './recipe-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

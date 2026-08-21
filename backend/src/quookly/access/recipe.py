@@ -154,6 +154,7 @@ async def _lines_for(active: AsyncSession, recipe_id: int, locale: str) -> list[
                     origin=entry.origin,
                     allergens=allergens,
                     classified=classified,
+                    piece_grams=entry.piece_grams,
                 ),
                 quantity=(
                     None

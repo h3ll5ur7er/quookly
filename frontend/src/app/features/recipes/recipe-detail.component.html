@@ -87,6 +87,12 @@
       </ul>
     </section>
 
+    <!-- After the ingredients and before the method: it follows from the quantities above
+         it, and a cook deciding whether to make something has already read them. -->
+    @if (shown.nutrition; as nutrition) {
+      <app-nutrition [nutrition]="nutrition" />
+    }
+
     <section class="recipe__section" aria-labelledby="steps-heading">
       <h2 id="steps-heading" i18n="@@recipeMethod">Method</h2>
       <ol class="steps">

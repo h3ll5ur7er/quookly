@@ -15,6 +15,7 @@ from quookly.contracts.eater import AgeBand, Severity
 from quookly.contracts.execution import Attention
 from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.contracts.measure import Unit
+from quookly.contracts.nutrition import Nutrient, NutritionSource
 from quookly.contracts.onboarding import SetupStep
 from quookly.contracts.pantry import WasteReason
 from quookly.contracts.plan import Meal
@@ -55,6 +56,41 @@ class IngredientRow(SQLModel, table=True):
     # Whether anybody has classified this ingredient's allergens. Absent rows in
     # `ingredient_allergen` mean "contains none" only when this is true.
     allergens_classified: bool = Field(default=False)
+    # What one of them weighs, for the countable ones. Composition tables publish per
+    # 100 g, so without this a recipe's eggs cannot be counted towards its nutrition.
+    # Absent rather than assumed: eggs come in four sizes, and no table Quookly reads
+    # publishes a portion weight.
+    piece_grams: Decimal | None = Field(default=None, max_digits=8, decimal_places=2)
+
+
+class NutrientProfileRow(SQLModel, table=True):
+    """One published figure: what 100 g of one ingredient contains, per one table.
+
+    A row per nutrient rather than a column each, so a nutrient a table did not measure is
+    a **missing row** rather than a null somebody has to remember to check. That is the
+    same distinction the allergen classification makes, and for the same reason: a food
+    with no fibre figure is not a food without fibre.
+
+    Several sources can hold the same ingredient at once. Which one answers is decided at
+    read time against the instance's configured order, so changing that order is a setting
+    rather than a re-import (ADR-045).
+    """
+
+    __tablename__ = "nutrient_profile"
+    __table_args__ = (
+        UniqueConstraint("ingredient_id", "source", "nutrient", name="uq_nutrient_profile"),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    ingredient_id: int = Field(foreign_key="ingredient.id", index=True)
+    source: NutritionSource = Field(index=True)
+    nutrient: Nutrient
+    # Four places, because a table publishes tenths of a gram and dividing by servings
+    # needs somewhere to land.
+    amount: Decimal = Field(max_digits=12, decimal_places=4)
+    # The published row this came from, so a number on a screen can be traced back to one
+    # in a book. Kept per row so a re-import that changes a mapping is visible.
+    reference: str
 
 
 class IngredientNameRow(SQLModel, table=True):

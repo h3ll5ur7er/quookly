@@ -19,6 +19,7 @@ from quookly.contracts.execution import Attention, TimingView
 from quookly.contracts.ingredient import Ingredient, Origin
 from quookly.contracts.interpretation import Source
 from quookly.contracts.measure import DecimalString, Quantity, Unit
+from quookly.contracts.nutrition import NutritionView
 from quookly.contracts.suitability import Outcome, VerdictView
 
 
@@ -271,6 +272,9 @@ class PresentedRecipe(BaseModel):
     # Derived from the steps every time, never stored. A recipe whose steps say nothing
     # about time reports nothing, rather than an hour of nothing (ADR-037).
     timing: TimingView | None = None
+    # What it contains, from whichever published table this instance believes first
+    # (ADR-045). Absent where nothing in the recipe could be weighed against one.
+    nutrition: NutritionView | None = None
 
 
 class RecipeSummaryView(BaseModel):

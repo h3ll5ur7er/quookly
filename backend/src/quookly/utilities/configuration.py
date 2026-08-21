@@ -11,6 +11,8 @@ from typing import Literal
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from quookly.contracts.nutrition import NutritionSource
+
 Environment = Literal["development", "production"]
 
 DEFAULT_DATABASE_URL = "sqlite+aiosqlite:///./quookly.db"
@@ -41,6 +43,18 @@ class Settings(BaseSettings):
     #
     # Empty means no provider. An instance without one still works — it simply cannot be
     # asked to interpret a page, and says so rather than failing as if something broke.
+    #: Which food composition tables to believe, best first.
+    #:
+    #: Composition data is a measurement of a particular food supply, not a fact about an
+    #: ingredient: Swiss flour is unfortified and American flour is fortified with folic
+    #: acid and iron by law. So the order is an instance's own — a kitchen in Bern and one
+    #: in Toronto want different answers to the same question — and it ships preferring the
+    #: tables measured nearest the cooks this product was built for (ADR-045).
+    #:
+    #: A source left out of the list is a source this instance will not use, even if its
+    #: figures are stored.
+    nutrition_sources: str = "swiss,ciqual,cofid,usda"
+
     inference_base_url: str = ""
     inference_model: str = ""
     inference_api_key: SecretStr = SecretStr("")
@@ -84,3 +98,21 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Resolve settings once per process."""
     return Settings()
+
+
+def preferred_sources() -> list[NutritionSource]:
+    """The composition tables this instance believes, best first (ADR-045).
+
+    A name nobody recognises is skipped rather than fatal: a typo in a setting should cost
+    an instance one table, not its ability to start.
+    """
+    named = [word.strip().lower() for word in get_settings().nutrition_sources.split(",")]
+    ordered = []
+    for name in named:
+        try:
+            source = NutritionSource(name)
+        except ValueError:
+            continue
+        if source not in ordered:
+            ordered.append(source)
+    return ordered

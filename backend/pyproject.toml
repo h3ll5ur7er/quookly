@@ -60,6 +60,13 @@ python_version = "3.12"
 files = ["src", "tests"]
 strict = true
 
+# The seed builder reads a spreadsheet, and openpyxl ships no stubs. It is a by-hand tool
+# run when a publisher releases a new edition — not part of the application — so this is
+# one library's missing types rather than a hole in the checked code.
+[[tool.mypy.overrides]]
+module = "openpyxl.*"
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"

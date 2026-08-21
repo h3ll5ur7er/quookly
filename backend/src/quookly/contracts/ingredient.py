@@ -75,6 +75,11 @@ class Ingredient:
     # `classified=False` means "nobody has looked", which is a different fact from
     # "contains none" — and treating them alike is how unknown becomes safe (ADR-006).
     classified: bool = False
+    #: What one of them weighs, for the countable ones. An egg has no grams until somebody
+    #: says so, and composition tables publish per 100 g — so without this a recipe's eggs
+    #: cannot be counted towards its nutrition. Absent rather than assumed: eggs come in
+    #: four sizes and inventing one puts a number on a label that nobody measured.
+    piece_grams: Decimal | None = None
 
 
 class IngredientView(BaseModel):

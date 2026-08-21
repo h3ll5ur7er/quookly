@@ -320,7 +320,7 @@ what allows scoring rules to change without touching a single line in recipe or 
 | `GenerationEngine` | V1, V3 | Composes prompts for synthesis; parses and constrains model output. Knows *what to ask*, never *whom to ask*. |
 | `MeasureEngine` | V4 | Unit conversion, density-aware mass/volume, yield scaling, portion sizing from appetite multipliers, preferred-unit rendering. |
 | `SuitabilityEngine` | V5 | Evaluates a structured recipe against structured eater constraints. Safety-critical. |
-| `NutritionEngine` | V6 | Aggregates nutrient profiles; per-serving and per-recipe bases. |
+| `NutritionEngine` | V6 | Aggregates nutrient profiles; per-serving and per-recipe bases. **Built** — weighs each line against the first published table this instance believes, and names what it could not count ([ADR-045](07-decisions.md#adr-045-composition-data-is-tried-in-a-configured-order-nearest-table-first)). |
 | `PlanningEngine` | V7 | Sizes each planned meal to the people at it, and says how sure it is. **Built.** Proposing assignments arrives with generation (Phase 6). |
 | `ReplenishmentEngine` | V8 | Nets requirement against availability; aggregates and rounds a shopping list. **Built** — netting, aggregation, and rounding a countable up to something a shop will sell. Rounding to pack sizes waits for pack-size data. |
 | `RankingEngine` | V10 | Orders candidate recipes by relevance, pantry coverage, and expiry urgency. |

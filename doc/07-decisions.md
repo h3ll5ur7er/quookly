@@ -167,7 +167,11 @@ in the UI, never be silently omitted.
 
 ## ADR-007 Nutrition data: USDA FoodData Central as the base
 
-**Status:** Accepted
+**Status:** Accepted, and **amended by
+[ADR-045](#adr-045-composition-data-is-tried-in-a-configured-order-nearest-table-first)**, which
+demotes USDA from the base set to the last resort. The licensing work below stands unchanged and is
+why USDA remains in the list at all; the claim that "nutrient values for generic ingredients travel
+well across borders" does not, and ADR-045 says why.
 
 **Context.** Nutrition requires reference data. The constraint set is: usable freely, redistributable
 inside a self-hosted container, and with no licensing obligation that could become a problem for
@@ -1790,4 +1794,78 @@ The lists are also a judgement that will be wrong somewhere. "Bar" counts chocol
 measures pressure; "head" counts lettuce and is part of a fish. Both readings are recorded in
 the note, so nothing is lost — but the *name* is now the reader's opinion rather than the
 page's words, which is a change worth being honest about.
+
+---
+
+## ADR-045 Composition data is tried in a configured order, nearest table first
+
+**Status:** Accepted. Amends [ADR-007](#adr-007-nutrition-data-usda-fooddata-central-as-the-base).
+
+**Context.** ADR-007 chose USDA FoodData Central as the base and regional tables as *overlays*,
+reasoning that "nutrient values for generic ingredients — flour, butter, chicken thigh — travel well
+across borders".
+
+That reasoning is wrong, and the way it is wrong matters.
+
+**Composition data is not a fact about an ingredient. It is a measurement of a particular food
+supply.** US wheat flour is fortified with folic acid and iron by law; Swiss flour is not. US milk is
+vitamin-D fortified; Swiss milk is not. Fat standards for dairy, extraction rates for flour, and
+breed and feed for meat all differ by country. Reading an American table for a Swiss kitchen does not
+produce a value that is slightly off — for iron in white flour it produces a value for a food that is
+not on sale here.
+
+**Decision.** Sources are tried in an **ordered list**, and the first that has an ingredient answers
+for it. The order is instance configuration (`QUOOKLY_NUTRITION_SOURCES`), shipped as:
+
+    swiss, ciqual, cofid, usda
+
+Every profile is stored per source, and the choice is made at read time. Changing the order is a
+setting, not a re-import.
+
+**One table answers for one ingredient, whole.** Nutrients are never taken from two at once: a value
+with its protein from Bern and its fibre from Beltsville is a number nobody measured, and it would
+have to be attributed to both.
+
+**Rationale.** *Ordered rather than base-plus-overlay* because there are more than two tables and the
+question "which do I believe" has one answer per ingredient, not one answer per application. A
+cascade also states the fallback honestly: the Swiss database is about 1,200 generic foods and USDA is
+thousands, so the table that is better where it applies goes first and the table that answers for
+anything goes last.
+
+*Configurable rather than derived from locale.* Deriving it would be defensible and would give a
+Swiss instance the same order. It was rejected because the order is a judgement about **data quality
+and relevance**, and an operator is better placed to make it than a locale string is — someone
+cooking Thai food in Zürich may want a different order from their neighbour. The shipped default
+carries the opinion; the setting means nobody is stuck with it.
+
+*A name nobody recognises is skipped, not fatal.* A typo in a setting should cost an instance one
+table, not its ability to start.
+
+**What this changes from ADR-007.** USDA is no longer "the base"; it is the last resort. Its licensing
+argument still stands and is why it stays in the list at all — CC0 is the only status with no
+obligations, and it answers for ingredients no European table carries. What it is not is the right
+first answer for the kitchens this product was built for.
+
+**Consequences.**
+
+*Coverage is visibly incomplete, and that is reported rather than hidden.* Of the 29 seeded
+ingredients, the Swiss table answers for 26. Baking powder, bicarbonate of soda and wholemeal wheat
+flour are simply not in it. A recipe using one of those reports its totals as **at least** that much
+and **names the ingredient** — "two ingredients missing" tells a cook nothing they can act on.
+
+*Portion weights are the one number no table publishes.* Every source gives figures per 100 g, and a
+recipe says "2 eggs". Bridging that needs what one egg weighs, which the Swiss database does not
+carry and which this project will not invent — eggs come in four sizes. `piece_grams` is therefore a
+registry field that ships unset, and an egg goes uncounted until somebody fills it in. That is the
+same rule as an unclassified allergen or an unreadable yield: absence does not get to read as a value.
+
+*Attribution is per source and mandatory.* The Swiss grant is "Open use. Must provide the source", so
+each table that answered is credited on the recipe (FR-20). A recipe drawing on two tables owes two
+credits, which is why the credit is carried per profile rather than as one line at the bottom of the
+application.
+
+**Cost.** A mapping from this instance's slugs to published rows, written by hand and kept by hand.
+That is deliberate: the Swiss table has four wheat flours by ash content, and choosing which one is
+"plain flour" is a judgement somebody should make on purpose rather than a name match. Each mapping
+records the row it came from, so any number on a screen can be traced to a published one.
 

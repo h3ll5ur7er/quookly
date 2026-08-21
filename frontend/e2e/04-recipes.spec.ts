@@ -273,3 +273,67 @@ test.describe('a recipe that says what each step asks of the cook', () => {
     await page.screenshot({ path: 'e2e/screenshots/recipe-timing.png', fullPage: true });
   });
 });
+
+test.describe('what a recipe contains', () => {
+  /*
+   * The seeded Shortbread is butter, sugar, flour and salt, and the Swiss table publishes
+   * all four — so this one counts whole. The pancakes below do not, which is the more
+   * interesting half (UC-2.3, ADR-045).
+   */
+  test.beforeEach(async ({ page }) => {
+    await page.getByText('Shortbread').click();
+    await expect(page.getByRole('heading', { name: 'Shortbread' })).toBeVisible();
+  });
+
+  test('reads like a packet', async ({ page }) => {
+    const panel = page.locator('app-nutrition');
+    await expect(panel.getByRole('heading', { name: 'Nutrition' })).toBeVisible();
+    await expect(panel.getByText('Per serving')).toBeVisible();
+    await expect(panel.getByText('Whole recipe')).toBeVisible();
+    await expect(panel.getByRole('rowheader', { name: 'of which saturates' })).toBeVisible();
+  });
+
+  test('the figures follow from the quantities', async ({ page }) => {
+    /* 225 g of butter at 82.3 g fat per 100 g is 185 g before anything else is added, so
+       the whole tray is over that and one of eight servings is well under it. */
+    const whole = await page
+      .locator('app-nutrition tbody tr')
+      .filter({ hasText: 'Fat' })
+      .first()
+      .locator('td')
+      .last()
+      .textContent();
+    expect(parseFloat(whole!)).toBeGreaterThan(185);
+  });
+
+  test('says who measured it', async ({ page }) => {
+    /* Mandatory under the Swiss grant, not a courtesy (FR-20). */
+    const credit = page.locator('.nutrition__credit a');
+    await expect(credit).toContainText('Federal Food Safety and Veterinary Office');
+    await expect(credit).toHaveAttribute('href', 'https://naehrwertdaten.ch/');
+  });
+
+  test('has no accessibility violations', async ({ page }) => {
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toEqual([]);
+  });
+
+  test('looks like this', async ({ page }) => {
+    await page.locator('app-nutrition').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: 'e2e/screenshots/recipe-nutrition.png', fullPage: true });
+  });
+});
+
+test.describe('what a recipe does not say it contains', () => {
+  test('names the ingredient no table answers for', async ({ page }) => {
+    /* The Swiss database has no baking powder and publishes no portion weight for an egg.
+       Both are named, and the totals are marked as floors — a figure that quietly leaves
+       out an ingredient is worse than no figure. */
+    await page.getByText('Buttermilk Pancakes').click();
+    await expect(page.getByRole('heading', { name: 'Buttermilk Pancakes' })).toBeVisible();
+
+    const gap = page.locator('.nutrition__gap');
+    await expect(gap).toContainText('At least this much');
+    await expect(gap).toContainText('baking powder');
+  });
+});

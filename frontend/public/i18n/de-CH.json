@@ -300,6 +300,21 @@
     "mealCookNow": "Das jetzt kochen",
     "cookAdrift": "Keine Verbindung. Machen Sie weiter – Ihr Stand wird nachgetragen.",
     "cookAdriftEmpty": "Keine Verbindung, und dieses Essen ist auf diesem Gerät nicht geöffnet. Es ist wieder da, sobald Sie es sind.",
-    "timerNeedsConnection": "Timer brauchen die Verbindung. Ein laufender zählt weiter."
+    "timerNeedsConnection": "Timer brauchen die Verbindung. Ein laufender zählt weiter.",
+    "nutrientEnergy": "Energie",
+    "nutrientFat": "Fett",
+    "nutrientSaturates": "davon gesättigte Fettsäuren",
+    "nutrientCarbohydrate": "Kohlenhydrate",
+    "nutrientSugars": "davon Zucker",
+    "nutrientFibre": "Nahrungsfasern",
+    "nutrientProtein": "Eiweiss",
+    "nutrientSalt": "Salz",
+    "nutritionHeading": "Nährwerte",
+    "nutritionWhat": "Nährstoff",
+    "nutritionPerServing": "Pro Portion",
+    "nutritionPerRecipe": "Ganzes Rezept",
+    "nutritionAtLeast": "Mindestens so viel – nichts veröffentlicht zu",
+    "nutritionNothing": "Das liess sich nicht berechnen. Nichts veröffentlicht zu",
+    "nutritionMeasuredBy": "Gemessen von"
   }
 }

@@ -5,8 +5,8 @@ Sequences the steps and owns none of the rules. Storage is `RecipeAccess`, prefe
 """
 
 import re
-from dataclasses import dataclass
-from decimal import Decimal
+from dataclasses import dataclass, replace
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
 from quookly.access import cook as cook_access
@@ -21,6 +21,14 @@ from quookly.contracts.execution import TimingView
 from quookly.contracts.ingredient import IngredientKind, Origin
 from quookly.contracts.interpretation import InterpretedLine
 from quookly.contracts.measure import Quantity
+from quookly.contracts.nutrition import (
+    CREDITS,
+    Counted,
+    CreditView,
+    Nutrient,
+    NutrientView,
+    NutritionView,
+)
 from quookly.contracts.preferences import UnitPreferences
 from quookly.contracts.recipe import (
     ImportedRecipe,
@@ -36,7 +44,15 @@ from quookly.contracts.recipe import (
 )
 from quookly.contracts.suitability import JudgedLine, Outcome, VerdictView
 from quookly.contracts.web import ReadableContent
-from quookly.engines import exchange, execution, interpretation, measure, suitability
+from quookly.engines import (
+    exchange,
+    execution,
+    interpretation,
+    measure,
+    nutrition,
+    suitability,
+)
+from quookly.utilities.configuration import preferred_sources
 
 #: Resolving a symbol lives in `MeasureEngine`, which owns units. Kept as a local name
 #: because it reads better at the call sites than the qualified one.
@@ -154,6 +170,73 @@ async def present(
     return await _present(recipe, await preference_access.for_cook(cook_id), servings, cook_id)
 
 
+#: How much of a figure is worth showing. Energy is a whole number — nobody plates half a
+#: kilojoule — and everything else goes to a tenth of a gram, which is the precision a
+#: label in this part of the world prints and the precision the tables publish.
+_WHOLE = Decimal(1)
+_TENTH = Decimal("0.1")
+
+
+def _shown(nutrient: Nutrient, amount: Decimal) -> str:
+    places = _WHOLE if nutrient in {Nutrient.ENERGY_KJ, Nutrient.ENERGY_KCAL} else _TENTH
+    rendered = amount.quantize(places, rounding=ROUND_HALF_UP)
+    return f"{rendered:f}"
+
+
+def _nutrients(counted: Counted) -> list[NutrientView]:
+    """The figures in the order a label prints them, which is the order a reader expects."""
+    return [
+        NutrientView(
+            nutrient=nutrient,
+            amount=_shown(nutrient, counted.amounts[nutrient]),
+            unit=nutrient.unit,
+        )
+        for nutrient in Nutrient
+        if nutrient in counted.amounts
+    ]
+
+
+async def _nutrition(recipe: Recipe, factor: Decimal) -> NutritionView | None:
+    """What this recipe contains, from whichever table this instance believes (UC-2.3).
+
+    Scaled with everything else. Doubling a tray doubles what is in it, which is the one
+    figure on this page where scaling is plain arithmetic rather than a judgement about
+    ovens.
+    """
+    profiles = await registry.profiles_for(sorted({line.ingredient.id for line in recipe.lines}))
+    scaled = [
+        replace(
+            line, quantity=None if line.quantity is None else measure.scale(line.quantity, factor)
+        )
+        for line in recipe.lines
+    ]
+    counted = nutrition.count(scaled, profiles, preferred_sources())
+    if counted is None:
+        return None
+
+    each = nutrition.per_serving(counted, _scaled_servings(recipe, factor))
+    return NutritionView(
+        per_serving=None if each is None else _nutrients(each),
+        per_recipe=_nutrients(counted),
+        at_least=counted.at_least,
+        uncounted=counted.uncounted,
+        credits=[
+            CreditView(
+                name=CREDITS[source].name,
+                publisher=CREDITS[source].publisher,
+                licence=CREDITS[source].licence,
+                url=CREDITS[source].url,
+            )
+            for source in counted.sources
+        ],
+    )
+
+
+def _scaled_servings(recipe: Recipe, factor: Decimal) -> Decimal | None:
+    servings = recipe.servings
+    return None if servings is None else servings * factor
+
+
 async def _judge(recipe: Recipe, cook_id: int) -> VerdictView | None:
     """Whether this cook's household can eat this (V5, UC-2.4).
 
@@ -206,6 +289,7 @@ async def _present(
         # and it barely touches the chopping — a factor applied here would be arithmetic
         # producing a number nobody could have measured.
         timing=TimingView.of(execution.timing(recipe.steps)),
+        nutrition=await _nutrition(recipe, factor),
     )
 
 

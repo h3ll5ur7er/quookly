@@ -2070,6 +2070,34 @@
         "title": "Credentials",
         "description": "A request to sign in. No length rule \u2014 an old password is still the password."
       },
+      "CreditView": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "publisher": {
+            "type": "string",
+            "title": "Publisher"
+          },
+          "licence": {
+            "type": "string",
+            "title": "Licence"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "publisher",
+          "licence",
+          "url"
+        ],
+        "title": "CreditView"
+      },
       "EaterInput": {
         "properties": {
           "name": {
@@ -2775,6 +2803,97 @@
         "title": "Meal",
         "description": "Which meal of the day a slot is.\n\nFour coarse ones rather than free text or a clock time. A plan is read as a grid, and\na grid needs a fixed number of rows; \"18:30\" would sort correctly and group not at all."
       },
+      "Nutrient": {
+        "type": "string",
+        "enum": [
+          "energy_kj",
+          "energy_kcal",
+          "fat",
+          "saturates",
+          "carbohydrate",
+          "sugars",
+          "fibre",
+          "protein",
+          "salt"
+        ],
+        "title": "Nutrient",
+        "description": "What Quookly tracks, which is what a European label declares.\n\nThe set is EU Regulation 1169/2011's mandatory declaration \u2014 energy, fat, saturates,\ncarbohydrate, sugars, protein, salt \u2014 plus fibre, which is optional there and given by\nevery table worth using. It is also, not coincidentally, the set the Swiss and French\ndatabases publish, so nothing here is derived from a table that did not measure it.\n\nSalt rather than sodium, for the same reason: it is what a label in this part of the\nworld says, and multiplying one into the other is arithmetic on somebody else's\nconvention."
+      },
+      "NutrientView": {
+        "properties": {
+          "nutrient": {
+            "$ref": "#/components/schemas/Nutrient"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nutrient",
+          "amount",
+          "unit"
+        ],
+        "title": "NutrientView"
+      },
+      "NutritionView": {
+        "properties": {
+          "per_serving": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/NutrientView"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Serving"
+          },
+          "per_recipe": {
+            "items": {
+              "$ref": "#/components/schemas/NutrientView"
+            },
+            "type": "array",
+            "title": "Per Recipe"
+          },
+          "at_least": {
+            "type": "boolean",
+            "title": "At Least"
+          },
+          "uncounted": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Uncounted"
+          },
+          "credits": {
+            "items": {
+              "$ref": "#/components/schemas/CreditView"
+            },
+            "type": "array",
+            "title": "Credits"
+          }
+        },
+        "type": "object",
+        "required": [
+          "per_serving",
+          "per_recipe",
+          "at_least",
+          "uncounted",
+          "credits"
+        ],
+        "title": "NutritionView",
+        "description": "What a recipe contains, as a client reads it."
+      },
       "Outcome": {
         "type": "string",
         "enum": [
@@ -3081,6 +3200,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/TimingView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nutrition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NutritionView"
               },
               {
                 "type": "null"

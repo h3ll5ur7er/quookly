@@ -300,6 +300,21 @@
     "mealCookNow": "Cuisiner ça maintenant",
     "cookAdrift": "Pas de connexion. Continuez – votre position sera rattrapée.",
     "cookAdriftEmpty": "Pas de connexion, et ce repas n’est pas ouvert sur cet appareil. Il sera là à votre retour.",
-    "timerNeedsConnection": "Les minuteurs ont besoin de la connexion. Celui qui tourne continue."
+    "timerNeedsConnection": "Les minuteurs ont besoin de la connexion. Celui qui tourne continue.",
+    "nutrientEnergy": "Énergie",
+    "nutrientFat": "Matières grasses",
+    "nutrientSaturates": "dont acides gras saturés",
+    "nutrientCarbohydrate": "Glucides",
+    "nutrientSugars": "dont sucres",
+    "nutrientFibre": "Fibres alimentaires",
+    "nutrientProtein": "Protéines",
+    "nutrientSalt": "Sel",
+    "nutritionHeading": "Valeurs nutritives",
+    "nutritionWhat": "Nutriment",
+    "nutritionPerServing": "Par portion",
+    "nutritionPerRecipe": "Recette entière",
+    "nutritionAtLeast": "Au moins autant – rien n’est publié pour",
+    "nutritionNothing": "Impossible à calculer. Rien n’est publié pour",
+    "nutritionMeasuredBy": "Mesuré par"
   }
 }

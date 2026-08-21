@@ -13,7 +13,7 @@ from fastapi.routing import APIRoute
 from .access.database import dispose_engine
 from .contracts.events import MealCooked
 from .managers import pantry
-from .managers.seed import stock_registry
+from .managers.seed import stock_nutrition, stock_registry
 from .routes import (
     accounts_router,
     cooking_router,
@@ -73,6 +73,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     configure_logging()
     wire_subscriptions()
     await stock_registry()
+    await stock_nutrition()
     yield
     await dispose_engine()
 

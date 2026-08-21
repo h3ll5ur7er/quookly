@@ -202,7 +202,12 @@ which lands after the Academy without blocking anything here.
 - Variant derivation (UC-1.7)
 - `SearchIndexAccess` and full-text search (UC-3.1, UC-3.2)
 - `RankingEngine`: pantry coverage and expiry urgency (UC-3.3, UC-3.4)
-- `NutritionEngine` and nutrition display (UC-2.3), over the USDA FoodData Central base set
+- ~~`NutritionEngine` and nutrition display (UC-2.3)~~ **Built**, over the **Swiss Food Composition
+  Database** with a configured cascade behind it
+  ([ADR-045](07-decisions.md#adr-045-composition-data-is-tried-in-a-configured-order-nearest-table-first)).
+  USDA is the last resort rather than the base: composition data measures a food supply, and US flour
+  is fortified where Swiss flour is not. Ciqual, CoFID and USDA are places in the order waiting for
+  their data
 
 **Done when:** "what should I cook this week" returns ranked, suitable suggestions that use up what
 is about to expire.

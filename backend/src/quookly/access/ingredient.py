@@ -8,9 +8,15 @@ from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from quookly.access.database import session
-from quookly.access.models import IngredientAllergenRow, IngredientNameRow, IngredientRow
+from quookly.access.models import (
+    IngredientAllergenRow,
+    IngredientNameRow,
+    IngredientRow,
+    NutrientProfileRow,
+)
 from quookly.contracts.errors import IngredientAlreadyRegistered
 from quookly.contracts.ingredient import Allergen, Ingredient, IngredientKind, Origin
+from quookly.contracts.nutrition import NutrientProfile, NutritionSource
 
 # The registry is seeded in English, so a Swiss instance must still resolve a seeded name
 # until a translation for it exists. The fallback is to this one locale only: matching
@@ -38,6 +44,7 @@ def _to_contract(
         origin=row.origin,
         allergens=allergens,
         classified=row.allergens_classified,
+        piece_grams=row.piece_grams,
     )
 
 
@@ -410,3 +417,82 @@ async def allergens_within(
         for row in rows
         if row.id is not None
     }
+
+
+async def profiles_for(ingredient_ids: list[int]) -> list[NutrientProfile]:
+    """Every published figure held for these ingredients, from every source.
+
+    All of them, not the preferred one: which table answers is decided against the
+    instance's configured order by `NutritionEngine`, so that a change of order is a
+    setting rather than a re-import (ADR-045). Choosing here would put the most volatile
+    judgement in the least volatile place.
+    """
+    if not ingredient_ids:
+        return []
+    async with session() as active:
+        rows = (
+            await active.exec(
+                select(NutrientProfileRow)
+                .where(col(NutrientProfileRow.ingredient_id).in_(ingredient_ids))
+                .order_by(col(NutrientProfileRow.ingredient_id), col(NutrientProfileRow.source))
+            )
+        ).all()
+
+    gathered: dict[tuple[int, NutritionSource], NutrientProfile] = {}
+    for row in rows:
+        key = (row.ingredient_id, row.source)
+        if key not in gathered:
+            gathered[key] = NutrientProfile(
+                ingredient_id=row.ingredient_id,
+                source=row.source,
+                reference=row.reference,
+                amounts={},
+            )
+        gathered[key].amounts[row.nutrient] = row.amount
+    return list(gathered.values())
+
+
+async def record_profile(profile: NutrientProfile) -> None:
+    """Write down what one table says about one ingredient, replacing what it said before.
+
+    Restated wholesale rather than merged, for the same reason a plan's reservations are
+    (ADR-038): a nutrient that has been *withdrawn* from a published table must disappear
+    here, and a merge would leave it behind for ever.
+    """
+    async with session() as active:
+        held = (
+            await active.exec(
+                select(NutrientProfileRow)
+                .where(col(NutrientProfileRow.ingredient_id) == profile.ingredient_id)
+                .where(col(NutrientProfileRow.source) == profile.source)
+            )
+        ).all()
+        for row in held:
+            await active.delete(row)
+        # Flushed before the new rows go in, or the insert races the delete into the
+        # unique index and a second seeding fails on figures it is only restating.
+        await active.flush()
+        for nutrient, amount in profile.amounts.items():
+            active.add(
+                NutrientProfileRow(
+                    ingredient_id=profile.ingredient_id,
+                    source=profile.source,
+                    nutrient=nutrient,
+                    amount=amount,
+                    reference=profile.reference,
+                )
+            )
+        await active.commit()
+
+
+async def weigh_pieces(slug: str, grams: Decimal | None) -> None:
+    """Say what one of a countable ingredient weighs, so it can be counted (UC-2.3)."""
+    async with session() as active:
+        row = (
+            await active.exec(select(IngredientRow).where(col(IngredientRow.slug) == slug))
+        ).first()
+        if row is None:
+            return
+        row.piece_grams = grams
+        active.add(row)
+        await active.commit()

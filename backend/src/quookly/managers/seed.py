@@ -9,12 +9,14 @@ a self-hoster can supply their own.
 """
 
 import json
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 from quookly.access import ingredient as registry
 from quookly.access import recipe as recipe_access
 from quookly.contracts.ingredient import Origin
+from quookly.contracts.nutrition import Nutrient, NutrientProfile, NutritionSource
 from quookly.contracts.recipe import Provenance
 from quookly.engines import exchange
 from quookly.utilities.diagnostics import get_logger
@@ -95,6 +97,58 @@ async def stock_registry(locale: str = DEFAULT_SEED_LOCALE) -> int:
         log.info("stocked the registry with %s ingredients", added, extra={"added": added})
     await name_ingredients()
     return added
+
+
+#: The composition tables shipped with the application, in the order they are installed.
+#: Adding one is a file and a line, which is the point of holding profiles per source
+#: rather than choosing at seed time (ADR-045).
+SHIPPED_NUTRITION = (NutritionSource.SWISS,)
+
+
+def read_nutrition_file(source: NutritionSource) -> dict[str, Any]:
+    document: dict[str, Any] = json.loads(
+        (SEED_DIRECTORY / f"nutrition.{source.value}.json").read_text(encoding="utf-8")
+    )
+    return document
+
+
+async def stock_nutrition() -> int:
+    """Install the published figures for the ingredients this registry has. Returns how many.
+
+    Restated on every start-up rather than added once. A refreshed table is a corrected
+    table, and a figure this instance holds that the publisher has since revised should
+    move — these are somebody else's measurements, not a cook's own work, so the reasoning
+    that protects a hand-set density (ADR-016) does not apply.
+
+    Ingredients the table does not carry are simply absent. That is the cascade working:
+    another source answers for them, or the recipe says it could not count them.
+    """
+    installed = 0
+    for source in SHIPPED_NUTRITION:
+        document = read_nutrition_file(source)
+        profiles = document["profiles"]
+        ids = await registry.ids_by_slug([one["slug"] for one in profiles])
+        for one in profiles:
+            ingredient_id = ids.get(one["slug"])
+            if ingredient_id is None:
+                # An instance whose registry does not have this ingredient. Nothing to
+                # attach the figures to, and inventing the entry would be a different job.
+                continue
+            await registry.record_profile(
+                NutrientProfile(
+                    ingredient_id=ingredient_id,
+                    source=source,
+                    reference=one["reference"],
+                    amounts={
+                        Nutrient(name): Decimal(value) for name, value in one["amounts"].items()
+                    },
+                )
+            )
+            installed += 1
+
+    if installed:
+        log.info("stocked %s nutrient profiles", installed, extra={"profiles": installed})
+    return installed
 
 
 async def install_starter_recipes(cook_id: int, locale: str = DEFAULT_SEED_LOCALE) -> int:

@@ -45,7 +45,7 @@ UC-1.3 is the founding use case: the product exists because this is currently pa
 | --- | --- |
 | UC-2.1 | View a recipe scaled to an arbitrary yield |
 | UC-2.2 | View quantities in the viewer's preferred unit per ingredient kind |
-| UC-2.3 | View estimated nutrition per serving and per recipe |
+| UC-2.3 | View estimated nutrition per serving and per recipe ([ADR-045](07-decisions.md#adr-045-composition-data-is-tried-in-a-configured-order-nearest-table-first)) |
 | UC-2.4 | See whether a recipe is suitable for a named set of eaters, and why not |
 | UC-2.5 | Look up an unfamiliar technique or term from within a recipe |
 | UC-2.6 | See how long a recipe takes, separating hands-on work from waiting ([ADR-037](07-decisions.md#adr-037-how-long-a-recipe-takes-is-two-numbers-both-derived)) |

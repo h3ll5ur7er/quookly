@@ -1,0 +1,394 @@
+{
+ "quookly": 1,
+ "source": "swiss",
+ "retrieved": "2026-08-21",
+ "profiles": [
+  {
+   "slug": "brown-sugar",
+   "reference": "471 Sugar, brown",
+   "amounts": {
+    "energy_kj": "1660",
+    "energy_kcal": "390",
+    "fat": "0",
+    "saturates": "0",
+    "carbohydrate": "97.6",
+    "sugars": "97.6",
+    "fibre": "0",
+    "protein": "0",
+    "salt": "0.1"
+   }
+  },
+  {
+   "slug": "caster-sugar",
+   "reference": "470 Sugar, white",
+   "amounts": {
+    "energy_kj": "1700",
+    "energy_kcal": "400",
+    "fat": "0",
+    "saturates": "0",
+    "carbohydrate": "100",
+    "sugars": "100",
+    "fibre": "0",
+    "protein": "0",
+    "salt": "0"
+   }
+  },
+  {
+   "slug": "cocoa-powder",
+   "reference": "581 Cocoa powder, without sugar",
+   "amounts": {
+    "energy_kj": "1580",
+    "energy_kcal": "380",
+    "fat": "20.6",
+    "saturates": "12.4",
+    "carbohydrate": "11.6",
+    "sugars": "0.9",
+    "fibre": "29.5",
+    "protein": "22.4",
+    "salt": "0.1"
+   }
+  },
+  {
+   "slug": "cornflour",
+   "reference": "426 Maize starch",
+   "amounts": {
+    "energy_kj": "1510",
+    "energy_kcal": "354",
+    "carbohydrate": "88",
+    "fibre": "0.6",
+    "protein": "0.3",
+    "salt": "0"
+   }
+  },
+  {
+   "slug": "double-cream",
+   "reference": "798 Cream, at least 45 % milk fat, pasteurized",
+   "amounts": {
+    "energy_kj": "1930",
+    "energy_kcal": "468",
+    "fat": "50",
+    "saturates": "30",
+    "carbohydrate": "2.7",
+    "sugars": "2.7",
+    "fibre": "0",
+    "protein": "1.9",
+    "salt": "0.1"
+   }
+  },
+  {
+   "slug": "egg",
+   "reference": "290 Egg, raw",
+   "amounts": {
+    "energy_kj": "583",
+    "energy_kcal": "140",
+    "fat": "9.8",
+    "saturates": "2.6",
+    "carbohydrate": "0.3",
+    "sugars": "0.3",
+    "fibre": "0",
+    "protein": "12.6",
+    "salt": "0.4"
+   }
+  },
+  {
+   "slug": "egg-white",
+   "reference": "411 Egg white, raw",
+   "amounts": {
+    "energy_kj": "190",
+    "energy_kcal": "45",
+    "fat": "0",
+    "saturates": "0",
+    "carbohydrate": "0.4",
+    "sugars": "0.4",
+    "fibre": "0",
+    "protein": "10.8",
+    "salt": "0.5"
+   }
+  },
+  {
+   "slug": "egg-yolk",
+   "reference": "410 Egg yolk, raw",
+   "amounts": {
+    "energy_kj": "1440",
+    "energy_kcal": "349",
+    "fat": "31.3",
+    "saturates": "8.8",
+    "carbohydrate": "0.3",
+    "sugars": "0.2",
+    "fibre": "0",
+    "protein": "16.4",
+    "salt": "0.1"
+   }
+  },
+  {
+   "slug": "fine-salt",
+   "reference": "14086 Salt, sea salt, standard, white, without iodine and fluoride added",
+   "amounts": {
+    "energy_kj": "0",
+    "energy_kcal": "0",
+    "fat": "0",
+    "saturates": "0",
+    "carbohydrate": "0",
+    "sugars": "0",
+    "fibre": "0",
+    "protein": "0",
+    "salt": "99"
+   }
+  },
+  {
+   "slug": "garlic-clove",
+   "reference": "356 Garlic, raw",
+   "amounts": {
+    "energy_kj": "451",
+    "energy_kcal": "107",
+    "fat": "0.5",
+    "saturates": "0.1",
+    "carbohydrate": "16.3",
+    "sugars": "1.6",
+    "fibre": "5.8",
+    "protein": "6.4",
+    "salt": "0"
+   }
+  },
+  {
+   "slug": "granulated-sugar",
+   "reference": "470 Sugar, white",
+   "amounts": {
+    "energy_kj": "1700",
+    "energy_kcal": "400",
+    "fat": "0",
+    "saturates": "0",
+    "carbohydrate": "100",
+    "sugars": "100",
+    "fibre": "0",
+    "protein": "0",
+    "salt": "0"
+   }
+  },
+  {
+   "slug": "ground-almonds",
+   "reference": "273 Almond",
+   "amounts": {
+    "energy_kj": "2580",
+    "energy_kcal": "624",
+    "fat": "52.1",
+    "saturates": "4.3",
+    "carbohydrate": "7.8",
+    "sugars": "6.6",
+    "fibre": "10.6",
+    "protein": "25.6",
+    "salt": "0"
+   }
+  },
+  {
+   "slug": "honey",
+   "reference": "472 Honey, from flowers",
+   "amounts": {
+    "energy_kj": "1300",
+    "energy_kcal": "306",
+    "fat": "0",
+    "saturates": "0",
+    "carbohydrate": "76",
+    "sugars": "76",
+    "fibre": "0",
+    "protein": "0.4",
+    "salt": "0"
+   }
+  },
+  {
+   "slug": "icing-sugar",
+   "reference": "470 Sugar, white",
+   "amounts": {
+    "energy_kj": "1700",
+    "energy_kcal": "400",
+    "fat": "0",
+    "saturates": "0",
+    "carbohydrate": "100",
+    "sugars": "100",
+    "fibre": "0",
+    "protein": "0",
+    "salt": "0"
+   }
+  },
+  {
+   "slug": "lemon",
+   "reference": "398 Lemon, fresh",
+   "amounts": {
+    "energy_kj": "101",
+    "energy_kcal": "24",
+    "fat": "0.6",
+    "saturates": "0.1",
+    "carbohydrate": "2.9",
+    "sugars": "2.5",
+    "fibre": "2",
+    "protein": "0.8",
+    "salt": "0"
+   }
+  },
+  {
+   "slug": "olive-oil",
+   "reference": "591 Olive oil",
+   "amounts": {
+    "energy_kj": "3700",
+    "energy_kcal": "900",
+    "fat": "100",
+    "saturates": "11.9",
+    "carbohydrate": "0",
+    "sugars": "0",
+    "fibre": "0",
+    "protein": "0",
+    "salt": "0"
+   }
+  },
+  {
+   "slug": "onion",
+   "reference": "368 Onion, raw",
+   "amounts": {
+    "energy_kj": "163",
+    "energy_kcal": "39",
+    "fat": "0.6",
+    "saturates": "0.2",
+    "carbohydrate": "6.3",
+    "sugars": "4.8",
+    "fibre": "1.9",
+    "protein": "1.1",
+    "salt": "0"
+   }
+  },
+  {
+   "slug": "plain-flour",
+   "reference": "205 Wheat flour, white, type 400",
+   "amounts": {
+    "energy_kj": "1470",
+    "energy_kcal": "346",
+    "fat": "1.1",
+    "saturates": "0.3",
+    "carbohydrate": "71",
+    "sugars": "0.3",
+    "fibre": "3.2",
+    "protein": "11.5",
+    "salt": "0"
+   }
+  },
+  {
+   "slug": "plain-yoghurt",
+   "reference": "52 Yogurt natural",
+   "amounts": {
+    "energy_kj": "277",
+    "energy_kcal": "66",
+    "fat": "3.6",
+    "saturates": "2.2",
+    "carbohydrate": "4.5",
+    "sugars": "4.5",
+    "fibre": "0",
+    "protein": "3.9",
+    "salt": "0.1"
+   }
+  },
+  {
+   "slug": "rice",
+   "reference": "427 Rice polished, raw",
+   "amounts": {
+    "energy_kj": "1490",
+    "energy_kcal": "352",
+    "fat": "0.9",
+    "saturates": "0.2",
+    "carbohydrate": "78",
+    "sugars": "0.2",
+    "fibre": "1",
+    "protein": "7.4",
+    "salt": "0"
+   }
+  },
+  {
+   "slug": "rolled-oats",
+   "reference": "198 Oat flakes",
+   "amounts": {
+    "energy_kj": "1600",
+    "energy_kcal": "381",
+    "fat": "7.5",
+    "saturates": "0.9",
+    "carbohydrate": "59.5",
+    "sugars": "1",
+    "fibre": "10.5",
+    "protein": "13.5",
+    "salt": "0"
+   }
+  },
+  {
+   "slug": "unsalted-butter",
+   "reference": "49 Butter of choice",
+   "amounts": {
+    "energy_kj": "3070",
+    "energy_kcal": "746",
+    "fat": "82.3",
+    "saturates": "49.4",
+    "carbohydrate": "0.7",
+    "sugars": "0.6",
+    "fibre": "0",
+    "protein": "0.7",
+    "salt": "0"
+   }
+  },
+  {
+   "slug": "vegetable-oil",
+   "reference": "600 Rapeseed oil",
+   "amounts": {
+    "energy_kj": "3700",
+    "energy_kcal": "900",
+    "fat": "100",
+    "saturates": "6.9",
+    "carbohydrate": "0",
+    "sugars": "0",
+    "fibre": "0",
+    "protein": "0",
+    "salt": "0"
+   }
+  },
+  {
+   "slug": "water",
+   "reference": "47 Drinking water (average Switzerland)",
+   "amounts": {
+    "energy_kj": "0",
+    "energy_kcal": "0",
+    "fat": "0",
+    "saturates": "0",
+    "carbohydrate": "0",
+    "sugars": "0",
+    "fibre": "0",
+    "protein": "0",
+    "salt": "0"
+   }
+  },
+  {
+   "slug": "white-wine",
+   "reference": "511 Wine white, 12.5 vol%",
+   "amounts": {
+    "energy_kj": "298",
+    "energy_kcal": "72",
+    "fat": "0",
+    "saturates": "0",
+    "carbohydrate": "0.1",
+    "sugars": "0.1",
+    "fibre": "0",
+    "protein": "0.2",
+    "salt": "0"
+   }
+  },
+  {
+   "slug": "whole-milk",
+   "reference": "62 Whole milk, pasteurized",
+   "amounts": {
+    "energy_kj": "282",
+    "energy_kcal": "68",
+    "fat": "4",
+    "saturates": "2.4",
+    "carbohydrate": "4.7",
+    "sugars": "4.7",
+    "fibre": "0",
+    "protein": "3.2",
+    "salt": "0.1"
+   }
+  }
+ ]
+}
