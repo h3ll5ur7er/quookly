@@ -93,6 +93,12 @@
           }
         </button>
         @if (existing()?.recipe_id) {
+          <!-- The way in to cooking mode. First, because it is what a cook came here to do
+               on the day; "I cooked this" is the shortcut for a meal they made without the
+               app open. -->
+          <button type="button" class="secondary" [disabled]="saving()" (click)="cookNow()">
+            <span i18n="@@mealCookNow">Cook this now</span>
+          </button>
           <button type="button" class="secondary" [disabled]="saving()" (click)="cook()">
             <span i18n="@@mealCooked">I cooked this</span>
           </button>

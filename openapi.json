@@ -2488,8 +2488,7 @@
               "$ref": "#/components/schemas/PresentedLine"
             },
             "type": "array",
-            "title": "Lines",
-            "default": []
+            "title": "Lines"
           },
           "timer": {
             "anyOf": [
@@ -2506,7 +2505,11 @@
         "required": [
           "position",
           "instruction",
-          "attention"
+          "duration_seconds",
+          "temperature_celsius",
+          "attention",
+          "lines",
+          "timer"
         ],
         "title": "GuidedStepView",
         "description": "One step, with everything needed to do it without looking elsewhere.\n\n`lines` is the point. A cook at the hob should not have to scroll back to the\ningredient list to find out how much flour \"the flour\" was \u2014 the quantities the step\nasks for sit with the instruction. Empty where nothing could be matched with\nconfidence, which is honest: a step pointing at the wrong ingredient is worse than one\npointing at none (ADR-040)."
@@ -2959,11 +2962,14 @@
               "$ref": "#/components/schemas/PresentedLine"
             },
             "type": "array",
-            "title": "Lines",
-            "default": []
+            "title": "Lines"
           }
         },
         "type": "object",
+        "required": [
+          "preparation",
+          "lines"
+        ],
         "title": "PrepGroupView",
         "description": "Things to have ready that want the same work doing to them (UC-9.2)."
       },
@@ -3450,24 +3456,21 @@
               "$ref": "#/components/schemas/PrepGroupView"
             },
             "type": "array",
-            "title": "Mise En Place",
-            "default": []
+            "title": "Mise En Place"
           },
           "ahead": {
             "items": {
               "$ref": "#/components/schemas/GuidedStepView"
             },
             "type": "array",
-            "title": "Ahead",
-            "default": []
+            "title": "Ahead"
           },
           "steps": {
             "items": {
               "$ref": "#/components/schemas/GuidedStepView"
             },
             "type": "array",
-            "title": "Steps",
-            "default": []
+            "title": "Steps"
           },
           "at_step": {
             "anyOf": [
@@ -3514,8 +3517,16 @@
           "plan_slot_id",
           "title",
           "yield_quantity",
+          "serves",
           "sizing",
-          "started_at"
+          "suitability",
+          "mise_en_place",
+          "ahead",
+          "steps",
+          "at_step",
+          "started_at",
+          "finished_at",
+          "outcome"
         ],
         "title": "SessionView",
         "description": "A session as the cooking screen reads it: the whole meal, scaled and arranged."

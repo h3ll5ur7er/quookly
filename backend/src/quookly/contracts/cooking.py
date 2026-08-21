@@ -109,13 +109,13 @@ class GuidedStepView(BaseModel):
 
     position: int
     instruction: str
-    duration_seconds: int | None = None
-    temperature_celsius: int | None = None
+    duration_seconds: int | None
+    temperature_celsius: int | None
     attention: Attention
-    lines: list[PresentedLine] = []
+    lines: list[PresentedLine]
     # Absent until the cook starts one. A timer that exists before it is asked for is a
     # timer already counting down something nobody began.
-    timer: TimerView | None = None
+    timer: TimerView | None
 
 
 class PrepGroupView(BaseModel):
@@ -123,8 +123,8 @@ class PrepGroupView(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    preparation: str | None = None
-    lines: list[PresentedLine] = []
+    preparation: str | None
+    lines: list[PresentedLine]
 
 
 class SessionView(BaseModel):
@@ -136,24 +136,24 @@ class SessionView(BaseModel):
     plan_slot_id: int
     title: str
     yield_quantity: QuantityView
-    serves: str | None = None
+    serves: str | None
     # How confidently the meal was sized, by the same rule the plan used. A session that
     # could not be scaled to the table is cooking one batch, and the cook has to be able
     # to see that before they start rather than when it runs out.
     sizing: Sizing
     # Whether the people at this meal can eat it. Judged again here on purpose: this is
     # the last moment before the food exists, and a guest may have been added since.
-    suitability: VerdictView | None = None
-    mise_en_place: list[PrepGroupView] = []
+    suitability: VerdictView | None
+    mise_en_place: list[PrepGroupView]
     # What had to happen before today. Separate from the method, because a cook standing
     # at the hob cannot act on it and a session that walks them through it first would be
     # walking them through yesterday (ADR-041).
-    ahead: list[GuidedStepView] = []
-    steps: list[GuidedStepView] = []
-    at_step: int | None = None
+    ahead: list[GuidedStepView]
+    steps: list[GuidedStepView]
+    at_step: int | None
     started_at: datetime
-    finished_at: datetime | None = None
-    outcome: SessionOutcome | None = None
+    finished_at: datetime | None
+    outcome: SessionOutcome | None
 
 
 class StartInput(BaseModel):

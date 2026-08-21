@@ -263,11 +263,19 @@ Non-negotiable, and mostly a consequence of the rest.
 The one place the rules deliberately change, because the posture does: standing, hands busy or wet,
 screen a metre away, glancing rather than reading.
 
-- `--density` rises: larger type, larger targets, more space.
-- One step fills the screen. No scrolling to find the current instruction.
-- Timers use the numeric face at display size, legible across a kitchen.
-- Controls sit low and are large enough for a knuckle.
-- The screen stays awake (NFR-12).
+- `--density` rises: larger type, larger targets, more space. Set on the cooking screen's own host,
+  so every size on it follows from one number.
+- One step fills the screen. No scrolling to find the current instruction — the layout is three
+  rows, and the middle one takes whatever is left.
+- Timers use the numeric face at display size, legible across a kitchen, with tabular figures so the
+  clock does not shift about as the digits change.
+- Controls sit low, stick to the bottom, and are large enough for a knuckle. **Onwards is twice the
+  width of back**: going on happens twenty times a recipe and going back twice, and a thumb should
+  not have to aim for the difference.
+- A whole row is a tap target, not the 20px box inside it — wet hands, and a phone propped at an
+  angle. What has been ticked off is struck through as well as faded, because a screen in daylight
+  is not a place to rely on colour.
+- The screen stays awake (NFR-12), and the application's own navigation is not there at all.
 
 ## What to avoid
 

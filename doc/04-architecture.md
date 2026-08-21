@@ -615,19 +615,32 @@ What that changes in practice:
 ### Cooking mode is a distinct presentation
 
 Cooking mode is not the recipe page with bigger text. The cook is standing, hands occupied,
-possibly wet, glancing from a metre away. It is built as its own routed feature with its own rules:
+possibly wet, glancing from a metre away. It is built as its own routed feature with its own rules.
+**Built**, except for technique lookup, which waits for the Academy.
 
 - One step fills the screen. No scrolling to find the current instruction.
+- **The application's own furniture goes away.** No section bar, no language picker: a navigation
+  link under a recipe somebody is halfway through is an invitation to leave in the middle of it, and
+  a thing to knock with a wet thumb. The route declares this with `data: { chrome: false }` rather
+  than the shell matching a path, so a screen states its own posture and the shell does not
+  accumulate a list of exceptions.
 - The [Screen Wake Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Wake_Lock_API)
   holds the display on for the duration of the session, released on completion or abandonment
-  (NFR-12).
+  (NFR-12). It is re-acquired when the tab returns, because browsers drop the lock whenever the page
+  is hidden — one request at the start would hold until the first time somebody answered a message
+  and no longer. A browser without the API is not an error; the screen dims, as it would have anyway.
 - Timers render from server-held start instants, so a locked screen or a switched device resumes
-  correctly. The client ticks; it is not the source of truth.
+  correctly. The client ticks; it is not the source of truth. They count **past** zero rather than
+  stopping there: a pan does not stop cooking because a timer ran out, and "+2:10" is the number a
+  cook coming back to it needs. When one expires it says so in words, buzzes, and sounds a tone
+  generated in the browser — an audio file is a request that fails exactly when the kitchen has no
+  signal, which is when it is most needed.
 - Technique lookup opens over the current step and dismisses back to it. Navigating away from the
   step to read what "deglaze" means loses the cook's place, which is the failure this feature
   exists to prevent.
 - Session progress is written through as it advances rather than at the end. A dropped connection
-  mid-recipe must not discard the session.
+  mid-recipe must not discard the session. **Nothing is held locally except the prep-list ticks**,
+  which are a glance at what is left rather than a fact about the meal.
 
 ## Where the CLI fits
 

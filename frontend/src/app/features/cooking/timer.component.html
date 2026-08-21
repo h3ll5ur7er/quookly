@@ -1,0 +1,23 @@
+<div class="timer" [class.timer--running]="running()" [class.timer--over]="over()">
+  <!-- A live region, because the whole point of a timer is to be noticed by somebody who
+       is looking at a pan rather than at a screen. Polite: it should not cut across a
+       step being read out. -->
+  <output class="timer__clock numeric" role="status">{{ display() }}</output>
+
+  @if (over()) {
+    <p class="timer__over" i18n="@@timerOver">Time is up</p>
+  }
+
+  <div class="timer__controls">
+    <button type="button" class="timer__button timer__button--primary" (click)="toggle()">
+      @if (running()) {
+        <span i18n="@@timerPause">Pause</span>
+      } @else {
+        <span i18n="@@timerStart">Start</span>
+      }
+    </button>
+    <button type="button" class="timer__button" (click)="cleared.emit()" i18n="@@timerReset">
+      Reset
+    </button>
+  </div>
+</div>

@@ -179,7 +179,9 @@ a correct shopping list, and cooking a meal updates the pantry. **Met.**
 - ~~Completion and abandonment, driving stock through the bus (UC-9.6, UC-9.8, FR-19)~~ **Built.**
   Abandoning publishes nothing: the meal is still planned, and releasing what it held would take it
   off the shopping list at the same time
-- Cooking-mode UI: one step per screen, wake lock, thumb-reachable controls (NFR-12)
+- ~~Cooking-mode UI: one step per screen, wake lock, thumb-reachable controls (NFR-12)~~ **Built.**
+  The application's own navigation goes away with it: a section bar under a half-finished recipe is
+  an invitation to leave in the middle of one
 - Offline tolerance for the active session (NFR-13)
 
 **Done when:** a cook can start a session on a tablet, prep from the mise-en-place list, run a timer,

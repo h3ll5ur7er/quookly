@@ -7,11 +7,16 @@
 
   <!-- Settings are set once and then left alone, so they sit at the end of the page
        rather than in the bar that follows the cook around. The page's contentinfo, so
-       the controls are inside a landmark rather than loose at the end of the document. -->
-  <footer class="shell__settings">
-    <app-locale-picker />
-    <app-theme-picker />
-  </footer>
+       the controls are inside a landmark rather than loose at the end of the document.
+
+       Gone in cooking mode with the rest of the furniture: a language picker under a
+       recipe somebody is halfway through is a thing to knock with a wet thumb. -->
+  @if (chromed()) {
+    <footer class="shell__settings">
+      <app-locale-picker />
+      <app-theme-picker />
+    </footer>
+  }
 
   <!-- Low, within thumb reach, and the same bar on every screen. Navigation is available
        rather than present: two words, no icons competing with the content above them. -->

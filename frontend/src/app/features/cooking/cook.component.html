@@ -1,0 +1,208 @@
+@if (missing()) {
+  <main class="cook cook--plain">
+    <p class="notice notice--danger" role="alert" i18n="@@cookMissing">
+      That meal is not one you are cooking. It may already be finished.
+    </p>
+    <a class="cook__leave" routerLink="/plans" i18n="@@cookBackToPlan">Back to the plan</a>
+  </main>
+} @else if (session(); as meal) {
+  <main class="cook">
+    <header class="cook__bar">
+      <!-- Leaving is not stopping. The session stays exactly where it is, which is the
+           whole of UC-9.7 — a cook who walks away comes back to the same step. -->
+      <a class="cook__out" routerLink="/plans" i18n-aria-label="@@cookLeave" aria-label="Leave">
+        <span aria-hidden="true">←</span>
+      </a>
+      <h1 class="cook__title">{{ meal.title }}</h1>
+    </header>
+
+    @if (meal.outcome) {
+      <section class="cook__body cook__done">
+        @if (meal.outcome === completed) {
+          <p class="cook__done-mark" aria-hidden="true">✓</p>
+          <h2 i18n="@@cookFinishedHeading">That is dinner</h2>
+          <p class="cook__lede" i18n="@@cookFinished">
+            What this meal was holding has come out of your pantry.
+          </p>
+        } @else {
+          <h2 i18n="@@cookStoppedHeading">You stopped this one</h2>
+          <p class="cook__lede" i18n="@@cookStopped">
+            Nothing came out of your pantry. The meal is still on your plan.
+          </p>
+        }
+        <a class="cook__action" routerLink="/plans" i18n="@@cookBackToPlan">Back to the plan</a>
+      </section>
+    } @else if (step(); as current) {
+      <section class="cook__body">
+        <p class="cook__place">
+          <span class="numeric">{{ place().at }}</span>
+          <span i18n="@@cookStepOf">of</span>
+          <span class="numeric">{{ place().of }}</span>
+        </p>
+        <!-- A bar rather than dots: six dots at a glance is a counting exercise, and this
+             is read from a metre away. -->
+        <div
+          class="cook__progress"
+          role="progressbar"
+          [attr.aria-valuenow]="place().at"
+          [attr.aria-valuemin]="1"
+          [attr.aria-valuemax]="place().of"
+        >
+          <span class="cook__progress-run" [style.inline-size.%]="(place().at / place().of) * 100">
+          </span>
+        </div>
+
+        <p class="cook__instruction">{{ current.instruction }}</p>
+
+        @if (attentionNote(current.attention); as asks) {
+          <p class="cook__asks">{{ asks }}</p>
+        }
+
+        <!-- The quantities this step asks for, beside the instruction that asks. Going
+             back to the ingredient list at the hob is what this is here to prevent. -->
+        @if (current.lines.length > 0) {
+          <ul class="cook__lines">
+            @for (line of current.lines; track line.ingredient) {
+              <li class="cook__line">
+                <span class="cook__amount numeric">{{ line.quantity?.display }}</span>
+                <span>{{ line.ingredient }}</span>
+              </li>
+            }
+          </ul>
+        }
+
+        @if (current.temperature_celsius) {
+          <p class="cook__heat">
+            <span class="numeric">{{ current.temperature_celsius }} °C</span>
+          </p>
+        }
+
+        @if (current.duration_seconds) {
+          <app-timer
+            [duration]="current.duration_seconds"
+            [timer]="current.timer ?? null"
+            (started)="startTimer(current)"
+            (paused)="pauseTimer(current)"
+            (cleared)="resetTimer(current)"
+          />
+        }
+      </section>
+
+      <footer class="cook__controls">
+        <button
+          type="button"
+          class="cook__move"
+          [disabled]="busy()"
+          (click)="onwards(-1)"
+          i18n="@@cookBack"
+        >
+          Back
+        </button>
+        @if (last()) {
+          <button
+            type="button"
+            class="cook__move cook__move--go"
+            [disabled]="busy()"
+            (click)="finish()"
+          >
+            <span i18n="@@cookFinish">I am done</span>
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="cook__move cook__move--go"
+            [disabled]="busy()"
+            (click)="onwards(1)"
+          >
+            <span i18n="@@cookNext">Next</span>
+          </button>
+        }
+      </footer>
+    } @else {
+      <section class="cook__body">
+        <h2 i18n="@@cookPrepHeading">Get everything ready</h2>
+
+        <!-- Sizing first, because it is the thing a cook has to know before they start
+             rather than when the tray comes out short. -->
+        @if (meal.sizing === asWritten) {
+          <p class="notice notice--info" i18n="@@cookAsWritten">
+            Nobody was listed at this meal, so this is one batch as the recipe writes it.
+          </p>
+        } @else if (meal.sizing === unscalable) {
+          <p class="notice notice--info" i18n="@@cookUnscalable">
+            This recipe does not say how many it feeds, so this is one batch as written.
+          </p>
+        }
+
+        @if (meal.suitability; as verdict) {
+          <app-verdict [verdict]="verdict" />
+        }
+
+        <!-- Before the prep list, not after it: a cook reading this once they have started
+             has been told too late (ADR-041). -->
+        @if (meal.ahead.length > 0) {
+          <section class="cook__ahead">
+            <h3 i18n="@@cookAheadHeading">Before today</h3>
+            <ul>
+              @for (earlier of meal.ahead; track earlier.position) {
+                <li>{{ earlier.instruction }}</li>
+              }
+            </ul>
+          </section>
+        }
+
+        @for (group of meal.mise_en_place; track $index) {
+          <section class="cook__group">
+            <h3 class="cook__group-title">
+              @if (group.preparation) {
+                {{ group.preparation }}
+              } @else {
+                <span i18n="@@cookWeighOut">Weigh out</span>
+              }
+            </h3>
+            <ul class="cook__prep">
+              @for (line of group.lines; track line.ingredient) {
+                <li>
+                  <label class="cook__tick" [class.cook__tick--done]="isDone(line.ingredient)">
+                    <input
+                      type="checkbox"
+                      [checked]="isDone(line.ingredient)"
+                      (change)="tick(line.ingredient)"
+                    />
+                    <span class="cook__amount numeric">{{ line.quantity?.display }}</span>
+                    <span class="cook__ingredient">{{ line.ingredient }}</span>
+                    <!-- Worth saying here more than on a recipe page: this is the list a
+                         cook is weighing from, and weighing something they were free to
+                         leave out is work nobody asked for. -->
+                    @if (line.optional) {
+                      <span class="cook__optional" i18n="@@recipeOptional">optional</span>
+                    }
+                  </label>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        <button type="button" class="cook__give-up" (click)="giveUp()" i18n="@@cookGiveUp">
+          I am not cooking this after all
+        </button>
+      </section>
+
+      <footer class="cook__controls">
+        <button
+          type="button"
+          class="cook__move cook__move--go"
+          [disabled]="busy()"
+          (click)="begin()"
+        >
+          <span i18n="@@cookBegin">Start cooking</span>
+        </button>
+      </footer>
+    }
+  </main>
+} @else {
+  <main class="cook cook--plain">
+    <p i18n="@@cookLoading">Loading…</p>
+  </main>
+}

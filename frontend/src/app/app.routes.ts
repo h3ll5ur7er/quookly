@@ -88,6 +88,15 @@ export const routes: Routes = [
     loadComponent: () => import('./features/plans/plan.component').then((m) => m.PlanComponent),
   },
   {
+    // Its own route rather than a mode of the plan screen. Cooking is a different
+    // posture with different rules — bigger, low-slung, and with the app's own
+    // navigation out of the way (NFR-12).
+    path: 'cook/:id',
+    canActivate: [requireSignedIn],
+    data: { chrome: false },
+    loadComponent: () => import('./features/cooking/cook.component').then((m) => m.CookComponent),
+  },
+  {
     path: 'setup',
     canActivate: [requireSignedIn],
     loadComponent: () => import('./features/setup/setup.component').then((m) => m.SetupComponent),

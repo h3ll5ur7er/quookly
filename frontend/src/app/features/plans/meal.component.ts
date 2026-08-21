@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
+  CookingService,
   EaterView,
   EatersService,
   Meal,
@@ -27,6 +28,7 @@ const UNDECIDED = '';
 })
 export class MealComponent {
   private readonly plans = inject(PlansService);
+  private readonly cooking = inject(CookingService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute).snapshot;
 
@@ -146,6 +148,28 @@ export class MealComponent {
           this.failed.set(true);
         },
       });
+  }
+
+  /**
+   * Open cooking mode on this meal (UC-9.1).
+   *
+   * Starting is idempotent, so a cook who left mid-recipe and tapped this again lands back
+   * where they were rather than at the top of a second session.
+   */
+  protected cookNow(): void {
+    const slot = this.existing();
+    if (slot === null || this.saving()) {
+      return;
+    }
+    this.saving.set(true);
+    this.failed.set(false);
+    this.cooking.startSession({ plan_slot_id: slot.id }).subscribe({
+      next: (session) => void this.router.navigateByUrl(`/cook/${session.id}`),
+      error: () => {
+        this.saving.set(false);
+        this.failed.set(true);
+      },
+    });
   }
 
   protected cook(): void {

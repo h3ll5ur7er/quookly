@@ -1,0 +1,335 @@
+@use '../../../styles/page';
+@use '../../../styles/badges';
+
+/* The one place the rules deliberately change, because the posture does: standing, hands
+   busy or wet, screen a metre away, glancing rather than reading. */
+:host {
+  --density: 1.15;
+
+  display: block;
+  min-block-size: 100dvh;
+  background: var(--surface);
+}
+
+.cook {
+  display: grid;
+  /* Header, then the step, then the controls. The middle row takes what is left, so one
+     step fills the screen and the buttons never move about between steps. */
+  grid-template-rows: auto 1fr auto;
+  min-block-size: 100dvh;
+  width: min(100% - var(--space-4), 44rem);
+  margin-inline: auto;
+}
+
+.cook--plain {
+  grid-template-rows: auto;
+  align-content: center;
+  gap: var(--space-4);
+  padding: var(--space-6);
+}
+
+.cook__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+}
+
+.cook__out {
+  display: grid;
+  place-items: center;
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: var(--radius-full);
+  color: var(--on-surface-muted);
+  font-size: var(--text-lg);
+  text-decoration: none;
+}
+
+.cook__out:hover {
+  background: var(--surface-sunken);
+}
+
+.cook__title {
+  margin: 0;
+  font-size: calc(var(--text-lg) * var(--density));
+}
+
+.cook__body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding-block-end: var(--space-6);
+  overflow-y: auto;
+}
+
+.cook__place {
+  display: flex;
+  gap: 0.35em;
+  margin: 0;
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cook__progress {
+  block-size: 4px;
+  margin-block: var(--space-2) var(--space-5);
+  border-radius: var(--radius-full);
+  background: var(--surface-sunken);
+}
+
+.cook__progress-run {
+  display: block;
+  block-size: 100%;
+  border-radius: var(--radius-full);
+  background: var(--primary);
+  transition: inline-size var(--motion-base) var(--ease-standard);
+}
+
+/* The one thing on the screen. Display face, generous measure, read from a metre. */
+.cook__instruction {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: calc(var(--text-xl) * var(--density));
+  line-height: 1.35;
+}
+
+.cook__asks {
+  margin: var(--space-2) 0 0;
+  color: var(--on-surface-muted);
+  font-style: italic;
+}
+
+.cook__lines,
+.cook__prep {
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cook__line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding-block: var(--space-2);
+  font-size: calc(var(--text-md) * var(--density));
+}
+
+.cook__amount {
+  min-inline-size: 5.5rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: end;
+}
+
+.cook__heat {
+  align-self: flex-start;
+  margin: var(--space-4) 0 0;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--surface-sunken);
+  color: var(--on-surface-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pushed to the foot of the step rather than left under the instruction. The timer is the
+   thing a cook reaches for with a wet thumb, so it belongs where the thumb already is —
+   and it closes the gap that otherwise sits between a short step and the controls. */
+app-timer {
+  margin-block-start: auto;
+  padding-block-start: var(--space-5);
+}
+
+/* --- the prep list ------------------------------------------------------------------ */
+
+.cook__group {
+  margin-block-start: var(--space-5);
+}
+
+.cook__group-title {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--on-surface-muted);
+}
+
+.cook__prep {
+  margin-block-start: var(--space-2);
+}
+
+/* A whole row is the target, not a 20px box. Wet hands, and a phone propped at an angle. */
+.cook__tick {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: 56px;
+  padding-inline: var(--space-3);
+  border-block-end: 1px solid var(--border);
+  font-size: calc(var(--text-md) * var(--density));
+  cursor: pointer;
+}
+
+.cook__tick input {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  accent-color: var(--primary);
+}
+
+/* Struck through as well as faded: a cook glancing at this needs the difference to survive
+   a screen in daylight, and colour alone would not. */
+.cook__tick--done .cook__ingredient,
+.cook__tick--done .cook__amount {
+  color: var(--on-surface-subtle);
+  text-decoration: line-through;
+}
+
+.cook__optional {
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  color: var(--on-surface-muted);
+  font-size: var(--text-xs);
+}
+
+.cook__ahead {
+  margin-block-start: var(--space-5);
+  padding: var(--space-4);
+  border-inline-start: 4px solid var(--warning);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.cook__ahead h3 {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--on-surface-muted);
+}
+
+.cook__ahead ul {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+}
+
+/* Pushed to the end of whatever the prep list came to, rather than left floating in the
+   middle of the gap under a short one. */
+.cook__give-up {
+  align-self: flex-start;
+  min-height: 48px;
+  margin-block-start: auto;
+  padding-block-start: var(--space-7);
+  padding-inline: var(--space-4);
+  border: none;
+  background: none;
+  color: var(--danger);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* --- the controls -------------------------------------------------------------------- */
+
+/* Low and sticky, because that is where a thumb is and because the instruction above them
+   must not have to move to reach them (NFR-12). */
+.cook__controls {
+  position: sticky;
+  inset-block-end: 0;
+  display: flex;
+  gap: var(--space-3);
+  padding-block: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border-block-start: 1px solid var(--border);
+}
+
+.cook__move {
+  flex: 1 1 0;
+  min-height: 64px;
+  padding-inline: var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  font-size: calc(var(--text-md) * var(--density));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Onwards is twice the width of back. Going on is what happens twenty times a recipe;
+   going back is what happens twice, and a thumb should not have to aim for the difference. */
+.cook__move--go {
+  flex: 2 1 0;
+  border-color: transparent;
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+/* Neutral rather than a faded accent, for the reason a disabled primary always is: a
+   washed-out filled button still reads as one you can press. */
+.cook__move:disabled {
+  border-color: var(--border);
+  background: var(--surface-sunken);
+  color: var(--on-surface-subtle);
+  cursor: default;
+}
+
+.cook__move:disabled:hover {
+  background: var(--surface-sunken);
+}
+
+.cook__move:hover {
+  background: var(--surface-sunken);
+}
+
+.cook__move--go:hover {
+  background: var(--primary-hover);
+}
+
+/* --- finished ------------------------------------------------------------------------ */
+
+.cook__done {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.cook__done-mark {
+  display: grid;
+  place-items: center;
+  inline-size: 4rem;
+  block-size: 4rem;
+  margin: 0;
+  border-radius: var(--radius-full);
+  background: var(--success);
+  color: var(--on-success);
+  font-size: var(--text-2xl);
+}
+
+.cook__lede {
+  margin: 0;
+  color: var(--on-surface-muted);
+}
+
+.cook__action,
+.cook__leave {
+  display: grid;
+  place-items: center;
+  min-height: 48px;
+  margin-top: var(--space-4);
+  padding-inline: var(--space-5);
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
