@@ -447,6 +447,7 @@ backend/src/quookly/
 ├── engines/
 │   ├── measure.py          # units, conversion, scaling (Built)
 │   ├── exchange.py         # the interchange format (Built)
+│   ├── interpretation.py   # content to canonical structure (Partial)
 │   ├── onboarding.py       # what is still missing from setup (Built)
 │   └── suitability.py      # can these people eat this (Built)
 ├── access/
@@ -474,6 +475,7 @@ backend/src/quookly/
 │   ├── eater.py            # Eater, Constraint, Severity, AgeBand (Built)
 │   ├── onboarding.py       # SetupStep, ProfileState, SetupProgress (Built)
 │   ├── inference.py        # Completion, ProviderStatus (Built)
+│   ├── interpretation.py   # InterpretedRecipe, Source (Built)
 │   ├── web.py              # ReadableContent (Built)
 │   ├── suitability.py      # Outcome, Finding, Verdict (Built)
 │   ├── measure.py          # Dimension, Unit, Quantity (Built)

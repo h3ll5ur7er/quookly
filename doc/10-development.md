@@ -401,3 +401,19 @@ just backend test -- -m live
 
 Any OpenAI-compatible server works ([ADR-026](07-decisions.md#adr-026-one-openai-shaped-wire-format-not-a-provider-plugin-system)):
 vLLM, Ollama, llama.cpp, LM Studio locally, or a hosted provider with `QUOOKLY_INFERENCE_API_KEY`.
+
+## The captured page corpus
+
+`backend/tests/fixtures/pages/` holds schema.org metadata blocks exactly as four publishers served
+them. This is the mitigation the roadmap names for interpretation risk: a change to the reader is
+measured against what sites actually publish rather than against what is convenient to invent.
+
+Only the metadata is kept, not the page markup — the blocks are the part being read, and megabytes
+of HTML would be keeping the wrong thing. Refresh with:
+
+```bash
+cd backend && uv run python tests/fixtures/capture.py
+```
+
+The suite never fetches. A test failing *after* a refresh is real news about how a site has changed
+its shape, and worth reading as such rather than fixing by adjusting the assertion.

@@ -1,0 +1,102 @@
+{
+ "url": "https://www.jamieoliver.com/recipes/eggs/easy-pancakes/",
+ "title": "Easy pancake recipe",
+ "structured": [
+  {
+   "@context": "https://schema.org",
+   "@type": "WebPage",
+   "url": "https://www.jamieoliver.com/recipes/eggs/easy-pancakes/",
+   "primaryImageOfPage": {
+    "@type": "ImageObject",
+    "url": "https://asset.jamieoliver.com/images/cq7w2e71/production/0d6dd365203ac1de26cfbe7f2813f92af4d00001-973x1300.jpg/46312390.webp?rect=0,285,973,730&w=1200&h=900&fm=webp&q=75&fit=crop&auto=format",
+    "width": 1200,
+    "height": 900
+   }
+  },
+  {
+   "@context": "https://schema.org",
+   "@type": "Recipe",
+   "@id": "https://www.jamieoliver.com/recipes/eggs/easy-pancakes/",
+   "mainEntityOfPage": "https://www.jamieoliver.com/recipes/eggs/easy-pancakes/",
+   "image": [
+    {
+     "@type": "ImageObject",
+     "url": "https://asset.jamieoliver.com/images/cq7w2e71/production/0d6dd365203ac1de26cfbe7f2813f92af4d00001-973x1300.jpg/46312390.webp?rect=0,164,973,973&w=1200&h=1200&fm=webp&q=75&fit=crop&auto=format",
+     "width": 1200,
+     "height": 1200
+    },
+    {
+     "@type": "ImageObject",
+     "url": "https://asset.jamieoliver.com/images/cq7w2e71/production/0d6dd365203ac1de26cfbe7f2813f92af4d00001-973x1300.jpg/46312390.webp?rect=0,285,973,730&w=1200&h=900&fm=webp&q=75&fit=crop&auto=format",
+     "width": 1200,
+     "height": 900
+    },
+    {
+     "@type": "ImageObject",
+     "url": "https://asset.jamieoliver.com/images/cq7w2e71/production/0d6dd365203ac1de26cfbe7f2813f92af4d00001-973x1300.jpg/46312390.webp?rect=0,377,973,547&w=1280&h=720&fm=webp&q=75&fit=crop&auto=format",
+     "width": 1280,
+     "height": 720
+    }
+   ],
+   "name": "Easy pancakes",
+   "description": "Jamie Oliver's easy pancake recipe is delicious with fresh fruit, lemon and sugar; or try a savoury pancake with ham and cheese.",
+   "recipeYield": "Makes 8",
+   "totalTime": "PT15M",
+   "cookTime": "PT15M",
+   "recipeCuisine": "French",
+   "recipeCategory": "French-style",
+   "recipeIngredient": [
+    "3 large free-range eggs",
+    "125g plain flour",
+    "250ml milk",
+    "unsalted butter"
+   ],
+   "recipeInstructions": [
+    {
+     "@type": "HowToStep",
+     "text": "Crack the eggs into a blender, then add the flour, milk and 1 pinch of sea salt, and blitz until smooth."
+    },
+    {
+     "@type": "HowToStep",
+     "text": "Pour into a bowl and leave to stand for 15 minutes."
+    },
+    {
+     "@type": "HowToStep",
+     "text": "Melt the butter (or a drizzle of oil if you want to be a bit healthier) in a large non-stick frying pan on a medium heat, then tilt the pan so the butter coats the surface."
+    },
+    {
+     "@type": "HowToStep",
+     "text": "Pour in 1 ladle of batter and tilt again, so that the batter spreads all over the base, then cook for 1 to 2 minutes, or until it starts to come away from the sides."
+    },
+    {
+     "@type": "HowToStep",
+     "text": "Once golden underneath, flip the pancake over and cook for 1 further minute, or until cooked through."
+    },
+    {
+     "@type": "HowToStep",
+     "text": "Serve straightaway with your favourite topping."
+    }
+   ],
+   "keywords": "Breakfast, Course, Family one-pan recipes, Quick fixes, Dish Type, breakfast, breakfast and brunch, pancakes, Eggs, Main Ingredient, Method, Frying, Father's day, Occasion, Mother's day, Pancake day, Family batch cooking",
+   "author": {
+    "@type": "Person",
+    "name": "Jamie Oliver"
+   },
+   "nutrition": {
+    "@type": "NutritionInformation",
+    "calories": "108 calories",
+    "carbohydrateContent": "13.7 g",
+    "fatContent": "4.1 g",
+    "fiberContent": "0.4 g",
+    "proteinContent": "5.2 g",
+    "sodiumContent": "0.10 g",
+    "saturatedFatContent": "1.6 g",
+    "sugarContent": "1.7 g"
+   },
+   "datePublished": "2016-01-25",
+   "suitableForDiet": [
+    "https://schema.org/VegetarianDiet"
+   ]
+  }
+ ]
+}

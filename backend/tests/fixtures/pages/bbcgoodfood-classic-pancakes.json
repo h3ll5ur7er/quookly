@@ -1,0 +1,112 @@
+{
+ "url": "https://www.bbcgoodfood.com/recipes/classic-pancakes",
+ "title": "Classic pancakes",
+ "structured": [
+  {
+   "@context": "https://schema.org",
+   "@id": "https://www.bbcgoodfood.com/recipes/classic-pancakes#Recipe",
+   "@type": "Recipe",
+   "description": "You can use this foolproof classic batter recipe to create a base for sweet or savoury pancakes",
+   "image": [
+    {
+     "@type": "ImageObject",
+     "url": "https://images.immediate.co.uk/production/volatile/sites/30/2020/08/recipe-image-legacy-id-881465_10-7cc4719.jpg?resize=440,400",
+     "width": 440,
+     "height": 400
+    }
+   ],
+   "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.bbcgoodfood.com/recipes/classic-pancakes"
+   },
+   "name": "Classic pancakes",
+   "url": "https://www.bbcgoodfood.com/recipes/classic-pancakes",
+   "dateModified": "2026-02-27T10:41:42+00:00",
+   "datePublished": "2012-01-26T10:58:04+00:00",
+   "headline": "Classic pancakes",
+   "keywords": " Josh Eagleton, 10-30 minutes, 200 kcal or less, 30-60 minutes, Basic pancake recipe, Batter, Breakfast, Brunch, Classic, Cooking with kids, Crepe, Crêpes, Easy, Egg, Eggs, Family, Fillings, Flipping, How to make pancakes, Mary Cadogan, Milk, Occasion, Pan cakes, Pancake day, Pancake recipe, Pancakes, Plain flour, Quick, Shrove Tuesday, Technique",
+   "publisher": {
+    "@type": "Organization",
+    "name": "Good Food",
+    "url": "https://www.bbcgoodfood.com",
+    "logo": {
+     "@type": "ImageObject",
+     "height": 325,
+     "url": "https://images.immediate.co.uk/production/volatile/sites/30/2026/02/goodfood.logo-f37096c.png?resize=1312,325",
+     "width": 1312
+    }
+   },
+   "nutrition": {
+    "@type": "NutritionInformation",
+    "calories": "117 calories",
+    "fatContent": "7 grams fat",
+    "saturatedFatContent": "4 grams saturated fat",
+    "carbohydrateContent": "12 grams carbohydrates",
+    "proteinContent": "3 grams protein",
+    "sodiumContent": "0.2 milligram of sodium"
+   },
+   "recipeCategory": "Breakfast, Side dish",
+   "recipeCuisine": "British",
+   "recipeIngredient": [
+    "100g plain flour",
+    "1 large egg",
+    "300ml milk",
+    "oil or melted butter, for frying"
+   ],
+   "recipeInstructions": [
+    {
+     "@type": "HowToStep",
+     "text": "Sift the flour and a pinch of salt into a bowl. Make a well in the centre with the back of a spoon then break in the egg and pour in half the milk. Whisk together, gradually incorporating the flour to make a smooth thick batter. Beat thoroughly to remove any lumps, then stir in the rest of the milk."
+    },
+    {
+     "@type": "HowToStep",
+     "text": "Heat a little oil or butter in a medium frying pan, then tip off the excess into a bowl. Pour about 2 tablespoons of batter into the pan, tilting the pan as you pour, until the batter thinly coats the base. Cook over a moderate heat for 30 seconds to one minute until golden brown on the underside."
+    },
+    {
+     "@type": "HowToStep",
+     "text": "Flip over the pancake with a palette knife, and cook the other side until it is golden brown. Slide the pancake out of the pan on to a plate, heat a little more oil or butter and cook the remaining pancakes one at a time in the same way."
+    },
+    {
+     "@type": "HowToStep",
+     "text": "If preparing in advance, cook and stack the pancakes. Reheat in the microwave on Medium (750W) for about 2 minutes. Alternatively, heat the oven to 180C/gas 4/fan 160C. Wrap the pancakes in foil and warm them through in the oven for 10 minutes."
+    }
+   ],
+   "recipeYield": "Makes 8 pancakes",
+   "totalTime": "PT30M"
+  },
+  {
+   "@context": "https://schema.org/",
+   "@type": "BreadcrumbList",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "Home",
+     "item": "https://www.bbcgoodfood.com/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Recipes",
+     "item": "https://www.bbcgoodfood.com/recipes"
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "name": "Classic pancakes"
+    }
+   ]
+  },
+  {
+   "@context": "https://schema.org/",
+   "@id": "https://www.bbcgoodfood.com/recipes/classic-pancakes#Recipe",
+   "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": 4,
+    "reviewCount": 53,
+    "bestRating": 5,
+    "worstRating": 1
+   }
+  }
+ ]
+}
