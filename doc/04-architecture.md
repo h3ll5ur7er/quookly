@@ -179,7 +179,9 @@ Permitted, restated as prohibitions — these are the ones that get enforced:
 - A Manager must never call another Manager. Use the event bus.
 - An Engine must never call a Manager.
 - Resource Access must never call an Engine or a Manager.
-- A Client must never call Resource Access directly.
+- A Client must never call Resource Access directly. A route therefore cannot decide which language
+  a cook reads in — it does not have the account. Reading language is resolved by the manager, which
+  is why `DEFAULT_LOCALE` no longer exists in `routes/`.
 - A Utility must never call a Manager, Engine, or Resource Access.
 
 The last rule is what keeps utilities usable everywhere: the moment `Security` calls `EaterAccess`,

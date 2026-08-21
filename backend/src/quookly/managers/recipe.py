@@ -63,8 +63,11 @@ def _view(quantity: Quantity) -> QuantityView:
     )
 
 
-async def author(submitted: RecipeInput, cook_id: int, locale: str) -> PresentedRecipe:
+async def author(
+    submitted: RecipeInput, cook_id: int, locale: str | None = None
+) -> PresentedRecipe:
     """Store a recipe and hand it back as the cook will read it."""
+    locale = locale or await cook_access.locale_for(cook_id)
     draft = RecipeDraft(
         title=submitted.title,
         summary=submitted.summary,
@@ -129,7 +132,8 @@ async def _outcomes_for(cook_id: int, locale: str) -> dict[int, Outcome]:
     }
 
 
-async def list_for(cook_id: int, locale: str = "en-GB") -> list[RecipeSummaryView]:
+async def list_for(cook_id: int, locale: str | None = None) -> list[RecipeSummaryView]:
+    locale = locale or await cook_access.locale_for(cook_id)
     summaries = await recipe_access.list_for_cook(cook_id)
     outcomes = await _outcomes_for(cook_id, locale)
     return [
@@ -146,13 +150,17 @@ async def list_for(cook_id: int, locale: str = "en-GB") -> list[RecipeSummaryVie
 
 
 async def present(
-    recipe_id: int, cook_id: int, locale: str, servings: Decimal | None = None
+    recipe_id: int,
+    cook_id: int,
+    locale: str | None = None,
+    servings: Decimal | None = None,
 ) -> PresentedRecipe | None:
     """A recipe at the requested yield, in this cook's units (UC-2.1, UC-2.2).
 
     `servings` is a magnitude in whatever the recipe itself yields: asking for 6 of a
     recipe that makes 12 biscuits halves it.
     """
+    locale = locale or await cook_access.locale_for(cook_id)
     recipe = await recipe_access.fetch(recipe_id, locale)
     if recipe is None or recipe.cook_id != cook_id:
         # Someone else's private recipe is absent, not forbidden: saying "forbidden"
@@ -266,7 +274,9 @@ async def export_for(cook_id: int, locale: str) -> ExchangeDocument:
     return exchange.to_document(recipes, locale)
 
 
-async def import_document(raw: dict[str, Any], cook_id: int, locale: str) -> ImportResult:
+async def import_document(
+    raw: dict[str, Any], cook_id: int, locale: str | None = None
+) -> ImportResult:
     """Read a document into this instance (UC-1.2).
 
     Slugs are resolved against the local registry and whatever is missing is created, so a
@@ -289,6 +299,7 @@ async def import_document(raw: dict[str, Any], cook_id: int, locale: str) -> Imp
     yet; the validation above is what keeps the realistic failures — a bad document — from
     ever reaching that point.
     """
+    locale = locale or await cook_access.locale_for(cook_id)
     document = exchange.from_document(raw)
 
     known = await registry.slugs_present([entry.slug for entry in document.ingredients])
@@ -418,7 +429,7 @@ async def _reading_locale(content: ReadableContent, cook_id: int, fallback: str)
     return fallback
 
 
-async def import_from_url(url: str, cook_id: int, locale: str) -> ImportedRecipe:
+async def import_from_url(url: str, cook_id: int, locale: str | None = None) -> ImportedRecipe:
     """Read a recipe off a page and store it (UC-1.3) — the founding use case.
 
     The sequence, and only the sequence: fetch, interpret, resolve, store. Each of those
@@ -428,12 +439,14 @@ async def import_from_url(url: str, cook_id: int, locale: str) -> ImportedRecipe
     """
     content = await web.fetch_readable(url)
     read = await interpretation.read_page(content)
-    reading_locale = await _reading_locale(content, cook_id, locale)
+    resolve_in = await _reading_locale(
+        content, cook_id, locale or await cook_access.locale_for(cook_id)
+    )
 
     if read.yield_magnitude is None or read.yield_unit is None:
         raise YieldUnknown(f"{content.url} does not say how much this makes")
 
-    resolved, added = await _resolve(read.lines, reading_locale)
+    resolved, added = await _resolve(read.lines, resolve_in)
     draft = RecipeDraft(
         title=read.title,
         summary=read.summary,

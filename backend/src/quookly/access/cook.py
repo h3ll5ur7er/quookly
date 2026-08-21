@@ -83,6 +83,21 @@ async def any_registered() -> bool:
     return bool(total)
 
 
+#: The language the registry is defined in, and the one every instance can answer in.
+DEFINING_LOCALE = "en-GB"
+
+
+async def locale_for(cook_id: int) -> str:
+    """The language this cook reads in — theirs if they have chosen, else English.
+
+    The fallback lives here for the same reason unit preferences merge their defaults
+    here: a caller wants an answer, and making every one of them reason about a cook who
+    has not chosen yet is how two of them come to disagree.
+    """
+    row = await fetch(cook_id)
+    return row.locale if row is not None and row.locale else DEFINING_LOCALE
+
+
 async def fetch(cook_id: int) -> Cook | None:
     async with session() as active:
         row = await active.get(CookRow, cook_id)

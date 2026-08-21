@@ -8,8 +8,6 @@ from quookly.routes.dependencies import CurrentCook
 
 router = APIRouter()
 
-DEFAULT_LOCALE = "en-GB"
-
 
 @router.get("/ingredients", response_model=list[IngredientView])
 async def search_ingredients(
@@ -17,4 +15,4 @@ async def search_ingredients(
     search: str = Query(min_length=1, max_length=100, description="Part of an ingredient name."),
 ) -> list[IngredientView]:
     """Find registry entries to point a recipe line, or a dietary constraint, at."""
-    return await ingredient_manager.search(search, DEFAULT_LOCALE)
+    return await ingredient_manager.search(search, cook.cook_id)

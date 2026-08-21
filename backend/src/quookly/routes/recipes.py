@@ -34,20 +34,24 @@ from quookly.routes.dependencies import CurrentCook
 
 router = APIRouter()
 
-DEFAULT_LOCALE = "en-GB"
+#: The language a document is exported in. Deliberately fixed rather than the cook's own:
+#: the format carries one locale's names, and English is the language every registry is
+#: defined in — so an English export is the one that resolves on any instance. Exporting a
+#: cook's own language would make a document readable on fewer instances rather than more.
+EXPORT_LOCALE = "en-GB"
 
 
 @router.get("/recipes", response_model=list[RecipeSummaryView])
 async def list_recipes(cook: CurrentCook) -> list[RecipeSummaryView]:
     """The cook's own recipes."""
-    return await recipe_manager.list_for(cook.cook_id, DEFAULT_LOCALE)
+    return await recipe_manager.list_for(cook.cook_id)
 
 
 @router.post("/recipes", response_model=PresentedRecipe, status_code=status.HTTP_201_CREATED)
 async def create_recipe(submitted: RecipeInput, cook: CurrentCook) -> PresentedRecipe:
     """Author a recipe."""
     try:
-        return await recipe_manager.author(submitted, cook.cook_id, DEFAULT_LOCALE)
+        return await recipe_manager.author(submitted, cook.cook_id)
     except UnknownUnit as unknown:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -71,14 +75,14 @@ class ImportOutcome(BaseModel):
 @router.get("/recipes/export", response_model=ExchangeDocument)
 async def export_recipes(cook: CurrentCook) -> ExchangeDocument:
     """Everything this cook owns, in the portable format (FR-11)."""
-    return await recipe_manager.export_for(cook.cook_id, DEFAULT_LOCALE)
+    return await recipe_manager.export_for(cook.cook_id, EXPORT_LOCALE)
 
 
 @router.post("/recipes/import", response_model=ImportOutcome, status_code=status.HTTP_201_CREATED)
 async def import_recipes(document: dict[str, Any], cook: CurrentCook) -> ImportOutcome:
     """Read an exported document into this instance (UC-1.2)."""
     try:
-        result = await recipe_manager.import_document(document, cook.cook_id, DEFAULT_LOCALE)
+        result = await recipe_manager.import_document(document, cook.cook_id)
     except UnsupportedDocument as unreadable:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -100,7 +104,7 @@ async def get_recipe(
     ),
 ) -> PresentedRecipe:
     """A recipe, scaled and in the cook's preferred units."""
-    presented = await recipe_manager.present(recipe_id, cook.cook_id, DEFAULT_LOCALE, servings)
+    presented = await recipe_manager.present(recipe_id, cook.cook_id, servings=servings)
     if presented is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such recipe.")
     return presented
@@ -117,7 +121,7 @@ async def import_recipe_from_url(submitted: UrlImport, cook: CurrentCook) -> Imp
     your browser" is an interface.
     """
     try:
-        return await recipe_manager.import_from_url(submitted.url, cook.cook_id, DEFAULT_LOCALE)
+        return await recipe_manager.import_from_url(submitted.url, cook.cook_id)
     except AddressNotAllowed as refused:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(refused)

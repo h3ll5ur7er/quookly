@@ -193,8 +193,8 @@ and [V17](03-volatility-analysis.md#v17-content-translation).
 Most of it already exists. Quantities, durations and temperatures are language-neutral by
 construction, and ingredient names resolve per locale through the registry. What is missing:
 
-- Serve recipes in the **cook's** language rather than a hardcoded `en-GB` — the plumbing is built,
-  the routes simply do not pass it yet. This is small and worth doing on its own.
+- ~~Serve recipes in the **cook's** language rather than a hardcoded `en-GB`~~ **Built** — the
+  plumbing had been there since Phase 1; the routes simply never asked for anything but English
 - Record the language a recipe is written in
 - `TranslationEngine` — a capability engine over `ModelAccess`, the same shape as
   `InterpretationEngine`
