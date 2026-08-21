@@ -297,6 +297,9 @@
     "timerPause": "Pause",
     "timerStart": "Start",
     "timerReset": "Zurücksetzen",
-    "mealCookNow": "Das jetzt kochen"
+    "mealCookNow": "Das jetzt kochen",
+    "cookAdrift": "Keine Verbindung. Machen Sie weiter – Ihr Stand wird nachgetragen.",
+    "cookAdriftEmpty": "Keine Verbindung, und dieses Essen ist auf diesem Gerät nicht geöffnet. Es ist wieder da, sobald Sie es sind.",
+    "timerNeedsConnection": "Timer brauchen die Verbindung. Ein laufender zählt weiter."
   }
 }

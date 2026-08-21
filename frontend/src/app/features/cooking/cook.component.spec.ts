@@ -266,4 +266,91 @@ describe('CookComponent', () => {
 
     expect(text()).toContain('That meal is not one you are cooking');
   });
+
+  describe('when the connection drops', () => {
+    /* The kitchen is often the furthest room from the router, and a screen that goes blank
+       mid-recipe is the failure NFR-13 names. */
+
+    function unreachable(request: import('@angular/common/http/testing').TestRequest): void {
+      // Status 0 is "the request never arrived", which is what a browser reports with no
+      // network. Being told no is a different thing and is handled differently.
+      request.error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
+    }
+
+    it('keeps showing the meal it last had', async () => {
+      await open();
+      fixture.nativeElement.querySelector('.cook__move--go').click();
+      unreachable(backend.expectOne('/api/v1/cooking/sessions/7/step'));
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(text()).toContain('Shortbread');
+      expect(text()).not.toContain('That meal is not one you are cooking');
+    });
+
+    it('says so, and says it is not a problem', async () => {
+      await open();
+      fixture.nativeElement.querySelector('.cook__move--go').click();
+      unreachable(backend.expectOne('/api/v1/cooking/sessions/7/step'));
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(text()).toContain('No connection');
+      expect(text()).toContain('Keep going');
+    });
+
+    it('turns the page anyway', async () => {
+      // A cook standing at step one is at step one whether or not the router agrees.
+      await open();
+      fixture.nativeElement.querySelector('.cook__move--go').click();
+      unreachable(backend.expectOne('/api/v1/cooking/sessions/7/step'));
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.cook__instruction').textContent).toContain(
+        'Cream the butter.',
+      );
+    });
+
+    it('will not start a timer it cannot have stamped', async () => {
+      // The instant is the server's, and one stamped on the way back would quietly lose
+      // however long the connection was down (ADR-013).
+      await open(session({ at_step: 0 }));
+      fixture.nativeElement.querySelector('.timer__button--primary').click();
+      unreachable(backend.expectOne('/api/v1/cooking/sessions/7/timers/0/started'));
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.timer__button--primary').disabled).toBe(true);
+      expect(text()).toContain('Timers need the connection');
+    });
+
+    it('sends where the cook got to once the network is back', async () => {
+      await open();
+      fixture.nativeElement.querySelector('.cook__move--go').click();
+      unreachable(backend.expectOne('/api/v1/cooking/sessions/7/step'));
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      window.dispatchEvent(new Event('online'));
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const caught = backend.expectOne('/api/v1/cooking/sessions/7/step');
+      expect(caught.request.body).toEqual({ position: 0 });
+      caught.flush(session({ at_step: 0 }));
+    });
+
+    it('is told apart from a meal that is not yours', async () => {
+      await open();
+      fixture.nativeElement.querySelector('.cook__move--go').click();
+      backend
+        .expectOne('/api/v1/cooking/sessions/7/step')
+        .flush({ detail: 'No such meal to cook.' }, { status: 404, statusText: 'Not Found' });
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(text()).toContain('That meal is not one you are cooking');
+    });
+  });
 });

@@ -297,6 +297,9 @@
     "timerPause": "Pause",
     "timerStart": "Démarrer",
     "timerReset": "Réinitialiser",
-    "mealCookNow": "Cuisiner ça maintenant"
+    "mealCookNow": "Cuisiner ça maintenant",
+    "cookAdrift": "Pas de connexion. Continuez – votre position sera rattrapée.",
+    "cookAdriftEmpty": "Pas de connexion, et ce repas n’est pas ouvert sur cet appareil. Il sera là à votre retour.",
+    "timerNeedsConnection": "Les minuteurs ont besoin de la connexion. Celui qui tourne continue."
   }
 }

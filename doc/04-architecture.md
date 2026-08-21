@@ -610,7 +610,15 @@ What that changes in practice:
 - **Installable.** A service worker and manifest make Quookly a PWA
   ([ADR-015](07-decisions.md#adr-015-mobile-first-installable-and-offline-where-it-matters)), which
   is what delivers NFR-13: the active recipe, the running cooking session, and the shopping list
-  keep working when the signal does not.
+  keep working when the signal does not. The worker caches the application shell, its fonts and its
+  translation catalogues — a cook offline in de-CH should not find the app has quietly reverted to
+  English.
+
+**Data is not cached by the worker.** It caches by URL, and a URL here answers differently depending
+on who is asking; two people sharing a tablet would see each other's meals. What has to survive a
+dropped connection is kept explicitly instead, keyed and cleared whenever anybody signs in or out.
+**Built** for the running cooking session; the recipe page and the shopping list follow the same
+shape when their turn comes.
 
 ### Cooking mode is a distinct presentation
 

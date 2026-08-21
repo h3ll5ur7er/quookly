@@ -301,6 +301,57 @@ test.describe('a timer', () => {
   });
 });
 
+test.describe('when the connection drops', () => {
+  /* The kitchen is often the furthest room from the router (NFR-13). What must not happen
+     is the screen going blank halfway through a recipe. */
+
+  test('the cook keeps turning the page', async ({ page, context }) => {
+    await cooking(page);
+    await page.getByRole('button', { name: 'Start cooking' }).click();
+    await expect(page.locator('.cook__instruction')).toContainText('Cream the butter');
+
+    await context.setOffline(true);
+    await page.getByRole('button', { name: 'Next' }).click();
+
+    await expect(page.locator('.cook__instruction')).toContainText('Work in the flour');
+    await expect(page.getByText('No connection')).toBeVisible();
+    await context.setOffline(false);
+  });
+
+  test('a timer says why it will not start rather than losing the time', async ({
+    page,
+    context,
+  }) => {
+    /* The instant is the server's, and one stamped on the way back would quietly lose
+       however long the connection was down (ADR-013). */
+    await cooking(page);
+    await page.getByRole('button', { name: 'Start cooking' }).click();
+
+    await context.setOffline(true);
+    await page.getByRole('button', { name: 'Start', exact: true }).click();
+
+    await expect(page.getByText('Timers need the connection')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeDisabled();
+    await context.setOffline(false);
+  });
+
+  test('where the cook got to catches up when the network returns', async ({ page, context }) => {
+    await cooking(page);
+    await page.getByRole('button', { name: 'Start cooking' }).click();
+
+    await context.setOffline(true);
+    await page.getByRole('button', { name: 'Next' }).click();
+    await expect(page.locator('.cook__instruction')).toContainText('Work in the flour');
+
+    await context.setOffline(false);
+    await expect(page.getByText('No connection')).toHaveCount(0);
+
+    // Read back cold, as the tablet in the other room would.
+    await page.reload();
+    await expect(page.locator('.cook__instruction')).toContainText('Work in the flour');
+  });
+});
+
 test.describe('leaving and coming back', () => {
   test('walking away keeps the session where it was', async ({ page }) => {
     await cooking(page);

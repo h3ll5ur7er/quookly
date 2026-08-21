@@ -533,6 +533,26 @@ needed.
 ticking off shopping items, advancing steps — needing a reconciliation story. Confining offline to
 three surfaces keeps that bounded.
 
+**As built, for the cooking session.** The reconciliation story turned out to be smaller than
+feared, because of what these mutations *are*.
+
+*Where the cook is* is a position, not an increment. Held locally and re-sent when the network
+returns, last write wins — and last write wins is not a compromise here, it is the correct answer:
+the server does not need the steps in between, only where the cook ended up.
+
+*A timer* is the one thing that cannot be done offline, and it says so rather than pretending. Its
+whole design is that the server stamps the instant
+([ADR-013](#adr-013-cooking-sessions-are-server-side-state-timers-store-instants)); one stamped on
+the way back would quietly lose however long the connection was down, which is the failure that ADR
+exists to prevent. A timer already running keeps counting, because that is arithmetic on instants
+the device already has — and it is the common case, since the connection usually drops *after* the
+pan is on.
+
+*Reading* is served by keeping the last answer the server gave, keyed and cleared whenever anybody
+signs in or out — **not** by the service worker's data cache. That caches by URL, and a URL here
+answers differently depending on who is asking: two people sharing a tablet would see each other's
+meals.
+
 ---
 
 ## ADR-016 Ship seed content, marked and upgradable

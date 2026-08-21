@@ -9,15 +9,35 @@
   }
 
   <div class="timer__controls">
-    <button type="button" class="timer__button timer__button--primary" (click)="toggle()">
+    <button
+      type="button"
+      class="timer__button timer__button--primary"
+      [disabled]="stranded()"
+      (click)="toggle()"
+    >
       @if (running()) {
         <span i18n="@@timerPause">Pause</span>
       } @else {
         <span i18n="@@timerStart">Start</span>
       }
     </button>
-    <button type="button" class="timer__button" (click)="cleared.emit()" i18n="@@timerReset">
+    <button
+      type="button"
+      class="timer__button"
+      [disabled]="stranded()"
+      (click)="cleared.emit()"
+      i18n="@@timerReset"
+    >
       Reset
     </button>
   </div>
+
+  @if (stranded()) {
+    <!-- Said rather than left to a greyed-out button. A timer whose instant the server
+         cannot stamp would lose however long the connection was down, which is worse than
+         not starting one (ADR-013). -->
+    <p class="timer__stranded" i18n="@@timerNeedsConnection">
+      Timers need the connection. One already running keeps counting.
+    </p>
+  }
 </div>

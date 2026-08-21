@@ -16,6 +16,14 @@
       <h1 class="cook__title">{{ meal.title }}</h1>
     </header>
 
+    <!-- Not an error. The kitchen is often the furthest room from the router, and the
+         thing a cook needs to know is that they can carry on (NFR-13). -->
+    @if (adrift()) {
+      <p class="cook__adrift" role="status" i18n="@@cookAdrift">
+        No connection. Keep going — where you are will catch up.
+      </p>
+    }
+
     @if (meal.outcome) {
       <section class="cook__body cook__done">
         @if (meal.outcome === completed) {
@@ -81,6 +89,7 @@
           <app-timer
             [duration]="current.duration_seconds"
             [timer]="current.timer ?? null"
+            [stranded]="adrift()"
             (started)="startTimer(current)"
             (paused)="pauseTimer(current)"
             (cleared)="resetTimer(current)"
@@ -200,6 +209,14 @@
         </button>
       </footer>
     }
+  </main>
+} @else if (adrift()) {
+  <main class="cook cook--plain">
+    <p class="notice notice--info" role="status" i18n="@@cookAdriftEmpty">
+      No connection, and this meal is not one this device has open. It will be here when you are
+      back.
+    </p>
+    <a class="cook__leave" routerLink="/plans" i18n="@@cookBackToPlan">Back to the plan</a>
   </main>
 } @else {
   <main class="cook cook--plain">

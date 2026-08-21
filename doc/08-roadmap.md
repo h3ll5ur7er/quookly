@@ -182,13 +182,17 @@ a correct shopping list, and cooking a meal updates the pantry. **Met.**
 - ~~Cooking-mode UI: one step per screen, wake lock, thumb-reachable controls (NFR-12)~~ **Built.**
   The application's own navigation goes away with it: a section bar under a half-finished recipe is
   an invitation to leave in the middle of one
-- Offline tolerance for the active session (NFR-13)
+- ~~Offline tolerance for the active session (NFR-13)~~ **Built.** The meal is kept as the server
+  last described it, turning the page works whether or not the request lands, and the position is
+  sent again when the network returns. Timers are the exception and say so: their whole design is
+  that the server stamps the instant, and one stamped on the way back would lose however long the
+  connection was down
 
 **Done when:** a cook can start a session on a tablet, prep from the mise-en-place list, run a timer,
-lock the screen, pick the session up on their phone, finish, and see the pantry updated.
+lock the screen, pick the session up on their phone, finish, and see the pantry updated. **Met.**
 
-Requires Phase 4 for reservations, and Phase 7's Academy for in-step technique lookup (UC-9.5) —
-that last piece can land after the Academy without blocking the rest.
+Required Phase 4 for reservations. Phase 7's Academy still owes in-step technique lookup (UC-9.5),
+which lands after the Academy without blocking anything here.
 
 ## Phase 6 — Generation and discovery
 

@@ -55,6 +55,18 @@
   font-size: calc(var(--text-lg) * var(--density));
 }
 
+/* Under the title rather than over it: the meal is what the cook came for, and a banner
+   above the name of the dish would push the thing they are reading down the screen. */
+.cook__adrift {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border-inline-start: 4px solid var(--warning);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
 .cook__body {
   display: flex;
   flex-direction: column;

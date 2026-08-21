@@ -33,6 +33,10 @@ export class TimerComponent {
   readonly duration = input.required<number>();
   readonly timer = input<TimerView | null>(null);
 
+  /** Set when there is no connection. A timer the server cannot stamp is a timer that
+   *  would lose however long the network was down (ADR-013). */
+  readonly stranded = input(false);
+
   // Past tense, and not `start`/`pause`: an output named for a DOM event shadows it.
   readonly started = output<void>();
   readonly paused = output<void>();

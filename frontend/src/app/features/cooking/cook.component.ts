@@ -1,8 +1,11 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CookingService, GuidedStepView, SessionOutcome, SessionView, Sizing } from '@api';
 import { Observable } from 'rxjs';
 import { VerdictComponent } from '../../core/dietary/verdict.component';
+import { kept, keep } from '../../core/offline/kept';
+import { online, whenReconnected } from '../../core/offline/online';
 import { keepScreenAwake } from '../../core/screen/wake-lock';
 import { attentionNote } from '../../core/time/labels';
 import { TimerComponent } from './timer.component';
@@ -14,9 +17,15 @@ import { TimerComponent } from './timer.component';
  * wet, glancing from a metre away — so the density rises, one step fills the screen, and
  * the controls sit low where a thumb reaches.
  *
- * Nothing here is remembered locally. Every move is written through to the server as it
- * happens, which is what makes a dropped connection or a dead battery cost nothing but the
- * walk back to the app (FR-13, UC-9.7).
+ * Every move is written through to the server as it happens, which is what makes a dead
+ * battery or a switched device cost nothing but the walk back to the app (FR-13, UC-9.7).
+ *
+ * A kitchen is often the furthest room from the router, so the screen has to survive losing
+ * the connection mid-recipe (NFR-13). The meal is kept locally as the server last described
+ * it, moving between steps happens whether or not the request lands, and the position is
+ * sent again when the network comes back. Timers are the exception and say so: their whole
+ * design is that the server stamps the instant (ADR-013), and one stamped on the way back
+ * would quietly lose however long the connection was down.
  */
 @Component({
   selector: 'app-cook',
@@ -42,6 +51,15 @@ export class CookComponent {
    * moves once and concludes the button is broken.
    */
   protected readonly busy = signal(false);
+
+  /** Whether the browser thinks it can reach anything. Used to explain and to retry. */
+  protected readonly online = online();
+
+  /** True once a request has failed for want of a connection rather than an answer. */
+  protected readonly adrift = signal(false);
+
+  /** Where the cook has said they are, still waiting to be told to the server. */
+  private readonly unsent = signal<{ position: number | null } | null>(null);
 
   /** What the cook has already got ready. Ticks live here and nowhere else: a prep list is
    *  a glance at what is left, not a fact about the meal worth a table of its own. */
@@ -75,7 +93,28 @@ export class CookComponent {
 
   constructor() {
     keepScreenAwake();
+
+    // What the server last said, shown immediately. The request below replaces it; until
+    // it answers — or if it never does — this is the meal.
+    const remembered = kept<SessionView>(this.key);
+    if (remembered !== null) {
+      this.session.set(remembered);
+    }
     this.load(this.cooking.getSession(this.sessionId));
+
+    // Back on the network: say where the cook actually is. Last write wins, which is
+    // exactly right for a position — the server does not need the steps in between.
+    whenReconnected(() => {
+      const owed = this.unsent();
+      if (owed !== null) {
+        this.unsent.set(null);
+        this.load(this.cooking.moveToStep(this.sessionId, owed));
+      }
+    });
+  }
+
+  private get key(): string {
+    return `cooking.${this.sessionId}`;
   }
 
   protected isDone(prep: string): boolean {
@@ -108,6 +147,11 @@ export class CookComponent {
   }
 
   protected moveTo(position: number | null): void {
+    // Moved here first, and told to the server after. A cook standing at step four is at
+    // step four whether or not the router in the hall agrees, and a screen that refused to
+    // turn the page until it did would be useless in the room it exists for.
+    this.session.update((meal) => (meal === null ? meal : { ...meal, at_step: position }));
+    this.unsent.set({ position });
     this.load(this.cooking.moveToStep(this.sessionId, { position }));
   }
 
@@ -140,13 +184,25 @@ export class CookComponent {
       next: (session) => {
         this.session.set(session);
         this.missing.set(false);
+        this.adrift.set(false);
+        this.unsent.set(null);
         this.busy.set(false);
+        keep(this.key, session);
       },
-      // Another cook's session, or one that is not there. Absent rather than forbidden,
-      // for the same reason the API says so.
-      error: () => {
-        this.missing.set(true);
+      error: (failure: HttpErrorResponse) => {
         this.busy.set(false);
+        // "The request never arrived" — no signal, no server. Status 0 is the usual
+        // shape; a service worker that could not reach the network answers 504 instead,
+        // and a browser that already knows it is offline settles the rest. All of them
+        // are a different thing from being told no, and telling a cook mid-recipe that
+        // their meal does not exist because the wifi dropped would be a lie.
+        if (failure.status === 0 || failure.status === 504 || !this.online()) {
+          this.adrift.set(true);
+          return;
+        }
+        // Another cook's session, or one that is not there. Absent rather than forbidden,
+        // for the same reason the API says so.
+        this.missing.set(true);
       },
     });
   }

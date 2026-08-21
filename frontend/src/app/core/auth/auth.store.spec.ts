@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import type { Authenticated } from '@api';
+import { keep, kept } from '../offline/kept';
 import { AuthStore, SESSION_STORAGE_KEY } from './auth.store';
 
 const SESSION: Authenticated = {
@@ -68,6 +69,26 @@ describe('AuthStore', () => {
       auth.signIn(SESSION);
       auth.signOut();
       expect(localStorage.getItem(SESSION_STORAGE_KEY)).toBeNull();
+    });
+
+    it('does not leave what was kept for a lost connection either', () => {
+      // A cooking session held for offline reading is somebody's dinner, and the next
+      // person at this device is not necessarily the last one.
+      const auth = store();
+      auth.signIn(SESSION);
+      keep('cooking.7', { title: 'Shortbread' });
+
+      auth.signOut();
+
+      expect(kept('cooking.7')).toBeNull();
+    });
+  });
+
+  describe('signing in', () => {
+    it('clears what the last person left behind', () => {
+      keep('cooking.7', { title: 'Shortbread' });
+      store().signIn(SESSION);
+      expect(kept('cooking.7')).toBeNull();
     });
   });
 

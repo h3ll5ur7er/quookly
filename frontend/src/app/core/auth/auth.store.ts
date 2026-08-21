@@ -1,5 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
 import type { Authenticated, Cook } from '@api';
+import { forgetKept } from '../offline/kept';
 
 export const SESSION_STORAGE_KEY = 'quookly.session';
 
@@ -42,11 +43,15 @@ export class AuthStore {
   readonly isAdmin = computed(() => this.session()?.cook.is_admin === true);
 
   signIn(authenticated: Authenticated): void {
+    // Whatever the last person at this device was in the middle of is not this person's
+    // business, and a cooking session kept for offline reading is somebody's dinner.
+    forgetKept();
     this.session.set(authenticated);
     this.write(JSON.stringify(authenticated));
   }
 
   signOut(): void {
+    forgetKept();
     this.session.set(null);
     this.write(null);
   }
