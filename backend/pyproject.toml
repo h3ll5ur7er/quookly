@@ -142,12 +142,21 @@ allow_indirect_imports = true
 # ADR-006 and ADR-008: rule engines are pure functions, so their inputs arrive as
 # arguments and they can be tested as a table of cases.
 #
-# Every engine is a rule engine today. When a capability engine arrives — one that
-# mediates the model or the search index — this contract will break the build until it is
-# rewritten to name the rule engines explicitly. That is deliberate: an engine acquiring
-# I/O should be a decision someone makes, not something that happens.
+# This contract used to name `quookly.engines` wholesale, with a note that the first
+# capability engine would break the build until it was rewritten. `InterpretationEngine`
+# is that engine, and it did.
+#
+# The rule engines are now listed one by one. That is the point: adding an engine does not
+# quietly grant it I/O, and adding I/O to one of these still breaks the build. A new
+# capability engine — one mediating the search index, say — is added by *leaving it out*
+# of this list, which is a line in a review rather than a silence.
 [[tool.importlinter.contracts]]
-name = "Engines do not reach resource access"
+name = "Rule engines do not reach resource access"
 type = "forbidden"
-source_modules = ["quookly.engines"]
+source_modules = [
+    "quookly.engines.exchange",
+    "quookly.engines.measure",
+    "quookly.engines.onboarding",
+    "quookly.engines.suitability",
+]
 forbidden_modules = ["quookly.access"]

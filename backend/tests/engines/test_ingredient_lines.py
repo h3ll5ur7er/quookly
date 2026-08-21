@@ -150,6 +150,53 @@ class TestVagueAmounts:
         assert line.magnitude is None
 
 
+class TestPurposesAndAdjectives:
+    """Shapes a model produces when it is reading prose rather than copying a list."""
+
+    @pytest.mark.parametrize(
+        ("written", "ingredient", "preparation"),
+        [
+            ("a good pinch of salt", "salt", "a good pinch"),
+            ("a generous knob of butter", "butter", "a generous knob"),
+        ],
+    )
+    def test_an_adjective_belongs_to_the_hand_waving(
+        self, written: str, ingredient: str, preparation: str
+    ) -> None:
+        line = read(written)
+        assert line.ingredient == ingredient
+        assert line.preparation == preparation
+
+    @pytest.mark.parametrize(
+        ("written", "ingredient", "preparation"),
+        [
+            ("butter for the pan", "butter", "for the pan"),
+            ("olive oil for frying", "olive oil", "for frying"),
+            ("icing sugar to dust", "icing sugar to dust", None),
+            ("flour for dusting", "flour", "for dusting"),
+            ("a knob of butter for the pan", "butter", "a knob, for the pan"),
+        ],
+    )
+    def test_a_trailing_purpose_leaves_the_ingredient_resolvable(
+        self, written: str, ingredient: str, preparation: str | None
+    ) -> None:
+        """ "butter for the pan" will never match a registry entry, and "butter" will."""
+        line = read(written)
+        assert line.ingredient == ingredient
+        assert line.preparation == preparation
+
+    def test_an_ordinary_name_is_not_carved_up(self) -> None:
+        """ "Cream of tartar" is an ingredient, not a cream with a purpose."""
+        assert read("2 tsp cream of tartar").ingredient == "cream of tartar"
+
+    @pytest.mark.parametrize(
+        "written",
+        ["1 tbsp caster sugar — optional", "1 tbsp caster sugar (optional)"],
+    )
+    def test_optional_is_recognised_however_it_is_marked(self, written: str) -> None:
+        assert read(written).optional is True
+
+
 class TestWhatItWillNotGuess:
     def test_a_line_with_no_number_gets_no_number(self) -> None:
         line = read("unsalted butter")

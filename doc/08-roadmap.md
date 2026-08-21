@@ -108,7 +108,7 @@ claims; having the structural judge already in place removes the temptation and 
 - ~~`WebContentAccess`: fetch and extract readable content~~ **Built** — prose plus embedded schema.org metadata ([ADR-028](07-decisions.md#adr-028-structured-metadata-is-fetched-not-preferred)), refusing the instance's own network ([ADR-027](07-decisions.md#adr-027-an-instance-will-not-fetch-its-own-network))
 - ~~Recipe lines that carry no quantity — "salt, to taste"~~ **Built** — surfaced by Phase 3: the
   domain could not store a line real pages are full of, see [the domain model](06-domain-model.md#a-line-without-a-quantity)
-- `InterpretationEngine`: content to canonical recipe (V2)
+- ~~`InterpretationEngine`: content to canonical recipe (V2)~~ **Built** — metadata first, a model over the prose otherwise; verified against live pages and a local Qwen3.6
 - URL import (UC-1.3), validation and failure reporting (FR-9)
 - Provider configuration in settings and via CLI (UC-8.2)
 

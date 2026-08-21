@@ -12,6 +12,8 @@ from collections.abc import Iterable, Iterator
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from quookly.access import model
+from quookly.contracts.errors import NotARecipe
 from quookly.contracts.interpretation import (
     InterpretedLine,
     InterpretedRecipe,
@@ -19,6 +21,7 @@ from quookly.contracts.interpretation import (
     Source,
 )
 from quookly.contracts.measure import Unit
+from quookly.contracts.web import ReadableContent
 
 # What a unit is called in the wild, mapped to what Quookly means by it.
 #
@@ -66,9 +69,35 @@ _UNITS: dict[str, Unit] = {
 # "a knob of butter" — and the honest reading keeps the words and refuses a number.
 _VAGUE = ("knob", "pinch", "handful", "splash", "dash", "drizzle", "sprinkle", "glug")
 
+# "a good pinch of salt", "a generous knob of butter" — the adjective is part of the
+# hand-waving, not part of the ingredient.
 _VAGUE_PATTERN = re.compile(
-    rf"^(?P<amount>(?:a|an)\s+(?:{'|'.join(_VAGUE)}))\s+of\s+(?P<name>.+)$",
+    rf"^(?P<amount>(?:a|an)\s+(?:\w+\s+)?(?:{'|'.join(_VAGUE)}))\s+of\s+(?P<name>.+)$",
     re.IGNORECASE,
+)
+
+# A trailing purpose. In an ingredient list "for frying" and "to serve" say what the
+# ingredient is *for*, and belong with the note rather than in the ingredient's name —
+# "butter for the pan" will never resolve against a registry, and "butter" will.
+_PURPOSE = re.compile(
+    r"^(?P<name>.+?)[,;]?\s+(?P<purpose>(?:for|to)\s+\w+(?:\s+\w+)?)$", re.IGNORECASE
+)
+_PURPOSE_WORDS = (
+    "frying",
+    "greasing",
+    "dusting",
+    "serving",
+    "garnish",
+    "drizzling",
+    "brushing",
+    "sprinkling",
+    "taste",
+    "serve",
+    "finish",
+    "decorate",
+    "top",
+    "the pan",
+    "the tin",
 )
 
 # A leading amount: digits, a fraction, or both, optionally the low end of a range.
@@ -86,7 +115,9 @@ _UNIT_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-_OPTIONAL = re.compile(r"[(\[]\s*optional\s*[)\]]|,\s*optional\s*$", re.IGNORECASE)
+_OPTIONAL = re.compile(
+    r"[(\[]\s*optional\s*[)\]]|[,–—-]\s*optional\s*$|\s+\(optional\)", re.IGNORECASE
+)
 
 _WHITESPACE = re.compile(r"\s+")
 
@@ -155,9 +186,11 @@ def read_ingredient(written: str) -> InterpretedLine | None:
 
     vague = _VAGUE_PATTERN.match(body)
     if vague:
+        name, purpose = _split_note(vague.group("name"))
+        amount = vague.group("amount").strip()
         return InterpretedLine(
-            ingredient=_tidy(vague.group("name")),
-            preparation=vague.group("amount").strip(),
+            ingredient=_tidy(name),
+            preparation=f"{amount}, {purpose}" if purpose else amount,
             optional=optional,
             written=original,
         )
@@ -226,12 +259,18 @@ def _split_note(body: str) -> tuple[str, str | None]:
     """Separate a trailing note from the ingredient.
 
     "225g unsalted butter, softened" is butter, softened — the note describes this use of
-    the ingredient rather than the ingredient itself.
+    the ingredient rather than the ingredient itself. A trailing purpose counts too, with
+    or without the comma: "butter for the pan" is butter, and it is the only one of the
+    two that will ever resolve against a registry.
     """
     head, separator, tail = body.partition(",")
-    if not separator or not tail.strip():
-        return body, None
-    return head.strip(), _WHITESPACE.sub(" ", tail).strip()
+    if separator and tail.strip():
+        return head.strip(), _WHITESPACE.sub(" ", tail).strip()
+
+    purpose = _PURPOSE.match(body.strip())
+    if purpose and purpose.group("purpose").lower().split(maxsplit=1)[-1] in _PURPOSE_WORDS:
+        return purpose.group("name").strip(), purpose.group("purpose").strip()
+    return body, None
 
 
 # --- schema.org metadata ------------------------------------------------------------
@@ -402,3 +441,111 @@ def read_metadata(blocks: Iterable[dict[str, Any]]) -> InterpretedRecipe | None:
             steps=steps,
         )
     return None
+
+
+# --- reading the prose ---------------------------------------------------------------
+#
+# The blog case: a thousand words of childhood memory around forty of recipe. This is the
+# half that mediates a model, which makes this a *capability* engine rather than a rule
+# engine. It is allowed to reach resource access; the import-linter contract names the
+# rule engines explicitly so that stays a decision rather than a drift.
+
+#: A page's text is long and a context window is not. An answer cut short by the token
+#: limit is refused (ADR-026), so sending less beats being refused for sending too much.
+#: Generous for a recipe page: the longest blog preamble is a few thousand words.
+MOST_TEXT_SENT = 24_000
+
+_INSTRUCTIONS = """You extract recipes from web pages.
+
+Return only what the page actually says. Do not invent quantities, ingredients or steps,
+and do not complete a recipe that is incomplete — a missing amount is better than an
+invented one, because a cook cannot see that an invented one is wrong.
+
+Write each ingredient the way a recipe lists it, not the way the article says it:
+the amount, then the unit, then the ingredient, then any preparation after a comma.
+"You will want 225g of plain flour, sifted if you can be bothered" becomes
+"225g plain flour, sifted". Mark an ingredient the page calls optional by ending the
+line with "(optional)". Where the page gives no amount, give none.
+
+For recipe_yield, copy how the page says it — "Makes 8", "Serves 4" — or leave it empty if
+it does not say. Leave narrative, advertising, comments and navigation out."""
+
+_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "title": {"type": "string"},
+        "summary": {"type": "string"},
+        "recipe_yield": {"type": "string"},
+        "ingredients": {"type": "array", "items": {"type": "string"}},
+        "steps": {"type": "array", "items": {"type": "string"}},
+    },
+    # `recipe_yield` is required so the model has to answer rather than omit the field.
+    # An empty string means the page does not say, which is a different thing from not
+    # having looked — and a recipe with no yield cannot be scaled to a household.
+    "required": ["title", "recipe_yield", "ingredients", "steps"],
+    "additionalProperties": False,
+}
+
+
+async def read_prose(content: ReadableContent) -> InterpretedRecipe:
+    """Ask a model to find the recipe in a page's text.
+
+    The model decides what is a recipe; the reader decides what a quantity means. It is
+    asked for ingredient lines *as written*, and the same tested reader turns them into
+    quantities — so there is one implementation of "what does 225g mean" rather than two
+    that drift apart. It is also the easier question to ask: telling recipe from reminiscence
+    is what a model is good at, and arithmetic is not.
+    """
+    text = content.text.strip()
+    if not text:
+        # Asking a model to read nothing produces an invented recipe, which is the one
+        # outcome worse than an error.
+        raise NotARecipe(f"there is nothing to read at {content.url}")
+
+    answer, _ = await model.complete_structured(
+        f"Read this page and extract the recipe.\n\n{text[:MOST_TEXT_SENT]}",
+        _SCHEMA,
+        system=_INSTRUCTIONS,
+    )
+
+    title = _tidy_prose(str(answer.get("title") or ""))
+    written_lines = answer.get("ingredients") or []
+    if not title or not isinstance(written_lines, list) or not written_lines:
+        raise NotARecipe(f"no recipe was found at {content.url}")
+
+    lines = [
+        line
+        for line in (read_ingredient(str(written)) for written in written_lines)
+        if line is not None
+    ]
+    if not lines:
+        raise NotARecipe(f"no recipe was found at {content.url}")
+
+    magnitude, unit = read_yield(answer.get("recipe_yield"))
+    return InterpretedRecipe(
+        title=title,
+        source=Source.MODEL,
+        summary=_tidy_prose(str(answer.get("summary") or "")) or None,
+        yield_magnitude=magnitude,
+        yield_unit=unit,
+        lines=lines,
+        steps=_steps_from(answer.get("steps")),
+    )
+
+
+async def read_page(content: ReadableContent) -> InterpretedRecipe:
+    """Read a fetched page, by whichever route it will give up a recipe (UC-1.3).
+
+    Metadata first, always. It is better and it is free: the ingredient list is already a
+    list, the steps are already in order, and nobody had to guess which paragraph was
+    preamble. Spending a model round trip to get a worse answer would be a strange
+    tradeoff (ADR-028).
+
+    An instance with no model configured is not a broken instance. It cannot read a blog,
+    and it can still import from every site that publishes its recipes properly — which,
+    checked against live pages, is most of the large ones.
+    """
+    from_metadata = read_metadata(content.structured)
+    if from_metadata is not None:
+        return from_metadata
+    return await read_prose(content)

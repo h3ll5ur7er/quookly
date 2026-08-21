@@ -32,6 +32,22 @@ def lint_imports() -> subprocess.CompletedProcess[str]:
 
 
 @contextmanager
+def violating_line(relative_path: str, source: str) -> Iterator[None]:
+    """Append a line to a module that already exists, then put it back.
+
+    Needed where the contract names specific modules: planting a *new* module would not
+    be covered by it, and the test would pass without the guard ever firing.
+    """
+    path = PACKAGE_ROOT / relative_path
+    original = path.read_text()
+    path.write_text(original + source)
+    try:
+        yield
+    finally:
+        path.write_text(original)
+
+
+@contextmanager
 def violating_module(relative_path: str, source: str) -> Iterator[None]:
     """Place a module inside the package for the duration of the test, then remove it."""
     path = PACKAGE_ROOT / relative_path
@@ -110,14 +126,23 @@ class TestArchitectureContracts:
     def test_a_rule_engine_may_not_reach_resource_access(self) -> None:
         """Rule engines take their inputs as arguments; that is what makes them testable.
 
-        This is the contract ADR-008 deferred until there was a rule engine to name.
+        The probe goes into a real rule engine rather than a new module, because the
+        contract now names the rule engines one at a time — a fresh module would not be
+        covered by it, and a test that passes by not being watched proves nothing.
         """
-        with violating_module(
-            "engines/_violation_probe.py",
-            "from quookly import access\n\n__all__ = ['access']\n",
+        with violating_line(
+            "engines/measure.py", "\nfrom quookly import access as _probe  # noqa: F401\n"
         ):
             result = lint_imports()
-        assert_rejected(result, "an engine importing resource access")
+        assert_rejected(result, "a rule engine importing resource access")
+
+    def test_a_capability_engine_may(self) -> None:
+        """`InterpretationEngine` mediates a model, so it reaches resource access by
+        design (ADR-003). It is absent from the contract deliberately, and this asserts
+        that the absence is the reason rather than an oversight in the rule itself."""
+        source = (PACKAGE_ROOT / "engines" / "interpretation.py").read_text()
+        assert "from quookly.access import" in source
+        assert lint_imports().returncode == 0
 
     def test_a_client_may_not_reach_resource_access(self) -> None:
         """A route that reads the database itself has no manager to hold the use case.

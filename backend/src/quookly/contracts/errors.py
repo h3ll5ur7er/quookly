@@ -127,3 +127,11 @@ class ContentUnreadable(QuooklyError):
     reading it is itself the problem. Reported rather than passed on: handing an empty
     page to a model produces an invented recipe.
     """
+
+
+class NotARecipe(QuooklyError):
+    """The page was read and there is no recipe in it.
+
+    Reported rather than half-answered. A recipe with no ingredients, or no name, looks
+    complete on a screen and is not — which is the failure FR-9 exists to prevent.
+    """

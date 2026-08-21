@@ -186,6 +186,14 @@ The last rule is what keeps utilities usable everywhere: the moment `Security` c
 it stops being a utility and becomes a layered service with a dependency cycle waiting to happen.
 Where a utility genuinely needs data, it receives it as an argument.
 
+`InterpretationEngine` is the first **capability engine**: it mediates one external
+capability — the model — and so reaches resource access by design (ADR-003). The
+import-linter contract that used to name `quookly.engines` wholesale now lists the *rule*
+engines one at a time. That break was predicted in the contract's own comment and happened
+exactly when the first capability engine arrived. Listing them individually is the point:
+adding an engine does not quietly grant it I/O, and a new capability engine is added by
+being *left out* of the list, which is a line in a review rather than a silence.
+
 The "never skip a layer downward" rules need contracts of their own. `import-linter`'s
 layers contract forbids a lower layer importing a higher one, but permits a layer to reach
 past the one below it — so *Client must not call Resource Access* and *Engine must not call
@@ -447,7 +455,7 @@ backend/src/quookly/
 ├── engines/
 │   ├── measure.py          # units, conversion, scaling (Built)
 │   ├── exchange.py         # the interchange format (Built)
-│   ├── interpretation.py   # content to canonical structure (Partial)
+│   ├── interpretation.py   # content to canonical structure (Built) — capability engine
 │   ├── onboarding.py       # what is still missing from setup (Built)
 │   └── suitability.py      # can these people eat this (Built)
 ├── access/
