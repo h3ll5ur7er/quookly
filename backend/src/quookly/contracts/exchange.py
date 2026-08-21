@@ -62,6 +62,9 @@ class ExchangeRecipe(BaseModel):
     summary: str | None = None
     yield_magnitude: Decimal
     yield_unit: str
+    # How many people it feeds, where the yield does not already say. Added in format 2;
+    # absent in every format 1 document, and absent is a real answer.
+    serves: Decimal | None = None
     provenance: Provenance
     lines: list[ExchangeLine] = Field(min_length=1)
     steps: list[ExchangeStep] = Field(min_length=1)

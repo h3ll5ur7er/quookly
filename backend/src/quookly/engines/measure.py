@@ -224,16 +224,19 @@ def required_yield(eaters: Sequence[Eater]) -> Quantity:
     return Quantity(sum((eater.appetite for eater in eaters), Decimal(0)), Unit.SERVING)
 
 
-def scaling_for(recipe_yield: Quantity, eaters: Sequence[Eater]) -> Decimal:
+def scaling_for(
+    recipe_yield: Quantity, eaters: Sequence[Eater], serves: Decimal | None = None
+) -> Decimal:
     """The factor that takes a recipe from what it makes to what this table needs.
 
-    Only a yield stated in servings can answer this. A recipe that makes twelve pancakes
-    says nothing about how many pancakes feed one person, so it raises `PortionsUnknown`
-    rather than inventing a figure — the same refusal, and for the same reason, as
-    converting mass to volume without a density.
+    Answered by a yield stated in servings, or by `serves` where the yield is stated in
+    something else: makes 12, serves 4. A recipe that says neither raises
+    `PortionsUnknown` rather than inventing a pieces-per-serving figure — the same
+    refusal, and for the same reason, as converting mass to volume without a density.
     """
-    if recipe_yield.unit is not Unit.SERVING:
+    portions = recipe_yield.magnitude if recipe_yield.unit is Unit.SERVING else serves
+    if portions is None:
         raise PortionsUnknown(f"a yield of {recipe_yield} does not say how much one person eats")
-    if recipe_yield.magnitude <= 0:
+    if portions <= 0:
         raise ValueError("a recipe that yields nothing cannot be scaled to a table")
-    return required_yield(eaters).magnitude / recipe_yield.magnitude
+    return required_yield(eaters).magnitude / portions

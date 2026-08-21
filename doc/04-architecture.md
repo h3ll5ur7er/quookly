@@ -308,7 +308,7 @@ what allows scoring rules to change without touching a single line in recipe or 
 | `SuitabilityEngine` | V5 | Evaluates a structured recipe against structured eater constraints. Safety-critical. |
 | `NutritionEngine` | V6 | Aggregates nutrient profiles; per-serving and per-recipe bases. |
 | `PlanningEngine` | V7 | Proposes assignments satisfying constraints and objectives. |
-| `ReplenishmentEngine` | V8 | Nets requirement against availability; aggregates and rounds a shopping list. |
+| `ReplenishmentEngine` | V8 | Nets requirement against availability; aggregates and rounds a shopping list. **Built** — netting and aggregation; rounding to purchasable pack sizes waits for somebody to want it. |
 | `RankingEngine` | V10 | Orders candidate recipes by relevance, pantry coverage, and expiry urgency. |
 | `ScoringEngine` | V11 | Applies point and badge rules to activity. |
 | `ExecutionEngine` | V15 | Turns a scaled recipe into an execution plan: mise-en-place groups, ordered steps, parallelism, timer specifications, technique links. |
@@ -471,6 +471,7 @@ backend/src/quookly/
 │   └── seed.py             # stocking a fresh instance (Built)
 ├── engines/
 │   ├── measure.py          # units, conversion, scaling (Built)
+│   ├── replenishment.py    # what to draw, what to buy (Built)
 │   ├── exchange.py         # the interchange format (Built)
 │   ├── interpretation.py   # content to canonical structure (Built) — capability engine
 │   ├── onboarding.py       # what is still missing from setup (Built)
@@ -507,6 +508,7 @@ backend/src/quookly/
 │   ├── suitability.py      # Outcome, Finding, Verdict (Built)
 │   ├── measure.py          # Dimension, Unit, Quantity (Built)
 │   ├── pantry.py           # StockItem, WasteRecord, Reservation (Built)
+│   ├── provisioning.py     # Requirement, Draw, Shortfall (Built)
 │   ├── plan.py             # MealPlan, PlanSlot, Meal (Built)
 │   ├── security.py         # Principal (Built)
 │   └── errors.py           # errors that cross layers (Built)

@@ -76,12 +76,14 @@
   text-align: end;
 }
 
-/* Flex, so the whitespace the template puts between the name and the comma is not
-   rendered. Spacing between the parts comes from the parts themselves. */
+/* Flex, so the whitespace the template puts between the parts is not rendered. The
+   spacing is set here instead: one word space, so "flour, sifted" reads as written
+   whether it wraps or not. */
 .lines__name {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
+  column-gap: 0.3em;
 }
 
 .lines__preparation {
@@ -89,7 +91,7 @@
 }
 
 .lines__optional {
-  margin-inline-start: var(--space-2);
+  margin-inline-start: var(--space-1);
   padding: 0 var(--space-2);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-full);
@@ -136,4 +138,15 @@
   color: var(--on-surface-muted);
   font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
+}
+
+/* Under the stepper rather than beside it: "makes 12" is the number the cook adjusts and
+   "serves 4" is what follows from it, and setting them side by side would invite a thumb
+   towards the one that is not a control. */
+.recipe__serves {
+  display: flex;
+  gap: 0.35em;
+  margin: var(--space-3) 0 0;
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
 }

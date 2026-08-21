@@ -36,6 +36,11 @@
               <span class="recipes__yield">
                 <span i18n="@@recipeMakes">Makes</span>
                 <span class="numeric">{{ recipe.yield_quantity.display }}</span>
+                @if (recipe.serves; as serves) {
+                  <span aria-hidden="true">·</span>
+                  <span i18n="@@recipeServes">Serves</span>
+                  <span class="numeric">{{ serves }}</span>
+                }
               </span>
             </a>
           </li>

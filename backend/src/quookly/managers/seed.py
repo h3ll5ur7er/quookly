@@ -15,7 +15,7 @@ from typing import Any
 from quookly.access import ingredient as registry
 from quookly.access import recipe as recipe_access
 from quookly.contracts.ingredient import Origin
-from quookly.contracts.recipe import IngredientLineDraft, Provenance, RecipeDraft, StepDraft
+from quookly.contracts.recipe import Provenance
 from quookly.engines import exchange
 from quookly.utilities.diagnostics import get_logger
 
@@ -115,29 +115,11 @@ async def install_starter_recipes(cook_id: int, locale: str = DEFAULT_SEED_LOCAL
 
     for recipe in document.recipes:
         await recipe_access.store(
-            RecipeDraft(
-                title=recipe.title,
-                summary=recipe.summary,
-                yield_quantity=recipe.yield_quantity,
+            exchange.to_draft(
+                recipe,
+                ingredient_ids=ids,
                 provenance=Provenance.AUTHORED,
                 origin=Origin.SEED,
-                lines=[
-                    IngredientLineDraft(
-                        ingredient_id=ids[line.slug],
-                        quantity=line.quantity,
-                        preparation=line.preparation,
-                        optional=line.optional,
-                    )
-                    for line in recipe.lines
-                ],
-                steps=[
-                    StepDraft(
-                        instruction=step.instruction,
-                        duration_seconds=step.duration_seconds,
-                        temperature_celsius=step.temperature_celsius,
-                    )
-                    for step in recipe.steps
-                ],
             ),
             cook_id,
         )

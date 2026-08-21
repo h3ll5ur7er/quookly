@@ -302,3 +302,98 @@ class TestADocumentStandsAlone:
         with pytest.raises(UnsupportedDocument):
             await recipe_manager.import_document(document, cook_id, "en-GB")
         assert await recipe_manager.list_for(cook_id) == []
+
+
+class TestHowManyItFeeds:
+    """`serves` arrived with format 2 (ADR-030's deferred remedy, taken up by planning).
+
+    The version was bumped rather than the field quietly added to format 1, so an older
+    build refuses a document it would otherwise read incompletely — which is what the
+    version check is for. Documents already exported stay readable.
+    """
+
+    async def test_a_format_one_document_still_reads(self, cook_id: int) -> None:
+        """Every document a self-hoster has already exported. Refusing them to gain one
+        optional field would be a poor trade for the promise that nobody is trapped."""
+        result = await recipe_manager.import_document(
+            _document(1, {"yield_magnitude": "4", "yield_unit": "serving"}), cook_id, ENGLISH
+        )
+
+        assert result.recipes_added == 1
+
+    async def test_how_many_it_feeds_survives_the_round_trip(self, cook_id: int) -> None:
+        stored = await recipe_manager.author(
+            RecipeInput(
+                title="Pancakes",
+                yield_magnitude=Decimal("12"),
+                yield_unit="piece",
+                serves=Decimal("4"),
+                lines=[
+                    IngredientLineInput(
+                        ingredient_id=await _flour(), magnitude=Decimal("250"), unit="g"
+                    )
+                ],
+                steps=[StepInput(instruction="Whisk.")],
+            ),
+            cook_id,
+        )
+        assert stored.serves == "4"
+
+        document = await recipe_manager.export_for(cook_id, ENGLISH)
+
+        assert document.recipes[0].serves == Decimal("4")
+
+    async def test_a_recipe_that_never_said_reads_back_as_not_saying(self, cook_id: int) -> None:
+        """Absent is an answer. Nothing invents a pieces-per-serving figure on the way
+        through — that is the refusal ADR-030 recorded, and it still holds."""
+        result = await recipe_manager.import_document(
+            _document(2, {"yield_magnitude": "12", "yield_unit": "piece"}), cook_id, ENGLISH
+        )
+        assert result.recipes_added == 1
+
+        document = await recipe_manager.export_for(cook_id, ENGLISH)
+        assert document.recipes[0].serves is None
+
+    async def test_a_format_two_document_carries_it_in(self, cook_id: int) -> None:
+        await recipe_manager.import_document(
+            _document(2, {"yield_magnitude": "12", "yield_unit": "piece", "serves": "4"}),
+            cook_id,
+            ENGLISH,
+        )
+
+        document = await recipe_manager.export_for(cook_id, ENGLISH)
+        assert document.recipes[0].serves == Decimal("4")
+
+    async def test_a_version_nobody_here_reads_is_still_refused(self, cook_id: int) -> None:
+        with pytest.raises(UnsupportedDocument, match="formats"):
+            await recipe_manager.import_document({"quookly": 99}, cook_id, ENGLISH)
+
+
+async def _flour() -> int:
+    entry = await registry.register(
+        slug="plain-flour",
+        kind=IngredientKind.POWDER,
+        density=Decimal("0.55"),
+        names={ENGLISH: ["plain flour"]},
+    )
+    return entry.id
+
+
+def _document(version: int, recipe: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "quookly": version,
+        "exported_at": "2026-08-20T12:00:00Z",
+        "locale": ENGLISH,
+        "ingredients": [
+            {"slug": "plain-flour", "kind": "powder", "density": "0.55", "names": ["plain flour"]}
+        ],
+        "recipes": [
+            {
+                "title": "Pancakes",
+                "provenance": "imported_json",
+                "lines": [{"ingredient": "plain-flour", "magnitude": "250", "unit": "g"}],
+                "steps": [{"instruction": "Whisk."}],
+                **recipe,
+            }
+        ],
+    }

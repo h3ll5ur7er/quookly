@@ -14,8 +14,10 @@ from sqlmodel import SQLModel
 
 from quookly.access import cook as cook_access
 from quookly.access import ingredient as registry
+from quookly.access import recipe as recipe_access
 from quookly.access.database import dispose_engine, get_engine
 from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
+from quookly.engines import exchange
 from quookly.managers import seed
 from quookly.utilities.configuration import get_settings
 
@@ -45,7 +47,9 @@ class TestTheSeedFile:
     def test_it_is_an_ordinary_exchange_document(self) -> None:
         """One format in and out, so the seed set is exercised by the same tests."""
         document = seed.read_seed_file()
-        assert document["quookly"] == 1
+        # From the engine rather than a literal: the seed set ships in whatever format
+        # this build writes, and bumping one should not be a change to two places.
+        assert document["quookly"] == exchange.FORMAT_VERSION
         assert len(document["ingredients"]) > 10
 
     def test_it_covers_the_kinds_a_cook_measures_differently(self) -> None:
@@ -169,3 +173,18 @@ class TestTheSeededClassification:
 
         assert butter.classified and Allergen.MILK in butter.allergens
         assert sugar.classified and sugar.allergens == frozenset()
+
+
+class TestWhatTheStarterRecipesSay:
+    async def test_they_say_how_many_they_feed(self, cook_id: int) -> None:
+        """Both starter recipes count things — twelve pancakes, sixteen biscuits — so
+        without this neither could be scaled to a table, which is the first thing a cook
+        does with a recipe. It was missed once: the starter path built its own draft and
+        quietly dropped the field, and an end-to-end run found it."""
+        await seed.stock_registry()
+        await seed.install_starter_recipes(cook_id)
+
+        stored = await recipe_access.list_for_cook(cook_id)
+
+        assert stored
+        assert all(recipe.servings is not None for recipe in stored)

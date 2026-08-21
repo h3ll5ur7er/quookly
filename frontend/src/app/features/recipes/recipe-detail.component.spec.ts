@@ -6,12 +6,13 @@ import { ActivatedRoute, provideRouter } from '@angular/router';
 import { provideApi } from '@api';
 import { RecipeDetailComponent } from './recipe-detail.component';
 
-function pancakes(flour = '125 g', yieldDisplay = '12 piece') {
+function pancakes(flour = '125 g', yieldDisplay = '12 piece', serves: string | null = null) {
   return {
     id: 1,
     title: 'Pancakes',
     summary: 'Batter, pan, patience.',
     yield_quantity: { magnitude: '12', unit: 'piece', display: yieldDisplay },
+    serves,
     visibility: 'private',
     provenance: 'authored',
     lines: [
@@ -201,5 +202,22 @@ describe('RecipeDetailComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.verdict')).toBeNull();
+  });
+
+  describe('how many it feeds', () => {
+    it('says so where the yield counts something other than portions', async () => {
+      backend.expectOne('/api/v1/recipes/1').flush(pancakes('125 g', '12 piece', '4'));
+      await settle();
+      expect(text()).toContain('Serves');
+      expect(text()).toContain('4');
+    });
+
+    it('says nothing where the recipe never said', async () => {
+      /* Absent is an answer. A pieces-per-serving figure invented for the screen would
+         be a number a cook cannot see is wrong. */
+      backend.expectOne('/api/v1/recipes/1').flush(pancakes());
+      await settle();
+      expect(text()).not.toContain('Serves');
+    });
   });
 });

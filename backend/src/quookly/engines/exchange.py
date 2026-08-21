@@ -5,6 +5,7 @@ this instance's registry, creating what is missing — is sequencing, and belong
 manager.
 """
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -12,7 +13,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from quookly.contracts.errors import UnsupportedDocument
+from quookly.contracts.errors import UnknownUnit, UnsupportedDocument
 from quookly.contracts.exchange import (
     ExchangeDocument,
     ExchangeIngredient,
@@ -20,13 +21,28 @@ from quookly.contracts.exchange import (
     ExchangeRecipe,
     ExchangeStep,
 )
-from quookly.contracts.ingredient import Allergen, IngredientKind
+from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.contracts.measure import Quantity, Unit
-from quookly.contracts.recipe import Provenance, Recipe
+from quookly.contracts.recipe import (
+    IngredientLineDraft,
+    Provenance,
+    Recipe,
+    RecipeDraft,
+    StepDraft,
+)
+from quookly.engines import measure
 
-FORMAT_VERSION = 1
+#: What this build writes.
+FORMAT_VERSION = 2
 
-_UNITS_BY_SYMBOL = {unit.symbol: unit for unit in Unit}
+#: What this build reads. Format 2 added a recipe's `serves`; nothing else changed, and a
+#: format 1 document is a complete recipe that simply does not say how many it feeds.
+#: Reading both is what keeps every document a self-hoster has already exported valid.
+#:
+#: The version is bumped rather than the field quietly added to format 1, because an older
+#: build reading a document with an unknown field would drop it in silence — which is the
+#: partial honouring this check exists to prevent. Refusing outright tells them why.
+READABLE_VERSIONS = frozenset({1, FORMAT_VERSION})
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,6 +68,9 @@ class ReadRecipe:
     provenance: Provenance
     lines: list[ReadLine]
     steps: list[ReadStep]
+    #: Absent in every format 1 document, and absent is a real answer: such a recipe can
+    #: be scaled to a number of pancakes but not to a table.
+    serves: Decimal | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,6 +123,7 @@ def to_document(recipes: list[Recipe], locale: str) -> ExchangeDocument:
                 summary=recipe.summary,
                 yield_magnitude=recipe.yield_quantity.magnitude,
                 yield_unit=recipe.yield_quantity.unit.symbol,
+                serves=recipe.serves,
                 provenance=recipe.provenance,
                 lines=[
                     ExchangeLine(
@@ -129,10 +149,61 @@ def to_document(recipes: list[Recipe], locale: str) -> ExchangeDocument:
     )
 
 
+def to_draft(
+    recipe: ReadRecipe,
+    *,
+    ingredient_ids: Mapping[str, int],
+    provenance: Provenance,
+    origin: Origin = Origin.USER,
+) -> RecipeDraft:
+    """A recipe read from a document, as a draft this instance can store.
+
+    Here rather than in each manager. Two of them build this — importing a document and
+    installing the starter set — and while they were separate copies, adding a field to
+    the format meant remembering both. One of them was not remembered, and the starter
+    recipes silently lost how many people they feed.
+
+    `ingredient_ids` maps the document's slugs to this instance's ids: a document refers
+    by slug because ids belong to the instance that issued them.
+    """
+    return RecipeDraft(
+        title=recipe.title,
+        summary=recipe.summary,
+        yield_quantity=recipe.yield_quantity,
+        serves=recipe.serves,
+        provenance=provenance,
+        origin=origin,
+        lines=[
+            IngredientLineDraft(
+                ingredient_id=ingredient_ids[line.slug],
+                quantity=line.quantity,
+                preparation=line.preparation,
+                optional=line.optional,
+            )
+            for line in recipe.lines
+        ],
+        steps=[
+            StepDraft(
+                instruction=step.instruction,
+                duration_seconds=step.duration_seconds,
+                temperature_celsius=step.temperature_celsius,
+            )
+            for step in recipe.steps
+        ],
+    )
+
+
 def _unit(symbol: str) -> Unit:
+    """The unit a document names.
+
+    Resolving the symbol is `MeasureEngine`'s — an engine may call an engine, and one
+    table is what stops two of them learning about different units. The *refusal* is this
+    engine's own: a document naming a unit this build has never heard of is a document
+    from a newer Quookly, and saying that is more useful than naming the symbol.
+    """
     try:
-        return _UNITS_BY_SYMBOL[symbol]
-    except KeyError:
+        return measure.unit_for(symbol)
+    except UnknownUnit:
         raise UnsupportedDocument(f"unknown unit: {symbol}") from None
 
 
@@ -143,9 +214,9 @@ def from_document(raw: dict[str, Any]) -> ReadDocument:
     it would silently drop whatever the newer format added.
     """
     version = raw.get("quookly")
-    if version != FORMAT_VERSION:
+    if version not in READABLE_VERSIONS:
         raise UnsupportedDocument(
-            f"this build reads format {FORMAT_VERSION}; the document says {version!r}"
+            f"this build reads formats {sorted(READABLE_VERSIONS)}; the document says {version!r}"
         )
 
     try:
@@ -170,6 +241,7 @@ def from_document(raw: dict[str, Any]) -> ReadDocument:
                 title=recipe.title,
                 summary=recipe.summary,
                 yield_quantity=Quantity(recipe.yield_magnitude, _unit(recipe.yield_unit)),
+                serves=recipe.serves,
                 provenance=recipe.provenance,
                 lines=[
                     ReadLine(

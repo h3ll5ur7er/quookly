@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { PresentedRecipe, RecipesService } from '@api';
+import { PresentedLine, PresentedRecipe, RecipesService } from '@api';
 import { VerdictComponent } from '../../core/dietary/verdict.component';
 
 @Component({
@@ -48,6 +48,17 @@ export class RecipeDetailComponent {
 
   protected onYieldInput(event: Event): void {
     this.showFor(Number((event.target as HTMLInputElement).value));
+  }
+
+  /**
+   * The ingredient, carrying the comma that introduces its preparation.
+   *
+   * Together, because the two are flex items and a long preparation wraps as a whole —
+   * which left the comma sitting at the start of the second line, under the name it
+   * belongs to.
+   */
+  protected named(line: PresentedLine): string {
+    return line.preparation ? `${line.ingredient},` : line.ingredient;
   }
 
   /** Seconds are how a timer is stored; minutes are how a cook reads one. */

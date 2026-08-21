@@ -499,6 +499,25 @@ def read_yield(written: Any) -> tuple[Decimal | None, Unit | None]:
     return magnitude, Unit.SERVING
 
 
+def read_serves(written: Any) -> Decimal | None:
+    """How many people a recipe feeds, where its yield says something else.
+
+    "Makes 12 pancakes (serves 4)" is two facts, and only the second lets the recipe be
+    scaled to a table. Sites express the pair by putting both in `recipeYield`, usually as
+    a list — `["12 pancakes", "4 servings"]` — and `read_yield` takes only the first, so
+    this looks through the rest for one that reads as portions.
+
+    Absent is the common case and a real answer. Nothing here invents a pieces-per-serving
+    figure; a wrong one would misportion every meal planned from the recipe, silently.
+    """
+    candidates = written if isinstance(written, list) else [written]
+    for candidate in candidates:
+        magnitude, unit = read_yield(candidate)
+        if unit is Unit.SERVING and magnitude is not None:
+            return magnitude
+    return None
+
+
 def read_metadata(blocks: Iterable[dict[str, Any]]) -> InterpretedRecipe | None:
     """Read the first usable schema.org Recipe out of a page's metadata.
 
@@ -541,6 +560,9 @@ def read_metadata(blocks: Iterable[dict[str, Any]]) -> InterpretedRecipe | None:
             summary=_tidy_prose(str(block.get("description") or "")) or None,
             yield_magnitude=magnitude,
             yield_unit=unit,
+            # Only where the yield says something else. A yield already in servings is
+            # the answer, and carrying a second copy of it invites the two to disagree.
+            serves=None if unit is Unit.SERVING else read_serves(block.get("recipeYield")),
             lines=lines,
             steps=steps,
         )
@@ -572,7 +594,13 @@ the amount, then the unit, then the ingredient, then any preparation after a com
 line with "(optional)". Where the page gives no amount, give none.
 
 For recipe_yield, copy how the page says it — "Makes 8", "Serves 4" — or leave it empty if
-it does not say. Leave narrative, advertising, comments and navigation out."""
+it does not say.
+
+For serves, give just the number of people the page says it feeds, when the page says that
+separately from what it makes: "Makes 12 pancakes (serves 4)" is a recipe_yield of
+"12 pancakes" and a serves of "4". Leave serves empty otherwise, including when
+recipe_yield already counts portions. Leave narrative, advertising, comments and navigation
+out."""
 
 _SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -580,13 +608,14 @@ _SCHEMA: dict[str, Any] = {
         "title": {"type": "string"},
         "summary": {"type": "string"},
         "recipe_yield": {"type": "string"},
+        "serves": {"type": "string"},
         "ingredients": {"type": "array", "items": {"type": "string"}},
         "steps": {"type": "array", "items": {"type": "string"}},
     },
-    # `recipe_yield` is required so the model has to answer rather than omit the field.
-    # An empty string means the page does not say, which is a different thing from not
-    # having looked — and a recipe with no yield cannot be scaled to a household.
-    "required": ["title", "recipe_yield", "ingredients", "steps"],
+    # `recipe_yield` and `serves` are required so the model has to answer rather than omit
+    # the field. Empty means the page does not say, which is a different thing from not
+    # having looked.
+    "required": ["title", "recipe_yield", "serves", "ingredients", "steps"],
     "additionalProperties": False,
 }
 
@@ -632,6 +661,7 @@ async def read_prose(content: ReadableContent) -> InterpretedRecipe:
         summary=_tidy_prose(str(answer.get("summary") or "")) or None,
         yield_magnitude=magnitude,
         yield_unit=unit,
+        serves=None if unit is Unit.SERVING else read_serves(answer.get("serves")),
         lines=lines,
         steps=_steps_from(answer.get("steps")),
     )

@@ -33,6 +33,7 @@ async def store(draft: RecipeDraft, cook_id: int) -> Recipe:
         summary=draft.summary,
         yield_magnitude=draft.yield_quantity.magnitude,
         yield_unit=draft.yield_quantity.unit,
+        serves=draft.serves,
         provenance=draft.provenance,
         origin=draft.origin,
     )
@@ -97,6 +98,7 @@ async def fetch(recipe_id: int, locale: str) -> Recipe | None:
         title=row.title,
         summary=row.summary,
         yield_quantity=Quantity(row.yield_magnitude, row.yield_unit),
+        serves=row.serves,
         provenance=row.provenance,
         visibility=row.visibility,
         origin=row.origin,
@@ -179,6 +181,7 @@ async def list_for_cook(cook_id: int) -> list[RecipeSummary]:
             title=row.title,
             summary=row.summary,
             yield_quantity=Quantity(row.yield_magnitude, row.yield_unit),
+            serves=row.serves,
             visibility=row.visibility,
         )
         for row in rows

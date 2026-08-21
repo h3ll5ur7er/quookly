@@ -341,13 +341,27 @@ class TestScalingToAppetite:
     def test_a_recipe_already_the_right_size_scales_by_one(self) -> None:
         assert measure.scaling_for(q("2", Unit.SERVING), [person("A", "1"), person("B", "1")]) == 1
 
-    def test_a_recipe_measured_in_pieces_is_refused(self) -> None:
+    def test_a_recipe_measured_in_pieces_is_refused_when_it_does_not_say_who_it_feeds(
+        self,
+    ) -> None:
         """Nothing in "makes 12 pancakes" says how many of them feed one person.
 
         Guessing would misportion every meal planned from it, quietly.
         """
         with pytest.raises(PortionsUnknown):
             measure.scaling_for(q("12", Unit.PIECE), [person("Ana", "1")])
+
+    def test_a_recipe_measured_in_pieces_scales_once_it_says_who_it_feeds(self) -> None:
+        """Makes 12, serves 4. Six people at one portion each want one and a half times
+        the recipe — and twelve pancakes never had to become a unit of appetite."""
+        table = [person(f"Guest {n}", "1") for n in range(6)]
+
+        assert measure.scaling_for(q("12", Unit.PIECE), table, Decimal("4")) == Decimal("1.5")
+
+    def test_a_yield_in_servings_answers_for_itself(self) -> None:
+        """`serves` is absent on such a recipe by construction, so nothing has to decide
+        which of two numbers to believe."""
+        assert measure.scaling_for(q("2", Unit.SERVING), [person("A", "1")]) == Decimal("0.5")
 
     def test_a_recipe_measured_in_grams_is_refused(self) -> None:
         with pytest.raises(PortionsUnknown):

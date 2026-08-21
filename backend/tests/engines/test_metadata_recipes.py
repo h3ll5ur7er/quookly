@@ -205,3 +205,29 @@ class TestWhatItWillNotDo:
         read = interpretation.read_metadata([block(recipeIngredient=["100g flour", "", "  "])])
         assert read is not None
         assert len(read.lines) == 1
+
+
+class TestHowManyItFeeds:
+    """Sites express "makes 12, serves 4" by putting both in `recipeYield`, usually as a
+    list. `read_yield` takes the first; the servings can be anywhere in it."""
+
+    def test_a_list_carrying_both_gives_up_both(self) -> None:
+        read = interpretation.read_metadata([block(recipeYield=["12 pancakes", "4 servings"])])
+
+        assert read is not None
+        assert (read.yield_magnitude, read.yield_unit) == (Decimal("12"), Unit.PIECE)
+        assert read.serves == Decimal("4")
+
+    def test_a_yield_already_in_portions_answers_for_itself(self) -> None:
+        read = interpretation.read_metadata([block(recipeYield="Serves 4")])
+
+        assert read is not None
+        assert read.yield_unit is Unit.SERVING
+        assert read.serves is None
+
+    def test_a_site_that_only_counts_things_says_nothing_about_people(self) -> None:
+        """Which is most of them, and absent is the honest answer."""
+        read = interpretation.read_metadata([block(recipeYield="Makes 8 pancakes")])
+
+        assert read is not None
+        assert read.serves is None

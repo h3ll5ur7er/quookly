@@ -85,6 +85,13 @@ class RecipeRow(SQLModel, table=True):
     summary: str | None = Field(default=None)
     yield_magnitude: Decimal = Field(max_digits=12, decimal_places=4)
     yield_unit: Unit
+    # How many standard portions this makes, where the yield does not already say. "Makes
+    # 12 pancakes" says nothing about how many pancakes feed one person, and without this
+    # such a recipe can be scaled to a number of pancakes but never to a table.
+    #
+    # Absent when `yield_unit` is servings: the yield answers, and storing it twice would
+    # be two numbers for one fact.
+    serves: Decimal | None = Field(default=None, max_digits=8, decimal_places=2)
     provenance: Provenance
     visibility: Visibility = Field(default=Visibility.PRIVATE)
     origin: Origin = Field(default=Origin.USER)

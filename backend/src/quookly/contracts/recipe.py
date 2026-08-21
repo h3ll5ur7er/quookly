@@ -10,13 +10,14 @@ ingredients.
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from decimal import Decimal
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from quookly.contracts.ingredient import Ingredient, Origin
 from quookly.contracts.interpretation import Source
-from quookly.contracts.measure import DecimalString, Quantity
+from quookly.contracts.measure import DecimalString, Quantity, Unit
 from quookly.contracts.suitability import Outcome, VerdictView
 
 
@@ -73,6 +74,33 @@ class StepDraft:
             raise ValueError(f"a duration must be positive: {self.duration_seconds}")
 
 
+#: How many standard portions a recipe makes, where its yield does not already say.
+#:
+#: "Makes 12 pancakes" states a count of pancakes and nothing about how many pancakes feed
+#: one person, so such a recipe cannot be scaled to a table without this. Where the yield
+#: *is* in servings, this stays absent and the yield answers — one number, one place, and
+#: no way for the two to disagree.
+_SERVES_FROM_YIELD = "a recipe whose yield is in servings serves exactly that many"
+
+
+def _servings_of(yield_quantity: Quantity, serves: Decimal | None) -> Decimal | None:
+    """How many portions this makes, or nothing if the recipe does not say."""
+    if yield_quantity.unit is Unit.SERVING:
+        return yield_quantity.magnitude
+    return serves
+
+
+def _check_serves(yield_quantity: Quantity, serves: Decimal | None) -> None:
+    if serves is not None and serves <= 0:
+        raise ValueError("a recipe that serves nobody is not a recipe")
+    if (
+        yield_quantity.unit is Unit.SERVING
+        and serves is not None
+        and serves != yield_quantity.magnitude
+    ):
+        raise ValueError(_SERVES_FROM_YIELD)
+
+
 @dataclass(frozen=True, slots=True)
 class RecipeDraft:
     """A recipe as submitted, before it has identity."""
@@ -84,6 +112,8 @@ class RecipeDraft:
     steps: list[StepDraft]
     summary: str | None = None
     origin: Origin = Origin.USER
+    #: Absent where the yield already says. See `_servings_of`.
+    serves: Decimal | None = None
 
     def __post_init__(self) -> None:
         if not self.title.strip():
@@ -92,6 +122,12 @@ class RecipeDraft:
             raise ValueError("a recipe needs at least one ingredient")
         if not self.steps:
             raise ValueError("a recipe needs at least one step")
+        _check_serves(self.yield_quantity, self.serves)
+
+    @property
+    def servings(self) -> Decimal | None:
+        """How many standard portions this makes, or nothing if it does not say."""
+        return _servings_of(self.yield_quantity, self.serves)
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,6 +169,20 @@ class Recipe:
     created_at: datetime
     lines: list[IngredientLine] = field(default_factory=list)
     steps: list[Step] = field(default_factory=list)
+    #: Absent where the yield already says. See `_servings_of`.
+    serves: Decimal | None = None
+
+    def __post_init__(self) -> None:
+        _check_serves(self.yield_quantity, self.serves)
+
+    @property
+    def servings(self) -> Decimal | None:
+        """How many standard portions this makes, or nothing if it does not say.
+
+        The one thing that lets a recipe be scaled to a table rather than to a number of
+        pancakes. Absent is a real answer: nothing invents a pieces-per-serving figure.
+        """
+        return _servings_of(self.yield_quantity, self.serves)
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,6 +194,11 @@ class RecipeSummary:
     summary: str | None
     yield_quantity: Quantity
     visibility: Visibility
+    serves: Decimal | None = None
+
+    @property
+    def servings(self) -> Decimal | None:
+        return _servings_of(self.yield_quantity, self.serves)
 
 
 # What leaves the API. These are pydantic rather than dataclasses because they are the
@@ -193,6 +248,11 @@ class PresentedRecipe(BaseModel):
     title: str
     summary: str | None
     yield_quantity: QuantityView
+    # How many this feeds, where the yield does not already say it. "Makes 12" and
+    # "serves 4" are two different facts, and a recipe that states only the first cannot
+    # be scaled to a table. Absent where the yield is already in servings: saying it
+    # twice invites a reader to wonder which one is right.
+    serves: str | None
     visibility: Visibility
     provenance: Provenance
     lines: list[PresentedLine]
@@ -208,6 +268,7 @@ class RecipeSummaryView(BaseModel):
     title: str
     summary: str | None
     yield_quantity: QuantityView
+    serves: str | None
     visibility: Visibility
     # The outcome only. A list is a place to scan; the reasons are one tap away on a page
     # with room to name them. Absent when there is nobody to judge against.
@@ -251,6 +312,10 @@ class RecipeInput(BaseModel):
     summary: str | None = Field(default=None, max_length=1000)
     yield_magnitude: DecimalString = Field(gt=0)
     yield_unit: str
+    # How many people it feeds. Worth asking for only where the yield does not already
+    # say — and asking anyway, because "makes 12, serves 4" is how a cook says it and a
+    # recipe missing this cannot be planned around.
+    serves: DecimalString | None = Field(default=None, gt=0, le=1000)
     lines: list[IngredientLineInput] = Field(min_length=1)
     steps: list[StepInput] = Field(min_length=1)
 

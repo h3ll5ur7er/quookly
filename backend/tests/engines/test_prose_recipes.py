@@ -12,6 +12,7 @@ there is one implementation of that, not two that disagree.
 """
 
 import json
+from decimal import Decimal
 from typing import Any
 
 import pytest
@@ -47,6 +48,7 @@ ANSWER = {
     "title": "Pancakes",
     "summary": "A family batter.",
     "recipe_yield": "Makes 8",
+    "serves": "",
     "ingredients": ["225g plain flour", "300ml milk", "2 eggs", "a knob of butter"],
     "steps": ["Whisk the dry ingredients.", "Beat in the milk and eggs.", "Fry until set."],
 }
@@ -113,7 +115,13 @@ class TestWhatItAsksFor:
         asked: dict[str, Any] = {}
         answering(ANSWER, monkeypatch, asked)
         await interpretation.read_page(page())
-        assert asked["schema"]["required"] == ["title", "recipe_yield", "ingredients", "steps"]
+        assert asked["schema"]["required"] == [
+            "title",
+            "recipe_yield",
+            "serves",
+            "ingredients",
+            "steps",
+        ]
         assert asked["schema"]["additionalProperties"] is False
 
     async def test_the_page_text_is_what_it_reads(self, monkeypatch: MonkeyPatch) -> None:
@@ -233,3 +241,40 @@ class TestWithoutAModel:
         monkeypatch.setattr(inference, "complete_structured", unconfigured)
         with pytest.raises(InferenceNotConfigured):
             await interpretation.read_page(page())
+
+
+class TestHowManyItFeeds:
+    """A page saying "Makes 12 pancakes (serves 4)" states two facts, and only the second
+    lets the recipe be scaled to a table. Asked for separately, because a single field
+    cannot hold both — and required, so an empty answer means the page did not say rather
+    than that the model did not look."""
+
+    async def test_a_page_that_says_both_carries_both(self, monkeypatch: MonkeyPatch) -> None:
+        answering({**ANSWER, "recipe_yield": "Makes 12 pancakes", "serves": "4"}, monkeypatch)
+
+        read = await interpretation.read_page(page())
+
+        assert (read.yield_magnitude, read.yield_unit) == (Decimal("12"), Unit.PIECE)
+        assert read.serves == Decimal("4")
+
+    async def test_a_page_that_says_only_what_it_makes_says_nothing_about_people(
+        self, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Absent, not guessed. A pieces-per-serving figure invented here would misportion
+        every meal planned from the recipe, silently."""
+        answering({**ANSWER, "recipe_yield": "Makes 12 pancakes", "serves": ""}, monkeypatch)
+
+        read = await interpretation.read_page(page())
+
+        assert read.serves is None
+
+    async def test_a_yield_already_in_portions_answers_for_itself(
+        self, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Carrying a second copy of the same number is how the two come to disagree."""
+        answering({**ANSWER, "recipe_yield": "Serves 4", "serves": "4"}, monkeypatch)
+
+        read = await interpretation.read_page(page())
+
+        assert (read.yield_magnitude, read.yield_unit) == (Decimal("4"), Unit.SERVING)
+        assert read.serves is None

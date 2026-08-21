@@ -134,8 +134,12 @@ This is the phase that determines whether the product is worth using.
 - ~~`PlanAccess`: periods, slots, attendance (UC-4.1, UC-4.2)~~ **Built** — a slot exists before it
   has a recipe, because that is most of a week most of the time
 - `PlanningManager`, `PlanningEngine`: proposing and checking suitability (UC-4.1–4.3)
-- A recipe's `serves` alongside its yield, so "makes 12 pancakes" can be scaled to a table — see [the domain model](06-domain-model.md#appetite-multiplier)
-- `ReplenishmentEngine`: shopping list net of stock (UC-4.4, V8)
+- ~~A recipe's `serves` alongside its yield, so "makes 12 pancakes" can be scaled to a table~~
+  **Built** — the deferred half of [ADR-030](07-decisions.md#adr-030-a-recipe-whose-yield-cannot-be-read-is-refused);
+  read from a page's metadata and from its prose, and carried by
+  [format 2](07-decisions.md#adr-012-export-format-is-the-import-format) of the interchange document
+- ~~`ReplenishmentEngine`: shopping list net of stock (UC-4.4, V8)~~ **Built** — the packet going off
+  first is the one drawn from, and the shopping list is what could not be drawn
 - Cook a meal, consume reservations (UC-4.5)
 - `EventBus` and the first events
 

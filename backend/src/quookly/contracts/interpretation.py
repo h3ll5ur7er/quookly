@@ -58,5 +58,9 @@ class InterpretedRecipe:
     summary: str | None = None
     yield_magnitude: Decimal | None = None
     yield_unit: Unit | None = None
+    # How many people the page says it feeds, where its yield says something else —
+    # "makes 12 pancakes (serves 4)". Absent is the common case and a real answer:
+    # nothing here invents a pieces-per-serving figure.
+    serves: Decimal | None = None
     lines: list[InterpretedLine] = field(default_factory=list)
     steps: list[InterpretedStep] = field(default_factory=list)

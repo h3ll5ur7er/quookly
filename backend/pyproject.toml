@@ -157,6 +157,7 @@ source_modules = [
     "quookly.engines.exchange",
     "quookly.engines.measure",
     "quookly.engines.onboarding",
+    "quookly.engines.replenishment",
     "quookly.engines.suitability",
 ]
 forbidden_modules = ["quookly.access"]

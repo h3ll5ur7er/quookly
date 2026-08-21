@@ -426,6 +426,18 @@ an instance that has never seen the recipe:
   fresh instance would resolve nothing, and the promise would hold only between instances that
   already agreed.
 
+**Versioning, as exercised by the first change to the format.** A build **writes one version and
+reads several**. Format 2 added a recipe's `serves`; format 1 documents still import, and a format 1
+document is a complete recipe that simply does not say how many it feeds.
+
+The version was bumped rather than the field quietly added to format 1, and that is the whole point
+of having a version. An older build reading a document with an unknown field would drop it in
+silence — the partial honouring this check exists to prevent. Refusing outright tells the operator
+what happened. Meanwhile, refusing every document a self-hoster has *already* exported, to gain one
+optional field, would break the promise the format exists to keep.
+
+So: `FORMAT_VERSION` is what this build writes, `READABLE_VERSIONS` is what it accepts, and a
+version outside that set is refused with both named.
 Where an entry already exists locally, the **local one wins** — an instance's own densities are its
 business and a document must not rewrite them. Imported entries are created as the importer's own,
 so a document cannot forge a seeded row that an upgrade would later feel free to replace.
@@ -975,6 +987,19 @@ see. Refusing is the honest answer, and against five live pages it did not fire 
 remedy is the same shape as the one made for unmeasured lines: let a recipe record that it does not
 know its own yield. That is a wider change — scaling, planning and the shopping list all assume a
 yield exists — and it waits until something makes it worth doing.
+
+**Revisited in part.** This record also noted, via the
+[domain model](06-domain-model.md#appetite-multiplier), that a yield of "12 pancakes" cannot be
+scaled to a table at all. Planning is what made that worth fixing, and a recipe now carries
+**`serves`** beside its yield: makes 12, serves 4. `MeasureEngine.scaling_for` reads whichever of
+the two answers, and refuses only when neither does.
+
+Absent stays a real answer. Nothing infers a pieces-per-serving figure — from the page, from the
+model, or on the way to the screen — because a wrong one would misportion every meal planned from
+that recipe, silently and in the direction a cook cannot see.
+
+The *other* half — a recipe that does not know its own yield at all — is still refused, and still
+waiting for something to make it worth doing.
 
 ---
 

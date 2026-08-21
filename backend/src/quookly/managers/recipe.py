@@ -19,7 +19,7 @@ from quookly.contracts.errors import UnsupportedDocument, YieldUnknown
 from quookly.contracts.exchange import ExchangeDocument
 from quookly.contracts.ingredient import IngredientKind, Origin
 from quookly.contracts.interpretation import InterpretedLine
-from quookly.contracts.measure import Quantity
+from quookly.contracts.measure import Quantity, Unit
 from quookly.contracts.preferences import UnitPreferences
 from quookly.contracts.recipe import (
     ImportedRecipe,
@@ -42,6 +42,20 @@ from quookly.engines import exchange, interpretation, measure, suitability
 #: Resolving a symbol lives in `MeasureEngine`, which owns units. Kept as a local name
 #: because it reads better at the call sites than the qualified one.
 _unit = measure.unit_for
+
+
+def _servings(serves: Decimal | None, factor: Decimal) -> str | None:
+    """How many this feeds, scaled and tidied — or nothing where the yield already says.
+
+    Rendered as a plain number rather than a quantity: "serves 4", not "4 servings", and
+    trailing zeros from the column are an artefact of storage rather than precision
+    anybody should read into.
+    """
+    if serves is None:
+        return None
+    scaled = measure.round_for_display(Quantity(serves * factor, Unit.SERVING))
+    text = f"{scaled.magnitude:f}"
+    return text.rstrip("0").rstrip(".") if "." in text else text
 
 
 def _view(quantity: Quantity) -> QuantityView:
@@ -67,6 +81,7 @@ async def author(
         title=submitted.title,
         summary=submitted.summary,
         yield_quantity=Quantity(submitted.yield_magnitude, _unit(submitted.yield_unit)),
+        serves=submitted.serves,
         provenance=Provenance.AUTHORED,
         lines=[
             IngredientLineDraft(
@@ -137,6 +152,7 @@ async def list_for(cook_id: int, locale: str | None = None) -> list[RecipeSummar
             title=summary.title,
             summary=summary.summary,
             yield_quantity=_view(summary.yield_quantity),
+            serves=_servings(summary.serves, Decimal(1)),
             visibility=summary.visibility,
             suitability=outcomes.get(summary.id),
         )
@@ -240,6 +256,10 @@ async def _present(
         summary=recipe.summary,
         suitability=await _judge(recipe, cook_id),
         yield_quantity=_view(scaled_yield),
+        # Scaled with everything else: a doubled batch of "makes 12, serves 4" makes 24
+        # and serves 8, and a `serves` left at its written value would be the one number
+        # on the page that no longer matched the rest.
+        serves=_servings(recipe.serves, factor),
         visibility=recipe.visibility,
         provenance=recipe.provenance,
         lines=lines,
@@ -321,29 +341,7 @@ async def import_document(
     ids = await registry.ids_by_slug(sorted(referenced))
     for recipe in document.recipes:
         await recipe_access.store(
-            RecipeDraft(
-                title=recipe.title,
-                summary=recipe.summary,
-                yield_quantity=recipe.yield_quantity,
-                provenance=Provenance.IMPORTED_JSON,
-                lines=[
-                    IngredientLineDraft(
-                        ingredient_id=ids[line.slug],
-                        quantity=line.quantity,
-                        preparation=line.preparation,
-                        optional=line.optional,
-                    )
-                    for line in recipe.lines
-                ],
-                steps=[
-                    StepDraft(
-                        instruction=step.instruction,
-                        duration_seconds=step.duration_seconds,
-                        temperature_celsius=step.temperature_celsius,
-                    )
-                    for step in recipe.steps
-                ],
-            ),
+            exchange.to_draft(recipe, ingredient_ids=ids, provenance=Provenance.IMPORTED_JSON),
             cook_id,
         )
 
@@ -446,6 +444,7 @@ async def import_from_url(url: str, cook_id: int, locale: str | None = None) -> 
         title=read.title,
         summary=read.summary,
         yield_quantity=Quantity(read.yield_magnitude, read.yield_unit),
+        serves=read.serves,
         provenance=Provenance.IMPORTED_URL,
         lines=[
             IngredientLineDraft(

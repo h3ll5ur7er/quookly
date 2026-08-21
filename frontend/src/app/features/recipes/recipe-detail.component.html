@@ -42,6 +42,14 @@
           +
         </button>
       </div>
+      <!-- Only where the yield does not already say it. Twelve pancakes is not four
+           servings, and a recipe that states only the first cannot be planned around. -->
+      @if (shown.serves; as serves) {
+        <p class="recipe__serves">
+          <span i18n="@@recipeServes">Serves</span>
+          <span class="numeric">{{ serves }}</span>
+        </p>
+      }
     </section>
 
     <section class="recipe__section" aria-labelledby="ingredients-heading">
@@ -55,11 +63,15 @@
             <!-- Every part is its own element, and the container is a flex box. That
                  is what stops the newline before the comma from rendering as a space:
                  whitespace between flex items is dropped, whitespace between inline
-                 elements is not, and "plain flour , sifted" is what the second gives. -->
+                 elements is not, and "plain flour , sifted" is what the second gives.
+
+                 The comma travels with the ingredient rather than leading the
+                 preparation, because these are flex items and a long preparation wraps
+                 as a whole — which put the comma at the start of the second line. -->
             <span class="lines__name">
-              <span>{{ line.ingredient }}</span>
+              <span class="lines__ingredient">{{ named(line) }}</span>
               @if (line.preparation) {
-                <span class="lines__preparation">, {{ line.preparation }}</span>
+                <span class="lines__preparation">{{ line.preparation }}</span>
               }
               @if (line.optional) {
                 <span class="lines__optional" i18n="@@recipeOptional">optional</span>

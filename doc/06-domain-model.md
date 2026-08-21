@@ -292,9 +292,18 @@ scale such a recipe to a requested number of pancakes, but not to a table, and i
 reason, as converting mass to volume without a density. Both shipped starter recipes are in this
 position.
 
-Closing it means a recipe carrying **`serves`** alongside its yield: makes 12, serves 4. That is a
-schema change, and it lands in Phase 4 where planning is the first thing that consumes it. Until
-then, scaling to a household works for recipes whose yield is already stated in servings.
+**Built.** A recipe carries **`serves`** alongside its yield: makes 12, serves 4.
+`MeasureEngine.scaling_for` reads whichever of the two answers.
+
+`serves` is absent where the yield is already in servings — that yield *is* the answer, and a second
+copy of one number is how the two come to disagree. It is also absent where the recipe simply does
+not say, and that stays a real answer: nothing infers a pieces-per-serving figure, from a page, from
+a model, or on the way to a screen. A wrong one would misportion every meal planned from that recipe,
+silently.
+
+Both shipped starter recipes now state it. Reading it survives a round trip through the interchange
+format, which gained it in
+[format 2](07-decisions.md#adr-012-export-format-is-the-import-format).
 
 ### Reading a recipe that is not in English
 

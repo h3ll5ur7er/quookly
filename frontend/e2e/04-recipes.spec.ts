@@ -15,6 +15,9 @@ const COOK = {
   password: 'a-sufficiently-long-password',
 };
 
+// Deliberately a **format 1** document. Format 2 added `serves`; keeping this one at 1
+// means every run checks that a file a self-hoster exported before the change still
+// imports, which is the whole point of reading more than one version.
 const DOCUMENT = {
   quookly: 1,
   exported_at: '2026-08-20T12:00:00Z',
@@ -115,23 +118,32 @@ test.describe('a recipe', () => {
     await expect(page.getByText('1800')).toHaveCount(0);
   });
 
-  test('writes a preparation as a person would, with no space before the comma', async ({
-    page,
-  }) => {
+  test('writes a preparation as a person would, comma and all', async ({ page }) => {
     /*
-     * "plain flour , sifted" is what inline elements and a template newline produce, and
-     * it is invisible to every assertion that checks for the words rather than the line.
+     * Two ways this has gone wrong, neither visible to an assertion about the words.
+     *
+     * "plain flour , sifted" is what inline elements and a template newline produce. And
+     * a comma leading the preparation sits at the start of the next line when a long one
+     * wraps, under the ingredient it belongs to — so the comma travels with the name.
      */
-    const gap = await page.evaluate(() => {
+    const painted = await page.evaluate(() => {
       const name = [...document.querySelectorAll('.lines__name')].find((node) =>
         node.textContent!.includes('plain flour'),
       )!;
       const [ingredient, preparation] = [...name.children] as HTMLElement[];
-      return preparation.getBoundingClientRect().left - ingredient.getBoundingClientRect().right;
+      return {
+        ingredient: ingredient.textContent,
+        preparation: preparation.textContent,
+        gap: preparation.getBoundingClientRect().left - ingredient.getBoundingClientRect().right,
+      };
     });
-    // Measured rather than read: the text content says nothing about what was painted,
-    // and a space here is only ever visible by looking at it.
-    expect(gap).toBeLessThan(1);
+
+    expect(painted.ingredient).toBe('plain flour,');
+    expect(painted.preparation).toBe('sifted');
+    // Measured rather than read: the text content says nothing about what was painted.
+    // One word space, not none and not two.
+    expect(painted.gap).toBeGreaterThan(1);
+    expect(painted.gap).toBeLessThan(12);
   });
 
   test('marks the optional ingredient', async ({ page }) => {
@@ -159,5 +171,45 @@ test.describe('a recipe', () => {
     await page.getByLabel('Colour theme').selectOption('dark');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.screenshot({ path: 'e2e/screenshots/recipe-detail-dark.png', fullPage: true });
+  });
+});
+
+test.describe('how many it feeds', () => {
+  /** The "Makes" panel, which is where both numbers live. Scoped, because the recipe
+      list behind it carries the same words. */
+  function madeAndServed(page: import('@playwright/test').Page) {
+    return page.getByRole('region').filter({ has: page.getByRole('heading', { name: 'Makes' }) });
+  }
+
+  async function open(page: import('@playwright/test').Page, title: RegExp): Promise<void> {
+    await page.goto('/recipes');
+    await page.getByRole('link', { name: title }).click();
+    await expect(page.getByRole('heading', { name: title })).toBeVisible();
+  }
+
+  test('a seeded recipe says so, because twelve pancakes is not four portions', async ({
+    page,
+  }) => {
+    await open(page, /Buttermilk Pancakes/);
+    await expect(madeAndServed(page)).toContainText('Serves');
+    await expect(madeAndServed(page)).toContainText('4');
+    await page.screenshot({ path: 'e2e/screenshots/recipe-serves.png', fullPage: true });
+  });
+
+  test('and scales with the batch, so the two numbers never disagree', async ({ page }) => {
+    await open(page, /Buttermilk Pancakes/);
+    for (let i = 0; i < 12; i++) {
+      await page.getByRole('button', { name: 'More' }).click();
+    }
+    // Twenty-four pancakes, so eight portions.
+    await expect(madeAndServed(page)).toContainText('8');
+  });
+
+  test('a recipe that never said stays silent about it', async ({ page }) => {
+    /* The format 1 import above. Absent is an answer, and a pieces-per-serving figure
+       invented for the screen would be a number a cook cannot see is wrong. */
+    await open(page, /American Pancakes/);
+    await expect(madeAndServed(page)).toContainText('Makes');
+    await expect(madeAndServed(page)).not.toContainText('Serves');
   });
 });

@@ -1580,6 +1580,18 @@
             "type": "string",
             "title": "Yield Unit"
           },
+          "serves": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serves"
+          },
           "provenance": {
             "$ref": "#/components/schemas/Provenance"
           },
@@ -2076,6 +2088,17 @@
           "yield_quantity": {
             "$ref": "#/components/schemas/QuantityView"
           },
+          "serves": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serves"
+          },
           "visibility": {
             "$ref": "#/components/schemas/Visibility"
           },
@@ -2113,6 +2136,7 @@
           "title",
           "summary",
           "yield_quantity",
+          "serves",
           "visibility",
           "provenance",
           "lines",
@@ -2276,6 +2300,18 @@
             "type": "string",
             "title": "Yield Unit"
           },
+          "serves": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d*\\.?\\d+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serves"
+          },
           "lines": {
             "items": {
               "$ref": "#/components/schemas/IngredientLineInput"
@@ -2328,6 +2364,17 @@
           "yield_quantity": {
             "$ref": "#/components/schemas/QuantityView"
           },
+          "serves": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serves"
+          },
           "visibility": {
             "$ref": "#/components/schemas/Visibility"
           },
@@ -2348,6 +2395,7 @@
           "title",
           "summary",
           "yield_quantity",
+          "serves",
           "visibility"
         ],
         "title": "RecipeSummaryView"

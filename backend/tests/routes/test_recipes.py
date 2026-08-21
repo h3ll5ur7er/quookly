@@ -15,6 +15,7 @@ from quookly.access.database import dispose_engine, get_engine
 from quookly.api import app
 from quookly.contracts.ingredient import IngredientKind, Origin
 from quookly.contracts.measure import Unit
+from quookly.engines import exchange
 from quookly.utilities.configuration import get_settings
 
 ENGLISH = "en-GB"
@@ -260,7 +261,10 @@ class TestExchange:
         headers = await sign_up(client, "chef@example.com")
         response = await client.get("/api/v1/recipes/export", headers=headers)
         assert response.status_code == 200
-        assert response.json()["quookly"] == 1
+        # A document, not a recipe. The version comes from the engine rather than a
+        # literal, so bumping the format is not a change to a test about routing.
+        assert response.json()["quookly"] == exchange.FORMAT_VERSION
+        assert "recipes" in response.json()
 
     async def test_a_cook_can_take_their_recipes_with_them(
         self, client: AsyncClient, pantry: dict[str, int]
