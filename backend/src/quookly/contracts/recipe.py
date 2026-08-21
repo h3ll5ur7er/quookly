@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from quookly.contracts.ingredient import Ingredient, Origin
 from quookly.contracts.measure import DecimalString, Quantity
-from quookly.contracts.suitability import VerdictView
+from quookly.contracts.suitability import Outcome, VerdictView
 
 
 class Visibility(Enum):
@@ -200,6 +200,9 @@ class RecipeSummaryView(BaseModel):
     summary: str | None
     yield_quantity: QuantityView
     visibility: Visibility
+    # The outcome only. A list is a place to scan; the reasons are one tap away on a page
+    # with room to name them. Absent when there is nobody to judge against.
+    suitability: Outcome | None = None
 
 
 class IngredientLineInput(BaseModel):

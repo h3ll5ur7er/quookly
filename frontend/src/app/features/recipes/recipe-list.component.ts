@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { RecipeSummaryView, RecipesService } from '@api';
+import { Outcome, RecipeSummaryView, RecipesService } from '@api';
+import { outcomeBadge } from '../../core/dietary/labels';
 
 @Component({
   selector: 'app-recipe-list',
@@ -12,6 +13,21 @@ import { RecipeSummaryView, RecipesService } from '@api';
 export class RecipeListComponent {
   protected readonly recipes = signal<RecipeSummaryView[] | null>(null);
   protected readonly failed = signal(false);
+
+  protected readonly outcomeBadge = outcomeBadge;
+  protected readonly suitable = Outcome.suitable;
+
+  /**
+   * Whether anything here was judged at all.
+   *
+   * A recipe that suits everybody carries no badge — twenty green ticks would drown the
+   * one red one, and restraint is what keeps a warning worth reading. That makes an
+   * unbadged list ambiguous on its own, so a cook with nobody recorded is told why they
+   * are seeing none rather than left to read the silence as approval.
+   */
+  protected readonly judged = computed(() =>
+    (this.recipes() ?? []).some((recipe) => recipe.suitability != null),
+  );
 
   constructor() {
     inject(RecipesService)

@@ -67,10 +67,11 @@ test.beforeAll(async ({ request }) => {
         ).json()
       ).token;
 
-  await request.post('/api/v1/recipes/import', {
+  const imported = await request.post('/api/v1/recipes/import', {
     data: DOCUMENT,
     headers: { Authorization: `Bearer ${token}` },
   });
+  expect(imported.ok(), await imported.text()).toBe(true);
 });
 
 test.beforeEach(async ({ page }) => {

@@ -102,6 +102,12 @@
     "outcomeCautionWhy": "Quelqu’un à votre table présente une intolérance à un ingrédient.",
     "outcomeSuitableWhy": "Rien ici n’entre en conflit avec ce que vous avez enregistré.",
     "findingUnchecked": "allergènes non contrôlés",
-    "findingAvoidable": "peut être omis"
+    "findingAvoidable": "peut être omis",
+    "badgeUnsuitable": "Ne convient pas",
+    "badgeUnknown": "Non contrôlé",
+    "badgeCaution": "Prudence",
+    "badgeSuitable": "Convient à tout le monde",
+    "recipesNoHousehold": "Personne d’enregistré pour l’instant ; rien n’a donc été contrôlé ici.",
+    "recipesAddHousehold": "Indiquez pour qui vous cuisinez"
   }
 }

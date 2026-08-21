@@ -299,3 +299,64 @@ class TestAllergensOnALine:
         flour = next(line for line in fetched.lines if line.ingredient.slug == "plain-flour")
         assert flour.ingredient.allergens == frozenset()
         assert flour.ingredient.classified is True
+
+
+class TestLinesToJudge:
+    """What a verdict needs for a whole list of recipes, without loading any of them.
+
+    The list is the most-visited screen, so this exists to keep it a fixed number of
+    queries rather than a handful per recipe.
+    """
+
+    async def test_it_returns_a_line_per_ingredient(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        judged = await recipes.lines_to_judge(cook_id, ENGLISH)
+        assert {line.slug for line in judged} == {"plain-flour", "unsalted-butter", "egg"}
+        assert all(line.recipe_id == stored.id for line in judged)
+
+    async def test_lines_carry_their_allergen_classification(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        await registry.classify("plain-flour", frozenset({Allergen.GLUTEN}))
+        await recipes.store(shortbread(pantry), cook_id)
+        judged = await recipes.lines_to_judge(cook_id, ENGLISH)
+        flour = next(line for line in judged if line.slug == "plain-flour")
+        assert flour.allergens == frozenset({Allergen.GLUTEN})
+        assert flour.classified is True
+
+    async def test_an_unexamined_ingredient_says_so(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        await recipes.store(shortbread(pantry), cook_id)
+        judged = await recipes.lines_to_judge(cook_id, ENGLISH)
+        assert all(line.classified is False for line in judged)
+
+    async def test_lines_carry_the_name_a_finding_would_use(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        await recipes.store(shortbread(pantry), cook_id)
+        judged = await recipes.lines_to_judge(cook_id, ENGLISH)
+        assert {line.name for line in judged} == {"plain flour", "unsalted butter", "egg"}
+
+    async def test_optional_lines_are_marked(self, cook_id: int, pantry: dict[str, int]) -> None:
+        """An avoidable violation is not a refusal, and the list must not report it as one."""
+        await recipes.store(shortbread(pantry), cook_id)
+        judged = await recipes.lines_to_judge(cook_id, ENGLISH)
+        assert next(line for line in judged if line.slug == "egg").optional is True
+
+    async def test_several_recipes_are_kept_apart(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        first = await recipes.store(shortbread(pantry), cook_id)
+        second = await recipes.store(shortbread(pantry), cook_id)
+        judged = await recipes.lines_to_judge(cook_id, ENGLISH)
+        assert {line.recipe_id for line in judged} == {first.id, second.id}
+
+    async def test_another_cooks_recipes_are_not_returned(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        await recipes.store(shortbread(pantry), cook_id)
+        other = await cook_access.register("other@example.com", "Someone", "hash")
+        assert await recipes.lines_to_judge(other.id, ENGLISH) == []

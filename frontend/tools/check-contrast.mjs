@@ -33,6 +33,17 @@ const PAIRS = [
   ['--on-danger', '--danger', AA_TEXT],
   ['--on-danger-surface', '--danger-surface', AA_TEXT],
   ['--on-info', '--info', AA_TEXT],
+  // Status colours used as *text* rather than as fills. These tokens were defined as
+  // backgrounds, with an --on- partner for what sits on them; a badge that puts one on
+  // the page ground is a different pair, and one theme lightening a fill for its own
+  // background use would silently make that text unreadable.
+  ['--danger', '--surface', AA_TEXT],
+  ['--danger', '--surface-raised', AA_TEXT],
+  ['--warning', '--surface', AA_TEXT],
+  ['--warning', '--surface-raised', AA_TEXT],
+  ['--info', '--surface', AA_TEXT],
+  ['--info', '--surface-raised', AA_TEXT],
+  ['--success', '--surface-raised', AA_TEXT],
 ];
 
 const THEMES = ['light', 'dark', 'playful', 'decorative'];

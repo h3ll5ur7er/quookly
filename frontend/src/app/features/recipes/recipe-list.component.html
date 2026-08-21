@@ -9,6 +9,14 @@
     @if (found.length === 0) {
       <p class="recipes__empty" i18n="@@recipesEmpty">No recipes yet.</p>
     } @else {
+      @if (!judged()) {
+        <p class="recipes__prompt">
+          <span i18n="@@recipesNoHousehold"
+            >Nobody recorded yet, so nothing here has been checked.</span
+          >
+          <a routerLink="/household" i18n="@@recipesAddHousehold">Add who you cook for</a>
+        </p>
+      }
       <ul class="recipes__list">
         @for (recipe of found; track recipe.id) {
           <li class="recipes__item">
@@ -16,6 +24,14 @@
               <span class="recipes__title">{{ recipe.title }}</span>
               @if (recipe.summary) {
                 <span class="recipes__summary">{{ recipe.summary }}</span>
+              }
+              @if (recipe.suitability; as outcome) {
+                @if (outcome !== suitable) {
+                  <span class="badge badge--{{ outcome }}">
+                    <span class="badge__mark" aria-hidden="true"></span>
+                    {{ outcomeBadge(outcome) }}
+                  </span>
+                }
               }
               <span class="recipes__yield">
                 <span i18n="@@recipeMakes">Makes</span>

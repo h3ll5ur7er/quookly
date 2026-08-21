@@ -44,6 +44,23 @@ class Verdict:
     findings: list[Finding] = field(default_factory=list)
 
 
+@dataclass(frozen=True, slots=True)
+class JudgedLine:
+    """One recipe line, reduced to what deciding suitability needs.
+
+    Enough to judge a whole list of recipes without loading any of them. The list is the
+    most-visited screen, and loading each recipe whole to put a badge on it would be a
+    handful of queries per row.
+    """
+
+    recipe_id: int
+    slug: str
+    name: str
+    allergens: frozenset[Allergen]
+    classified: bool
+    optional: bool
+
+
 # What crosses the API.
 
 

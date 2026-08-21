@@ -1548,6 +1548,16 @@
           },
           "visibility": {
             "$ref": "#/components/schemas/Visibility"
+          },
+          "suitability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Outcome"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",

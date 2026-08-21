@@ -19,7 +19,13 @@ const MYSTERY = {
   quookly: 1,
   exported_at: '2026-08-21T12:00:00Z',
   locale: 'en-GB',
-  ingredients: [{ slug: 'mystery-paste', kind: 'solid', density: '1.0', names: ['mystery paste'] }],
+  ingredients: [
+    { slug: 'mystery-paste', kind: 'solid', density: '1.0', names: ['mystery paste'] },
+    // Already in the registry from the seed, and declared anyway: a document has to carry
+    // every ingredient its recipes name, and one already present is left as it is.
+    { slug: 'caster-sugar', kind: 'powder', density: '0.85', names: ['caster sugar'] },
+    { slug: 'water', kind: 'liquid', density: '1.0', names: ['water'] },
+  ],
   recipes: [
     {
       title: 'Mystery Bake',
@@ -29,6 +35,19 @@ const MYSTERY = {
       provenance: 'authored',
       lines: [{ ingredient: 'mystery-paste', magnitude: '200', unit: 'g' }],
       steps: [{ instruction: 'Bake it and hope.' }],
+    },
+    {
+      // Two seeded ingredients, both classified and both clear of everything Ada avoids.
+      title: 'Sugar Syrup',
+      summary: 'Nothing in it anybody here avoids.',
+      yield_magnitude: '4',
+      yield_unit: 'serving',
+      provenance: 'authored',
+      lines: [
+        { ingredient: 'caster-sugar', magnitude: '200', unit: 'g' },
+        { ingredient: 'water', magnitude: '100', unit: 'ml' },
+      ],
+      steps: [{ instruction: 'Dissolve one in the other.' }],
     },
   ],
 };
@@ -44,7 +63,10 @@ test.beforeAll(async ({ request }) => {
   token = (await signIn.json()).token;
   const auth = { Authorization: `Bearer ${token}` };
 
-  await request.post('/api/v1/recipes/import', { data: MYSTERY, headers: auth });
+  // Checked, because an import that quietly fails shows up later as "element not found"
+  // in a test about something else entirely.
+  const imported = await request.post('/api/v1/recipes/import', { data: MYSTERY, headers: auth });
+  expect(imported.ok(), await imported.text()).toBe(true);
 
   // Start from a household of exactly one person, so a verdict is about her alone.
   const existing = await (await request.get('/api/v1/eaters', { headers: auth })).json();
@@ -159,6 +181,52 @@ test.describe('a recipe nobody has checked', () => {
   });
 });
 
+test.describe('the list', () => {
+  test('marks a recipe somebody cannot eat', async ({ page }) => {
+    await page.goto('/recipes');
+    const row = page.locator('.recipes__item').filter({ hasText: 'Shortbread' });
+    await expect(row.locator('.badge')).toHaveText(/Not suitable/i);
+  });
+
+  test('marks a recipe nobody has checked, rather than leaving it bare', async ({ page }) => {
+    await page.goto('/recipes');
+    const row = page.locator('.recipes__item').filter({ hasText: 'Mystery Bake' });
+    await expect(row.locator('.badge')).toHaveText(/Not checked/i);
+  });
+
+  test('says nothing about a recipe that suits everybody', async ({ page }) => {
+    await page.goto('/recipes');
+    const row = page.locator('.recipes__item').filter({ hasText: 'Sugar Syrup' });
+    await expect(row).toBeVisible();
+    await expect(row.locator('.badge')).toHaveCount(0);
+  });
+
+  test('agrees with the page it leads to', async ({ page }) => {
+    /*
+     * Two code paths, one answer. A badge that disagrees with the page teaches a cook
+     * that the badge cannot be trusted, which is worse than having no badge.
+     */
+    await page.goto('/recipes');
+    const row = page.locator('.recipes__item').filter({ hasText: 'Mystery Bake' });
+    await expect(row.locator('.badge')).toHaveText(/Not checked/i);
+    await open(page, 'Mystery Bake');
+    await expect(page.locator('.verdict--unknown')).toBeVisible();
+  });
+
+  test('has no accessibility violations', async ({ page }) => {
+    await page.goto('/recipes');
+    await expect(page.getByText('Sugar Syrup')).toBeVisible();
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toEqual([]);
+  });
+
+  test('looks like this', async ({ page }) => {
+    await page.goto('/recipes');
+    await expect(page.getByText('Sugar Syrup')).toBeVisible();
+    await page.screenshot({ path: 'e2e/screenshots/recipe-list-judged.png', fullPage: true });
+  });
+});
+
 test.describe('a household nobody has described', () => {
   test('gets no verdict rather than a reassuring one', async ({ page, request }) => {
     const auth = { Authorization: `Bearer ${token}` };
@@ -168,5 +236,13 @@ test.describe('a household nobody has described', () => {
     }
     await open(page, 'Shortbread');
     await expect(page.locator('.verdict')).toHaveCount(0);
+  });
+
+  test('explains the unbadged list rather than letting it read as approval', async ({ page }) => {
+    await page.goto('/recipes');
+    await expect(page.locator('.badge')).toHaveCount(0);
+    await expect(page.getByText(/Nobody recorded yet/)).toBeVisible();
+    await page.getByRole('link', { name: /Add who you cook for/ }).click();
+    await expect(page).toHaveURL(/\/household$/);
   });
 });

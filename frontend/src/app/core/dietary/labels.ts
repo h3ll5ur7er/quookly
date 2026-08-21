@@ -132,6 +132,25 @@ export function outcomeLabel(outcome: Outcome): string {
   }
 }
 
+/**
+ * The same outcome, short enough for a list row.
+ *
+ * Separate from `outcomeLabel` because a headline and a badge are different lengths of
+ * the same sentence, and "Not enough is known" beside a recipe title is a paragraph.
+ */
+export function outcomeBadge(outcome: Outcome): string {
+  switch (outcome) {
+    case Outcome.unsuitable:
+      return $localize`:@@badgeUnsuitable:Not suitable`;
+    case Outcome.unknown:
+      return $localize`:@@badgeUnknown:Not checked`;
+    case Outcome.caution:
+      return $localize`:@@badgeCaution:Take care`;
+    case Outcome.suitable:
+      return $localize`:@@badgeSuitable:Suits everyone`;
+  }
+}
+
 /** What the cook should do about it, which is the part a verdict alone does not say. */
 export function outcomeExplanation(outcome: Outcome): string {
   switch (outcome) {

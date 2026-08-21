@@ -102,6 +102,12 @@
     "outcomeCautionWhy": "Jemand an Ihrem Tisch verträgt etwas darin nicht.",
     "outcomeSuitableWhy": "Nichts davon steht im Widerspruch zu dem, was Sie erfasst haben.",
     "findingUnchecked": "nicht auf Allergene geprüft",
-    "findingAvoidable": "kann weggelassen werden"
+    "findingAvoidable": "kann weggelassen werden",
+    "badgeUnsuitable": "Nicht geeignet",
+    "badgeUnknown": "Nicht geprüft",
+    "badgeCaution": "Vorsicht",
+    "badgeSuitable": "Für alle geeignet",
+    "recipesNoHousehold": "Noch niemand erfasst, deshalb wurde hier nichts geprüft.",
+    "recipesAddHousehold": "Erfassen Sie, für wen Sie kochen"
   }
 }

@@ -243,3 +243,72 @@ class TestSeveralEaters:
         await add_eater(client, theirs, "Stranger", [PEANUT_ALLERGY])
         recipe_id = await author(client, cook, recipe_of("peanut-butter", larder=larder))
         assert await verdict(client, cook, recipe_id) is None
+
+
+async def listed(client: AsyncClient, cook: dict[str, str], title: str) -> Any:
+    response = await client.get(RECIPES, headers=cook)
+    assert response.status_code == 200, response.text
+    return next(entry for entry in response.json() if entry["title"] == title)
+
+
+class TestTheList:
+    """The screen where a cook chooses, which is where the answer is worth the most.
+
+    The list carries the outcome and not the reasons: it is a place to scan, and the
+    reasons are one tap away on a page with room for them.
+    """
+
+    async def test_a_listed_recipe_carries_its_outcome(
+        self, client: AsyncClient, cook: dict[str, str], larder: dict[str, int]
+    ) -> None:
+        await add_eater(client, cook, "Mira", [PEANUT_ALLERGY])
+        await author(client, cook, {**recipe_of("peanut-butter", larder=larder), "title": "Bad"})
+        assert (await listed(client, cook, "Bad"))["suitability"] == "unsuitable"
+
+    async def test_an_unexamined_ingredient_is_unknown_in_the_list_too(
+        self, client: AsyncClient, cook: dict[str, str], larder: dict[str, int]
+    ) -> None:
+        """The list is where a cook decides what to open. It must not overstate safety."""
+        await add_eater(client, cook, "Mira", [PEANUT_ALLERGY])
+        await author(client, cook, {**recipe_of("mystery-paste", larder=larder), "title": "Odd"})
+        assert (await listed(client, cook, "Odd"))["suitability"] == "unknown"
+
+    async def test_a_clear_recipe_is_suitable(
+        self, client: AsyncClient, cook: dict[str, str], larder: dict[str, int]
+    ) -> None:
+        await add_eater(client, cook, "Mira", [PEANUT_ALLERGY])
+        await author(client, cook, {**recipe_of("plain-flour", larder=larder), "title": "Fine"})
+        assert (await listed(client, cook, "Fine"))["suitability"] == "suitable"
+
+    async def test_each_recipe_is_judged_on_its_own(
+        self, client: AsyncClient, cook: dict[str, str], larder: dict[str, int]
+    ) -> None:
+        await add_eater(client, cook, "Mira", [PEANUT_ALLERGY])
+        await author(client, cook, {**recipe_of("peanut-butter", larder=larder), "title": "Bad"})
+        await author(client, cook, {**recipe_of("plain-flour", larder=larder), "title": "Fine"})
+        assert (await listed(client, cook, "Bad"))["suitability"] == "unsuitable"
+        assert (await listed(client, cook, "Fine"))["suitability"] == "suitable"
+
+    async def test_an_empty_household_gets_no_badges(
+        self, client: AsyncClient, cook: dict[str, str], larder: dict[str, int]
+    ) -> None:
+        await author(client, cook, {**recipe_of("peanut-butter", larder=larder), "title": "Bad"})
+        assert (await listed(client, cook, "Bad"))["suitability"] is None
+
+    async def test_the_list_agrees_with_the_page_it_leads_to(
+        self, client: AsyncClient, cook: dict[str, str], larder: dict[str, int]
+    ) -> None:
+        """Two code paths, one answer. A badge that disagrees with the page is worse than
+        no badge: it teaches a cook that the badge cannot be trusted."""
+        await add_eater(client, cook, "Mira", [PEANUT_ALLERGY])
+        for title, slugs in (
+            ("Bad", ("peanut-butter",)),
+            ("Odd", ("mystery-paste",)),
+            ("Fine", ("plain-flour",)),
+        ):
+            recipe_id = await author(
+                client, cook, {**recipe_of(*slugs, larder=larder), "title": title}
+            )
+            badge = (await listed(client, cook, title))["suitability"]
+            page = await verdict(client, cook, recipe_id)
+            assert badge == page["outcome"], title

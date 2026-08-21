@@ -11,6 +11,11 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* The navigation bar is sticky at the bottom, so anything scrolled *just* into view
+     lands underneath it — unreachable by thumb and unreachable by keyboard focus, which
+     scrolls the same way. Reserving the bar's height means "scrolled into view" means
+     visible. Slightly more than the bar so a focus ring is not flush against it. */
+  scroll-padding-block-end: 5rem;
 }
 
 body {

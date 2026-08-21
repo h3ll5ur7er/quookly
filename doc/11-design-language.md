@@ -47,6 +47,11 @@ interface.
 the design should be striking, it is striking through type, proportion, and a single confident
 colour — not through more elements.
 
+**6a. A warning that is always on stops being read.** A badge appears where there is
+something to say and nowhere else — a tick on every recipe that is fine would drown the one
+that is not. Where that makes silence ambiguous, the silence is explained rather than left
+to be read as approval.
+
 **7. Nothing is colour alone.** Every state carries an icon or a word as well as a hue. This is an
 accessibility requirement and, for dietary warnings, a safety one.
 
@@ -206,7 +211,10 @@ is never removed without a replacement.
 
 Non-negotiable, and mostly a consequence of the rest.
 
-- **WCAG AA in every theme**, verified per token pair rather than per screen.
+- **WCAG AA in every theme**, verified per token pair rather than per screen. A status
+  colour used as *text* rather than as a fill is a different pair and needs its own entry:
+  `--danger` and friends were defined as backgrounds, and a theme is free to lighten one
+  for its own use.
 - **Never colour alone** — icon or text always. For dietary warnings this is a safety rule
   ([ADR-006](07-decisions.md#adr-006-allergen-determination-is-structural)), not a preference.
 - **Visible focus** on every interactive element.

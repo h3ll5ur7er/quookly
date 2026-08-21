@@ -20,7 +20,7 @@ DEFAULT_LOCALE = "en-GB"
 @router.get("/recipes", response_model=list[RecipeSummaryView])
 async def list_recipes(cook: CurrentCook) -> list[RecipeSummaryView]:
     """The cook's own recipes."""
-    return await recipe_manager.list_for(cook.cook_id)
+    return await recipe_manager.list_for(cook.cook_id, DEFAULT_LOCALE)
 
 
 @router.post("/recipes", response_model=PresentedRecipe, status_code=status.HTTP_201_CREATED)

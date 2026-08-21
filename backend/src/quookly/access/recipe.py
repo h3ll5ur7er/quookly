@@ -10,7 +10,7 @@ from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from quookly.access.database import session
-from quookly.access.ingredient import allergens_within, name_for
+from quookly.access.ingredient import allergens_within, canonical_names_within
 from quookly.access.models import IngredientLineRow, IngredientRow, RecipeRow, StepRow
 from quookly.contracts.errors import IngredientNotRegistered
 from quookly.contracts.ingredient import Ingredient
@@ -22,6 +22,7 @@ from quookly.contracts.recipe import (
     RecipeSummary,
     Step,
 )
+from quookly.contracts.suitability import JudgedLine
 
 
 async def store(draft: RecipeDraft, cook_id: int) -> Recipe:
@@ -128,9 +129,9 @@ async def _lines_for(active: AsyncSession, recipe_id: int, locale: str) -> list[
     # Resolved for the whole recipe at once. Leaving it off would give every line an
     # empty allergen set, which reads as "contains none" to anybody who does not also
     # check `classified` — the confusion ADR-006 exists to prevent.
-    classification = await allergens_within(
-        active, [entry.id for _, entry in pairs if entry.id is not None]
-    )
+    ingredient_ids = [entry.id for _, entry in pairs if entry.id is not None]
+    classification = await allergens_within(active, ingredient_ids)
+    names = await canonical_names_within(active, ingredient_ids, locale)
 
     lines: list[IngredientLine] = []
     for line, entry in pairs:
@@ -144,7 +145,7 @@ async def _lines_for(active: AsyncSession, recipe_id: int, locale: str) -> list[
                     id=entry.id,
                     slug=entry.slug,
                     kind=entry.kind,
-                    name=await name_for(active, entry.id, locale, entry.slug),
+                    name=names.get(entry.id, entry.slug),
                     density=entry.density,
                     origin=entry.origin,
                     allergens=allergens,
@@ -195,3 +196,45 @@ async def fetch_all_for_cook(cook_id: int, locale: str) -> list[Recipe]:
 
     recipes = [await fetch(recipe_id, locale) for recipe_id in ids]
     return [recipe for recipe in recipes if recipe is not None]
+
+
+async def lines_to_judge(cook_id: int, locale: str) -> list[JudgedLine]:
+    """Every line of every recipe this cook owns, reduced to what a verdict needs.
+
+    Three queries whatever the size of the collection. Fetching each recipe whole to put
+    a badge on a list row would be several queries per row, on the screen a cook opens
+    most often.
+    """
+    async with session() as active:
+        rows = (
+            await active.exec(
+                select(IngredientLineRow, IngredientRow, RecipeRow)
+                .join(IngredientRow, col(IngredientLineRow.ingredient_id) == col(IngredientRow.id))
+                .join(RecipeRow, col(IngredientLineRow.recipe_id) == col(RecipeRow.id))
+                .where(col(RecipeRow.cook_id) == cook_id)
+                .order_by(col(IngredientLineRow.recipe_id), col(IngredientLineRow.position))
+            )
+        ).all()
+        if not rows:
+            return []
+
+        ingredient_ids = [entry.id for _, entry, _ in rows if entry.id is not None]
+        classification = await allergens_within(active, ingredient_ids)
+        names = await canonical_names_within(active, ingredient_ids, locale)
+
+    judged = []
+    for line, entry, _ in rows:
+        if entry.id is None:
+            continue
+        allergens, classified = classification.get(entry.id, (frozenset(), False))
+        judged.append(
+            JudgedLine(
+                recipe_id=line.recipe_id,
+                slug=entry.slug,
+                name=names.get(entry.id, entry.slug),
+                allergens=allergens,
+                classified=classified,
+                optional=line.optional,
+            )
+        )
+    return judged

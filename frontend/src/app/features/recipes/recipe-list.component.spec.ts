@@ -12,7 +12,12 @@ const PANCAKES = {
   summary: 'Batter, pan, patience.',
   yield_quantity: { magnitude: '12', unit: 'piece', display: '12 piece' },
   visibility: 'private',
+  suitability: null,
 };
+
+function judged(suitability: string | null) {
+  return [{ ...PANCAKES, suitability }];
+}
 
 describe('RecipeListComponent', () => {
   let fixture: ComponentFixture<RecipeListComponent>;
@@ -73,5 +78,47 @@ describe('RecipeListComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="alert"]')).not.toBeNull();
+  });
+
+  async function show(body: unknown[]): Promise<void> {
+    backend.expectOne('/api/v1/recipes').flush(body);
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
+  it('marks a recipe somebody cannot eat', async () => {
+    await show(judged('unsuitable'));
+    expect(text()).toContain('Not suitable');
+  });
+
+  it('marks a recipe nobody has checked, rather than leaving it bare', async () => {
+    /*
+     * A bare row means "fine" once a cook has learnt the pattern. Unknown is not fine,
+     * and this is the screen where they decide what to open.
+     */
+    await show(judged('unknown'));
+    expect(text()).toContain('Not checked');
+  });
+
+  it('says nothing about a recipe that suits everybody', async () => {
+    // Twenty ticks would drown the one warning that matters.
+    await show(judged('suitable'));
+    expect(fixture.nativeElement.querySelector('.badge')).toBeNull();
+  });
+
+  it('carries a word beside the colour', async () => {
+    await show(judged('caution'));
+    expect(text()).toContain('Take care');
+  });
+
+  it('explains an unbadged list when there is nobody to judge against', async () => {
+    await show(judged(null));
+    expect(text()).toContain('Nobody recorded yet');
+    expect(fixture.nativeElement.querySelector('a[href="/household"]')).not.toBeNull();
+  });
+
+  it('does not nag once there is somebody to judge against', async () => {
+    await show(judged('suitable'));
+    expect(text()).not.toContain('Nobody recorded yet');
   });
 });

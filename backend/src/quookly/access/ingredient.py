@@ -149,6 +149,35 @@ async def name_for(active: AsyncSession, ingredient_id: int, locale: str, fallba
     return fallback
 
 
+async def canonical_names_within(
+    active: AsyncSession, ingredient_ids: list[int], locale: str
+) -> dict[int, str]:
+    """Canonical names for many ingredients at once, in one query.
+
+    The same fallback as `name_for` — the requested locale, then the locale the registry
+    was seeded in — resolved for a whole recipe rather than a line at a time. An id with
+    no name in either locale is absent, and the caller falls back to its slug.
+    """
+    if not ingredient_ids:
+        return {}
+    rows = (
+        await active.exec(
+            select(IngredientNameRow).where(
+                col(IngredientNameRow.ingredient_id).in_(ingredient_ids),
+                col(IngredientNameRow.locale).in_([locale, SOURCE_LOCALE]),
+                col(IngredientNameRow.is_canonical).is_(True),
+            )
+        )
+    ).all()
+
+    resolved: dict[int, str] = {}
+    for candidate in (locale, SOURCE_LOCALE):
+        for row in rows:
+            if row.locale == candidate and row.ingredient_id not in resolved:
+                resolved[row.ingredient_id] = row.name
+    return resolved
+
+
 async def densities_for(ingredient_ids: list[int]) -> dict[int, Decimal | None]:
     """Densities for a whole recipe at once, rather than one query per line."""
     if not ingredient_ids:

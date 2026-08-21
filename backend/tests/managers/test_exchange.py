@@ -241,3 +241,63 @@ class TestRefusing:
             await recipe_manager.import_document(document, cook_id, ENGLISH)
         assert await registry.resolve("sound", ENGLISH) is None
         assert await recipe_manager.list_for(cook_id) == []
+
+
+class TestADocumentStandsAlone:
+    """A recipe may only name ingredients the document itself declares.
+
+    Resolving against whatever this instance already holds would succeed here and fail on
+    the next machine, which makes the document unportable — and portability is the point
+    of the format (FR-11).
+    """
+
+    async def test_an_undeclared_ingredient_is_refused(self, cook_id: int) -> None:
+        await registry.register(
+            slug="caster-sugar",
+            kind=IngredientKind.POWDER,
+            density=Decimal("0.85"),
+            names={"en-GB": ["caster sugar"]},
+        )
+        document = {
+            "quookly": 1,
+            "exported_at": "2026-08-21T12:00:00Z",
+            "locale": "en-GB",
+            "ingredients": [],
+            "recipes": [
+                {
+                    "title": "Syrup",
+                    "summary": None,
+                    "yield_magnitude": "4",
+                    "yield_unit": "serving",
+                    "provenance": "authored",
+                    "lines": [{"ingredient": "caster-sugar", "magnitude": "200", "unit": "g"}],
+                    "steps": [{"instruction": "Dissolve."}],
+                }
+            ],
+        }
+        with pytest.raises(UnsupportedDocument) as refused:
+            await recipe_manager.import_document(document, cook_id, "en-GB")
+        assert "caster-sugar" in str(refused.value)
+
+    async def test_nothing_is_written_when_it_is_refused(self, cook_id: int) -> None:
+        """Refused before anything is stored, so a cook is never left guessing what landed."""
+        document = {
+            "quookly": 1,
+            "exported_at": "2026-08-21T12:00:00Z",
+            "locale": "en-GB",
+            "ingredients": [],
+            "recipes": [
+                {
+                    "title": "Syrup",
+                    "summary": None,
+                    "yield_magnitude": "4",
+                    "yield_unit": "serving",
+                    "provenance": "authored",
+                    "lines": [{"ingredient": "nothing-here", "magnitude": "1", "unit": "g"}],
+                    "steps": [{"instruction": "Dissolve."}],
+                }
+            ],
+        }
+        with pytest.raises(UnsupportedDocument):
+            await recipe_manager.import_document(document, cook_id, "en-GB")
+        assert await recipe_manager.list_for(cook_id) == []

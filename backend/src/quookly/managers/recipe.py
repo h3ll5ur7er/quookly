@@ -29,7 +29,7 @@ from quookly.contracts.recipe import (
     RecipeSummaryView,
     StepDraft,
 )
-from quookly.contracts.suitability import FindingView, VerdictView
+from quookly.contracts.suitability import FindingView, JudgedLine, Outcome, VerdictView
 from quookly.engines import exchange, measure, suitability
 
 _UNITS_BY_SYMBOL = {unit.symbol: unit for unit in Unit}
@@ -85,8 +85,41 @@ async def author(submitted: RecipeInput, cook_id: int, locale: str) -> Presented
     return await _present(stored, await preference_access.for_cook(cook_id), None, cook_id)
 
 
-async def list_for(cook_id: int) -> list[RecipeSummaryView]:
+def _facts(line: JudgedLine) -> suitability.IngredientFacts:
+    return suitability.IngredientFacts(
+        slug=line.slug,
+        name=line.name,
+        allergens=line.allergens,
+        classified=line.classified,
+        optional=line.optional,
+    )
+
+
+async def _outcomes_for(cook_id: int, locale: str) -> dict[int, Outcome]:
+    """One outcome per recipe this cook owns, judged against their household.
+
+    Judged here rather than per row so the whole list costs a fixed number of queries,
+    and by the same engine the recipe page uses. A badge that disagrees with the page it
+    leads to would teach a cook that the badge cannot be trusted, which is worse than
+    having no badge at all.
+    """
+    household = await eater_access.list_for_cook(cook_id)
+    if not household:
+        return {}
+
+    by_recipe: dict[int, list[suitability.IngredientFacts]] = {}
+    for line in await recipe_access.lines_to_judge(cook_id, locale):
+        by_recipe.setdefault(line.recipe_id, []).append(_facts(line))
+
+    return {
+        recipe_id: suitability.evaluate(facts, household).outcome
+        for recipe_id, facts in by_recipe.items()
+    }
+
+
+async def list_for(cook_id: int, locale: str = "en-GB") -> list[RecipeSummaryView]:
     summaries = await recipe_access.list_for_cook(cook_id)
+    outcomes = await _outcomes_for(cook_id, locale)
     return [
         RecipeSummaryView(
             id=summary.id,
@@ -94,6 +127,7 @@ async def list_for(cook_id: int) -> list[RecipeSummaryView]:
             summary=summary.summary,
             yield_quantity=_view(summary.yield_quantity),
             visibility=summary.visibility,
+            suitability=outcomes.get(summary.id),
         )
         for summary in summaries
     ]
@@ -221,9 +255,13 @@ async def import_document(raw: dict[str, Any], cook_id: int, locale: str) -> Imp
     them.
 
     The document is validated in full — format version, shape, units, and that every slug
-    a recipe refers to is one the document defines or this instance already holds — before
-    anything is written. A half-finished import would leave a cook unable to tell what
-    arrived.
+    a recipe refers to is one the document itself defines — before anything is written. A
+    half-finished import would leave a cook unable to tell what arrived.
+
+    A recipe may not lean on an ingredient this instance happens to already hold, even
+    though resolving it would succeed here. A document that only imports on the machine it
+    came from is not portable, and portability is the point of the format (FR-11). Our own
+    exporter always declares every ingredient its recipes name.
 
     That validation is not a transaction. Each write is its own, so a failure *during*
     writing could still leave part of a document imported. Making the whole import atomic
