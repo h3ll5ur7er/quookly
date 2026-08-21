@@ -35,6 +35,19 @@ class Settings(BaseSettings):
     token_lifetime_hours: int = 12
     log_level: str = "INFO"
 
+    # Which model answers, and how it is reached (V3, FR-8, UC-8.2). Configuration rather
+    # than code: the same build serves a local vLLM and a hosted provider, and nothing
+    # above the access layer knows which one answered.
+    #
+    # Empty means no provider. An instance without one still works — it simply cannot be
+    # asked to interpret a page, and says so rather than failing as if something broke.
+    inference_base_url: str = ""
+    inference_model: str = ""
+    inference_api_key: SecretStr = SecretStr("")
+    # Local models on modest hardware are slow, and a recipe page is a long prompt. The
+    # default is patient rather than snappy; a self-hoster on a slower box raises it.
+    inference_timeout_seconds: float = 180.0
+
     @model_validator(mode="after")
     def resolve_secret_key(self) -> "Settings":
         """Require a secret in production; generate a throwaway in development.

@@ -104,7 +104,7 @@ claims; having the structural judge already in place removes the temptation and 
 
 **Goal:** the founding use case.
 
-- `ModelAccess` with at least one local and one hosted provider (V3, FR-8)
+- ~~`ModelAccess` with at least one local and one hosted provider (V3, FR-8)~~ **Built** — one OpenAI-shaped client ([ADR-026](07-decisions.md#adr-026-one-openai-shaped-wire-format-not-a-provider-plugin-system)), verified against a local vLLM
 - `WebContentAccess`: fetch and extract readable content
 - `InterpretationEngine`: content to canonical recipe (V2)
 - URL import (UC-1.3), validation and failure reporting (FR-9)

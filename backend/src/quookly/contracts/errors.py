@@ -64,3 +64,35 @@ class UnsupportedDocument(QuooklyError):
     Reading a format we do not understand would silently drop whatever is new in it, so
     an unrecognised version is refused rather than partially honoured.
     """
+
+
+class InferenceNotConfigured(QuooklyError):
+    """This instance has not been pointed at a model (FR-8, UC-8.2).
+
+    Distinct from unavailability: nothing is wrong, nobody has said where to ask. An
+    operator can act on that; "the request failed" tells them to check a network.
+    """
+
+
+class InferenceUnavailable(QuooklyError):
+    """The model could not be reached, or failed while answering.
+
+    A model that is switched off is a normal outcome for a self-hosted instance, not a
+    crash — which is why it is an error the layers above are expected to catch.
+    """
+
+
+class InferenceRefused(QuooklyError):
+    """The provider declined: a rejected credential, a quota, a blocked account.
+
+    Kept apart from unavailability because the remedy is different and only the operator
+    has it. "Your key is wrong" is actionable; "it failed" is not.
+    """
+
+
+class StructuredOutputUnusable(QuooklyError):
+    """The model did not return the shape it was asked for.
+
+    Refused rather than repaired. A half-read answer is a recipe missing ingredients, and
+    guessing at what a model meant is exactly the failure FR-9 exists to prevent.
+    """

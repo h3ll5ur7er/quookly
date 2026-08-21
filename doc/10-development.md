@@ -164,6 +164,7 @@ Root recipes fan out to all three projects:
 | `just format` | ruff format + prettier |
 | `just test` | pytest + vitest |
 | `just check` | format, lint, typecheck, contrast, translations, and test across all three |
+| `just backend test -- -m live` | the tests that need a real inference provider (see below) |
 | `just build` | install, codegen, lint, typecheck, test, frontend build |
 | `just clean` | Remove caches and build output |
 
@@ -380,3 +381,23 @@ quookly/
 
 There is also `.claude/skills/quookly-stack/SKILL.md`, which gives coding agents the same tooling
 rules and architectural constraints described here.
+
+## Testing against a real model
+
+`ModelAccess` has two test files. The ordinary one stubs the transport, which is what makes the
+cases that matter — refused, unreachable, an answer that is not the shape it was asked for —
+testable at all; a live endpoint will not produce those on demand.
+
+The other is marked `live` and is excluded from `just check`, because a suite that needs a running
+model is a suite nobody runs. It exists to check the assumption underneath the stubs: that the
+provider really does speak the wire format we write. Run it when changing anything about how a
+provider is reached:
+
+```bash
+QUOOKLY_INFERENCE_BASE_URL=http://localhost:8000/v1 \
+QUOOKLY_INFERENCE_MODEL=your-model \
+just backend test -- -m live
+```
+
+Any OpenAI-compatible server works ([ADR-026](07-decisions.md#adr-026-one-openai-shaped-wire-format-not-a-provider-plugin-system)):
+vLLM, Ollama, llama.cpp, LM Studio locally, or a hosted provider with `QUOOKLY_INFERENCE_API_KEY`.

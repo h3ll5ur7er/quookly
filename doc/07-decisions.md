@@ -836,3 +836,35 @@ and changing language is rare.
 **Locale is not just language.** `de_CH` is not `de_DE` with different strings — it implies
 different units, number formatting, and ingredient names (V14). `LOCALE_ID` covers the formatting;
 ingredient naming is per-locale data in the registry, not a translation.
+
+---
+
+## ADR-026 One OpenAI-shaped wire format, not a provider plugin system
+
+**Status:** Accepted
+
+**Context.** FR-8 requires at least one local and one hosted inference provider, and V3 lists
+Ollama, vLLM, OpenAI, Anthropic and OpenRouter as things that vary. The obvious reading is an
+abstraction with an implementation per provider.
+
+**Decision.** `ModelAccess` speaks **OpenAI-shaped chat completions** and is configured by base
+URL, model name and an optional key. vLLM, Ollama, llama.cpp, LM Studio, OpenAI, OpenRouter and
+Together are all reached by pointing it somewhere different.
+
+**Rationale.** Those providers already agree on the wire format; a plugin layer over them would
+abstract a difference that is not there. One implementation satisfies FR-8 honestly — a local vLLM
+and a hosted OpenRouter key are both ordinary configurations of it — and the thing that actually
+varies, *which model answers and how it is reached*, is exactly what the settings hold.
+
+Structured output is requested as `response_format: json_schema` with `strict`. Verified against a
+local vLLM serving Qwen3.6-35B: the model fills the shape rather than describing it.
+
+**Cost.** A provider that speaks something else — Anthropic's Messages API is the obvious one — is
+not reachable by configuration and needs its own access service. That is a real limitation, and the
+right shape for it: a second implementation of `ModelAccess`'s interface rather than a plugin
+protocol designed before there was a second thing to plug in.
+
+An answer refused for being the wrong shape is not repaired. A fenced answer has its fence removed
+— models add those often enough that refusing them wastes good answers — but what is inside still
+has to parse on its own, and an answer cut short by the token limit is refused even when what
+arrived happens to parse. For a recipe, truncation means missing ingredients.

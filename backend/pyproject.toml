@@ -8,6 +8,7 @@ dependencies = [
     "aiosqlite>=0.22.1",
     "alembic>=1.19.1",
     "fastapi[all]>=0.136.1",
+    "httpx>=0.28.1",
     "pwdlib[argon2]>=0.3.1",
     "pydantic-settings>=2.14.1",
     "pyjwt>=2.13.0",
@@ -59,6 +60,10 @@ strict = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+# Tests that need a real inference provider. Excluded by default: a suite that needs
+# a running model is a suite nobody runs. Enable with `-m live`.
+markers = ["live: needs a real inference provider"]
+addopts = "-m 'not live'"
 
 [tool.importlinter]
 root_package = "quookly"
