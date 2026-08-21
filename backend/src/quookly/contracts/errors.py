@@ -135,3 +135,12 @@ class NotARecipe(QuooklyError):
     Reported rather than half-answered. A recipe with no ingredients, or no name, looks
     complete on a screen and is not — which is the failure FR-9 exists to prevent.
     """
+
+
+class YieldUnknown(QuooklyError):
+    """The page does not say how much the recipe makes.
+
+    Refused rather than guessed. A yield is the denominator of every quantity in a recipe,
+    so an invented one misscales all of them at once — and does it silently, which is the
+    kind of wrong a cook cannot see.
+    """

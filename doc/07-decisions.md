@@ -921,3 +921,57 @@ least volatile place.
 
 **Cost.** The engine receives two representations and has to reconcile them, which is more work
 than being handed one. That work is the thing the engine exists to do.
+
+---
+
+## ADR-029 An ingredient the registry does not know is recorded and reported
+
+**Status:** Accepted
+
+**Context.** Importing from a URL produces ingredient *names*. Most resolve against the registry.
+Some do not — "oil or melted butter" is a real line from a real page, and no registry will hold it.
+
+**Decision.** An unresolvable name is **recorded** as a new registry entry with no density and no
+allergen classification, and **reported** in the import's result. It is neither refused nor added
+silently.
+
+**Rationale.** The three options are not equal. Refusing the whole import over one unknown word
+would make the feature useless — a cook pastes a link and gets nothing. Adding it silently would
+leave them unaware that something needs checking. Recording and reporting keeps the recipe usable
+while making the gap visible.
+
+Crucially the new entry is **unexamined**, not examined-and-clear (ADR-006). Nothing is known about
+its allergens, so any recipe using it reads as *unknown* rather than as safe — which is the true
+answer, and one the cook can see and act on.
+
+**How resolution reaches the registry.** A written name is tried in several forms, most specific
+first: "3 large free-range eggs", then "eggs", then "egg". Words that say *which one to buy* —
+large, free-range, organic, fresh — are dropped; words that change *what a thing is* are not.
+"Whole" is pointedly in the second group, because whole milk is not milk, and dropping it would
+attach a dairy allergen to nothing and misweigh the recipe besides. Without this the registry
+gains an unclassified duplicate for eggs and an egg allergy stops firing on it.
+
+**Cost.** A registry accumulates entries a cook never chose to add. They are marked as theirs
+rather than seeded, so an upgrade will not touch them, and curating them is a Phase 9 concern.
+
+---
+
+## ADR-030 A recipe whose yield cannot be read is refused
+
+**Status:** Accepted, and expected to be revisited
+
+**Context.** A yield is the denominator of every quantity in a recipe. `InterpretationEngine`
+leaves one absent when the page does not say — "a generous amount" is not a number — and the
+domain currently requires one.
+
+**Decision.** Such an import is refused, with a message saying the page does not state a yield and
+suggesting the recipe be added by hand.
+
+**Rationale.** The alternative is to invent one, and a yield of "1 serving" on a recipe that serves
+four misscales every ingredient by a factor of four — silently, and in the direction a cook cannot
+see. Refusing is the honest answer, and against five live pages it did not fire once.
+
+**Cost.** A cook loses the whole extraction over one missing field, which is a poor trade. The
+remedy is the same shape as the one made for unmeasured lines: let a recipe record that it does not
+know its own yield. That is a wider change — scaling, planning and the shopping list all assume a
+yield exists — and it waits until something makes it worth doing.

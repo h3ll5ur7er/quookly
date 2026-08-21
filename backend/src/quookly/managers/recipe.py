@@ -4,6 +4,7 @@ Sequences the steps and owns none of the rules. Storage is `RecipeAccess`, prefe
 `PreferenceAccess`, and every quantity decision belongs to `MeasureEngine`.
 """
 
+import re
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
@@ -12,11 +13,15 @@ from quookly.access import eater as eater_access
 from quookly.access import ingredient as registry
 from quookly.access import preferences as preference_access
 from quookly.access import recipe as recipe_access
-from quookly.contracts.errors import UnknownUnit, UnsupportedDocument
+from quookly.access import web
+from quookly.contracts.errors import UnknownUnit, UnsupportedDocument, YieldUnknown
 from quookly.contracts.exchange import ExchangeDocument
+from quookly.contracts.ingredient import IngredientKind, Origin
+from quookly.contracts.interpretation import InterpretedLine
 from quookly.contracts.measure import Quantity, Unit
 from quookly.contracts.preferences import UnitPreferences
 from quookly.contracts.recipe import (
+    ImportedRecipe,
     IngredientLineDraft,
     PresentedLine,
     PresentedRecipe,
@@ -30,7 +35,7 @@ from quookly.contracts.recipe import (
     StepDraft,
 )
 from quookly.contracts.suitability import FindingView, JudgedLine, Outcome, VerdictView
-from quookly.engines import exchange, measure, suitability
+from quookly.engines import exchange, interpretation, measure, suitability
 
 _UNITS_BY_SYMBOL = {unit.symbol: unit for unit in Unit}
 
@@ -335,3 +340,102 @@ async def import_document(raw: dict[str, Any], cook_id: int, locale: str) -> Imp
         )
 
     return ImportResult(recipes_added=len(document.recipes), ingredients_added=len(missing))
+
+
+def _slug_for(name: str) -> str:
+    """A registry key for a name nobody has registered yet."""
+    return re.sub(r"[^a-z0-9]+", "-", name.strip().lower()).strip("-") or "unnamed"
+
+
+async def _resolve(lines: list[InterpretedLine], locale: str) -> tuple[dict[str, int], list[str]]:
+    """Match each ingredient name against the registry, recording what was new.
+
+    Resolution happens against the registry, never against what a model said (UC-1.3) —
+    that is what makes a recipe's allergens knowable at all.
+
+    A name the registry has never seen is **recorded and reported**, not invented and not
+    fatal. Refusing a whole import over one unknown word would make the feature useless;
+    adding it silently would leave a cook unaware that something needs checking. The new
+    entry carries no density and no allergen classification, because nothing is known
+    about it — which is why a recipe using one reads as *unknown* rather than as safe.
+    """
+    resolved: dict[str, int] = {}
+    added: list[str] = []
+    for line in lines:
+        if line.ingredient in resolved:
+            continue
+        # Most specific first: "large free-range eggs", then "eggs", then "egg". Without
+        # this the registry gains a second entry for eggs which nobody has classified,
+        # and an egg allergy stops firing on a recipe the registry could have judged.
+        found = None
+        for candidate in interpretation.candidate_names(line.ingredient):
+            found = await registry.resolve(candidate, locale)
+            if found is not None:
+                break
+        if found is not None:
+            resolved[line.ingredient] = found.id
+            continue
+        created = await registry.register(
+            slug=_slug_for(line.ingredient),
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={locale: [line.ingredient]},
+            origin=Origin.USER,
+            # Deliberately not `frozenset()`. Nobody has looked, and examined-and-clear is
+            # not the same fact as unexamined (ADR-006).
+            allergens=None,
+        )
+        resolved[line.ingredient] = created.id
+        added.append(line.ingredient)
+    return resolved, added
+
+
+async def import_from_url(url: str, cook_id: int, locale: str) -> ImportedRecipe:
+    """Read a recipe off a page and store it (UC-1.3) — the founding use case.
+
+    The sequence, and only the sequence: fetch, interpret, resolve, store. Each of those
+    belongs to a service that knows nothing about the others, which is what lets the
+    quality of interpretation change constantly without the shape of importing changing
+    at all.
+    """
+    content = await web.fetch_readable(url)
+    read = await interpretation.read_page(content)
+
+    if read.yield_magnitude is None or read.yield_unit is None:
+        raise YieldUnknown(f"{content.url} does not say how much this makes")
+
+    resolved, added = await _resolve(read.lines, locale)
+    draft = RecipeDraft(
+        title=read.title,
+        summary=read.summary,
+        yield_quantity=Quantity(read.yield_magnitude, read.yield_unit),
+        provenance=Provenance.IMPORTED_URL,
+        lines=[
+            IngredientLineDraft(
+                ingredient_id=resolved[line.ingredient],
+                quantity=(
+                    None
+                    if line.magnitude is None or line.unit is None
+                    else Quantity(line.magnitude, line.unit)
+                ),
+                preparation=line.preparation,
+                optional=line.optional,
+            )
+            for line in read.lines
+        ],
+        steps=[
+            StepDraft(
+                instruction=step.instruction,
+                duration_seconds=step.duration_seconds,
+                temperature_celsius=step.temperature_celsius,
+            )
+            for step in read.steps
+        ],
+    )
+    stored = await recipe_access.store(draft, cook_id)
+    return ImportedRecipe(
+        recipe=await _present(stored, await preference_access.for_cook(cook_id), None, cook_id),
+        read_from=read.source,
+        source_url=content.url,
+        ingredients_added=added,
+    )

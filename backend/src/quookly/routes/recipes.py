@@ -5,10 +5,30 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel
 
-from quookly.contracts.errors import IngredientNotRegistered, UnknownUnit, UnsupportedDocument
+from quookly.contracts.errors import (
+    AddressNotAllowed,
+    ContentRefused,
+    ContentUnreachable,
+    ContentUnreadable,
+    InferenceNotConfigured,
+    InferenceRefused,
+    InferenceUnavailable,
+    IngredientNotRegistered,
+    NotARecipe,
+    StructuredOutputUnusable,
+    UnknownUnit,
+    UnsupportedDocument,
+    YieldUnknown,
+)
 from quookly.contracts.exchange import ExchangeDocument
 from quookly.contracts.measure import DecimalString
-from quookly.contracts.recipe import PresentedRecipe, RecipeInput, RecipeSummaryView
+from quookly.contracts.recipe import (
+    ImportedRecipe,
+    PresentedRecipe,
+    RecipeInput,
+    RecipeSummaryView,
+    UrlImport,
+)
 from quookly.managers import recipe as recipe_manager
 from quookly.routes.dependencies import CurrentCook
 
@@ -84,3 +104,64 @@ async def get_recipe(
     if presented is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such recipe.")
     return presented
+
+
+@router.post(
+    "/recipes/import-url", response_model=ImportedRecipe, status_code=status.HTTP_201_CREATED
+)
+async def import_recipe_from_url(submitted: UrlImport, cook: CurrentCook) -> ImportedRecipe:
+    """Read a recipe off a web page (UC-1.3).
+
+    Every failure here is reported with what a cook can do about it. "It did not work" is
+    a bug report; "this site will not serve an automated reader, but the page works in
+    your browser" is an interface.
+    """
+    try:
+        return await recipe_manager.import_from_url(submitted.url, cook.cook_id, DEFAULT_LOCALE)
+    except AddressNotAllowed as refused:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(refused)
+        ) from None
+    except ContentRefused:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="That site will not serve an automated reader. The page works in your "
+            "browser, so the recipe can be copied across by hand.",
+        ) from None
+    except ContentUnreachable:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="That page could not be fetched. Check the address and try again.",
+        ) from None
+    except ContentUnreadable:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="There is nothing readable at that address.",
+        ) from None
+    except NotARecipe:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="No recipe was found on that page.",
+        ) from None
+    except YieldUnknown:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="That page does not say how much the recipe makes, so it cannot be "
+            "scaled. Add it by hand to record the yield yourself.",
+        ) from None
+    except InferenceNotConfigured:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="That page publishes no recipe data, so reading it needs a model — and "
+            "this instance has none configured.",
+        ) from None
+    except InferenceRefused:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="The model provider refused the request. Check the instance's key.",
+        ) from None
+    except (InferenceUnavailable, StructuredOutputUnusable):
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="The model could not be reached, or did not answer usefully. Please try again.",
+        ) from None

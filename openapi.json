@@ -388,6 +388,48 @@
         }
       }
     },
+    "/api/v1/recipes/import-url": {
+      "post": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Import Recipe From Url",
+        "description": "Read a recipe off a web page (UC-1.3).\n\nEvery failure here is reported with what a cook can do about it. \"It did not work\" is\na bug report; \"this site will not serve an automated reader, but the page works in\nyour browser\" is an interface.",
+        "operationId": "importRecipeFromUrl",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UrlImport"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportedRecipe"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ingredients": {
       "get": {
         "tags": [
@@ -1429,6 +1471,35 @@
         "title": "ImportOutcome",
         "description": "What an import did."
       },
+      "ImportedRecipe": {
+        "properties": {
+          "recipe": {
+            "$ref": "#/components/schemas/PresentedRecipe"
+          },
+          "read_from": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "ingredients_added": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Ingredients Added"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipe",
+          "read_from",
+          "source_url"
+        ],
+        "title": "ImportedRecipe",
+        "description": "What importing a page did, as well as what it produced.\n\n`ingredients_added` is the part a cook has to act on: names the registry had never\nseen are recorded so the recipe can exist, and nothing is known about their allergens\nuntil somebody looks. Reporting them is what stops that being a silent addition."
+      },
       "IngredientKind": {
         "type": "string",
         "enum": [
@@ -1919,6 +1990,15 @@
         "title": "Severity",
         "description": "How seriously a constraint is meant, which is what decides behaviour.\n\nWithout this every constraint is treated alike, and either a disliked ingredient bars a\nmenu or a life-threatening allergen appears as a suggestion. Both are wrong."
       },
+      "Source": {
+        "type": "string",
+        "enum": [
+          "metadata",
+          "model"
+        ],
+        "title": "Source",
+        "description": "Where a reading came from, which is worth keeping.\n\nA recipe that came out wrong is a different investigation depending on whether the\npage lied in its metadata or a model misread its prose."
+      },
       "StatusResponse": {
         "properties": {
           "status": {
@@ -2034,6 +2114,22 @@
         ],
         "title": "UnitPreferenceView",
         "description": "One kind of ingredient and the unit this cook reads it in.\n\n`chosen` separates a preference from a default. Everybody has defaults, and having\nthem is not an answer \u2014 which is what lets guided setup tell the two apart (FR-15)."
+      },
+      "UrlImport": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "UrlImport",
+        "description": "A page to read a recipe out of (UC-1.3)."
       },
       "ValidationError": {
         "properties": {

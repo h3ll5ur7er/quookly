@@ -15,6 +15,7 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from quookly.contracts.ingredient import Ingredient, Origin
+from quookly.contracts.interpretation import Source
 from quookly.contracts.measure import DecimalString, Quantity
 from quookly.contracts.suitability import Outcome, VerdictView
 
@@ -252,3 +253,27 @@ class RecipeInput(BaseModel):
     yield_unit: str
     lines: list[IngredientLineInput] = Field(min_length=1)
     steps: list[StepInput] = Field(min_length=1)
+
+
+class UrlImport(BaseModel):
+    """A page to read a recipe out of (UC-1.3)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    url: str = Field(min_length=1, max_length=2000)
+
+
+class ImportedRecipe(BaseModel):
+    """What importing a page did, as well as what it produced.
+
+    `ingredients_added` is the part a cook has to act on: names the registry had never
+    seen are recorded so the recipe can exist, and nothing is known about their allergens
+    until somebody looks. Reporting them is what stops that being a silent addition.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    recipe: PresentedRecipe
+    read_from: Source
+    source_url: str
+    ingredients_added: list[str] = Field(default_factory=list)

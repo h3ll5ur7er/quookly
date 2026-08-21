@@ -549,3 +549,90 @@ async def read_page(content: ReadableContent) -> InterpretedRecipe:
     if from_metadata is not None:
         return from_metadata
     return await read_prose(content)
+
+
+# --- names a registry might know -----------------------------------------------------
+
+# Words that say which one to buy rather than what it is. Dropping these turns "3 large
+# free-range eggs" into eggs, which the registry knows and has classified.
+#
+# The list is deliberately timid, and stays that way. Dropping *any* adjective would make
+# "coconut milk" resolve to milk — attaching a dairy allergen to a dairy-free ingredient
+# and weighing it wrongly besides. "Whole", as in whole milk, is pointedly absent for the
+# same reason: it looks like a size word and is not one.
+_SHOPPING_WORDS = frozenset(
+    {
+        "large",
+        "small",
+        "medium",
+        "extra",
+        "free-range",
+        "free",
+        "range",
+        "organic",
+        "fresh",
+        "ripe",
+        "good",
+        "good-quality",
+        "best",
+        "best-quality",
+        "quality",
+    }
+)
+
+# Enough of English plurals for a shopping list. A registry holds "egg"; recipes ask for
+# eggs, tomatoes and cherries.
+_PLURALS = (("ies", "y"), ("oes", "o"), ("ches", "ch"), ("shes", "sh"), ("s", ""))
+
+# Words that end in s and are not plurals. Trying "molasse" would find nothing, which
+# costs only a lookup — these are here so the singular is not offered *instead*.
+_NOT_PLURAL = frozenset({"molasses", "asparagus", "couscous", "hummus", "watercress"})
+
+
+def _singular(name: str) -> str | None:
+    """The singular of a name, if it looks plural."""
+    last = name.rsplit(maxsplit=1)[-1] if name.split() else name
+    if last.lower() in _NOT_PLURAL or not last.lower().endswith("s"):
+        return None
+    for ending, replacement in _PLURALS:
+        if last.lower().endswith(ending):
+            singular = last[: -len(ending)] + replacement
+            return name[: len(name) - len(last)] + singular
+    return None
+
+
+def candidate_names(written: str) -> list[str]:
+    """Names to try against the registry, most specific first.
+
+    The name as written always comes first: the registry may know the whole thing, and if
+    it does that is the better match. What follows is the same name with shopping words
+    removed and plurals reduced — so "3 large free-range eggs" reaches "egg" without
+    "coconut milk" ever reaching "milk".
+
+    A list rather than a single best guess, because *this* service does not know what the
+    registry holds. Choosing among them is resolution's job; offering them is reading's.
+    """
+    name = _WHITESPACE.sub(" ", written).strip()
+    if not name:
+        return []
+
+    offered: list[str] = []
+
+    def offer(candidate: str) -> None:
+        tidied = candidate.strip()
+        if tidied and tidied not in offered:
+            offered.append(tidied)
+
+    offer(name)
+
+    words = name.split()
+    kept = [word for word in words if word.lower().strip(",") not in _SHOPPING_WORDS]
+    if kept and len(kept) != len(words):
+        offer(" ".join(kept))
+
+    for candidate in list(offered):
+        singular = _singular(candidate)
+        if singular:
+            offer(singular)
+
+    return offered
