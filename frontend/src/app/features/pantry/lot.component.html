@@ -1,0 +1,98 @@
+<main class="page">
+  @if (missing()) {
+    <h1 i18n="@@lotMissingHeading">No such stock</h1>
+    <p class="lot__lede" i18n="@@lotMissing">
+      This packet is not in your pantry. It may already have been used up or removed.
+    </p>
+  } @else if (failed() && lot() === null) {
+    <h1 i18n="@@lotHeading">This packet</h1>
+    <p class="notice notice--danger" role="alert" i18n="@@lotLoadFailed">
+      Could not load your pantry. Please try again.
+    </p>
+  } @else if (lot(); as packet) {
+    <h1>{{ entry()!.name }}</h1>
+    <p class="lot__facts">
+      <span class="numeric">{{ packet.quantity }}</span>
+      @if (packet.expires_on !== null) {
+        <span aria-hidden="true">·</span>
+        <span i18n="@@lotUseBy">Use by</span>
+        <span>{{ day(packet.expires_on) }}</span>
+      }
+      @if (packet.note !== null) {
+        <span aria-hidden="true">·</span>
+        <span>{{ packet.note }}</span>
+      }
+    </p>
+    @if (urgency(packet); as note) {
+      <p class="lot__urgency lot__urgency--{{ packet.freshness }}">{{ note }}</p>
+    }
+
+    @if (wasting()) {
+      <form [formGroup]="wasteForm" (ngSubmit)="recordWaste()">
+        <label for="wasted" i18n="@@lotFieldWasted">How much was thrown away</label>
+        <span class="lot__measured">
+          <input id="wasted" type="text" inputmode="decimal" formControlName="wasted" />
+          <span class="lot__unit">{{ unit() }}</span>
+        </span>
+
+        <label for="reason" i18n="@@lotFieldReason">Why</label>
+        <select id="reason" formControlName="reason">
+          @for (option of reasons; track option) {
+            <option [value]="option">{{ wasteReasonLabel(option) }}</option>
+          }
+        </select>
+        <p class="hint" i18n="@@lotReasonHint">
+          Kept apart from a correction on purpose. Only what was really thrown away counts as waste
+          — and knowing whether it had gone off or only passed its date is what makes the number
+          worth reading.
+        </p>
+
+        @if (failed()) {
+          <p class="error" role="alert" i18n="@@lotWasteFailed">
+            Could not record that. Please try again.
+          </p>
+        }
+
+        <button type="submit" [disabled]="saving()" i18n="@@lotRecordWaste">Record waste</button>
+        <button type="button" class="secondary" (click)="stopWasting()" i18n="@@lotCancel">
+          Cancel
+        </button>
+      </form>
+    } @else {
+      <form [formGroup]="form" (ngSubmit)="save()">
+        <label for="magnitude" i18n="@@lotFieldRemaining">How much is left</label>
+        <span class="lot__measured">
+          <input id="magnitude" type="text" inputmode="decimal" formControlName="magnitude" />
+          <span class="lot__unit">{{ unit() }}</span>
+        </span>
+        <p class="hint" i18n="@@lotRemainingHint">
+          What is there now, not how much has gone. Zero empties the packet and takes it off the
+          shelf.
+        </p>
+
+        @if (held()) {
+          <p class="error" role="alert" i18n="@@lotHeld">
+            You have already recorded waste from this packet, so it cannot be removed — that record
+            would be left pointing at nothing. Set it to zero instead.
+          </p>
+        }
+        @if (failed()) {
+          <p class="error" role="alert" i18n="@@lotFailed">
+            Could not save that. Please try again.
+          </p>
+        }
+
+        <button type="submit" [disabled]="saving()" i18n="@@lotSave">Save</button>
+        <button type="button" class="secondary" (click)="startWasting()" i18n="@@lotWasteIt">
+          I threw some away
+        </button>
+        <button type="button" class="destructive" (click)="discard()" i18n="@@lotDiscard">
+          Remove — this was never here
+        </button>
+      </form>
+    }
+  } @else {
+    <h1 i18n="@@lotHeading">This packet</h1>
+    <p class="lot__lede" i18n="@@lotLoading">Loading…</p>
+  }
+</main>

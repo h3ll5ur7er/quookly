@@ -1,5 +1,6 @@
 @use '../../../styles/page';
 @use '../../../styles/controls';
+@use '../../../styles/form';
 @use '../../../styles/chips';
 
 /* Appearance comes from the shared partial; the spacing is this form's own. */
@@ -10,42 +11,6 @@ button.destructive {
 
 button.secondary {
   margin-top: var(--space-3);
-}
-
-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-5);
-}
-
-label,
-legend {
-  margin-top: var(--space-3);
-  color: var(--on-surface-muted);
-  font-size: var(--text-sm);
-  font-weight: 600;
-}
-
-input,
-select {
-  min-height: 44px;
-  padding: var(--space-3);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised);
-  color: var(--on-surface);
-  transition: border-color var(--motion-fast) var(--ease-standard);
-
-  &:focus-visible {
-    border-color: var(--primary);
-  }
-}
-
-.hint {
-  margin: var(--space-1) 0 0;
-  color: var(--on-surface-subtle);
-  font-size: var(--text-sm);
 }
 
 .avoids {
@@ -94,33 +59,4 @@ select {
   margin-top: var(--space-4);
   padding-top: var(--space-4);
   border-top: 1px solid var(--border);
-}
-
-/* Tinted rather than filled, so it does not shout in the same red as the action it is
-   telling you to retry. */
-.error {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-  margin: var(--space-4) 0 0;
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  border-inline-start: 4px solid var(--danger);
-  background: var(--danger-surface);
-  color: var(--on-danger-surface);
-  font-size: var(--text-sm);
-
-  /* Never colour alone: the mark carries the meaning where hue cannot. */
-  &::before {
-    content: '!';
-    flex: none;
-    display: grid;
-    place-items: center;
-    width: 1.25rem;
-    height: 1.25rem;
-    border: 2px solid currentcolor;
-    border-radius: var(--radius-full);
-    font-weight: 700;
-    line-height: 1;
-  }
 }

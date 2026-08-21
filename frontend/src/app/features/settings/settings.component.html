@@ -32,8 +32,8 @@
               (change)="choose(preference.kind, $event)"
               [disabled]="optionsFor(preference.kind).length < 2"
             >
-              @for (option of optionsFor(preference.kind); track option.value) {
-                <option [value]="option.value">{{ option.label }}</option>
+              @for (option of optionsFor(preference.kind); track option) {
+                <option [value]="option">{{ option }}</option>
               }
             </select>
           </label>

@@ -1,0 +1,74 @@
+@use '../../../styles/page';
+@use '../../../styles/controls';
+@use '../../../styles/form';
+
+.lot__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em;
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
+.lot__urgency {
+  margin-top: var(--space-2);
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.lot__urgency--past {
+  color: var(--danger);
+}
+
+/* The unit sits inside the field's outline rather than beside it, so the number and what
+   it counts read as one answer. A number alone is not a quantity. */
+.lot__measured {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+
+  &:focus-within {
+    border-color: var(--primary);
+  }
+
+  input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: none;
+    background: none;
+
+    &:focus-visible {
+      outline: none;
+    }
+  }
+}
+
+.lot__unit {
+  display: grid;
+  place-items: center;
+  padding-inline: var(--space-4);
+  border-inline-start: 1px solid var(--border);
+  color: var(--on-surface-muted);
+  font-weight: 600;
+}
+
+.lot__lede {
+  color: var(--on-surface-muted);
+}
+
+button[type='submit'] {
+  margin-top: var(--space-5);
+}
+
+button.secondary {
+  margin-top: var(--space-3);
+}
+
+/* Findable, and never what a thumb lands on by accident. */
+button.destructive {
+  margin-top: var(--space-5);
+}

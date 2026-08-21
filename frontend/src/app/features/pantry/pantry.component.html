@@ -1,0 +1,77 @@
+<main class="page">
+  <h1 i18n="@@pantryHeading">Pantry</h1>
+
+  <!-- Above the shelf, because it is the reason to open this screen at all: food gets
+       thrown away by being forgotten, not by being unavailable. -->
+  @if (pressing().length > 0) {
+    <section class="pantry__soon" aria-labelledby="usingSoon">
+      <h2 id="usingSoon" i18n="@@pantryUsingSoon">Use these soon</h2>
+      <ul class="pantry__soonList">
+        @for (entry of pressing(); track entry.ingredient_id) {
+          @for (lot of entry.lots; track lot.id) {
+            <li>
+              <a
+                class="pantry__soonRow pantry__soonRow--{{ lot.freshness }}"
+                [routerLink]="['/pantry/lots', lot.id]"
+              >
+                <span class="pantry__soonName">{{ entry.name }}</span>
+                <span class="numeric">{{ lot.quantity }}</span>
+                <span class="pantry__urgency">{{ urgency(lot) }}</span>
+              </a>
+            </li>
+          }
+        }
+      </ul>
+    </section>
+  }
+
+  @if (failed()) {
+    <p class="notice notice--danger" role="alert" i18n="@@pantryFailed">
+      Could not load your pantry. Please try again.
+    </p>
+  } @else if (shelf(); as entries) {
+    @if (entries.length === 0) {
+      <p class="pantry__empty" i18n="@@pantryEmpty">
+        Nothing in your pantry yet. Add what you have, and Quookly can tell you what a recipe still
+        needs — and what is about to go to waste.
+      </p>
+    } @else {
+      <ul class="pantry__list">
+        @for (entry of entries; track entry.ingredient_id) {
+          <li class="pantry__entry">
+            <p class="pantry__name">
+              <span>{{ entry.name }}</span>
+              @if (entry.total !== null) {
+                <span class="numeric pantry__total">{{ entry.total }}</span>
+              }
+            </p>
+            <ul class="pantry__lots">
+              @for (lot of entry.lots; track lot.id) {
+                <li>
+                  <a class="pantry__lot" [routerLink]="['/pantry/lots', lot.id]">
+                    <span class="numeric">{{ lot.quantity }}</span>
+                    @if (lot.expires_on !== null) {
+                      <span class="pantry__date">{{ day(lot.expires_on) }}</span>
+                    }
+                    @if (urgency(lot); as note) {
+                      <span class="pantry__urgency pantry__urgency--{{ lot.freshness }}">
+                        {{ note }}
+                      </span>
+                    }
+                    @if (lot.note !== null) {
+                      <span class="pantry__source">{{ lot.note }}</span>
+                    }
+                  </a>
+                </li>
+              }
+            </ul>
+          </li>
+        }
+      </ul>
+    }
+  } @else {
+    <p class="pantry__loading" i18n="@@pantryLoading">Loading…</p>
+  }
+
+  <a class="action" routerLink="/pantry/add" i18n="@@pantryAdd">Add stock</a>
+</main>

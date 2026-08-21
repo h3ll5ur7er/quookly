@@ -16,6 +16,12 @@ export default defineConfig({
     trace: 'retain-on-failure',
     // The phone is the design target (NFR-11), so it is what the suite runs on.
     ...devices['Pixel 7'],
+    // After the device, which carries a locale of its own. This is what `Intl` and the
+    // `Accept-Language` header see. It does *not* reach a native date input: Chromium
+    // formats those from its own UI language, which the harness cannot set from here — so
+    // the date field in these screenshots reads mm/dd/yyyy where a European cook's browser
+    // would not. The field is the platform's, which is the reason for using it.
+    locale: 'en-GB',
   },
   webServer: [
     {

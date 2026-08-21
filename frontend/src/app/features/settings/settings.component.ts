@@ -7,30 +7,8 @@ import {
   UnitPreferenceView,
 } from '@api';
 import { AuthStore } from '../../core/auth/auth.store';
+import { unitsFor } from '../../core/measure/units';
 import { LocalePickerComponent } from '../../core/locale/locale-picker.component';
-
-/** The units worth offering per kind. A countable is counted; the rest are measured. */
-const UNITS_FOR: Record<string, readonly { value: string; label: string }[]> = {
-  [IngredientKind.powder]: [
-    { value: 'g', label: 'g' },
-    { value: 'kg', label: 'kg' },
-    { value: 'oz', label: 'oz' },
-    { value: 'lb', label: 'lb' },
-  ],
-  [IngredientKind.solid]: [
-    { value: 'g', label: 'g' },
-    { value: 'kg', label: 'kg' },
-    { value: 'oz', label: 'oz' },
-    { value: 'lb', label: 'lb' },
-  ],
-  [IngredientKind.liquid]: [
-    { value: 'ml', label: 'ml' },
-    { value: 'dl', label: 'dl' },
-    { value: 'l', label: 'l' },
-    { value: 'fl oz (US)', label: 'fl oz (US)' },
-  ],
-  [IngredientKind.countable]: [{ value: 'piece', label: 'piece' }],
-};
 
 @Component({
   selector: 'app-settings',
@@ -67,8 +45,8 @@ export class SettingsComponent {
     }
   }
 
-  protected optionsFor(kind: IngredientKind): readonly { value: string; label: string }[] {
-    return UNITS_FOR[kind] ?? [];
+  protected optionsFor(kind: IngredientKind): readonly string[] {
+    return unitsFor(kind);
   }
 
   protected kindLabel(kind: IngredientKind): string {

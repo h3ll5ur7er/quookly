@@ -1,0 +1,75 @@
+<main class="page">
+  <h1 i18n="@@receiveHeading">Add stock</h1>
+  <p class="receive__lede" i18n="@@receiveLede">
+    One packet at a time, with the date that is on it. Quookly keeps them apart so a warning can
+    name the bag that is going off rather than the ingredient in general.
+  </p>
+
+  <form [formGroup]="form" (ngSubmit)="save()">
+    <label for="ingredient" i18n="@@receiveFieldIngredient">What is it</label>
+    <input
+      id="ingredient"
+      type="text"
+      list="pantryMatches"
+      formControlName="ingredient"
+      autocomplete="off"
+      (input)="onIngredientInput($event)"
+    />
+    <datalist id="pantryMatches">
+      @for (match of matches(); track match.id) {
+        <option [value]="match.name"></option>
+      }
+    </datalist>
+    @if (unmatched()) {
+      <p class="error" role="alert" i18n="@@receiveUnmatched">
+        Pick one from the list. A name Quookly does not know could never be matched against a
+        recipe, so the stock would be invisible to your shopping list.
+      </p>
+    }
+
+    <div class="receive__amount">
+      <span class="receive__field">
+        <label for="magnitude" i18n="@@receiveFieldAmount">How much</label>
+        <input
+          id="magnitude"
+          type="text"
+          inputmode="decimal"
+          formControlName="magnitude"
+          autocomplete="off"
+        />
+      </span>
+      <span class="receive__field receive__field--unit">
+        <label for="unit" i18n="@@receiveFieldUnit">Unit</label>
+        <select id="unit" formControlName="unit">
+          @for (option of units(); track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      </span>
+    </div>
+
+    <label for="expires_on" i18n="@@receiveFieldExpires">Use by</label>
+    <input id="expires_on" type="date" formControlName="expires_on" />
+    <p class="hint" i18n="@@receiveExpiresHint">
+      Leave it empty if there is no date on the packet. Quookly will not invent one.
+    </p>
+
+    <label for="note" i18n="@@receiveFieldNote">Note</label>
+    <input id="note" type="text" formControlName="note" autocomplete="off" />
+    <p class="hint" i18n="@@receiveNoteHint">Where it came from, or which shelf it is on.</p>
+
+    @if (failed()) {
+      <p class="error" role="alert" i18n="@@receiveFailed">
+        Could not save that. Please try again.
+      </p>
+    }
+
+    <button type="submit" [disabled]="saving()">
+      @if (saving()) {
+        <span i18n="@@receiveSubmitting">Saving…</span>
+      } @else {
+        <span i18n="@@receiveSubmit">Add to pantry</span>
+      }
+    </button>
+  </form>
+</main>

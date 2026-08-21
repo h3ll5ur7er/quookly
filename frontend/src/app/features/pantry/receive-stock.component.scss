@@ -1,0 +1,40 @@
+@use '../../../styles/page';
+@use '../../../styles/controls';
+@use '../../../styles/form';
+
+/* Amount and unit are one question asked in two boxes, so they sit on one line. The unit
+   takes only what it needs: a picker as wide as the number invites the eye to read it as
+   the more important of the two. */
+.receive__amount {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-end;
+}
+
+.receive__field {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-2);
+
+  /* One height for both. A select sizes itself from its content and comes out a few
+     pixels shorter than a text field, which is enough to knock the two labels above them
+     out of line — and a form whose labels do not line up reads as one nobody checked. */
+  input,
+  select {
+    height: 48px;
+  }
+}
+
+.receive__field--unit {
+  flex: 0 0 auto;
+  min-width: 8rem;
+}
+
+.receive__lede {
+  color: var(--on-surface-muted);
+}
+
+button[type='submit'] {
+  margin-top: var(--space-5);
+}

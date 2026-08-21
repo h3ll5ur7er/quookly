@@ -1,0 +1,93 @@
+/* The shape of a form, in one place.
+ *
+ * Four screens had grown their own copy of "a column of labels, inputs and hints, with a
+ * tinted error underneath". One definition means a focus ring looks the same everywhere,
+ * and that changing the shape is a change rather than four.
+ *
+ * The same argument as `_controls.scss`, and the design language lists the text field as
+ * a primitive we own (ADR-024).
+ */
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
+
+/* Space above a label rather than below it, so a label belongs to the field under it
+   rather than floating between two. The first one needs none: the form already stands
+   away from whatever it follows. */
+form > label,
+form > legend,
+form legend {
+  margin-top: var(--space-3);
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+form > label:first-child {
+  margin-top: 0;
+}
+
+label {
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+input,
+select {
+  min-height: 44px;
+  padding: var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--on-surface);
+  font: inherit;
+  transition: border-color var(--motion-fast) var(--ease-standard);
+
+  &:focus-visible {
+    border-color: var(--primary);
+  }
+}
+
+/* Why a field is worth answering, or what happens if it is left alone. Quieter than the
+   label, because it is read once and then never again. */
+.hint {
+  margin: var(--space-1) 0 0;
+  color: var(--on-surface-subtle);
+  font-size: var(--text-sm);
+}
+
+/* Tinted rather than filled: one filled element on a screen is the action, and a message
+   shouting in the same red as the button it is telling you to press again competes with
+   the thing it is asking for. */
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border-inline-start: 4px solid var(--danger);
+  background: var(--danger-surface);
+  color: var(--on-danger-surface);
+  font-size: var(--text-sm);
+  text-align: start;
+
+  /* Never colour alone: the mark carries the meaning where hue cannot. */
+  &::before {
+    content: '!';
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid currentcolor;
+    border-radius: var(--radius-full);
+    font-weight: 700;
+    line-height: 1;
+  }
+}

@@ -57,7 +57,9 @@ test.describe('how it looks', () => {
   });
 
   test('sign-in in German', async ({ browser }) => {
-    const context = await browser.newContext({ locale: 'de-CH', ...test.info().project.use });
+    // The spread goes first: the project now sets a locale of its own, and spreading it
+    // afterwards would quietly put this German page back into English.
+    const context = await browser.newContext({ ...test.info().project.use, locale: 'de-CH' });
     const page = await context.newPage();
     await page.goto('/sign-in');
     await expect(page.getByRole('heading', { name: 'Bei Quookly anmelden' })).toBeVisible();

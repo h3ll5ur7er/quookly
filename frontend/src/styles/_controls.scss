@@ -51,6 +51,10 @@ button.secondary {
 
 button.destructive {
   background: none;
+  /* Lighter than the actions above it. Full weight in danger red, centred at 48px, is the
+     third thing the eye lands on — which is the opposite of "findable, and never what a
+     thumb reaches for". */
+  font-weight: 500;
   color: var(--danger);
 
   &:hover:not(:disabled) {

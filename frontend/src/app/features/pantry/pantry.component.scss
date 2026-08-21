@@ -1,0 +1,152 @@
+@use '../../../styles/page';
+
+/* The reason to open this screen. Sunken rather than filled: it is a prompt, not an
+   alarm — food about to go off is an opportunity to cook, and a red band at the top of
+   the page every week is a band a cook learns to scroll past. */
+.pantry__soon {
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+
+  h2 {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--on-surface-muted);
+  }
+}
+
+.pantry__soonList {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pantry__soonRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border-inline-start: 4px solid var(--warning);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    background: var(--surface);
+  }
+}
+
+/* Past its date is the one case that earns the stronger hue. It is still carried by the
+   words beside it, so the colour is never the only thing saying so. */
+.pantry__soonRow--past {
+  border-inline-start-color: var(--danger);
+}
+
+.pantry__soonName {
+  flex: 1 1 auto;
+  font-weight: 600;
+}
+
+.pantry__urgency {
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
+/* On the shelf, a lot that wants using has to be told apart from the one beside it that
+   does not. In the "use these soon" strip the border already says so; in a card of three
+   identical grey rows, nothing did. */
+.pantry__urgency--soon {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.pantry__urgency--past {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.pantry__list {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pantry__entry {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+
+.pantry__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+/* The total is the answer to "have I got enough", so it is the number the eye lands on. */
+.pantry__total {
+  color: var(--on-surface-muted);
+  font-size: var(--text-md);
+  font-weight: 500;
+}
+
+.pantry__lots {
+  display: grid;
+  gap: var(--space-1);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One lot per row, each its own target. A cook adjusting the bag that is nearly empty
+   should not have to work out which of three numbers belongs to it. */
+.pantry__lot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  min-height: 44px;
+  padding-block: var(--space-2);
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+
+  &:hover {
+    color: var(--primary);
+  }
+}
+
+.pantry__entry li:last-child .pantry__lot {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.pantry__date,
+.pantry__source {
+  color: var(--on-surface-subtle);
+  font-size: var(--text-sm);
+}
+
+.pantry__empty,
+.pantry__loading {
+  color: var(--on-surface-muted);
+}

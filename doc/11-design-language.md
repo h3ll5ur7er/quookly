@@ -210,6 +210,15 @@ washed-out primary still reads as a filled button, which is the one thing a disa
 not do, and beside a real one it competes for the eye it should be giving up. Three screens had
 grown their own copy before this was pulled together, and they had drifted.
 
+**Form field** lives in `styles/_form.scss` — the column of label, control, hint and error that
+every form on this app is made of. Same story as the button, one phase later: four screens had a
+copy by the time the pantry needed a fifth. Space sits *above* a label rather than below it, so a
+label belongs to the field under it rather than floating between two.
+
+A quantity is a number **and** its unit, so where a field takes one, the unit sits inside the
+field's own outline rather than beside it. A cook reading "0.5" and then looking elsewhere to find
+out 0.5 of what has been asked one question in two places.
+
 Each primitive: one responsibility, tokens only, keyboard-operable, and a visible focus ring that
 is never removed without a replacement.
 
