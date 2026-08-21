@@ -18,6 +18,7 @@ from quookly.contracts.errors import (
 from quookly.contracts.ingredient import IngredientKind
 from quookly.contracts.measure import Dimension, Quantity, Unit
 from quookly.contracts.preferences import UnitPreferences
+from quookly.contracts.recipe import IngredientLine, PresentedLine, QuantityView
 
 # How many base units one of each unit is worth. Base units are the gram, the millilitre,
 # and the piece. Exact where the definition is exact.
@@ -240,3 +241,68 @@ def scaling_for(
     if portions <= 0:
         raise ValueError("a recipe that yields nothing cannot be scaled to a table")
     return required_yield(eaters).magnitude / portions
+
+
+# --- what a client reads ---------------------------------------------------------------
+#
+# Here rather than in a manager because two of them need it now: a recipe page and a
+# cooking session render the same lines to the same numbers, and a second copy of this is
+# a second set of rounding rules waiting to disagree with the first.
+
+
+def viewed(quantity: Quantity) -> QuantityView:
+    """A quantity as a client reads it.
+
+    `magnitude` keeps the stored precision, for a client that computes with it. `display`
+    is tidied here rather than at each call site: stored precision is not display
+    precision, and a yield of "12.0000" is not a yield.
+    """
+    return QuantityView(
+        magnitude=str(quantity.magnitude),
+        unit=quantity.unit.symbol,
+        display=str(round_for_display(quantity)),
+    )
+
+
+def servings_of(serves: Decimal | None, factor: Decimal) -> str | None:
+    """How many this feeds, scaled and tidied — or nothing where the yield already says.
+
+    A plain number rather than a quantity: "serves 4", not "4 servings", and trailing
+    zeros from the column are an artefact of storage rather than precision anybody should
+    read into.
+    """
+    if serves is None:
+        return None
+    scaled = round_for_display(Quantity(serves * factor, Unit.SERVING))
+    text = f"{scaled.magnitude:f}"
+    return text.rstrip("0").rstrip(".") if "." in text else text
+
+
+def rendered_lines(
+    lines: Sequence[IngredientLine], preferences: UnitPreferences, factor: Decimal
+) -> list[PresentedLine]:
+    """A recipe's lines scaled and converted for one cook.
+
+    A line with no quantity is left alone. Twice as much "to taste" is still "to taste",
+    and rendering a zero there would read as an amount somebody wrote down.
+    """
+    return [
+        PresentedLine(
+            ingredient=line.ingredient.name,
+            quantity=(
+                None
+                if line.quantity is None
+                else viewed(
+                    render(
+                        scale(line.quantity, factor),
+                        line.ingredient.kind,
+                        line.ingredient.density,
+                        preferences,
+                    )
+                )
+            ),
+            preparation=line.preparation,
+            optional=line.optional,
+        )
+        for line in lines
+    ]

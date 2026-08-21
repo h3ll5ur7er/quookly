@@ -6,10 +6,15 @@ not contribute zero, because zero is a lie in the direction that makes every rec
 quicker than it is.
 """
 
+from datetime import UTC, datetime, timedelta
+
+from quookly.contracts.cooking import Timer
 from quookly.contracts.execution import Attention, PrepGroup, Span
 from quookly.contracts.ingredient import Ingredient, IngredientKind, Origin
 from quookly.contracts.recipe import IngredientLine, Step
 from quookly.engines import execution
+
+AT = datetime(2026, 8, 21, 18, 0, tzinfo=UTC)
 
 
 def step(
@@ -289,3 +294,66 @@ class TestWorkDoneBeforeStarting:
             [step(60, Attention.AHEAD), step(60), step(60)],
         )
         assert [one.position for one in plan.steps] == [1, 2]
+
+
+class TestTimers:
+    """Instants in, instants out (ADR-013, UC-9.4).
+
+    The rule this has to get right is that no interruption loses time. A cook pauses to
+    answer the door, the phone locks, the tablet sleeps, and the reduction is still where
+    it was — that is the whole reason the server holds instants rather than a countdown.
+    """
+
+    def test_starting_a_timer_records_when(self) -> None:
+        running = execution.started(execution.reset(2), AT)
+        assert running.running_since == AT
+        assert running.elapsed_seconds == 0
+
+    def test_pausing_keeps_what_it_counted(self) -> None:
+        running = execution.started(execution.reset(2), AT)
+        held = execution.paused(running, AT + timedelta(minutes=4))
+        assert held.running_since is None
+        assert held.elapsed_seconds == 240
+
+    def test_time_accumulates_across_pauses(self) -> None:
+        """The door, then the phone. Four minutes plus three is seven, not three."""
+        timer = execution.started(execution.reset(2), AT)
+        timer = execution.paused(timer, AT + timedelta(minutes=4))
+        timer = execution.started(timer, AT + timedelta(minutes=10))
+        timer = execution.paused(timer, AT + timedelta(minutes=13))
+        assert timer.elapsed_seconds == 420
+
+    def test_starting_a_running_timer_changes_nothing(self) -> None:
+        """A double tap, or a request the client retried. Moving `running_since` forward
+        would throw away everything since it was last started."""
+        running = execution.started(execution.reset(2), AT)
+        assert execution.started(running, AT + timedelta(minutes=4)) == running
+
+    def test_pausing_a_paused_timer_changes_nothing(self) -> None:
+        held = execution.paused(execution.started(execution.reset(2), AT), AT)
+        assert execution.paused(held, AT + timedelta(minutes=4)) == held
+
+    def test_resetting_puts_it_back_to_nothing(self) -> None:
+        timer = execution.paused(
+            execution.started(execution.reset(2), AT), AT + timedelta(minutes=4)
+        )
+        assert execution.reset(timer.step_position) == Timer(
+            step_position=2, running_since=None, elapsed_seconds=0
+        )
+
+    def test_a_clock_that_runs_backwards_does_not_run_the_timer_backwards(self) -> None:
+        """A client's clock can be ahead of the server's. A timer that goes *up* when you
+        pause it is a timer nobody believes again."""
+        running = execution.started(execution.reset(2), AT)
+        held = execution.paused(running, AT - timedelta(minutes=4))
+        assert held.elapsed_seconds == 0
+
+    def test_a_running_timer_counts_from_when_it_started(self) -> None:
+        running = execution.started(execution.reset(2), AT)
+        assert execution.counted(running, AT + timedelta(minutes=4)) == 240
+
+    def test_a_paused_timer_counts_what_it_had(self) -> None:
+        held = execution.paused(
+            execution.started(execution.reset(2), AT), AT + timedelta(minutes=4)
+        )
+        assert execution.counted(held, AT + timedelta(hours=3)) == 240

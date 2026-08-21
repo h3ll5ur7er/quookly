@@ -272,14 +272,23 @@ and consuming arrive with planning and with cooking mode.
 multipliers → derive the execution plan → track progress and timer state → complete, releasing a
 `MealCooked` fact, or abandon, releasing reservations.
 
+**Built** for UC-9.1 to UC-9.4 and UC-9.6 to UC-9.8. A session is opened for a **planned meal**
+([ADR-042](07-decisions.md#adr-042-a-cooking-session-executes-a-planned-meal)): the plan is already
+where a meal is recorded and where its stock is held aside, and a second place a meal could exist
+would be a second history. In-step technique lookup (UC-9.5) waits for the Academy.
+
 The session is server-side (FR-13), which is what makes UC-9.7 — resume on another device — work at
-all. Timers tick on the client; the server holds the start instant and the paused accumulation, so a
-locked phone or a switched device does not lose a reduction.
+all. Timers tick on the client; the server holds the instant each was last started and the seconds it
+had already counted, so a locked phone or a switched device does not lose a reduction.
 
 On completion `CookingManager` publishes `MealCooked` rather than consuming stock itself.
 `PantryManager` owns inventory truth (V9) and subscribes. This is the Manager→Manager prohibition
 doing useful work: cooking does not need to know how stock accounting is done, and stock accounting
 does not need to know cooking mode exists.
+
+Abandoning publishes nothing. Giving up on cooking does not un-plan Thursday's dinner, so the meal
+keeps its claim on the stock and the session simply closes — a state worth recording rather than a
+fact worth announcing.
 
 ### AccountManager
 
@@ -356,7 +365,7 @@ Each service exposes atomic business verbs. Illustrative, not exhaustive:
 | `WebContentAccess` | External websites | `fetch_readable` — prose and embedded metadata, neither preferred ([ADR-027](07-decisions.md#adr-027-an-instance-will-not-fetch-its-own-network), [ADR-028](07-decisions.md#adr-028-structured-metadata-is-fetched-not-preferred)) |
 | `MediaAccess` | Media store | `store_image`, `fetch_image`, `delete_image` |
 | `SearchIndexAccess` | Index | `index_recipe`, `query`, `remove` |
-| `CookingSessionAccess` | Database | `open_session`, `fetch_active`, `advance_step`, `record_timer`, `close_session` |
+| `CookingSessionAccess` | Database | `open_session`, `fetch`, `open_for_slot`, `open_for_cook`, `advance_step`, `record_timer`, `close_session` — **Built** ([ADR-013](07-decisions.md#adr-013-cooking-sessions-are-server-side-state-timers-store-instants)) |
 
 `ModelAccess` is where V3 dies. One implementation per provider behind one interface; the choice is
 configuration. No service above this layer may name a provider, and none may assume streaming,

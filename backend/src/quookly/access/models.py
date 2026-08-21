@@ -10,6 +10,7 @@ from decimal import Decimal
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
+from quookly.contracts.cooking import SessionOutcome
 from quookly.contracts.eater import AgeBand, Severity
 from quookly.contracts.execution import Attention
 from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
@@ -334,3 +335,52 @@ class ReservationRow(SQLModel, table=True):
     magnitude: Decimal = Field(max_digits=12, decimal_places=4)
     unit: Unit
     created_at: datetime = Field(default_factory=_now)
+
+
+class CookingSessionRow(SQLModel, table=True):
+    """One meal being cooked, and where the cook has got to (ADR-013).
+
+    On the server rather than in the tab, which is the whole of UC-9.7: a phone locks, a
+    tablet sleeps, and a cook picks the recipe up in the other room. Client-held progress
+    dies with the screen.
+
+    `at_step` is null while the cook is still on the mise-en-place, which is where every
+    session begins. Null is not step zero — "getting things ready" and "doing the first
+    thing" are different places to come back to.
+    """
+
+    __tablename__ = "cooking_session"
+
+    id: int | None = Field(default=None, primary_key=True)
+    cook_id: int = Field(foreign_key="cook.id", index=True)
+    plan_slot_id: int = Field(foreign_key="plan_slot.id", index=True)
+    started_at: datetime = Field(default_factory=_now)
+    at_step: int | None = Field(default=None)
+    # Both null while the session is open. Set together, and never unset: a session that
+    # ended is a record of what happened, and reopening it would be a second history of
+    # one meal.
+    finished_at: datetime | None = Field(default=None)
+    outcome: SessionOutcome | None = Field(default=None)
+
+
+class CookingTimerRow(SQLModel, table=True):
+    """A timer belonging to one step of one session (UC-9.4).
+
+    Instants, never a countdown. `running_since` is when it was last started and is null
+    while paused; `elapsed_seconds` is what it had counted before that. Storing *remaining
+    seconds* instead goes wrong the moment anything pauses, disconnects or resumes on
+    another device, and a reduction that quietly loses four minutes is worse than no timer
+    at all.
+
+    A row per step rather than one per session, because a real kitchen has the oven on
+    while something else simmers.
+    """
+
+    __tablename__ = "cooking_timer"
+    __table_args__ = (UniqueConstraint("session_id", "step_position", name="uq_cooking_timer"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    session_id: int = Field(foreign_key="cooking_session.id", index=True)
+    step_position: int
+    running_since: datetime | None = Field(default=None)
+    elapsed_seconds: int = Field(default=0)

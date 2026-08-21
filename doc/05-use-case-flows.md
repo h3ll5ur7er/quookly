@@ -166,33 +166,43 @@ sequenceDiagram
   actor Cook
   participant API as "API route"
   participant CKM as "CookingManager"
+  participant PLA as "PlanAccess"
   participant RCA as "RecipeAccess"
   participant EAT as "EaterAccess"
-  participant ING as "IngredientAccess"
+  participant PLN as "PlanningEngine"
   participant ME as "MeasureEngine"
   participant EXE as "ExecutionEngine"
   participant SES as "CookingSessionAccess"
 
-  Cook->>API: cook this, for these four people
-  API->>CKM: start_session(recipe id, eaters)
+  Cook->>API: cook this meal
+  API->>CKM: start(plan slot id)
+  CKM->>PLA: fetch_slot(plan slot id)
+  PLA-->>CKM: the meal, its dish and its guest list
   CKM->>RCA: fetch(recipe id)
   RCA-->>CKM: canonical recipe
-  CKM->>EAT: constraints_for(eaters)
-  EAT-->>CKM: constraints and appetite multipliers
-  CKM->>ING: density_for(ingredients)
-  ING-->>CKM: densities
-  CKM->>ME: render(recipe, yield=sum of multipliers, preferences, densities)
-  ME-->>CKM: scaled recipe
+  CKM->>EAT: for_ids(attendees)
+  EAT-->>CKM: the people, with their constraints and appetites
+  CKM->>PLN: requirements_for(this one meal)
+  PLN-->>CKM: how much to make, and how sure
+  CKM->>ME: rendered_lines(lines, preferences, factor)
+  ME-->>CKM: quantities scaled and in this cook's units
   CKM->>EXE: plan(lines, steps)
   EXE-->>CKM: mise-en-place groups, the lines each step names, the lead
-  CKM->>SES: open_session(plan)
-  SES-->>CKM: session
-  CKM-->>API: session with mise-en-place
+  CKM->>SES: open_session(cook, plan slot)
+  SES-->>CKM: session, on the mise-en-place
+  CKM-->>API: the meal, arranged for doing
   API-->>Cook: prep list, then step one
 ```
 
-The yield is the **sum of the attending eaters' appetite multipliers**, not the head count (FR-18).
-Four adults where one eats half portions is 3.5, and the mise-en-place quantities follow.
+A session is opened for a **planned meal**, not for a bare recipe
+([ADR-042](07-decisions.md#adr-042-a-cooking-session-executes-a-planned-meal)). The plan is where a
+meal is already recorded, where its guest list lives, and where its stock is held aside; cooking
+something unplanned means putting it on today's plan first, which is one form the cook already has.
+
+The yield is the **sum of the attending eaters' appetite multipliers**, not the head count (FR-18) —
+worked out by `PlanningEngine`, the same rule and the same code that sized the meal when it was
+planned. A session and the shopping list that bought for it therefore cannot come to different
+conclusions about how much to make.
 
 `ExecutionEngine` answers in **positions**, not content: everything it says about ingredient lines it
 says as an index into the recipe's own list. The manager pairs those with the quantities
@@ -238,9 +248,17 @@ sequenceDiagram
 scoring. `PantryManager` still owns inventory truth (V9) and `EngagementManager` still owns scoring
 (V11) — neither knows cooking mode exists, and cooking mode knows nothing of either.
 
-Abandoning a session (UC-9.8) publishes `SessionAbandoned` instead, which releases the reservation
-without consuming it. The distinction is the reason abandonment is a first-class outcome rather than
-a timeout: stock that was never cooked must come back.
+Abandoning a session (UC-9.8) publishes **nothing**. It is still a first-class outcome rather than a
+timeout — the difference between food that was eaten and food that was not is the difference the
+pantry turns on — but there is no fact for anyone else to act on: the meal is still planned, so it
+keeps its claim, and releasing what it was holding would take it off the shopping list at the same
+time. The reservation is let go when the *meal* is, not when a cook puts the pan down
+([ADR-038](07-decisions.md#adr-038-a-plans-reservations-are-restated-not-adjusted),
+[ADR-042](07-decisions.md#adr-042-a-cooking-session-executes-a-planned-meal)).
+
+`EngagementManager` and `ScoringEngine` are drawn here as the second listener they will be; neither
+exists yet. The bus already carries `MealCooked` to the pantry, and adding them is a subscription
+rather than a change to anything above.
 
 ## UC-2.1 and UC-2.2 View a recipe scaled and in preferred units
 

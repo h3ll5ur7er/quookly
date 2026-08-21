@@ -477,6 +477,21 @@ produces.
 **Cost.** A write on every step advance and timer action, and a resolution ceiling set by clock skew
 between client and server. Neither matters at the granularity of cooking.
 
+**As built.** Two refinements, both in the direction of the same argument.
+
+*Elapsed rather than paused.* A timer stores the instant it was last started plus the seconds it had
+already counted, which carries the same information as "start plus accumulated pause" and needs one
+subtraction rather than two. It also degrades better: a client clock ahead of the server's is clamped
+at zero, because a timer that goes *up* when you pause it is a timer nobody believes again.
+
+*A timer per step, not per session.* UC-9.4 says "a timer belonging to a step", and a real kitchen
+has the oven on while something else simmers. One timer per session would have made the cook choose
+between them.
+
+Nothing here is a countdown. The server never computes remaining time and the client never sends one,
+which is what lets a locked phone and a tablet in the other room agree about how long the sauce has
+had.
+
 ---
 
 ## ADR-014 Onboarding progress is derived, not stored
@@ -1582,4 +1597,51 @@ before* — does not get its lead surfaced. That is the author writing the steps
 fix is to write them in order. Guessing which mid-recipe ahead steps were "really" preconditions
 would be inventing an order the author did not write, in the one place where a wrong order is
 actionable.
+
+---
+
+## ADR-042 A cooking session executes a planned meal
+
+**Status:** Accepted
+
+**Context.** Cooking mode has to end by consuming the stock the meal used (UC-9.6, FR-19). Stock is
+held aside by a **plan slot** ([ADR-004](#adr-004-plans-reserve-stock-cooking-consumes-it),
+[ADR-036](#adr-036-a-reservation-exists-only-while-it-is-held)), and `MealCooked` names one. So a
+session has to relate to a slot somehow, and the question is whether it *requires* one.
+
+The alternative is a free-standing session started from a recipe, which would need its own way to
+work out what stock the meal used and its own way to spend it.
+
+**Decision.** A session is opened for a plan slot. Cooking something unplanned means putting it on
+today's plan first — one form the cook already has.
+
+**Rationale.** **One record of a meal.** The plan is already where "what did we eat on Tuesday" is
+answered, where a meal's guest list lives, and where its stock is held. A second place a meal can
+exist would be a second history, and the two would disagree the first time somebody cooked without
+planning.
+
+**One consumption path.** A free-standing session would have to net its requirement against
+availability at completion — a second implementation of the arithmetic `ReplenishmentEngine` already
+does for planning, reached from a different manager. Two answers to "what did this meal take" is
+exactly what [FR-7](02-requirements.md) exists to prevent for the shopping list, and the argument is
+the same here.
+
+**No polymorphic claim holder.** A reservation belongs to a plan slot and nothing else, which is what
+lets `held_for_slot` and `consume_for_slot` be two lines each. Making the holder polymorphic to admit
+a session would put a discriminator on the one table whose correctness ADR-004 turns on.
+
+**Cooking without planning is one extra call, not a missing feature.** "Cook this now" is *plan it
+for today, then cook it* — two actions that are each meaningful on their own, composed by the client,
+which is the layer allowed to call two managers. The reservation happens in `PlanningManager`, where
+the only implementation of it lives.
+
+**Consequences for abandonment.** The original flow had `SessionAbandoned` releasing the meal's
+reservation. With the claim owned by the slot that is wrong: giving up on cooking does not un-plan
+Thursday's dinner, and releasing what it was holding would take it off the shopping list at the same
+time. Abandoning closes the session and touches nothing else, so no second event is needed — the
+distinction ADR-039 draws between a fact worth publishing and a state worth recording.
+
+**Cost.** A cook who never plans meets the plan anyway. That is a real cost and it is bounded: the
+slot they create is the record of what they cooked, which they wanted regardless. If it proves to be
+friction, the fix is a button, not a second model.
 

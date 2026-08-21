@@ -16,7 +16,9 @@ by construction rather than by a rule somebody has to remember.
 
 import re
 from collections.abc import Sequence
+from datetime import datetime
 
+from quookly.contracts.cooking import Timer
 from quookly.contracts.execution import (
     Attention,
     ExecutionPlan,
@@ -176,3 +178,61 @@ def plan(lines: Sequence[IngredientLine], steps: Sequence[Step]) -> ExecutionPla
         ahead=planned[:lead],
         steps=planned[lead:],
     )
+
+
+# --- timers ---------------------------------------------------------------------------
+#
+# Instants in, instants out (ADR-013). The arithmetic is here rather than in the store
+# because getting it wrong is how a reduction silently loses four minutes, and a pure
+# function is the only version of it that can be exhausted as a table of cases.
+
+
+def started(timer: Timer, now: datetime) -> Timer:
+    """Set a timer running, or leave a running one alone (UC-9.4).
+
+    Restarting a running timer would move `running_since` forward and throw away the time
+    since it was last started — the failure mode of this design, arriving through a
+    double tap or a retried request.
+    """
+    if timer.running:
+        return timer
+    return Timer(
+        step_position=timer.step_position, running_since=now, elapsed_seconds=timer.elapsed_seconds
+    )
+
+
+def paused(timer: Timer, now: datetime) -> Timer:
+    """Stop the clock, keeping what it has counted so far.
+
+    Pausing an already-paused timer changes nothing, for the same reason as above: the
+    second request must not add a stretch of time that was never running.
+    """
+    if timer.running_since is None:
+        return timer
+    counted = int((now - timer.running_since).total_seconds())
+    return Timer(
+        step_position=timer.step_position,
+        running_since=None,
+        # Clamped at zero. A client clock ahead of the server's would otherwise send a
+        # timer backwards, and a timer that goes up when you pause it is a timer nobody
+        # believes again.
+        elapsed_seconds=timer.elapsed_seconds + max(counted, 0),
+    )
+
+
+def reset(step_position: int) -> Timer:
+    """Back to nothing counted and nothing running. Deliberately not "back to the step's
+    duration": this timer counts up from zero, and the remaining time is the client's
+    subtraction."""
+    return Timer(step_position=step_position, running_since=None, elapsed_seconds=0)
+
+
+def counted(timer: Timer, now: datetime) -> int:
+    """How many seconds this timer has counted, running or not.
+
+    The client's job every second, and the server's whenever it has to answer a question
+    about a timer — which is nearly never. Here so that the one rule has one home.
+    """
+    if timer.running_since is None:
+        return timer.elapsed_seconds
+    return timer.elapsed_seconds + max(int((now - timer.running_since).total_seconds()), 0)

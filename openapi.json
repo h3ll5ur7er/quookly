@@ -1335,6 +1335,410 @@
         }
       }
     },
+    "/api/v1/cooking/sessions": {
+      "get": {
+        "tags": [
+          "cooking"
+        ],
+        "summary": "List Sessions",
+        "description": "What this cook has on the go (UC-9.7).\n\nThe endpoint that makes an interrupted session findable at all. A list rather than one\nsession, because a kitchen has the oven on while something else simmers.",
+        "operationId": "listSessions",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SessionView"
+                  },
+                  "type": "array",
+                  "title": "Response Listsessions"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "cooking"
+        ],
+        "summary": "Start Session",
+        "description": "Begin cooking a planned meal (UC-9.1, UC-9.2).\n\nAsking for a meal already being cooked returns the session that is running. A cook who\nreopens the app has come back to what they were doing, and a second session would\nthrow away where they were and every timer with it.",
+        "operationId": "startSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cooking/sessions/{session_id}": {
+      "get": {
+        "tags": [
+          "cooking"
+        ],
+        "summary": "Get Session",
+        "description": "The whole session \u2014 prep list, steps, timers, and where the cook is.",
+        "operationId": "getSession",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cooking/sessions/{session_id}/step": {
+      "put": {
+        "tags": [
+          "cooking"
+        ],
+        "summary": "Move To Step",
+        "description": "Put the cook at a step, or back on the mise-en-place (UC-9.3).\n\nA position rather than \"next\", because a cook goes back to re-read the step before as\noften as they go on.",
+        "operationId": "moveToStep",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AtStepInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cooking/sessions/{session_id}/timers/{step_position}/started": {
+      "post": {
+        "tags": [
+          "cooking"
+        ],
+        "summary": "Start Timer",
+        "description": "Set a step's timer running (UC-9.4).\n\nThe server records the instant; the client counts. Which is what lets a locked phone\nand a tablet in the other room agree about how long the sauce has had.",
+        "operationId": "startTimer",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "step_position",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Step Position"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cooking/sessions/{session_id}/timers/{step_position}/paused": {
+      "post": {
+        "tags": [
+          "cooking"
+        ],
+        "summary": "Pause Timer",
+        "description": "Stop a step's timer, keeping what it has counted (UC-9.4).",
+        "operationId": "pauseTimer",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "step_position",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Step Position"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cooking/sessions/{session_id}/timers/{step_position}/reset": {
+      "post": {
+        "tags": [
+          "cooking"
+        ],
+        "summary": "Reset Timer",
+        "description": "Put a step's timer back to nothing (UC-9.4).",
+        "operationId": "resetTimer",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "step_position",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Step Position"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cooking/sessions/{session_id}/completed": {
+      "post": {
+        "tags": [
+          "cooking"
+        ],
+        "summary": "Complete Session",
+        "description": "The meal is made (UC-9.6, FR-19).\n\nConsumes what the meal was holding, and marks it cooked on the plan. One way, for the\nreason ADR-004 gives: un-marking would mean re-adding stock that never came back.",
+        "operationId": "completeSession",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cooking/sessions/{session_id}/abandoned": {
+      "post": {
+        "tags": [
+          "cooking"
+        ],
+        "summary": "Abandon Session",
+        "description": "The cook stopped, and nothing was eaten (UC-9.8).\n\nThe meal keeps its claim on the stock: it is still planned, and releasing what it was\nholding would take it off the shopping list at the same time.",
+        "operationId": "abandonSession",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/preferences/units": {
       "get": {
         "tags": [
@@ -1504,6 +1908,24 @@
         ],
         "title": "Allergen",
         "description": "The allergen classes that must be declared on food sold in the EU and Switzerland.\n\nA fixed, externally defined list rather than free text: a constraint and an ingredient\nhave to mean the same thing by \"nuts\" for a verdict to be worth anything. Anything\noutside these fourteen is avoided by ingredient instead."
+      },
+      "AtStepInput": {
+        "properties": {
+          "position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          }
+        },
+        "type": "object",
+        "title": "AtStepInput",
+        "description": "Where the cook has got to (UC-9.3)."
       },
       "Attention": {
         "type": "string",
@@ -2026,6 +2448,69 @@
         "title": "Freshness",
         "description": "How urgently a lot wants using, coarsely.\n\nA band rather than a number, because this drives colour and ordering. The precise\ncount of days travels beside it, so the interface can say \"in two days\" without this\nenum needing a case for every number."
       },
+      "GuidedStepView": {
+        "properties": {
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          },
+          "instruction": {
+            "type": "string",
+            "title": "Instruction"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "temperature_celsius": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature Celsius"
+          },
+          "attention": {
+            "$ref": "#/components/schemas/Attention"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PresentedLine"
+            },
+            "type": "array",
+            "title": "Lines",
+            "default": []
+          },
+          "timer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TimerView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "position",
+          "instruction",
+          "attention"
+        ],
+        "title": "GuidedStepView",
+        "description": "One step, with everything needed to do it without looking elsewhere.\n\n`lines` is the point. A cook at the hob should not have to scroll back to the\ningredient list to find out how much flour \"the flour\" was \u2014 the quantities the step\nasks for sit with the instruction. Empty where nothing could be matched with\nconfidence, which is honest: a step pointing at the wrong ingredient is worse than one\npointing at none (ADR-040)."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2456,6 +2941,32 @@
         "title": "PlanView",
         "description": "A plan whole: the week, and what it means the cook has to buy.\n\nThe list travels with the plan rather than behind its own request. It is derived from\nwhat the plan managed to reserve, so fetching the two separately would let a screen\nshow a week and a list that disagree about the same butter."
       },
+      "PrepGroupView": {
+        "properties": {
+          "preparation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preparation"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PresentedLine"
+            },
+            "type": "array",
+            "title": "Lines",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "PrepGroupView",
+        "description": "Things to have ready that want the same work doing to them (UC-9.2)."
+      },
       "PresentedLine": {
         "properties": {
           "ingredient": {
@@ -2884,6 +3395,131 @@
         "title": "Registration",
         "description": "A request to create an account.\n\nThe password rule lives here rather than in the manager: it constrains the shape of\nthe input, so it is the contract's business, and stating it here means the API\nrejects a short password before any work is done."
       },
+      "SessionOutcome": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "abandoned"
+        ],
+        "title": "SessionOutcome",
+        "description": "How a session ended.\n\nNamed for sessions rather than called `Outcome`, because a dietary verdict already has\nthat name and one of the two would have to be renamed at the API boundary anyway.\n\nTwo outcomes, not one plus a timeout. The difference is the difference between food\nthat was eaten and food that was not, and only one of them is a meal."
+      },
+      "SessionView": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "plan_slot_id": {
+            "type": "integer",
+            "title": "Plan Slot Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "yield_quantity": {
+            "$ref": "#/components/schemas/QuantityView"
+          },
+          "serves": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serves"
+          },
+          "sizing": {
+            "$ref": "#/components/schemas/Sizing"
+          },
+          "suitability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VerdictView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mise_en_place": {
+            "items": {
+              "$ref": "#/components/schemas/PrepGroupView"
+            },
+            "type": "array",
+            "title": "Mise En Place",
+            "default": []
+          },
+          "ahead": {
+            "items": {
+              "$ref": "#/components/schemas/GuidedStepView"
+            },
+            "type": "array",
+            "title": "Ahead",
+            "default": []
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/GuidedStepView"
+            },
+            "type": "array",
+            "title": "Steps",
+            "default": []
+          },
+          "at_step": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At Step"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionOutcome"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "plan_slot_id",
+          "title",
+          "yield_quantity",
+          "sizing",
+          "started_at"
+        ],
+        "title": "SessionView",
+        "description": "A session as the cooking screen reads it: the whole meal, scaled and arranged."
+      },
       "SetupProgressView": {
         "properties": {
           "steps": {
@@ -3142,6 +3778,20 @@
         "title": "SpanView",
         "description": "A stretch of time as a client reads it.\n\nSeconds rather than a rendered string: \"1 h 50\" is four words in three languages, and\nthe client already knows which one it is speaking. `at_least` is carried separately for\nthe same reason \u2014 a screen decides whether that reads as a prefix, a tilde or a mark."
       },
+      "StartInput": {
+        "properties": {
+          "plan_slot_id": {
+            "type": "integer",
+            "title": "Plan Slot Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan_slot_id"
+        ],
+        "title": "StartInput",
+        "description": "Which planned meal is being cooked (UC-9.1)."
+      },
       "StatusResponse": {
         "properties": {
           "status": {
@@ -3294,6 +3944,43 @@
         ],
         "title": "StockLotView",
         "description": "One lot as a client reads it."
+      },
+      "TimerView": {
+        "properties": {
+          "step_position": {
+            "type": "integer",
+            "title": "Step Position"
+          },
+          "running_since": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Running Since"
+          },
+          "elapsed_seconds": {
+            "type": "integer",
+            "title": "Elapsed Seconds"
+          },
+          "duration_seconds": {
+            "type": "integer",
+            "title": "Duration Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "step_position",
+          "running_since",
+          "elapsed_seconds",
+          "duration_seconds"
+        ],
+        "title": "TimerView",
+        "description": "A timer as a client reads it, with the duration it is counting towards.\n\nThe duration travels with the timer so a client has one thing to look at rather than\ntwo: a step whose duration changed under a running timer is a bug, not a feature."
       },
       "TimingView": {
         "properties": {

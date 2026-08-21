@@ -169,10 +169,16 @@ a correct shopping list, and cooking a meal updates the pantry. **Met.**
   [ADR-037](07-decisions.md#adr-037-how-long-a-recipe-takes-is-two-numbers-both-derived))~~
   **Built.** Overlap turned out not to want inferring: a recipe never says which steps run together,
   and a guess makes the total *shorter* than the truth — the one direction that makes somebody late
-- `CookingSessionAccess` and `CookingManager`: sessions, progress, resumption (UC-9.1–9.3, 9.7)
-- Timers held as instants server-side, ticked on the client (UC-9.4,
-  [ADR-013](07-decisions.md#adr-013-cooking-sessions-are-server-side-state-timers-store-instants))
-- Completion and abandonment, driving stock through the bus (UC-9.6, UC-9.8, FR-19)
+- ~~`CookingSessionAccess` and `CookingManager`: sessions, progress, resumption (UC-9.1–9.3, 9.7)~~
+  **Built.** A session executes a *planned meal*
+  ([ADR-042](07-decisions.md#adr-042-a-cooking-session-executes-a-planned-meal)), so there is one
+  record of a meal and one way its stock is spent
+- ~~Timers held as instants server-side, ticked on the client (UC-9.4,
+  [ADR-013](07-decisions.md#adr-013-cooking-sessions-are-server-side-state-timers-store-instants))~~
+  **Built**, one per step — a kitchen has the oven on while something else simmers
+- ~~Completion and abandonment, driving stock through the bus (UC-9.6, UC-9.8, FR-19)~~ **Built.**
+  Abandoning publishes nothing: the meal is still planned, and releasing what it held would take it
+  off the shopping list at the same time
 - Cooking-mode UI: one step per screen, wake lock, thumb-reachable controls (NFR-12)
 - Offline tolerance for the active session (NFR-13)
 

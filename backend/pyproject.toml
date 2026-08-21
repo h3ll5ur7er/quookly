@@ -177,6 +177,7 @@ name = "Managers do not call one another"
 type = "independence"
 modules = [
     "quookly.managers.account",
+    "quookly.managers.cooking",
     "quookly.managers.eater",
     "quookly.managers.ingredient",
     "quookly.managers.instance",

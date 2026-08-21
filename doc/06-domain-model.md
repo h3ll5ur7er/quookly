@@ -258,6 +258,35 @@ clock, but a written recipe never says which steps overlap, and guessing would m
 **shorter** than the truth — the one direction that makes somebody late. A cook who wants the overlap
 counted writes it as one step, which is how they would say it out loud.
 
+### Cooking a meal
+
+A **cooking session** is one planned meal being made right now: where the cook has got to, and what
+each timer has counted. It is the only stateful thing in the system, and it lives on the server
+([ADR-013](07-decisions.md#adr-013-cooking-sessions-are-server-side-state-timers-store-instants))
+because a phone locks, a tablet sleeps, and a session that dies with the screen is worse than a
+printed page.
+
+It belongs to a **plan slot**, not to a bare recipe
+([ADR-042](07-decisions.md#adr-042-a-cooking-session-executes-a-planned-meal)). The plan already
+answers "what did we eat on Tuesday", holds the guest list, and holds the stock aside; a meal that
+could also exist somewhere else would be a second history of the same dinner.
+
+Where the cook is has three readings, not two. **On the mise-en-place** is where every session
+begins and is a real place to come back to — not step zero, and not a missing answer. **On a step**
+is a position in the recipe's own list, so a session picked up on another device points at the same
+instruction. **Ended** is one way: a session that finished is a record of what happened, and letting
+it reopen would be a second history of one meal.
+
+A session ends **completed** or **abandoned**, and the difference is the difference between food that
+was eaten and food that was not. Completing states `MealCooked`, which the pantry hears; abandoning
+states nothing, because the meal is still planned and still holds its stock.
+
+**Timers hold instants.** Each is a step's own — a kitchen has the oven on while something else
+simmers — and each records when it was last started plus what it had already counted. Remaining time
+is the client's subtraction, computed afresh every second. Storing the remainder instead goes wrong
+the moment anything pauses, disconnects, or resumes elsewhere, and a reduction that quietly loses
+four minutes is worse than no timer at all.
+
 ### A line without a quantity
 
 "Salt, to taste." "Oil, for frying." "A pinch of nutmeg." These are ordinary lines in every

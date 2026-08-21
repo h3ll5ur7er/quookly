@@ -20,16 +20,14 @@ from quookly.contracts.exchange import ExchangeDocument
 from quookly.contracts.execution import TimingView
 from quookly.contracts.ingredient import IngredientKind, Origin
 from quookly.contracts.interpretation import InterpretedLine
-from quookly.contracts.measure import Quantity, Unit
+from quookly.contracts.measure import Quantity
 from quookly.contracts.preferences import UnitPreferences
 from quookly.contracts.recipe import (
     ImportedRecipe,
     IngredientLineDraft,
-    PresentedLine,
     PresentedRecipe,
     PresentedStep,
     Provenance,
-    QuantityView,
     Recipe,
     RecipeDraft,
     RecipeInput,
@@ -43,34 +41,6 @@ from quookly.engines import exchange, execution, interpretation, measure, suitab
 #: Resolving a symbol lives in `MeasureEngine`, which owns units. Kept as a local name
 #: because it reads better at the call sites than the qualified one.
 _unit = measure.unit_for
-
-
-def _servings(serves: Decimal | None, factor: Decimal) -> str | None:
-    """How many this feeds, scaled and tidied — or nothing where the yield already says.
-
-    Rendered as a plain number rather than a quantity: "serves 4", not "4 servings", and
-    trailing zeros from the column are an artefact of storage rather than precision
-    anybody should read into.
-    """
-    if serves is None:
-        return None
-    scaled = measure.round_for_display(Quantity(serves * factor, Unit.SERVING))
-    text = f"{scaled.magnitude:f}"
-    return text.rstrip("0").rstrip(".") if "." in text else text
-
-
-def _view(quantity: Quantity) -> QuantityView:
-    """A quantity as a client reads it.
-
-    `magnitude` keeps the stored precision, for a client that computes with it.
-    `display` is tidied here rather than at each call site: stored precision is not
-    display precision, and a yield of "12.0000" is not a yield.
-    """
-    return QuantityView(
-        magnitude=str(quantity.magnitude),
-        unit=quantity.unit.symbol,
-        display=str(measure.round_for_display(quantity)),
-    )
 
 
 async def author(
@@ -154,8 +124,8 @@ async def list_for(cook_id: int, locale: str | None = None) -> list[RecipeSummar
             id=summary.id,
             title=summary.title,
             summary=summary.summary,
-            yield_quantity=_view(summary.yield_quantity),
-            serves=_servings(summary.serves, Decimal(1)),
+            yield_quantity=measure.viewed(summary.yield_quantity),
+            serves=measure.servings_of(summary.serves, Decimal(1)),
             visibility=summary.visibility,
             suitability=outcomes.get(summary.id),
             timing=TimingView.of(execution.timing(steps.get(summary.id, []))),
@@ -207,39 +177,18 @@ async def _present(
     factor = Decimal(1) if servings is None else servings / recipe.yield_quantity.magnitude
     scaled_yield = measure.scale(recipe.yield_quantity, factor)
 
-    lines = []
-    for line in recipe.lines:
-        # A line with no quantity is left alone. Twice as much "to taste" is still "to
-        # taste", and rendering a zero there would read as an amount.
-        rendered = (
-            None
-            if line.quantity is None
-            else measure.render(
-                measure.scale(line.quantity, factor),
-                line.ingredient.kind,
-                line.ingredient.density,
-                preferences,
-            )
-        )
-        lines.append(
-            PresentedLine(
-                ingredient=line.ingredient.name,
-                quantity=None if rendered is None else _view(rendered),
-                preparation=line.preparation,
-                optional=line.optional,
-            )
-        )
+    lines = measure.rendered_lines(recipe.lines, preferences, factor)
 
     return PresentedRecipe(
         id=recipe.id,
         title=recipe.title,
         summary=recipe.summary,
         suitability=await _judge(recipe, cook_id),
-        yield_quantity=_view(scaled_yield),
+        yield_quantity=measure.viewed(scaled_yield),
         # Scaled with everything else: a doubled batch of "makes 12, serves 4" makes 24
         # and serves 8, and a `serves` left at its written value would be the one number
         # on the page that no longer matched the rest.
-        serves=_servings(recipe.serves, factor),
+        serves=measure.servings_of(recipe.serves, factor),
         visibility=recipe.visibility,
         provenance=recipe.provenance,
         lines=lines,
