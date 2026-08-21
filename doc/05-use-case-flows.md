@@ -32,9 +32,12 @@ sequenceDiagram
   API->>RM: import_from_url(url, cook)
   RM->>WEB: fetch_readable(url)
   WEB-->>RM: readable content
-  RM->>IE: interpret(content)
+  RM->>IE: read_page(content)
+  Note over IE: metadata if the page has it,<br/>otherwise a model reads the prose
   IE->>MOD: complete_structured(prompt, schema)
   MOD-->>IE: structured candidate
+  IE->>MOD: rewrite the method
+  MOD-->>IE: steps a cook can follow
   IE-->>RM: canonical recipe draft
   RM->>ING: resolve_by_name(each ingredient)
   ING-->>RM: registry entries
@@ -47,10 +50,15 @@ sequenceDiagram
   API-->>Cook: structured recipe
 ```
 
-Three things worth noting:
+Four things worth noting:
 
 - `ModelAccess` is asked for *structured* output against a schema. The model fills a shape; it does
   not author the shape.
+- **The method is edited, whichever way it was read**
+  ([ADR-043](07-decisions.md#adr-043-a-pages-method-is-edited-on-the-way-in)). A page's
+  instructions are written to be read on a sofa; carried through verbatim they are the thing this
+  product exists to replace. The edit is one pass over both readings, because "what does a cook
+  actually do" is one question.
 - Ingredient resolution happens against the registry, not against model output. An unresolvable
   ingredient is reported (FR-9), never invented.
 - Nothing here knows which provider served the completion.

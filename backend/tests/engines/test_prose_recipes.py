@@ -20,7 +20,6 @@ from pytest import MonkeyPatch
 
 from quookly.access import model as inference
 from quookly.contracts.errors import InferenceNotConfigured, NotARecipe
-from quookly.contracts.execution import Attention
 from quookly.contracts.inference import Completion
 from quookly.contracts.interpretation import Source
 from quookly.contracts.measure import Unit
@@ -51,11 +50,7 @@ ANSWER = {
     "recipe_yield": "Makes 8",
     "serves": "",
     "ingredients": ["225g plain flour", "300ml milk", "2 eggs", "a knob of butter"],
-    "steps": [
-        {"instruction": "Whisk the dry ingredients.", "attention": "hands_on"},
-        {"instruction": "Rest the batter.", "attention": "waiting"},
-        {"instruction": "Fry until set.", "attention": "hands_on"},
-    ],
+    "steps": ["Whisk the dry ingredients.", "Rest the batter.", "Fry until set."],
 }
 
 
@@ -117,45 +112,13 @@ class TestReadingTheProse:
             "Fry until set.",
         ]
 
-    async def test_what_each_step_asks_of_the_cook_is_read(self, monkeypatch: MonkeyPatch) -> None:
-        """The model classifies; the engine adds up. Resting batter is half an hour in
-        which nobody is cooking, and counted as work it doubles the recipe (ADR-037)."""
-        answering(ANSWER, monkeypatch)
-        read = await interpretation.read_page(page())
-        assert [step.attention for step in read.steps] == [
-            Attention.HANDS_ON,
-            Attention.WAITING,
-            Attention.HANDS_ON,
-        ]
-
-    async def test_a_model_that_ignores_the_shape_still_yields_a_recipe(
-        self, monkeypatch: MonkeyPatch
-    ) -> None:
-        """Bare strings where objects were asked for. A model that answers loosely should
-        cost a recipe its attention, not the whole import."""
-        answering({**ANSWER, "steps": ["Whisk.", "Fry."]}, monkeypatch)
-        read = await interpretation.read_page(page())
-        assert [step.instruction for step in read.steps] == ["Whisk.", "Fry."]
-        assert all(step.attention is Attention.HANDS_ON for step in read.steps)
-
-    async def test_an_attention_nobody_recognises_falls_back_to_work(
-        self, monkeypatch: MonkeyPatch
-    ) -> None:
-        """Hands-on over-reports the work rather than under-reporting it, which is the
-        failure that does not make anybody late."""
-        answering(
-            {**ANSWER, "steps": [{"instruction": "Whisk.", "attention": "vigorous"}]}, monkeypatch
-        )
-        read = await interpretation.read_page(page())
-        assert read.steps[0].attention is Attention.HANDS_ON
-
 
 class TestWhatItAsksFor:
     async def test_it_asks_for_a_shape_rather_than_prose(self, monkeypatch: MonkeyPatch) -> None:
         """The model fills a shape; it does not author one (UC-1.3)."""
         asked: dict[str, Any] = {}
         answering(ANSWER, monkeypatch, asked)
-        await interpretation.read_page(page())
+        await interpretation.read_prose(page())
         assert asked["schema"]["required"] == [
             "title",
             "recipe_yield",
@@ -168,7 +131,7 @@ class TestWhatItAsksFor:
     async def test_the_page_text_is_what_it_reads(self, monkeypatch: MonkeyPatch) -> None:
         asked: dict[str, Any] = {}
         answering(ANSWER, monkeypatch, asked)
-        await interpretation.read_page(page())
+        await interpretation.read_prose(page())
         assert "windswept morning in 1962" in asked["prompt"]
 
     async def test_a_very_long_page_is_cut_before_it_is_sent(
@@ -184,7 +147,7 @@ class TestWhatItAsksFor:
     async def test_it_is_told_not_to_invent(self, monkeypatch: MonkeyPatch) -> None:
         asked: dict[str, Any] = {}
         answering(ANSWER, monkeypatch, asked)
-        await interpretation.read_page(page())
+        await interpretation.read_prose(page())
         assert "invent" in asked["prompt"].lower() or "invent" in str(asked).lower()
 
     async def test_it_must_answer_about_the_yield_rather_than_omitting_it(
@@ -194,18 +157,8 @@ class TestWhatItAsksFor:
         not having looked — and a recipe with no yield cannot be scaled to a household."""
         asked: dict[str, Any] = {}
         answering(ANSWER, monkeypatch, asked)
-        await interpretation.read_page(page())
+        await interpretation.read_prose(page())
         assert "recipe_yield" in asked["schema"]["required"]
-
-    async def test_it_must_say_what_each_step_asks_of_the_cook(
-        self, monkeypatch: MonkeyPatch
-    ) -> None:
-        asked: dict[str, Any] = {}
-        answering(ANSWER, monkeypatch, asked)
-        await interpretation.read_page(page())
-        step_shape = asked["schema"]["properties"]["steps"]["items"]
-        assert step_shape["required"] == ["instruction", "attention"]
-        assert step_shape["properties"]["attention"]["enum"] == ["hands_on", "waiting", "ahead"]
 
 
 class TestPagesThatAreNotRecipes:

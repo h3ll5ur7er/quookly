@@ -95,7 +95,10 @@ recipe's usefulness never depends on its origin.
 
 **Question:** how does unstructured content become canonical structure?
 **Varies:** parsing scraped HTML, stripping narrative filler, reading model output, reconciling
-ambiguous quantities ("a knob of butter"), inferring implicit steps, detecting the actual yield.
+ambiguous quantities ("a knob of butter"), inferring implicit steps, detecting the actual yield,
+and how much of a page's method is rewritten on the way in
+([ADR-043](07-decisions.md#adr-043-a-pages-method-is-edited-on-the-way-in)) — where a step ends,
+how terse is too terse, and what must never be cut.
 This is the product's core competence and will be refined indefinitely.
 **Stable:** the canonical structure it produces.
 **Encapsulated by:** `InterpretationEngine`.

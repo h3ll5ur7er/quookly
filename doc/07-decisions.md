@@ -1665,3 +1665,67 @@ distinction ADR-039 draws between a fact worth publishing and a state worth reco
 slot they create is the record of what they cooked, which they wanted regardless. If it proves to be
 friction, the fix is a button, not a second model.
 
+---
+
+## ADR-043 A page's method is edited on the way in
+
+**Status:** Accepted
+
+**Context.** A recipe imported from the web arrived with its instructions exactly as the site wrote
+them. Checked against the pages this project tests against, that means:
+
+- *"Gather all ingredients."* — a heading standing in for a step (Allrecipes)
+- *"Cut 185g unsalted butter into small cubes and tip into a medium bowl. Break 185g dark chocolate
+  into small pieces and drop into the bowl."* — two actions, one paragraph (BBC Good Food)
+- *"They'll keep in an airtight container for a good two weeks."* — useful, and not something to walk
+  a cook through at the hob
+- *"Melt the butter (or a drizzle of oil if you want to be a bit healthier)…"* — an aside inside an
+  instruction (Jamie Oliver)
+
+A method written to be read on a sofa, imported into a screen a cook glances at with their hands
+full. It is precisely the experience this product exists to replace, arriving through the front door.
+
+**Decision.** Both readings — metadata and prose — go through one editing pass before the recipe is
+stored. The pass splits a step that covers several moments, cuts what is not an instruction, says
+each step in one or two plain sentences, and reports what the step asks of the cook.
+
+**A step that waits ends at the wait.** "Pour in the batter and cook for two minutes" becomes two
+steps, which is what lets the waiting carry a timer of its own (UC-9.4) and stops a cook holding a
+pan while they read three more sentences.
+
+**Rationale.** *One pass over both readings*, because "what does a cook actually do" is one question
+and two implementations of it would drift apart at their own pace. It is also where the metadata path
+gains something it never had: a duration and a temperature on the step they belong to, rather than
+the page's single `cookTime` landing on the last one.
+
+*The division of labour holds.* The model decides what a step **says**; a tested reader decides what
+a number in it **means** — the same split that makes `read_ingredient` the one implementation of
+"what does 225g mean". So `read_step_timing` is a pure function with a table of cases, and a range
+takes its **lower** end: a timer that goes off at 25 minutes sends a cook to look at the oven, one
+that goes off at 30 sends them to look at something already burnt.
+
+*An improvement, not a requirement.* An instance with no model configured, one whose model is
+unreachable, or one that answers with nothing keeps the steps exactly as the page wrote them. The
+recipe still imports. A courtesy that can fail an import is not a courtesy.
+
+**What must never be cut**, and what the prompt spends most of its words on: times, temperatures,
+the quantities a step names, doneness cues, and warnings. A shorter method that lost *"stop just
+before you feel you should, to avoid overmixing"* would be a worse import than the wordy one it
+replaced. The live tests assert that particular sentence survives.
+
+**Cost.** Three real ones.
+
+*A second model call per import*, so importing is slower on an instance that has one. The
+alternative was the complaint that prompted this.
+
+*The recipe is no longer the page's words.* Provenance still records where it came from, but a cook
+comparing the two will find them different. That is the point, and it is worth being honest that it
+is a change and not a transcription.
+
+*Calibration is a prompt, and prompts drift.* Getting here took three attempts: the first split at
+every verb and turned a fifteen-step brownie into forty-two; the second was told to keep sentences
+whole and stopped editing at all; the third dropped the articles and wrote telegrams. What settled
+it was stating the two rules separately — split by moments, and write plain sentences — rather than
+hoping one implied the other. The live tests exist so the next adjustment is measured rather than
+guessed at.
+

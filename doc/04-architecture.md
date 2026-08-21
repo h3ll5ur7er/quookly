@@ -316,7 +316,7 @@ what allows scoring rules to change without touching a single line in recipe or 
 
 | Engine | Volatility | Responsibility |
 | --- | --- | --- |
-| `InterpretationEngine` | V2 | Unstructured content to canonical recipe. Filler removal, quantity resolution, step extraction. |
+| `InterpretationEngine` | V2 | Unstructured content to canonical recipe. Filler removal, quantity resolution, step extraction, and **editing the method** into steps a cook can follow ([ADR-043](07-decisions.md#adr-043-a-pages-method-is-edited-on-the-way-in)). |
 | `GenerationEngine` | V1, V3 | Composes prompts for synthesis; parses and constrains model output. Knows *what to ask*, never *whom to ask*. |
 | `MeasureEngine` | V4 | Unit conversion, density-aware mass/volume, yield scaling, portion sizing from appetite multipliers, preferred-unit rendering. |
 | `SuitabilityEngine` | V5 | Evaluates a structured recipe against structured eater constraints. Safety-critical. |

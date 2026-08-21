@@ -8,7 +8,8 @@ is worse than a visible gap, because a cook cannot see that it is wrong.
 
 import re
 import unicodedata
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Sequence
+from dataclasses import replace
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -493,6 +494,95 @@ def _steps_read(value: Any) -> list[InterpretedStep]:
     return steps
 
 
+#: Words for a stretch of time, in the languages Quookly reads, and what one is worth in
+#: seconds. Abbreviations included because a recipe writes "25 min" as often as "25
+#: minutes"; "h" is left out, because a bare h after a number is as likely to be the start
+#: of a word as an hour.
+_TIME_WORDS: dict[str, int] = {
+    "second": 1,
+    "seconds": 1,
+    "sec": 1,
+    "secs": 1,
+    "sekunde": 1,
+    "sekunden": 1,
+    "seconde": 1,
+    "secondes": 1,
+    "minute": 60,
+    "minutes": 60,
+    "min": 60,
+    "mins": 60,
+    "minuten": 60,
+    "hour": 3600,
+    "hours": 3600,
+    "hr": 3600,
+    "hrs": 3600,
+    "stunde": 3600,
+    "stunden": 3600,
+    "heure": 3600,
+    "heures": 3600,
+}
+
+#: How a recipe writes the far end of a range. Words as well as dashes: "2 to 3 minutes"
+#: is at least as common as "2-3 minutes", and without the word the pattern reads the
+#: *upper* end — which is the direction that burns things.
+_RANGE = r"(?:[-–—]|to|or|bis|und|à|ou)"
+
+#: A number — or the first end of a range — followed by a word for time. The range is what
+#: makes this worth a pattern rather than a lookup: "25-30 minutes" is how every recipe
+#: writes an oven, and the lower end is the one a timer should use.
+_DURATION = re.compile(
+    rf"(?P<amount>\d+(?:[.,]\d+)?)\s*(?:{_RANGE}\s*\d+(?:[.,]\d+)?\s*)?"
+    rf"(?P<unit>{'|'.join(sorted(_TIME_WORDS, key=len, reverse=True))})\b",
+    re.IGNORECASE,
+)
+
+#: A number followed by a degree marker. The marker is the whole of the test: without it
+#: "200 g" and "1 cup" are temperatures, and a wrong oven is a ruined dinner. `Grad` is
+#: how a German recipe writes it and is always Celsius.
+_TEMPERATURE = re.compile(
+    r"(?P<amount>\d{2,3})\s*(?:°\s*(?P<scale>[CF])\b|(?P<scale2>[CF])\b|grad\b)",
+    re.IGNORECASE,
+)
+
+
+def _number(written: str) -> Decimal:
+    return Decimal(written.replace(",", "."))
+
+
+def read_step_timing(instruction: str) -> tuple[int | None, int | None]:
+    """How long a step takes and how hot, read out of its own words.
+
+    The same division of labour as everywhere else: a model decides what a step *says*,
+    and this decides what a number in it *means*. Without it an imported recipe has no
+    timers at all, which is the one thing a cook standing at a hob reaches for.
+
+    Absent rather than guessed, in both. "Chop 5 onions" has a number in it and no
+    duration; a five-second timer would be worse than none. A gas mark is a real oven
+    setting and not a temperature, so it stays unread rather than becoming one.
+    """
+    seconds: int | None = None
+    #: Summed across a run, so "1 hour 30 minutes" is not one hour. Only a run: a second
+    #: duration further into the sentence belongs to a different action.
+    at = 0
+    for match in _DURATION.finditer(instruction):
+        if seconds is not None and match.start() > at:
+            break
+        counted = int(_number(match.group("amount")) * _TIME_WORDS[match.group("unit").lower()])
+        seconds = counted if seconds is None else seconds + counted
+        at = match.end() + 1
+
+    celsius: int | None = None
+    hot = _TEMPERATURE.search(instruction)
+    if hot is not None:
+        scale = (hot.group("scale") or hot.group("scale2") or "C").upper()
+        degrees = int(hot.group("amount"))
+        # Every temperature in this system is Celsius. A cook with a European oven cannot
+        # act on 350 °F, and the conversion is exact enough to round.
+        celsius = degrees if scale == "C" else round((degrees - 32) * 5 / 9)
+
+    return seconds, celsius
+
+
 def _seconds(duration: Any) -> int | None:
     """Read an ISO-8601 duration. Absent rather than guessed if it is prose."""
     if not isinstance(duration, str):
@@ -653,21 +743,10 @@ _SCHEMA: dict[str, Any] = {
         "recipe_yield": {"type": "string"},
         "serves": {"type": "string"},
         "ingredients": {"type": "array", "items": {"type": "string"}},
-        "steps": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "instruction": {"type": "string"},
-                    "attention": {
-                        "type": "string",
-                        "enum": [level.value for level in Attention],
-                    },
-                },
-                "required": ["instruction", "attention"],
-                "additionalProperties": False,
-            },
-        },
+        # Plain strings. What a step *asks of the cook* is a question about steps, and
+        # steps belong to the editing pass that runs after this — asking twice would be
+        # two prompts answering one question, drifting apart at their own pace.
+        "steps": {"type": "array", "items": {"type": "string"}},
     },
     # `recipe_yield` and `serves` are required so the model has to answer rather than omit
     # the field. Empty means the page does not say, which is a different thing from not
@@ -724,6 +803,141 @@ async def read_prose(content: ReadableContent) -> InterpretedRecipe:
     )
 
 
+_EDITING = """You are given the method of a recipe as a website wrote it. Rewrite it as
+instructions somebody can follow standing at a hob with their hands full.
+
+Say each step in one or two plain sentences. Full sentences with their articles, not notes:
+"Sift the flour into a bowl", never "Sift flour into bowl". Cut restatement, encouragement
+and asides — "the mixture will look dry and dusty at first, and a bit unpromising" is not an
+instruction. Cut anything that is not an instruction at all: gathering the ingredients,
+"enjoy", the author's memories, links, advertising, and notes about storing leftovers.
+
+Split a step that covers several moments. A moment is what a cook does before they look back
+at the screen: "Break the eggs into a bowl and tip in the sugar" is one. "Melt the butter,
+leave it to cool, then heat the oven" is three, because waiting comes between them. Do not
+split every verb — two actions at the same bowl are one step.
+
+**A step that waits ends at the wait.** "Pour in the batter and cook for two minutes" is
+two steps: pouring, then cooking for two minutes. That is what gives the waiting a timer of
+its own.
+
+Keep every detail that changes the result, in the step it belongs to: times, temperatures,
+quantities the step names, doneness cues such as "until the edges set", and warnings such as
+"do not overmix". It is better to leave a step long than to lose one of these.
+
+Keep the original order, use the imperative, and stay in the language the recipe is written
+in. Do not invent anything the original did not say.
+
+For each step, say what it asks of the cook. "hands_on" is work — chopping, stirring,
+shaping. "waiting" is time the food needs while the cook is around: baking, simmering,
+resting. "ahead" is time that passes without the cook: proving overnight, soaking, chilling
+for a day. When a step is both, call it hands_on."""
+
+_EDITING_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "steps": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "instruction": {"type": "string"},
+                    "attention": {
+                        "type": "string",
+                        "enum": [level.value for level in Attention],
+                    },
+                },
+                "required": ["instruction", "attention"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["steps"],
+    "additionalProperties": False,
+}
+
+
+def _timed(steps: list[InterpretedStep]) -> list[InterpretedStep]:
+    """Give each step the time and temperature its own words carry."""
+    read = []
+    for step in steps:
+        seconds, celsius = read_step_timing(step.instruction)
+        read.append(
+            InterpretedStep(
+                instruction=step.instruction,
+                duration_seconds=seconds,
+                temperature_celsius=celsius,
+                attention=step.attention,
+            )
+        )
+    return read
+
+
+def _carried_over(
+    tidied: list[InterpretedStep], written: Sequence[InterpretedStep]
+) -> list[InterpretedStep]:
+    """Put back a duration the site gave, where the steps themselves say nothing.
+
+    A site's single `cookTime` is a poor answer — it says how long the dish takes, not
+    which step takes it — and it is better than none. So it is a fallback: a recipe whose
+    steps carry their own times keeps those, and one whose steps say nothing keeps what the
+    page said, on the last step, where the waiting is.
+    """
+    if any(step.duration_seconds is not None for step in tidied) or not tidied:
+        return tidied
+    given = [step.duration_seconds for step in written if step.duration_seconds is not None]
+    if not given:
+        return tidied
+
+    last = tidied[-1]
+    tidied[-1] = InterpretedStep(
+        instruction=last.instruction,
+        duration_seconds=max(given),
+        temperature_celsius=last.temperature_celsius,
+        attention=Attention.WAITING,
+    )
+    return tidied
+
+
+async def tidy_steps(written: Sequence[InterpretedStep]) -> list[InterpretedStep]:
+    """Edit a page's method into instructions a cook can follow (UC-1.3).
+
+    The founding annoyance, met at the front door: a recipe page's method is written to be
+    read on a sofa, and imported verbatim it is the thing this product exists to replace.
+
+    **An improvement, not a requirement.** An instance with no model configured, or one
+    whose model falls over, keeps the steps exactly as the page wrote them — the recipe
+    still imports, and every site that publishes properly still works. The same is true of
+    an answer that comes back empty: a recipe with no method is not an improvement on a
+    wordy one.
+
+    Applied to both readings, metadata and prose, because it is one question — *what does a
+    cook actually do* — and two implementations of it would drift apart. It is also where
+    the metadata path gets what it never had: a time and a temperature on the step they
+    belong to, rather than the whole dish's figure landing on the end.
+    """
+    if not written:
+        return []
+
+    method = "\n".join(
+        f"{position + 1}. {step.instruction}" for position, step in enumerate(written)
+    )
+    try:
+        answer, _ = await model.complete_structured(
+            f"Rewrite this method.\n\n{method}", _EDITING_SCHEMA, system=_EDITING
+        )
+    except Exception:
+        # Any failure at all. Editing is a courtesy, and a courtesy that can fail an import
+        # is not one — an unreachable model must cost a cook a tidier recipe, not the
+        # recipe.
+        return list(written)
+
+    edited = _steps_read(answer.get("steps"))
+    if not edited:
+        return list(written)
+    return _carried_over(_timed(edited), written)
+
+
 async def read_page(content: ReadableContent) -> InterpretedRecipe:
     """Read a fetched page, by whichever route it will give up a recipe (UC-1.3).
 
@@ -737,9 +951,11 @@ async def read_page(content: ReadableContent) -> InterpretedRecipe:
     checked against live pages, is most of the large ones.
     """
     from_metadata = read_metadata(content.structured)
-    if from_metadata is not None:
-        return from_metadata
-    return await read_prose(content)
+    read = from_metadata if from_metadata is not None else await read_prose(content)
+    # Both readings go through the same edit. A page's method is written to be read on a
+    # sofa, and carried through verbatim it is exactly the thing this product exists to
+    # replace — however well the page published it.
+    return replace(read, steps=await tidy_steps(read.steps))
 
 
 # --- names a registry might know -----------------------------------------------------
