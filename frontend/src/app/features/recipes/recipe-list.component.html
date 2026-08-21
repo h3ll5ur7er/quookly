@@ -31,6 +31,11 @@
                   {{ outcomeBadge(outcome) }}
                 </span>
               }
+              <!-- Beside the yield, because they are the same kind of fact: what a cook
+                   weighs up before opening a recipe rather than after. -->
+              @if (recipe.timing; as timing) {
+                <app-timing [timing]="timing" [compact]="true" />
+              }
               <span class="recipes__yield">
                 <span i18n="@@recipeMakes">Makes</span>
                 <span class="numeric">{{ recipe.yield_quantity.display }}</span>

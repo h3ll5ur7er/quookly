@@ -11,6 +11,11 @@
       @if (shown.summary) {
         <p class="recipe__summary">{{ shown.summary }}</p>
       }
+      <!-- With the title, not buried under the method: "how long does this take" is asked
+           before a cook decides to read the rest. -->
+      @if (shown.timing; as timing) {
+        <app-timing [timing]="timing" />
+      }
     </header>
 
     <!-- Above the ingredients on purpose: a cook who reads this after starting to weigh
@@ -88,13 +93,18 @@
         @for (step of shown.steps; track step.position) {
           <li class="steps__step">
             <p class="recipe__step-text">{{ step.instruction }}</p>
-            @if (step.duration_seconds || step.temperature_celsius) {
+            @if (step.duration_seconds || step.temperature_celsius || note(step)) {
               <p class="steps__facts">
                 @if (step.duration_seconds) {
                   <span class="fact numeric">{{ minutes(step.duration_seconds) }}</span>
                 }
                 @if (step.temperature_celsius) {
                   <span class="fact numeric">{{ step.temperature_celsius }} °C</span>
+                }
+                <!-- Only where it is worth saying. A badge on every hands-on step would
+                     mark the whole method and single out nothing. -->
+                @if (note(step); as asks) {
+                  <span class="fact fact--quiet">{{ asks }}</span>
                 }
               </p>
             }

@@ -426,9 +426,9 @@ an instance that has never seen the recipe:
   fresh instance would resolve nothing, and the promise would hold only between instances that
   already agreed.
 
-**Versioning, as exercised by the first change to the format.** A build **writes one version and
-reads several**. Format 2 added a recipe's `serves`; format 1 documents still import, and a format 1
-document is a complete recipe that simply does not say how many it feeds.
+**Versioning, as exercised by the changes to the format.** A build **writes one version and reads
+several**. Format 2 added a recipe's `serves`; format 3 added each step's `attention`. Older
+documents still import, and one of them is a complete recipe that simply does not say those things.
 
 The version was bumped rather than the field quietly added to format 1, and that is the whole point
 of having a version. An older build reading a document with an unknown field would drop it in
@@ -445,9 +445,15 @@ so a document cannot forge a seeded row that an upgrade would later feel free to
 A document declaring a format version this build does not know is refused rather than partially
 read: honouring the parts we recognise would silently drop whatever the newer format added.
 
-**Adding an optional field does not bump the version.** Allergen classification arrived that way: an
+**What owes a bump is not "is the field optional".** Allergen classification arrived without one: an
 absent `allergens` field means unexamined, which is exactly what a document written before it existed
-knows. Removing or changing the meaning of a field would bump it.
+knew, and an older build reading a newer document reaches the same conclusion the newer one does.
+
+The test is whether an older build would silently produce a **different recipe**, rather than a less
+complete record of the same one. `serves` and `attention` both fail it. Dropping `serves`, a recipe
+that could be scaled to a table can no longer be; dropping `attention`, a cake's ninety minutes in
+the oven are reported as ninety minutes of work. Neither reader would know anything had gone wrong,
+which is why both bumped. Removing a field or changing what one means always bumps.
 
 ---
 
@@ -1290,9 +1296,9 @@ written for that purpose, and not one that any availability query has to read.
 
 ---
 
-## ADR-037 (Proposed) How long a recipe takes is two numbers, both derived
+## ADR-037 How long a recipe takes is two numbers, both derived
 
-**Status:** Proposed
+**Status:** Accepted
 
 **Context.** A recipe has no time on it at all, which is a real gap: "how long does this take" is one
 of the first two questions anybody asks of a recipe, alongside "can we eat it". Every recipe site
@@ -1370,9 +1376,24 @@ Derived values cannot be indexed, so filtering a large collection by time would 
 cached column recomputed on write. That would be explicitly a **cache**, invalidated by any step
 edit, and never the thing the recipe screen reads.
 
-**Deferred to Phase 5**, with `ExecutionEngine`. The schema could land earlier, but the number is
-only honest once something knows about overlap, and a wrong time on a recipe card is worse than no
-time at all.
+**Built** in Phase 5, in `ExecutionEngine`. Two things settled differently in the building than they
+were framed here.
+
+**Overlap is not inferred, and the total is sequential.** This decision was deferred to Phase 5 on
+the grounds that the number is only honest once something knows about parallelism. Writing it made
+the opposite case: a recipe never says which of its steps overlap, so any inference is a guess, and a
+guess makes the total *shorter* than the truth. That is the one direction that makes somebody late —
+the exact failure this ADR exists to prevent. Adding the durations up over-reports, which is safe,
+and a cook who wants the overlap counted writes it as one step. That is also how they would say it
+out loud: *while the oven heats, make the batter* is one instruction, not two.
+
+So the number was honest immediately, and the deferral bought nothing except that the field arrived
+alongside cooking mode, where the same attention decides what a session surfaces ahead of time.
+
+**Absence goes all the way up.** A step with no duration makes its total a lower bound, as decided.
+Where *nothing* of a kind was timed, there is no number at all rather than a floor of zero: "at least
+0 min hands-on" would tell a cook the cake makes itself. The three numbers are absent independently,
+so a recipe can report exact work and an unknown clock.
 
 ---
 

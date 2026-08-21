@@ -13,6 +13,11 @@ const PANCAKES = {
   yield_quantity: { magnitude: '12', unit: 'piece', display: '12 piece' },
   visibility: 'private',
   suitability: null,
+  timing: {
+    hands_on: { seconds: 900, at_least: false },
+    total: { seconds: 2700, at_least: false },
+    ahead: null,
+  },
 };
 
 function judged(suitability: string | null) {
@@ -120,5 +125,20 @@ describe('RecipeListComponent', () => {
   it('does not nag once there is somebody to judge against', async () => {
     await show(judged('suitable'));
     expect(text()).not.toContain('Nobody recorded yet');
+  });
+
+  it('says how long a recipe takes without opening it', async () => {
+    // The question is asked before the tap. Answering it after is answering it late.
+    await show([PANCAKES]);
+
+    const row = fixture.nativeElement.querySelector('.recipes__item');
+    expect(row.textContent).toContain('15 min');
+    expect(row.textContent).toContain('hands-on');
+  });
+
+  it('leaves the row alone where the recipe says nothing about time', async () => {
+    await show([{ ...PANCAKES, timing: null }]);
+
+    expect(fixture.nativeElement.querySelector('app-timing')).toBeNull();
   });
 });

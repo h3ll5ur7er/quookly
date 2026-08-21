@@ -18,6 +18,7 @@ from quookly.access import ingredient as registry
 from quookly.access import recipe as recipes
 from quookly.access.database import dispose_engine, get_engine
 from quookly.contracts.errors import IngredientNotRegistered
+from quookly.contracts.execution import Attention
 from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.contracts.measure import Quantity, Unit
 from quookly.contracts.recipe import (
@@ -97,6 +98,7 @@ def shortbread(pantry: dict[str, int]) -> RecipeDraft:
                 instruction="Bake until pale gold.",
                 duration_seconds=2400,
                 temperature_celsius=160,
+                attention=Attention.WAITING,
             ),
         ],
     )
@@ -128,6 +130,42 @@ class TestStoring:
             "Work in the flour.",
             "Bake until pale gold.",
         ]
+
+    async def test_what_each_step_asks_of_the_cook_survives_the_round_trip(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        """The field the two times are derived from (ADR-037). Lost in storage, every
+        recipe would report its baking as work."""
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        assert [step.attention for step in stored.steps] == [
+            Attention.HANDS_ON,
+            Attention.HANDS_ON,
+            Attention.WAITING,
+        ]
+
+    async def test_every_step_of_every_recipe_in_one_query(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        """What the list screen times its recipes from. Fetching each recipe whole to put
+        a duration on a row would be several queries per row."""
+        first = await recipes.store(shortbread(pantry), cook_id)
+        second = await recipes.store(shortbread(pantry), cook_id)
+
+        grouped = await recipes.steps_for_cook(cook_id)
+
+        assert set(grouped) == {first.id, second.id}
+        assert [step.instruction for step in grouped[first.id]] == [
+            "Cream the butter.",
+            "Work in the flour.",
+            "Bake until pale gold.",
+        ]
+
+    async def test_another_cooks_steps_are_not_in_the_answer(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        await recipes.store(shortbread(pantry), cook_id)
+        other = await cook_access.register("other@example.com", "Someone", "hash")
+        assert await recipes.steps_for_cook(other.id) == {}
 
     async def test_a_recipe_is_private_until_published(
         self, cook_id: int, pantry: dict[str, int]

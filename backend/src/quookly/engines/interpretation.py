@@ -14,6 +14,7 @@ from typing import Any
 
 from quookly.access import model
 from quookly.contracts.errors import NotARecipe
+from quookly.contracts.execution import Attention
 from quookly.contracts.interpretation import (
     InterpretedLine,
     InterpretedRecipe,
@@ -454,6 +455,44 @@ def _steps_from(value: Any) -> list[InterpretedStep]:
     return steps
 
 
+def _attention(named: Any) -> Attention:
+    """What the model said a step asks of the cook, or hands-on if it said nothing usable.
+
+    Falling back rather than refusing. A step whose attention could not be read is still a
+    step, and hands-on over-reports the work rather than under-reporting it — the failure
+    that does not make anybody late.
+    """
+    try:
+        return Attention(str(named))
+    except ValueError:
+        return Attention.HANDS_ON
+
+
+def _steps_read(value: Any) -> list[InterpretedStep]:
+    """The model's steps, each with what it asks of the cook.
+
+    Separate from `_steps_from`, which flattens whatever shape a *site* chose. This reads
+    one shape, because this end of the conversation is one we specified. Bare strings are
+    still accepted: a model that ignores the shape it was given should cost a recipe its
+    attention, not the whole import.
+    """
+    if not isinstance(value, list):
+        return []
+
+    steps: list[InterpretedStep] = []
+    for entry in value:
+        if isinstance(entry, str):
+            text, attention = _tidy_prose(entry), Attention.HANDS_ON
+        elif isinstance(entry, dict):
+            text = _tidy_prose(str(entry.get("instruction") or ""))
+            attention = _attention(entry.get("attention"))
+        else:
+            continue
+        if text:
+            steps.append(InterpretedStep(instruction=text, attention=attention))
+    return steps
+
+
 def _seconds(duration: Any) -> int | None:
     """Read an ISO-8601 duration. Absent rather than guessed if it is prose."""
     if not isinstance(duration, str):
@@ -551,6 +590,10 @@ def read_metadata(blocks: Iterable[dict[str, Any]]) -> InterpretedRecipe | None:
                 instruction=last.instruction,
                 duration_seconds=duration,
                 temperature_celsius=last.temperature_celsius,
+                # `cookTime` is the site saying how long it is *in the oven*, which is
+                # waiting by definition. Left as hands-on it would report ninety minutes
+                # of work for a cake that is twenty (ADR-037).
+                attention=Attention.WAITING,
             )
 
         magnitude, unit = read_yield(block.get("recipeYield"))
@@ -610,7 +653,21 @@ _SCHEMA: dict[str, Any] = {
         "recipe_yield": {"type": "string"},
         "serves": {"type": "string"},
         "ingredients": {"type": "array", "items": {"type": "string"}},
-        "steps": {"type": "array", "items": {"type": "string"}},
+        "steps": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "instruction": {"type": "string"},
+                    "attention": {
+                        "type": "string",
+                        "enum": [level.value for level in Attention],
+                    },
+                },
+                "required": ["instruction", "attention"],
+                "additionalProperties": False,
+            },
+        },
     },
     # `recipe_yield` and `serves` are required so the model has to answer rather than omit
     # the field. Empty means the page does not say, which is a different thing from not
@@ -663,7 +720,7 @@ async def read_prose(content: ReadableContent) -> InterpretedRecipe:
         yield_unit=unit,
         serves=None if unit is Unit.SERVING else read_serves(answer.get("serves")),
         lines=lines,
-        steps=_steps_from(answer.get("steps")),
+        steps=_steps_read(answer.get("steps")),
     )
 
 

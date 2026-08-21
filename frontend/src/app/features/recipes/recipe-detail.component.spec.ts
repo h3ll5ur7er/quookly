@@ -30,10 +30,33 @@ function pancakes(flour = '125 g', yieldDisplay = '12 piece', serves: string | n
       },
     ],
     steps: [
-      { position: 0, instruction: 'Whisk.', duration_seconds: null, temperature_celsius: null },
-      { position: 1, instruction: 'Rest.', duration_seconds: 1800, temperature_celsius: null },
-      { position: 2, instruction: 'Fry.', duration_seconds: null, temperature_celsius: 180 },
+      {
+        position: 0,
+        instruction: 'Whisk.',
+        duration_seconds: null,
+        temperature_celsius: null,
+        attention: 'hands_on',
+      },
+      {
+        position: 1,
+        instruction: 'Rest.',
+        duration_seconds: 1800,
+        temperature_celsius: null,
+        attention: 'waiting',
+      },
+      {
+        position: 2,
+        instruction: 'Fry.',
+        duration_seconds: null,
+        temperature_celsius: 180,
+        attention: 'hands_on',
+      },
     ],
+    timing: {
+      hands_on: { seconds: 600, at_least: true },
+      total: { seconds: 2400, at_least: true },
+      ahead: null,
+    },
   };
 }
 
@@ -218,6 +241,42 @@ describe('RecipeDetailComponent', () => {
       backend.expectOne('/api/v1/recipes/1').flush(pancakes());
       await settle();
       expect(text()).not.toContain('Serves');
+    });
+  });
+
+  describe('how long it takes', () => {
+    it('answers before the ingredients, not after the method', async () => {
+      // Asked before a cook decides to read the rest, so answered there.
+      backend.expectOne('/api/v1/recipes/1').flush(pancakes());
+      await settle();
+
+      const header = fixture.nativeElement.querySelector('.recipe__header');
+      expect(header.textContent).toContain('hands-on');
+      expect(header.textContent).toContain('at least 10 min');
+    });
+
+    it('marks the step a cook can walk away from', async () => {
+      backend.expectOne('/api/v1/recipes/1').flush(pancakes());
+      await settle();
+
+      const steps = fixture.nativeElement.querySelectorAll('.steps__step');
+      expect(steps[1].textContent).toContain('you can walk away');
+    });
+
+    it('leaves ordinary work unmarked', async () => {
+      // A badge on every hands-on step would mark the whole method and single out none.
+      backend.expectOne('/api/v1/recipes/1').flush(pancakes());
+      await settle();
+
+      const steps = fixture.nativeElement.querySelectorAll('.steps__step');
+      expect(steps[0].querySelector('.fact--quiet')).toBeNull();
+    });
+
+    it('says nothing where the recipe says nothing', async () => {
+      backend.expectOne('/api/v1/recipes/1').flush({ ...pancakes(), timing: null });
+      await settle();
+
+      expect(fixture.nativeElement.querySelector('app-timing')).toBeNull();
     });
   });
 });

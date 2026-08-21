@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from enum import Enum
 
+from quookly.contracts.execution import Attention
 from quookly.contracts.measure import Unit
 
 
@@ -47,6 +48,10 @@ class InterpretedStep:
     instruction: str
     duration_seconds: int | None = None
     temperature_celsius: int | None = None
+    #: How much of the cook this step asks for. Hands-on unless the page gave a reason to
+    #: think otherwise — a `cookTime` says the last step is waiting, and a model reading
+    #: prose can say so for the rest.
+    attention: Attention = Attention.HANDS_ON
 
 
 @dataclass(frozen=True, slots=True)

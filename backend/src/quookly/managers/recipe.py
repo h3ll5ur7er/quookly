@@ -17,6 +17,7 @@ from quookly.access import recipe as recipe_access
 from quookly.access import web
 from quookly.contracts.errors import UnsupportedDocument, YieldUnknown
 from quookly.contracts.exchange import ExchangeDocument
+from quookly.contracts.execution import TimingView
 from quookly.contracts.ingredient import IngredientKind, Origin
 from quookly.contracts.interpretation import InterpretedLine
 from quookly.contracts.measure import Quantity, Unit
@@ -37,7 +38,7 @@ from quookly.contracts.recipe import (
 )
 from quookly.contracts.suitability import JudgedLine, Outcome, VerdictView
 from quookly.contracts.web import ReadableContent
-from quookly.engines import exchange, interpretation, measure, suitability
+from quookly.engines import exchange, execution, interpretation, measure, suitability
 
 #: Resolving a symbol lives in `MeasureEngine`, which owns units. Kept as a local name
 #: because it reads better at the call sites than the qualified one.
@@ -102,6 +103,7 @@ async def author(
                 instruction=step.instruction,
                 duration_seconds=step.duration_seconds,
                 temperature_celsius=step.temperature_celsius,
+                attention=step.attention,
             )
             for step in submitted.steps
         ],
@@ -146,6 +148,7 @@ async def list_for(cook_id: int, locale: str | None = None) -> list[RecipeSummar
     locale = locale or await cook_access.locale_for(cook_id)
     summaries = await recipe_access.list_for_cook(cook_id)
     outcomes = await _outcomes_for(cook_id, locale)
+    steps = await recipe_access.steps_for_cook(cook_id)
     return [
         RecipeSummaryView(
             id=summary.id,
@@ -155,6 +158,7 @@ async def list_for(cook_id: int, locale: str | None = None) -> list[RecipeSummar
             serves=_servings(summary.serves, Decimal(1)),
             visibility=summary.visibility,
             suitability=outcomes.get(summary.id),
+            timing=TimingView.of(execution.timing(steps.get(summary.id, []))),
         )
         for summary in summaries
     ]
@@ -245,9 +249,14 @@ async def _present(
                 instruction=step.instruction,
                 duration_seconds=step.duration_seconds,
                 temperature_celsius=step.temperature_celsius,
+                attention=step.attention,
             )
             for position, step in enumerate(recipe.steps)
         ],
+        # Not scaled with the rest. Doubling a tray does not double the time in the oven,
+        # and it barely touches the chopping — a factor applied here would be arithmetic
+        # producing a number nobody could have measured.
+        timing=TimingView.of(execution.timing(recipe.steps)),
     )
 
 
@@ -440,6 +449,7 @@ async def import_from_url(url: str, cook_id: int, locale: str | None = None) -> 
                 instruction=step.instruction,
                 duration_seconds=step.duration_seconds,
                 temperature_celsius=step.temperature_celsius,
+                attention=step.attention,
             )
             for step in read.steps
         ],

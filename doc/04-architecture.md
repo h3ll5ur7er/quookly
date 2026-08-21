@@ -316,7 +316,7 @@ what allows scoring rules to change without touching a single line in recipe or 
 | `ReplenishmentEngine` | V8 | Nets requirement against availability; aggregates and rounds a shopping list. **Built** — netting, aggregation, and rounding a countable up to something a shop will sell. Rounding to pack sizes waits for pack-size data. |
 | `RankingEngine` | V10 | Orders candidate recipes by relevance, pantry coverage, and expiry urgency. |
 | `ScoringEngine` | V11 | Applies point and badge rules to activity. |
-| `ExecutionEngine` | V15 | Turns a scaled recipe into an execution plan: mise-en-place groups, ordered steps, parallelism, timer specifications, technique links. |
+| `ExecutionEngine` | V15 | Turns a scaled recipe into an execution plan: mise-en-place groups, ordered steps, timer specifications, technique links. **Built** — how long a recipe takes, as hands-on and total time derived from each step's attention ([ADR-037](07-decisions.md#adr-037-how-long-a-recipe-takes-is-two-numbers-both-derived)). The rest arrives with cooking mode. |
 | `OnboardingEngine` | V16 | Given a profile's current state, reports what is missing and what comes next. |
 
 Every engine is **stateless**. Beyond that they divide into two kinds, and the distinction is

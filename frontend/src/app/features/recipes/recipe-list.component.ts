@@ -2,10 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { RouterLink } from '@angular/router';
 import { RecipeSummaryView, RecipesService } from '@api';
 import { outcomeBadge, worthMarking } from '../../core/dietary/labels';
+import { TimingComponent } from '../../core/time/timing.component';
 
 @Component({
   selector: 'app-recipe-list',
-  imports: [RouterLink],
+  imports: [RouterLink, TimingComponent],
   templateUrl: './recipe-list.component.html',
   styleUrl: './recipe-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

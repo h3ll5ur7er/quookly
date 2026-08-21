@@ -17,6 +17,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from quookly.contracts.execution import Attention
 from quookly.contracts.ingredient import Allergen, IngredientKind
 from quookly.contracts.recipe import Provenance
 
@@ -53,6 +54,10 @@ class ExchangeStep(BaseModel):
     instruction: str
     duration_seconds: int | None = None
     temperature_celsius: int | None = None
+    # How much of the cook the step asks for. Added in format 3; a format 1 or 2 document
+    # has no opinion, and every step in it takes the hands-on default — which over-reports
+    # the work rather than under-reporting it.
+    attention: Attention = Attention.HANDS_ON
 
 
 class ExchangeRecipe(BaseModel):

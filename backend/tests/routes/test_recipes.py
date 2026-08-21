@@ -82,9 +82,17 @@ def pancakes(pantry: dict[str, int]) -> dict[str, Any]:
             {"ingredient_id": pantry["egg"], "magnitude": "2", "unit": "piece"},
         ],
         "steps": [
-            {"instruction": "Whisk everything together."},
-            {"instruction": "Rest the batter.", "duration_seconds": 1800},
-            {"instruction": "Fry until golden.", "temperature_celsius": 180},
+            {"instruction": "Whisk everything together.", "duration_seconds": 300},
+            {
+                "instruction": "Rest the batter.",
+                "duration_seconds": 1800,
+                "attention": "waiting",
+            },
+            {
+                "instruction": "Fry until golden.",
+                "duration_seconds": 600,
+                "temperature_celsius": 180,
+            },
         ],
     }
 
@@ -305,3 +313,82 @@ class TestExchange:
 
     async def test_export_requires_signing_in(self, client: AsyncClient) -> None:
         assert (await client.get("/api/v1/recipes/export")).status_code == 401
+
+
+class TestHowLongItTakes:
+    """UC-2.6 and FR-23: two numbers, both derived from the steps (ADR-037)."""
+
+    async def test_a_recipe_reports_its_work_and_its_clock_separately(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """Fifteen minutes of work and forty-five before anybody eats. One figure
+        covering both would describe neither."""
+        headers = await sign_up(client, "chef@example.com")
+        created = await client.post("/api/v1/recipes", json=pancakes(pantry), headers=headers)
+
+        timing = created.json()["timing"]
+        assert timing["hands_on"] == {"seconds": 900, "at_least": False}
+        assert timing["total"] == {"seconds": 2700, "at_least": False}
+        assert timing["ahead"] is None
+
+    async def test_a_step_that_says_nothing_makes_the_numbers_a_floor(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """Not zero. A step with no duration must not make the recipe look quicker."""
+        headers = await sign_up(client, "chef@example.com")
+        untimed = pancakes(pantry)
+        untimed["steps"][0] = {"instruction": "Whisk everything together."}
+        created = await client.post("/api/v1/recipes", json=untimed, headers=headers)
+
+        timing = created.json()["timing"]
+        assert timing["hands_on"] == {"seconds": 600, "at_least": True}
+        assert timing["total"] == {"seconds": 2400, "at_least": True}
+
+    async def test_a_recipe_that_says_nothing_about_time_says_nothing(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        untimed = pancakes(pantry)
+        untimed["steps"] = [{"instruction": step["instruction"]} for step in untimed["steps"]]
+        created = await client.post("/api/v1/recipes", json=untimed, headers=headers)
+
+        assert created.json()["timing"] is None
+
+    async def test_the_time_is_on_the_list_as_well_as_the_page(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """The question is asked before the tap, not after it."""
+        headers = await sign_up(client, "chef@example.com")
+        await client.post("/api/v1/recipes", json=pancakes(pantry), headers=headers)
+
+        listed = await client.get("/api/v1/recipes", headers=headers)
+        assert listed.json()[0]["timing"]["hands_on"] == {"seconds": 900, "at_least": False}
+
+    async def test_scaling_a_recipe_does_not_scale_its_time(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """Doubling a tray does not double the oven, and it barely touches the chopping.
+        A factor applied here would be arithmetic producing a number nobody measured."""
+        headers = await sign_up(client, "chef@example.com")
+        created = await client.post("/api/v1/recipes", json=pancakes(pantry), headers=headers)
+        recipe_id = created.json()["id"]
+
+        doubled = await client.get(f"/api/v1/recipes/{recipe_id}?servings=24", headers=headers)
+        assert doubled.json()["timing"]["total"] == {"seconds": 2700, "at_least": False}
+
+    async def test_work_done_the_day_before_is_neither_number(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """Eight hours of soaking beans is not eight hours of cooking, and dropping it
+        silently lets somebody start dinner at six."""
+        headers = await sign_up(client, "chef@example.com")
+        overnight = pancakes(pantry)
+        overnight["steps"] = [
+            {"instruction": "Soak overnight.", "duration_seconds": 28800, "attention": "ahead"},
+            *overnight["steps"],
+        ]
+        created = await client.post("/api/v1/recipes", json=overnight, headers=headers)
+
+        timing = created.json()["timing"]
+        assert timing["total"] == {"seconds": 2700, "at_least": False}
+        assert timing["ahead"] == {"seconds": 28800, "at_least": False}

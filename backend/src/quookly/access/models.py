@@ -11,6 +11,7 @@ from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 from quookly.contracts.eater import AgeBand, Severity
+from quookly.contracts.execution import Attention
 from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.contracts.measure import Unit
 from quookly.contracts.onboarding import SetupStep
@@ -130,6 +131,11 @@ class StepRow(SQLModel, table=True):
     instruction: str
     duration_seconds: int | None = Field(default=None)
     temperature_celsius: int | None = Field(default=None)
+    # How much of the cook this step asks for, which is what turns a pile of durations
+    # into hands-on and total time (ADR-037). Defaulted rather than nullable: every step
+    # asks *something* of the cook, and hands-on is the reading that does not make anybody
+    # late. Existing rows take the default, which is right for most of them.
+    attention: Attention = Field(default=Attention.HANDS_ON)
 
 
 class UnitPreferenceRow(SQLModel, table=True):

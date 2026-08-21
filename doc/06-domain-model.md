@@ -15,7 +15,7 @@ of it. Concretely, a recipe is:
 | --- | --- |
 | **Yield** | What the quantities produce — servings, or a mass or volume. Every quantity is relative to this. |
 | **Ingredient lines** | An ordered set of (ingredient, quantity, unit, preparation note, optionality). |
-| **Steps** | An ordered set of actions, with timings, temperatures, and equipment. *Built.* References to the ingredient lines a step consumes arrive with cooking mode, which is what needs them. Each step's *attention* — hands-on, waiting, or ahead — is [proposed](07-decisions.md#adr-037-proposed-how-long-a-recipe-takes-is-two-numbers-both-derived). |
+| **Steps** | An ordered set of actions, with timings, temperatures, and equipment. *Built*, including each step's *attention* — hands-on, waiting, or ahead ([ADR-037](07-decisions.md#adr-037-how-long-a-recipe-takes-is-two-numbers-both-derived)). References to the ingredient lines a step consumes arrive with cooking mode, which is what needs them. |
 | **Technique references** | Links from steps into the Academy, so an unfamiliar term is one click from its definition. *Planned with the Academy.* |
 | **Provenance** | How this recipe came to exist: authored, imported from JSON, scraped from a URL, generated, or derived. |
 | **Visibility** | Private by default; explicitly published. |
@@ -238,7 +238,7 @@ edited. It stays in the week, saying what was cooked and who was there.
 
 ### How long it takes
 
-*Proposed — see [ADR-037](07-decisions.md#adr-037-proposed-how-long-a-recipe-takes-is-two-numbers-both-derived).*
+*Built — see [ADR-037](07-decisions.md#adr-037-how-long-a-recipe-takes-is-two-numbers-both-derived).*
 
 Two numbers, not one. **Hands-on time** is how long the cook has to be doing something; **total
 time** is how long from starting to eating. A cake is twenty minutes of work and ninety of waiting,
@@ -250,7 +250,13 @@ and *ahead* is not a number at all: proving overnight is eight hours in which th
 it is surfaced as *start the day before* rather than added to a total.
 
 A step with no duration contributes nothing and makes both totals a **lower bound**, marked as such.
-Zero would be a lie in the direction that makes every recipe look quicker than it is.
+Zero would be a lie in the direction that makes every recipe look quicker than it is. Where *nothing*
+was timed, there is no answer at all: "at least 0 min" reads as a fact and is not one.
+
+Nothing infers overlap. *While the oven heats, make the batter* is two steps and one stretch of
+clock, but a written recipe never says which steps overlap, and guessing would make the total
+**shorter** than the truth — the one direction that makes somebody late. A cook who wants the overlap
+counted writes it as one step, which is how they would say it out loud.
 
 ### A line without a quantity
 

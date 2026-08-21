@@ -1,0 +1,22 @@
+<!-- Not a list: these are two readings of one thing, and a screen reader announcing
+     "list, 2 items" adds structure where there is none. -->
+<p class="timing" [class.timing--compact]="compact()">
+  @if (timing().hands_on; as work) {
+    <span class="timing__part">
+      <span class="timing__value numeric">{{ span(work) }}</span>
+      <span class="timing__label" i18n="@@timingHandsOn">hands-on</span>
+    </span>
+  }
+  @if (timing().total; as clock) {
+    <span class="timing__part">
+      <span class="timing__value numeric">{{ span(clock) }}</span>
+      <span class="timing__label" i18n="@@timingTotal">total</span>
+    </span>
+  }
+</p>
+
+@if (timing().ahead; as lead) {
+  <!-- Phrased as an instruction rather than a duration. "8 h" beside the other two reads
+       as a third total; "start 8 h ahead" is the thing the cook has to act on. -->
+  <p class="timing__lead" i18n="@@timingAhead">Start {{ span(lead) }} ahead</p>
+}

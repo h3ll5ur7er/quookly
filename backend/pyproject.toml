@@ -155,6 +155,7 @@ name = "Rule engines do not reach resource access"
 type = "forbidden"
 source_modules = [
     "quookly.engines.exchange",
+    "quookly.engines.execution",
     "quookly.engines.measure",
     "quookly.engines.onboarding",
     "quookly.engines.planning",

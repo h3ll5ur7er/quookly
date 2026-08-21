@@ -225,6 +225,16 @@ one that is not, and a mark that is always on stops being read. The rule that de
 `worthMarking` rather than a condition in each template, because the day one screen starts showing a
 tick is the day the other's warnings get skimmed past.
 
+**Timing** lives in `core/time/timing.component.*` — the two numbers a cook asks a recipe for,
+answered as two. Each is a value with its label under it, never a bare figure: "15 min · 45 min" is
+two numbers nobody can tell apart. On a list row the pair turns inline and drops to body size, since
+there it is a fact to scan past rather than a heading to land on.
+
+Where a number is only a floor, it says so in the number itself — *at least 15 min* — rather than in
+a footnote or an icon. Where there is no number, there is nothing: "0 min" is a fact, and this one
+would be false. Work to be done the day before is phrased as an instruction, *start 8 h ahead*, not
+as a third figure sitting beside two totals.
+
 **The section bar** holds whatever the app grows, so its links share the width rather than taking a
 fixed one. Two sections fitted at any size; four did not fit a 360px phone (NFR-11), and an
 overflowing sticky bar looks correct until the last word is cut off the edge. An end-to-end test

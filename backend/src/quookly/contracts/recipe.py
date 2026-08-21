@@ -15,6 +15,7 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from quookly.contracts.execution import Attention, TimingView
 from quookly.contracts.ingredient import Ingredient, Origin
 from quookly.contracts.interpretation import Source
 from quookly.contracts.measure import DecimalString, Quantity, Unit
@@ -66,6 +67,9 @@ class StepDraft:
     instruction: str
     duration_seconds: int | None = None
     temperature_celsius: int | None = None
+    #: Hands-on unless said otherwise. The default over-reports the work rather than
+    #: under-reporting it, which fails in the direction that does not make anybody late.
+    attention: Attention = Attention.HANDS_ON
 
     def __post_init__(self) -> None:
         if not self.instruction.strip():
@@ -152,6 +156,7 @@ class Step:
     instruction: str
     duration_seconds: int | None
     temperature_celsius: int | None
+    attention: Attention = Attention.HANDS_ON
 
 
 @dataclass(frozen=True, slots=True)
@@ -237,6 +242,10 @@ class PresentedStep(BaseModel):
     instruction: str
     duration_seconds: int | None = None
     temperature_celsius: int | None = None
+    # Not defaulted, unlike the input. What a client is *shown* always says what the step
+    # asks of the cook — a field a reader has to supply a default for is a field that
+    # reads as absent, and absence is what this codebase refuses to let mean a value.
+    attention: Attention
 
 
 class PresentedRecipe(BaseModel):
@@ -259,6 +268,9 @@ class PresentedRecipe(BaseModel):
     steps: list[PresentedStep]
     # Absent when there is nobody to judge against, which is not the same as suitable.
     suitability: VerdictView | None = None
+    # Derived from the steps every time, never stored. A recipe whose steps say nothing
+    # about time reports nothing, rather than an hour of nothing (ADR-037).
+    timing: TimingView | None = None
 
 
 class RecipeSummaryView(BaseModel):
@@ -273,6 +285,10 @@ class RecipeSummaryView(BaseModel):
     # The outcome only. A list is a place to scan; the reasons are one tap away on a page
     # with room to name them. Absent when there is nobody to judge against.
     suitability: Outcome | None = None
+    # On the list too, not only the page. "How long does this take" is one of the two
+    # questions asked before a recipe is opened, and answering it after the tap is
+    # answering it too late.
+    timing: TimingView | None = None
 
 
 class IngredientLineInput(BaseModel):
@@ -301,6 +317,9 @@ class StepInput(BaseModel):
     instruction: str = Field(min_length=1, max_length=2000)
     duration_seconds: int | None = Field(default=None, gt=0)
     temperature_celsius: int | None = Field(default=None, ge=0, le=500)
+    # Defaulted, because most authors will leave it alone and the default has to be the
+    # one that does not make anybody late (ADR-037).
+    attention: Attention = Attention.HANDS_ON
 
 
 class RecipeInput(BaseModel):

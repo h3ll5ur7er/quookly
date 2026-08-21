@@ -21,6 +21,7 @@ from quookly.contracts.exchange import (
     ExchangeRecipe,
     ExchangeStep,
 )
+from quookly.contracts.execution import Attention
 from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.contracts.measure import Quantity, Unit
 from quookly.contracts.recipe import (
@@ -33,16 +34,18 @@ from quookly.contracts.recipe import (
 from quookly.engines import measure
 
 #: What this build writes.
-FORMAT_VERSION = 2
+FORMAT_VERSION = 3
 
-#: What this build reads. Format 2 added a recipe's `serves`; nothing else changed, and a
-#: format 1 document is a complete recipe that simply does not say how many it feeds.
-#: Reading both is what keeps every document a self-hoster has already exported valid.
+#: What this build reads. Format 2 added a recipe's `serves`; format 3 added each step's
+#: `attention`. Nothing else changed, and an older document is a complete recipe that
+#: simply does not say those things. Reading them all is what keeps every document a
+#: self-hoster has already exported valid.
 #:
-#: The version is bumped rather than the field quietly added to format 1, because an older
-#: build reading a document with an unknown field would drop it in silence — which is the
-#: partial honouring this check exists to prevent. Refusing outright tells them why.
-READABLE_VERSIONS = frozenset({1, FORMAT_VERSION})
+#: The version is bumped rather than the field quietly added to the older format, because
+#: an older build reading a document with an unknown field would drop it in silence —
+#: which is the partial honouring this check exists to prevent. Refusing outright tells
+#: them why.
+READABLE_VERSIONS = frozenset({1, 2, FORMAT_VERSION})
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,6 +61,9 @@ class ReadStep:
     instruction: str
     duration_seconds: int | None
     temperature_celsius: int | None
+    #: Hands-on in every document written before format 3, which is the reading that does
+    #: not make anybody late.
+    attention: Attention = Attention.HANDS_ON
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,6 +146,7 @@ def to_document(recipes: list[Recipe], locale: str) -> ExchangeDocument:
                         instruction=step.instruction,
                         duration_seconds=step.duration_seconds,
                         temperature_celsius=step.temperature_celsius,
+                        attention=step.attention,
                     )
                     for step in recipe.steps
                 ],
@@ -187,6 +194,7 @@ def to_draft(
                 instruction=step.instruction,
                 duration_seconds=step.duration_seconds,
                 temperature_celsius=step.temperature_celsius,
+                attention=step.attention,
             )
             for step in recipe.steps
         ],
@@ -261,6 +269,7 @@ def from_document(raw: dict[str, Any]) -> ReadDocument:
                         instruction=step.instruction,
                         duration_seconds=step.duration_seconds,
                         temperature_celsius=step.temperature_celsius,
+                        attention=step.attention,
                     )
                     for step in recipe.steps
                 ],

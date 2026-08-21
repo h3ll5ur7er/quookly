@@ -127,6 +127,8 @@
 
 .steps__facts {
   display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
   gap: var(--space-2);
   margin: var(--space-2) 0 0;
 }
@@ -138,6 +140,14 @@
   color: var(--on-surface-muted);
   font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
+}
+
+/* Words rather than a measurement, so it drops the pill. "You can walk away" set in the
+   same chip as "40 min" reads as a third number. */
+.fact--quiet {
+  padding-inline: 0;
+  background: none;
+  font-style: italic;
 }
 
 /* Under the stepper rather than beside it: "makes 12" is the number the cook adjusts and

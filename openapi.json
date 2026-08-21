@@ -1505,6 +1505,16 @@
         "title": "Allergen",
         "description": "The allergen classes that must be declared on food sold in the EU and Switzerland.\n\nA fixed, externally defined list rather than free text: a constraint and an ingredient\nhave to mean the same thing by \"nuts\" for a verdict to be worth anything. Anything\noutside these fourteen is avoided by ingredient instead."
       },
+      "Attention": {
+        "type": "string",
+        "enum": [
+          "hands_on",
+          "waiting",
+          "ahead"
+        ],
+        "title": "Attention",
+        "description": "How much of the cook this step asks for (V15, ADR-037).\n\nThe field that turns a pile of durations into the two numbers anybody actually wants:\nhow long you are working, and how long until you eat. A cake is twenty minutes of work\nand ninety of waiting, and one figure covering both describes neither.\n\n`AHEAD` is the case that is not a third number. Soaking beans overnight is eight hours\nin which the cook is asleep: adding it to a total makes a weeknight dish read as an\nordeal, and dropping it silently lets somebody start dinner at six and discover the\nbeans wanted starting yesterday."
+      },
       "Authenticated": {
         "properties": {
           "token": {
@@ -1950,6 +1960,10 @@
               }
             ],
             "title": "Temperature Celsius"
+          },
+          "attention": {
+            "$ref": "#/components/schemas/Attention",
+            "default": "hands_on"
           }
         },
         "type": "object",
@@ -2545,6 +2559,16 @@
                 "type": "null"
               }
             ]
+          },
+          "timing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TimingView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -2593,12 +2617,16 @@
               }
             ],
             "title": "Temperature Celsius"
+          },
+          "attention": {
+            "$ref": "#/components/schemas/Attention"
           }
         },
         "type": "object",
         "required": [
           "position",
-          "instruction"
+          "instruction",
+          "attention"
         ],
         "title": "PresentedStep"
       },
@@ -2799,6 +2827,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/Outcome"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TimingView"
               },
               {
                 "type": "null"
@@ -3085,6 +3123,25 @@
         "title": "Source",
         "description": "Where a reading came from, which is worth keeping.\n\nA recipe that came out wrong is a different investigation depending on whether the\npage lied in its metadata or a model misread its prose."
       },
+      "SpanView": {
+        "properties": {
+          "seconds": {
+            "type": "integer",
+            "title": "Seconds"
+          },
+          "at_least": {
+            "type": "boolean",
+            "title": "At Least"
+          }
+        },
+        "type": "object",
+        "required": [
+          "seconds",
+          "at_least"
+        ],
+        "title": "SpanView",
+        "description": "A stretch of time as a client reads it.\n\nSeconds rather than a rendered string: \"1 h 50\" is four words in three languages, and\nthe client already knows which one it is speaking. `at_least` is carried separately for\nthe same reason \u2014 a screen decides whether that reads as a prefix, a tilde or a mark."
+      },
       "StatusResponse": {
         "properties": {
           "status": {
@@ -3134,6 +3191,10 @@
               }
             ],
             "title": "Temperature Celsius"
+          },
+          "attention": {
+            "$ref": "#/components/schemas/Attention",
+            "default": "hands_on"
           }
         },
         "type": "object",
@@ -3233,6 +3294,42 @@
         ],
         "title": "StockLotView",
         "description": "One lot as a client reads it."
+      },
+      "TimingView": {
+        "properties": {
+          "hands_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SpanView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SpanView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ahead": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SpanView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "TimingView"
       },
       "UnitChoice": {
         "properties": {

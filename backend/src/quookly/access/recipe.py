@@ -62,6 +62,7 @@ async def store(draft: RecipeDraft, cook_id: int) -> Recipe:
                     instruction=step.instruction,
                     duration_seconds=step.duration_seconds,
                     temperature_celsius=step.temperature_celsius,
+                    attention=step.attention,
                 )
             )
         try:
@@ -110,6 +111,7 @@ async def fetch(recipe_id: int, locale: str) -> Recipe | None:
                 instruction=step.instruction,
                 duration_seconds=step.duration_seconds,
                 temperature_celsius=step.temperature_celsius,
+                attention=step.attention,
             )
             for step in steps
             if step.id is not None
@@ -187,6 +189,39 @@ async def list_for_cook(cook_id: int) -> list[RecipeSummary]:
         for row in rows
         if row.id is not None
     ]
+
+
+async def steps_for_cook(cook_id: int) -> dict[int, list[Step]]:
+    """Every step of every recipe this cook owns, in order, keyed by recipe.
+
+    One query whatever the size of the collection, for the same reason `lines_to_judge` is
+    three: how long a recipe takes belongs on the list a cook scans, and fetching each
+    recipe whole to work it out would be several queries per row.
+    """
+    async with session() as active:
+        rows = (
+            await active.exec(
+                select(StepRow)
+                .join(RecipeRow, col(StepRow.recipe_id) == col(RecipeRow.id))
+                .where(col(RecipeRow.cook_id) == cook_id)
+                .order_by(col(StepRow.recipe_id), col(StepRow.position))
+            )
+        ).all()
+
+    grouped: dict[int, list[Step]] = {}
+    for row in rows:
+        if row.id is None:
+            continue
+        grouped.setdefault(row.recipe_id, []).append(
+            Step(
+                id=row.id,
+                instruction=row.instruction,
+                duration_seconds=row.duration_seconds,
+                temperature_celsius=row.temperature_celsius,
+                attention=row.attention,
+            )
+        )
+    return grouped
 
 
 async def fetch_all_for_cook(cook_id: int, locale: str) -> list[Recipe]:

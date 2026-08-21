@@ -20,6 +20,7 @@ from pytest import MonkeyPatch
 
 from quookly.access import model as inference
 from quookly.contracts.errors import InferenceNotConfigured, NotARecipe
+from quookly.contracts.execution import Attention
 from quookly.contracts.inference import Completion
 from quookly.contracts.interpretation import Source
 from quookly.contracts.measure import Unit
@@ -50,7 +51,11 @@ ANSWER = {
     "recipe_yield": "Makes 8",
     "serves": "",
     "ingredients": ["225g plain flour", "300ml milk", "2 eggs", "a knob of butter"],
-    "steps": ["Whisk the dry ingredients.", "Beat in the milk and eggs.", "Fry until set."],
+    "steps": [
+        {"instruction": "Whisk the dry ingredients.", "attention": "hands_on"},
+        {"instruction": "Rest the batter.", "attention": "waiting"},
+        {"instruction": "Fry until set.", "attention": "hands_on"},
+    ],
 }
 
 
@@ -106,7 +111,43 @@ class TestReadingTheProse:
     async def test_the_steps_survive_in_order(self, monkeypatch: MonkeyPatch) -> None:
         answering(ANSWER, monkeypatch)
         read = await interpretation.read_page(page())
-        assert [step.instruction for step in read.steps] == ANSWER["steps"]
+        assert [step.instruction for step in read.steps] == [
+            "Whisk the dry ingredients.",
+            "Rest the batter.",
+            "Fry until set.",
+        ]
+
+    async def test_what_each_step_asks_of_the_cook_is_read(self, monkeypatch: MonkeyPatch) -> None:
+        """The model classifies; the engine adds up. Resting batter is half an hour in
+        which nobody is cooking, and counted as work it doubles the recipe (ADR-037)."""
+        answering(ANSWER, monkeypatch)
+        read = await interpretation.read_page(page())
+        assert [step.attention for step in read.steps] == [
+            Attention.HANDS_ON,
+            Attention.WAITING,
+            Attention.HANDS_ON,
+        ]
+
+    async def test_a_model_that_ignores_the_shape_still_yields_a_recipe(
+        self, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Bare strings where objects were asked for. A model that answers loosely should
+        cost a recipe its attention, not the whole import."""
+        answering({**ANSWER, "steps": ["Whisk.", "Fry."]}, monkeypatch)
+        read = await interpretation.read_page(page())
+        assert [step.instruction for step in read.steps] == ["Whisk.", "Fry."]
+        assert all(step.attention is Attention.HANDS_ON for step in read.steps)
+
+    async def test_an_attention_nobody_recognises_falls_back_to_work(
+        self, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Hands-on over-reports the work rather than under-reporting it, which is the
+        failure that does not make anybody late."""
+        answering(
+            {**ANSWER, "steps": [{"instruction": "Whisk.", "attention": "vigorous"}]}, monkeypatch
+        )
+        read = await interpretation.read_page(page())
+        assert read.steps[0].attention is Attention.HANDS_ON
 
 
 class TestWhatItAsksFor:
@@ -155,6 +196,16 @@ class TestWhatItAsksFor:
         answering(ANSWER, monkeypatch, asked)
         await interpretation.read_page(page())
         assert "recipe_yield" in asked["schema"]["required"]
+
+    async def test_it_must_say_what_each_step_asks_of_the_cook(
+        self, monkeypatch: MonkeyPatch
+    ) -> None:
+        asked: dict[str, Any] = {}
+        answering(ANSWER, monkeypatch, asked)
+        await interpretation.read_page(page())
+        step_shape = asked["schema"]["properties"]["steps"]["items"]
+        assert step_shape["required"] == ["instruction", "attention"]
+        assert step_shape["properties"]["attention"]["enum"] == ["hands_on", "waiting", "ahead"]
 
 
 class TestPagesThatAreNotRecipes:

@@ -14,6 +14,7 @@ from typing import Any
 
 import pytest
 
+from quookly.contracts.execution import Attention
 from quookly.contracts.interpretation import Source
 from quookly.contracts.measure import Unit
 from quookly.engines import interpretation
@@ -185,6 +186,14 @@ class TestTimings:
         read = interpretation.read_metadata([block(cookTime="about half an hour")])
         assert read is not None
         assert read.steps[-1].duration_seconds is None
+
+    def test_a_cook_time_is_time_the_cook_spends_waiting(self) -> None:
+        """`cookTime` is the site saying how long it is in the oven. Read as work, an
+        imported cake would claim ninety minutes of it (ADR-037)."""
+        read = interpretation.read_metadata([block(cookTime="PT30M")])
+        assert read is not None
+        assert read.steps[-1].attention is Attention.WAITING
+        assert all(step.attention is Attention.HANDS_ON for step in read.steps[:-1])
 
 
 class TestWhatItWillNotDo:

@@ -1,5 +1,5 @@
 {
-  "quookly": 2,
+  "quookly": 3,
   "exported_at": "2026-08-20T00:00:00Z",
   "locale": "en-GB",
   "ingredients": [
@@ -364,18 +364,25 @@
       ],
       "steps": [
         {
-          "instruction": "Whisk the flour, baking powder, sugar and salt together."
+          "instruction": "Whisk the flour, baking powder, sugar and salt together.",
+          "duration_seconds": 120,
+          "attention": "hands_on"
         },
         {
-          "instruction": "Beat in the milk, eggs and melted butter until just combined; a few lumps are fine."
+          "instruction": "Beat in the milk, eggs and melted butter until just combined; a few lumps are fine.",
+          "duration_seconds": 180,
+          "attention": "hands_on"
         },
         {
           "instruction": "Rest the batter — this is what makes them tender.",
-          "duration_seconds": 1800
+          "duration_seconds": 1800,
+          "attention": "waiting"
         },
         {
           "instruction": "Fry in a buttered pan until the edges set and the bubbles hold.",
-          "temperature_celsius": 180
+          "duration_seconds": 600,
+          "temperature_celsius": 180,
+          "attention": "hands_on"
         }
       ]
     },
@@ -412,19 +419,35 @@
       ],
       "steps": [
         {
-          "instruction": "Cream the butter and sugar until pale."
+          "instruction": "Cream the butter and sugar until pale.",
+          "duration_seconds": 300,
+          "attention": "hands_on"
         },
         {
-          "instruction": "Work in the flour and salt until it just comes together. Do not knead it."
+          "instruction": "Work in the flour and salt until it just comes together. Do not knead it.",
+          "duration_seconds": 180,
+          "attention": "hands_on"
         },
         {
-          "instruction": "Press into a tin, prick all over, and chill until firm.",
-          "duration_seconds": 1800
+          "instruction": "Press into a tin and prick all over.",
+          "duration_seconds": 300,
+          "attention": "hands_on"
         },
         {
-          "instruction": "Bake until the palest gold, then cut while still warm.",
+          "instruction": "Chill until firm.",
+          "duration_seconds": 1800,
+          "attention": "waiting"
+        },
+        {
+          "instruction": "Bake until the palest gold.",
           "duration_seconds": 2400,
-          "temperature_celsius": 160
+          "temperature_celsius": 160,
+          "attention": "waiting"
+        },
+        {
+          "instruction": "Cut while still warm.",
+          "duration_seconds": 120,
+          "attention": "hands_on"
         }
       ]
     }

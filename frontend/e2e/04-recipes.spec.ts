@@ -114,8 +114,28 @@ test.describe('a recipe', () => {
   });
 
   test('shows a timing as minutes rather than seconds', async ({ page }) => {
-    await expect(page.getByText('30 min')).toBeVisible();
+    await expect(page.locator('.steps__facts').getByText('30 min')).toBeVisible();
     await expect(page.getByText('1800')).toHaveCount(0);
+  });
+
+  test('says how long it takes without claiming to know more than it does', async ({ page }) => {
+    /*
+     * The document is format 1, which says nothing about what a step asks of the cook, and
+     * two of its three steps carry no duration at all. Both numbers therefore read as
+     * floors — a bare "30 min" would be a figure somebody plans an evening around.
+     *
+     * And the resting counts as work, because a document that does not say is read as
+     * hands-on. That over-reports the effort rather than under-reporting it, which is the
+     * direction that does not make anybody late (ADR-037).
+     */
+    const timing = page.locator('app-timing').first();
+    await expect(timing.getByText('at least 30 min')).toHaveCount(2);
+    await expect(timing.getByText('hands-on')).toBeVisible();
+    await expect(timing.getByText('total')).toBeVisible();
+  });
+
+  test('marks nothing on a recipe that never said what its steps ask', async ({ page }) => {
+    await expect(page.locator('.steps__step .fact--quiet')).toHaveCount(0);
   });
 
   test('writes a preparation as a person would, comma and all', async ({ page }) => {
@@ -211,5 +231,45 @@ test.describe('how many it feeds', () => {
     await open(page, /American Pancakes/);
     await expect(madeAndServed(page)).toContainText('Makes');
     await expect(madeAndServed(page)).not.toContainText('Serves');
+  });
+});
+
+test.describe('a recipe that says what each step asks of the cook', () => {
+  /*
+   * The seeded Shortbread, which carries an attention on every step. Fifteen minutes of
+   * work spread across an hour and a half of clock — the exact case a single figure
+   * describes wrongly in both directions (UC-2.6, ADR-037).
+   */
+  test.beforeEach(async ({ page }) => {
+    await page.getByText('Shortbread').click();
+    await expect(page.getByRole('heading', { name: 'Shortbread' })).toBeVisible();
+  });
+
+  test('separates the work from the waiting', async ({ page }) => {
+    const timing = page.locator('app-timing').first();
+    await expect(timing.getByText('15 min')).toBeVisible();
+    await expect(timing.getByText('1 h 25 min')).toBeVisible();
+    // Both exact: every step said how long it takes, so neither is a floor.
+    await expect(timing.getByText('at least')).toHaveCount(0);
+  });
+
+  test('marks the steps a cook can walk away from', async ({ page }) => {
+    await expect(page.getByText('you can walk away')).toHaveCount(2);
+  });
+
+  test('leaves the work unmarked', async ({ page }) => {
+    // Four of the six steps are ordinary work. A note on each would mark the whole method.
+    await expect(page.locator('.steps__step .fact--quiet')).toHaveCount(2);
+  });
+
+  test('says the same thing on the list it says on the page', async ({ page }) => {
+    await page.goBack();
+    const row = page.locator('.recipes__item').filter({ hasText: 'Shortbread' });
+    await expect(row.getByText('15 min')).toBeVisible();
+    await expect(row.getByText('hands-on')).toBeVisible();
+  });
+
+  test('looks like this', async ({ page }) => {
+    await page.screenshot({ path: 'e2e/screenshots/recipe-timing.png', fullPage: true });
   });
 });

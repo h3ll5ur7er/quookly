@@ -14,6 +14,7 @@ import pytest
 
 from quookly.contracts.errors import UnsupportedDocument
 from quookly.contracts.exchange import ExchangeDocument
+from quookly.contracts.execution import Attention
 from quookly.contracts.ingredient import Allergen, Ingredient, IngredientKind, Origin
 from quookly.contracts.measure import Quantity, Unit
 from quookly.contracts.recipe import (
@@ -76,7 +77,13 @@ def pancakes() -> Recipe:
         ],
         steps=[
             Step(id=1, instruction="Whisk.", duration_seconds=None, temperature_celsius=None),
-            Step(id=2, instruction="Rest.", duration_seconds=1800, temperature_celsius=None),
+            Step(
+                id=2,
+                instruction="Rest.",
+                duration_seconds=1800,
+                temperature_celsius=None,
+                attention=Attention.WAITING,
+            ),
         ],
     )
 
@@ -229,6 +236,28 @@ class TestRoundTrip:
         read = {entry.slug: entry for entry in exchange.from_document(as_json).ingredients}
         assert read["caster-sugar"].allergens == frozenset()
         assert read["mystery"].allergens is None
+
+    def test_what_a_step_asks_of_the_cook_travels(self) -> None:
+        """Without it, a recipe that crosses instances arrives claiming its resting is
+        work — and reports twice the hands-on time on the far side."""
+        as_json = exchange.to_document([pancakes()], "en-GB").model_dump(mode="json")
+        read = exchange.from_document(as_json)
+        assert [step.attention for step in read.recipes[0].steps] == [
+            Attention.HANDS_ON,
+            Attention.WAITING,
+        ]
+
+    def test_a_document_written_before_attention_existed_still_reads(self) -> None:
+        """Format 2 and earlier said nothing about attention. Every step in such a
+        document is hands-on, which over-reports the work rather than under-reporting it."""
+        as_json = exchange.to_document([pancakes()], "en-GB").model_dump(mode="json")
+        as_json["quookly"] = 2
+        for recipe in as_json["recipes"]:
+            for step in recipe["steps"]:
+                del step["attention"]
+
+        read = exchange.from_document(as_json)
+        assert all(step.attention is Attention.HANDS_ON for step in read.recipes[0].steps)
 
     def test_a_document_written_before_allergens_existed_still_reads(self) -> None:
         """The field is additive and optional, so v1 documents remain v1 documents."""

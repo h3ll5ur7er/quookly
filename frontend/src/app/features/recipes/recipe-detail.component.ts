@@ -1,11 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { PresentedLine, PresentedRecipe, RecipesService } from '@api';
+import { PresentedLine, PresentedRecipe, PresentedStep, RecipesService } from '@api';
 import { VerdictComponent } from '../../core/dietary/verdict.component';
+import { minutes } from '../../core/time/duration';
+import { attentionNote } from '../../core/time/labels';
+import { TimingComponent } from '../../core/time/timing.component';
 
 @Component({
   selector: 'app-recipe-detail',
-  imports: [VerdictComponent],
+  imports: [TimingComponent, VerdictComponent],
   templateUrl: './recipe-detail.component.html',
   styleUrl: './recipe-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -62,16 +65,11 @@ export class RecipeDetailComponent {
   }
 
   /** Seconds are how a timer is stored; minutes are how a cook reads one. */
-  protected minutes(seconds: number): string {
-    const total = Math.round(seconds / 60);
-    if (total < 60) {
-      return $localize`:@@durationMinutes:${total}:minutes: min`;
-    }
-    const hours = Math.floor(total / 60);
-    const rest = total % 60;
-    return rest === 0
-      ? $localize`:@@durationHours:${hours}:hours: h`
-      : $localize`:@@durationHoursMinutes:${hours}:hours: h ${rest}:minutes: min`;
+  protected readonly minutes = minutes;
+
+  /** What this step asks of the cook, where that is worth marking. */
+  protected note(step: PresentedStep): string | null {
+    return attentionNote(step.attention);
   }
 
   private load(servings: number | null): void {
