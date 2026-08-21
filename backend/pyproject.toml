@@ -160,3 +160,26 @@ source_modules = [
     "quookly.engines.suitability",
 ]
 forbidden_modules = ["quookly.access"]
+
+# ADR-002 and the iDesign call rules: a Manager owns a use case, and a use case that
+# needs another use case is a use case that has not been decomposed. Two managers wanting
+# to talk is the signal for an event, which is what the `EventBus` is for — cooking
+# publishes `MealCooked` rather than reaching into the pantry to consume stock.
+#
+# Stated as an independence contract rather than a forbidden one, because the prohibition
+# runs in every direction and a list of pairs would go stale the moment a manager is
+# added. Adding a manager means adding it here — a line in a review rather than a silence.
+[[tool.importlinter.contracts]]
+name = "Managers do not call one another"
+type = "independence"
+modules = [
+    "quookly.managers.account",
+    "quookly.managers.eater",
+    "quookly.managers.ingredient",
+    "quookly.managers.instance",
+    "quookly.managers.onboarding",
+    "quookly.managers.pantry",
+    "quookly.managers.preferences",
+    "quookly.managers.recipe",
+    "quookly.managers.seed",
+]

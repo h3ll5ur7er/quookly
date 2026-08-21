@@ -4,7 +4,7 @@ These types never leave the access layer — an import-linter contract enforces 
 (ADR-008, ADR-018). Resource access services translate them into `quookly.contracts`.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from sqlalchemy import UniqueConstraint
@@ -14,6 +14,7 @@ from quookly.contracts.eater import AgeBand, Severity
 from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.contracts.measure import Unit
 from quookly.contracts.onboarding import SetupStep
+from quookly.contracts.pantry import WasteReason
 from quookly.contracts.recipe import Provenance, Visibility
 
 
@@ -196,3 +197,51 @@ class SetupDeclarationRow(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     cook_id: int = Field(foreign_key="cook.id", index=True)
     step: SetupStep
+
+
+class StockItemRow(SQLModel, table=True):
+    """One lot in the pantry: some of an ingredient, arrived at one time.
+
+    Lots rather than a running total per ingredient, because expiry belongs to a packet
+    and not to an ingredient. Depleted lots keep their row with a magnitude of zero:
+    deleting them would break the waste records that point at them, and those are the
+    history the product is trying to help a cook shrink.
+    """
+
+    __tablename__ = "stock_item"
+
+    id: int | None = Field(default=None, primary_key=True)
+    cook_id: int = Field(foreign_key="cook.id", index=True)
+    ingredient_id: int = Field(foreign_key="ingredient.id", index=True)
+    magnitude: Decimal = Field(max_digits=12, decimal_places=4)
+    unit: Unit
+    # A day, not an instant. Nothing in a kitchen goes off at 14:32, and a timestamp
+    # would raise a timezone question with no correct answer for a carton of milk.
+    expires_on: date | None = Field(default=None, index=True)
+    note: str | None = Field(default=None)
+    received_at: datetime = Field(default_factory=_now)
+
+
+class WasteRow(SQLModel, table=True):
+    """Something that left the kitchen without being eaten (UC-5.4).
+
+    Its own fact rather than a subtraction from stock. Waste inferred from a falling
+    number cannot be told apart from waste that was eaten, and "what did we throw away,
+    and why" is a question this product exists to answer.
+
+    The ingredient, magnitude and unit are held here as well as on the lot, so the record
+    still reads once the lot behind it is empty — or, later, when waste is recorded for
+    something cooked rather than something stocked.
+    """
+
+    __tablename__ = "waste"
+
+    id: int | None = Field(default=None, primary_key=True)
+    cook_id: int = Field(foreign_key="cook.id", index=True)
+    ingredient_id: int = Field(foreign_key="ingredient.id", index=True)
+    stock_item_id: int | None = Field(default=None, foreign_key="stock_item.id", index=True)
+    magnitude: Decimal = Field(max_digits=12, decimal_places=4)
+    unit: Unit
+    reason: WasteReason
+    note: str | None = Field(default=None)
+    recorded_at: datetime = Field(default_factory=_now)

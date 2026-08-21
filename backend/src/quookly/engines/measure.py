@@ -9,7 +9,12 @@ from collections.abc import Sequence
 from decimal import ROUND_HALF_UP, Decimal
 
 from quookly.contracts.eater import Eater
-from quookly.contracts.errors import DensityRequired, IncompatibleUnits, PortionsUnknown
+from quookly.contracts.errors import (
+    DensityRequired,
+    IncompatibleUnits,
+    PortionsUnknown,
+    UnknownUnit,
+)
 from quookly.contracts.ingredient import IngredientKind
 from quookly.contracts.measure import Dimension, Quantity, Unit
 from quookly.contracts.preferences import UnitPreferences
@@ -40,6 +45,23 @@ _IN_BASE_UNITS: dict[Unit, Decimal] = {
     Unit.PIECE: Decimal("1"),
     Unit.SERVING: Decimal("1"),
 }
+
+_BY_SYMBOL = {unit.symbol: unit for unit in Unit}
+
+
+def unit_for(symbol: str) -> Unit:
+    """The unit a client named, or a refusal.
+
+    Units cross the API as their symbol — "g", "cup (US)" — rather than as an enum name,
+    because that is what a recipe is written in and what a cook reads. Resolving them
+    lives here rather than in each manager: two copies of this table are two chances for
+    one of them to learn about decilitres and the other not.
+    """
+    try:
+        return _BY_SYMBOL[symbol]
+    except KeyError:
+        raise UnknownUnit(symbol) from None
+
 
 _BRIDGEABLE = frozenset({Dimension.MASS, Dimension.VOLUME})
 

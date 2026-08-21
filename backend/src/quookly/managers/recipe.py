@@ -15,11 +15,11 @@ from quookly.access import ingredient as registry
 from quookly.access import preferences as preference_access
 from quookly.access import recipe as recipe_access
 from quookly.access import web
-from quookly.contracts.errors import UnknownUnit, UnsupportedDocument, YieldUnknown
+from quookly.contracts.errors import UnsupportedDocument, YieldUnknown
 from quookly.contracts.exchange import ExchangeDocument
 from quookly.contracts.ingredient import IngredientKind, Origin
 from quookly.contracts.interpretation import InterpretedLine
-from quookly.contracts.measure import Quantity, Unit
+from quookly.contracts.measure import Quantity
 from quookly.contracts.preferences import UnitPreferences
 from quookly.contracts.recipe import (
     ImportedRecipe,
@@ -39,14 +39,9 @@ from quookly.contracts.suitability import FindingView, JudgedLine, Outcome, Verd
 from quookly.contracts.web import ReadableContent
 from quookly.engines import exchange, interpretation, measure, suitability
 
-_UNITS_BY_SYMBOL = {unit.symbol: unit for unit in Unit}
-
-
-def _unit(symbol: str) -> Unit:
-    try:
-        return _UNITS_BY_SYMBOL[symbol]
-    except KeyError:
-        raise UnknownUnit(symbol) from None
+#: Resolving a symbol lives in `MeasureEngine`, which owns units. Kept as a local name
+#: because it reads better at the call sites than the qualified one.
+_unit = measure.unit_for
 
 
 def _view(quantity: Quantity) -> QuantityView:

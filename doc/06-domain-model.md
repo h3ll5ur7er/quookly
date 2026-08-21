@@ -75,6 +75,7 @@ erDiagram
   COOK ||--o{ EATER : "cooks for"
   COOK ||--o{ MEAL_PLAN : owns
   COOK ||--o{ STOCK_ITEM : keeps
+  COOK ||--o{ WASTE : "throws away"
   COOK ||--o{ UNIT_PREFERENCE : sets
   COOK ||--o{ AWARD : earns
 
@@ -86,6 +87,8 @@ erDiagram
 
   INGREDIENT ||--o{ INGREDIENT_LINE : "used as"
   INGREDIENT ||--o{ STOCK_ITEM : "stocked as"
+  INGREDIENT ||--o{ WASTE : "thrown away as"
+  STOCK_ITEM ||--o{ WASTE : "wasted from"
   INGREDIENT ||--|| NUTRIENT_PROFILE : has
   INGREDIENT ||--o{ INGREDIENT_NAME : "named per locale"
   INGREDIENT }o--o{ ALLERGEN : contains
@@ -185,14 +188,35 @@ reassurance about a question nobody asked.
 
 ### Stock item and reservation
 
-A **stock item** is a quantity of an ingredient, with optional expiry and a source. A
-**reservation** links a plan slot to stock it intends to consume.
+A **stock item** is a **lot**: some of an ingredient that arrived at one time, with one expiry and
+one note about where it came from. Lots rather than a running total per ingredient, because expiry
+belongs to a packet — a per-ingredient total can carry only one date, and either warns about two
+kilos when 200 g are at risk or never warns at all
+([ADR-034](07-decisions.md#adr-034-stock-is-held-as-lots-not-as-a-total-per-ingredient)). The shelf
+a cook reads is lots grouped and totalled, which is presentation rather than storage.
+
+A **reservation** links a plan slot to stock it intends to consume.
 
 Reservations exist so that planning does not lie about the pantry
 ([ADR-004](07-decisions.md#adr-004-plans-reserve-stock-cooking-consumes-it)). Planned-but-not-yet-cooked
 stock is neither freely available nor gone. Two plans cannot reserve the same butter, and a
 cancelled plan releases it. Deducting on planning would make the pantry wrong the moment anything
 changed.
+
+### Waste
+
+**Waste** is its own record — the ingredient, the amount, the reason and the date — rather than a
+subtraction from stock. Waste inferred from a falling quantity cannot be told from food that was
+eaten, and "what did we throw away, and why" is a question this product exists to answer
+([ADR-035](07-decisions.md#adr-035-adjusting-stock-and-recording-waste-are-different-acts)).
+
+The reason matters more than it looks. *Spoiled* and *expired* are kept apart: food that actually
+went off was bought or stored badly, and food binned on its date was very often still fine — which
+is the waste a cook can most easily stop.
+
+Correcting a quantity is a different act from wasting it. Adjusting says the number was wrong;
+wasting says food left the kitchen. Only the second belongs in the figure the cook is trying to
+bring down.
 
 ### A line without a quantity
 

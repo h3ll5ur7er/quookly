@@ -158,6 +158,21 @@ class TestArchitectureContracts:
             result = lint_imports()
         assert_rejected(result, "a route importing resource access")
 
+    def test_a_manager_may_not_call_another_manager(self) -> None:
+        """A use case that needs another use case has not been decomposed (ADR-002).
+
+        The probe goes into a real manager, because the contract names them one at a
+        time: a fresh module would not be covered, and a test that passes by not being
+        watched proves nothing. Two managers wanting to talk is the signal for an event —
+        cooking publishes `MealCooked` rather than reaching into the pantry itself.
+        """
+        with violating_line(
+            "managers/pantry.py",
+            "\nfrom quookly.managers import recipe as _probe  # noqa: F401\n",
+        ):
+            result = lint_imports()
+        assert_rejected(result, "a manager importing another manager")
+
     def test_a_new_top_level_package_cannot_escape_the_rules(self) -> None:
         """The layers contract is exhaustive, so an undeclared package is a failure."""
         probe = PACKAGE_ROOT / "_rogue_layer"

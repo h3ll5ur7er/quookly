@@ -17,6 +17,7 @@ from .routes import (
     eaters_router,
     ingredients_router,
     instance_router,
+    pantry_router,
     preferences_router,
     recipes_router,
     setup_router,
@@ -104,6 +105,7 @@ app.include_router(recipes_router, prefix=API_PREFIX, tags=["recipes"])
 app.include_router(ingredients_router, prefix=API_PREFIX, tags=["ingredients"])
 app.include_router(eaters_router, prefix=API_PREFIX, tags=["eaters"])
 app.include_router(setup_router, prefix=API_PREFIX, tags=["setup"])
+app.include_router(pantry_router, prefix=API_PREFIX, tags=["pantry"])
 app.include_router(preferences_router, prefix=API_PREFIX, tags=["preferences"])
 app.include_router(instance_router, prefix=API_PREFIX, tags=["instance"])
 

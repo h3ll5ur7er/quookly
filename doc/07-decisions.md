@@ -1117,3 +1117,82 @@ status page for three minutes has learned nothing except that.
 **Cost.** Changing provider means restarting the instance. For a container that is the ordinary way
 to change any setting; for somebody running it by hand it is a papercut. A database-backed override
 remains available later, and would be a considered addition rather than the default.
+
+---
+
+## ADR-034 Stock is held as lots, not as a total per ingredient
+
+**Status:** Accepted
+
+**Context.** The obvious model for a pantry is one row per ingredient with a running quantity: two
+kilos of flour, six eggs. It is smaller, it never needs grouping, and it is what a shopping list
+wants to read.
+
+**Decision.** Stock is held as **lots**. A lot is some of an ingredient that arrived at one time,
+with one date on it and one note about where it came from. The pantry screen groups lots by
+ingredient and totals them; storage keeps them apart.
+
+**Rationale.** Expiry belongs to a packet, not to an ingredient. Two bags of flour bought a month
+apart are the same ingredient and two different questions, and a per-ingredient total can only carry
+one date — so it either takes the earliest, and warns about two kilos when 200 g are at risk, or
+takes the latest, and never warns at all. Both are wrong in the direction that produces waste, which
+is the thing this product is trying to reduce.
+
+Reservations need the same granularity for the same reason. A plan reserves *stock*
+([ADR-004](#adr-004-plans-reserve-stock-cooking-consumes-it)), and reserving against a total cannot
+express "the carton that goes off on Thursday" — which is exactly the reservation a cook wants a
+planner to make.
+
+**Cost.** Every read has to group, and a total has to be computed rather than stored. A cook who
+buys the same thing weekly accumulates lots, and the screen has to stay legible as they do. The
+grouping lives in `PantryManager` so that no client re-derives it.
+
+A depleted lot keeps its row, at zero, rather than being deleted: waste records point at it, and
+they are the history the cook is trying to shrink. It leaves every listing, so an empty packet never
+appears on a shelf or in an expiry warning.
+
+**Where a total is refused.** Six eggs and 200 g of egg have no sum. The total is reported as
+absent rather than approximated — every lot is listed underneath, so declining to invent a number
+hides nothing.
+
+---
+
+## ADR-035 Adjusting stock and recording waste are different acts
+
+**Status:** Accepted
+
+**Context.** UC-5.3 and UC-5.4 both reduce a quantity. It is tempting to implement one verb — "the
+amount changed" — with an optional reason attached.
+
+**Decision.** Two operations, two endpoints, two stored facts. **Adjusting** restates what is
+actually there: the number was wrong and is now right, and nothing left the kitchen. **Recording
+waste** says food existed and was thrown away, and writes its own record carrying the ingredient,
+the amount, the reason and the date.
+
+**Rationale.** Only one of these is the number this product exists to bring down. A single verb
+could never tell them apart afterwards, and waste inferred from a falling quantity is
+indistinguishable from food that was eaten — which makes every waste figure derived from it
+fiction.
+
+The reasons are worth asking for, and `SPOILED` and `EXPIRED` are deliberately kept apart. Food that
+actually went off was bought or stored badly. Food binned on its date was very often still fine, and
+that is the waste a cook can most easily stop. Collapsing the two into "off" discards the only
+distinction worth acting on.
+
+**Adjustment is a restatement, not a difference.** A cook looking into a jar knows how much is in
+it, not how much has gone since they last looked. A difference sent twice by a flaky connection
+subtracts twice; a restatement sent twice says the same thing twice.
+
+**Deleting a lot is a third thing.** A lot entered by mistake never existed, so it is removed
+outright rather than wasted — food that was never in the house must not land in the figure the cook
+is trying to reduce. Once anything has been thrown away from a lot, deleting it is refused: the
+waste record would be left pointing at nothing, and the history would quietly shrink.
+
+**Cost.** Two endpoints and two forms where one would do, and a cook who does not care about the
+distinction has to pick a reason anyway. The reasons are five coarse choices with a sensible one at
+the top rather than a free-text box, so the cost is one tap.
+
+**What is not built yet.** The waste *report*. UC-5.* asks for waste to be recorded, not summarised,
+and a chart of it belongs with the rest of the reporting surface. The records are complete from the
+first one, so the report can be written later without a migration — which is the whole reason for
+storing the fact rather than the subtraction.

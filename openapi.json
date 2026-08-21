@@ -803,6 +803,238 @@
         }
       }
     },
+    "/api/v1/pantry": {
+      "get": {
+        "tags": [
+          "pantry"
+        ],
+        "summary": "List Pantry",
+        "description": "Everything this cook has, by ingredient (UC-5.2).",
+        "operationId": "listPantry",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PantryEntry"
+                  },
+                  "type": "array",
+                  "title": "Response Listpantry"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "pantry"
+        ],
+        "summary": "Receive Stock",
+        "description": "Record stock arriving (UC-5.1).\n\nReturns the whole entry rather than the new lot, so the card a cook is looking at\nupdates as a whole instead of the client guessing what the total became.",
+        "operationId": "receiveStock",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiveInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PantryEntry"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pantry/using-soon": {
+      "get": {
+        "tags": [
+          "pantry"
+        ],
+        "summary": "List Using Soon",
+        "description": "What wants eating, most pressing first (UC-5.2).",
+        "operationId": "listUsingSoon",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PantryEntry"
+                  },
+                  "type": "array",
+                  "title": "Response Listusingsoon"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pantry/lots/{stock_item_id}": {
+      "patch": {
+        "tags": [
+          "pantry"
+        ],
+        "summary": "Adjust Lot",
+        "description": "Say how much is actually there (UC-5.3).",
+        "operationId": "adjustLot",
+        "parameters": [
+          {
+            "name": "stock_item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Stock Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjustInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PantryEntry"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "pantry"
+        ],
+        "summary": "Discard Lot",
+        "description": "Delete a lot entered by mistake \u2014 food that was never in the house.",
+        "operationId": "discardLot",
+        "parameters": [
+          {
+            "name": "stock_item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Stock Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pantry/lots/{stock_item_id}/waste": {
+      "post": {
+        "tags": [
+          "pantry"
+        ],
+        "summary": "Record Waste",
+        "description": "Throw some of a lot away, and say why (UC-5.4).\n\nA different endpoint from `adjust` rather than a flag on it. Adjusting says the\nnumber was wrong; wasting says food left the kitchen. Only the second belongs in the\nfigure this product exists to bring down, and one verb could never tell them apart.",
+        "operationId": "recordWaste",
+        "parameters": [
+          {
+            "name": "stock_item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Stock Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WasteInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PantryEntry"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/preferences/units": {
       "get": {
         "tags": [
@@ -926,6 +1158,21 @@
   },
   "components": {
     "schemas": {
+      "AdjustInput": {
+        "properties": {
+          "magnitude": {
+            "type": "string",
+            "pattern": "^-?\\d*\\.?\\d+$",
+            "title": "Magnitude"
+          }
+        },
+        "type": "object",
+        "required": [
+          "magnitude"
+        ],
+        "title": "AdjustInput",
+        "description": "What is actually there now (UC-5.3).\n\nA restatement, not a difference. A cook looking into a jar knows how much is in it,\nnot how much has gone since they last looked, and a difference sent twice by a flaky\nconnection subtracts twice.\n\nIn the lot's own unit \u2014 the one it is displayed in. There is no form in which a cook\nreads a quantity in grams and types one in kilos."
+      },
       "AgeBand": {
         "type": "string",
         "enum": [
@@ -1442,6 +1689,17 @@
         "title": "FindingView",
         "description": "One reason behind a verdict, as a client reads it."
       },
+      "Freshness": {
+        "type": "string",
+        "enum": [
+          "undated",
+          "fresh",
+          "soon",
+          "past"
+        ],
+        "title": "Freshness",
+        "description": "How urgently a lot wants using, coarsely.\n\nA band rather than a number, because this drives colour and ordering. The precise\ncount of days travels beside it, so the interface can say \"in two days\" without this\nenum needing a case for every number."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1703,6 +1961,58 @@
         "title": "Outcome",
         "description": "The answer, worst-first when several apply."
       },
+      "PantryEntry": {
+        "properties": {
+          "ingredient_id": {
+            "type": "integer",
+            "title": "Ingredient Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/IngredientKind"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          },
+          "freshness": {
+            "$ref": "#/components/schemas/Freshness"
+          },
+          "lots": {
+            "items": {
+              "$ref": "#/components/schemas/StockLotView"
+            },
+            "type": "array",
+            "title": "Lots"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ingredient_id",
+          "slug",
+          "name",
+          "kind",
+          "total",
+          "freshness",
+          "lots"
+        ],
+        "title": "PantryEntry",
+        "description": "Everything the cook has of one ingredient, lot by lot.\n\n`total` is absent when the lots cannot honestly be added up \u2014 a jar and 200 g of the\nsame thing have no sum. Absent rather than approximated: the lots are all listed\nanyway, so nothing is hidden by declining to invent a number."
+      },
       "PresentedLine": {
         "properties": {
           "ingredient": {
@@ -1885,6 +2195,57 @@
         ],
         "title": "QuantityView",
         "description": "A quantity as a client reads it.\n\n`magnitude` is a string. JSON numbers are binary floats in a browser, and 0.1 of a\ngram is not worth losing to that; `display` is what a screen actually shows."
+      },
+      "ReceiveInput": {
+        "properties": {
+          "ingredient_id": {
+            "type": "integer",
+            "title": "Ingredient Id"
+          },
+          "magnitude": {
+            "type": "string",
+            "pattern": "^-?\\d*\\.?\\d+$",
+            "title": "Magnitude"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Unit"
+          },
+          "expires_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires On"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ingredient_id",
+          "magnitude",
+          "unit"
+        ],
+        "title": "ReceiveInput",
+        "description": "Stock arriving (UC-5.1)."
       },
       "RecipeInput": {
         "properties": {
@@ -2163,6 +2524,76 @@
         ],
         "title": "StepStatusView"
       },
+      "StockLotView": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "magnitude": {
+            "type": "string",
+            "title": "Magnitude"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "quantity": {
+            "type": "string",
+            "title": "Quantity"
+          },
+          "expires_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires On"
+          },
+          "days_remaining": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days Remaining"
+          },
+          "freshness": {
+            "$ref": "#/components/schemas/Freshness"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "magnitude",
+          "unit",
+          "quantity",
+          "expires_on",
+          "days_remaining",
+          "freshness",
+          "note"
+        ],
+        "title": "StockLotView",
+        "description": "One lot as a client reads it."
+      },
       "UnitChoice": {
         "properties": {
           "unit": {
@@ -2285,6 +2716,49 @@
         ],
         "title": "Visibility",
         "description": "Private by default; publishing is explicit (FR-5)."
+      },
+      "WasteInput": {
+        "properties": {
+          "magnitude": {
+            "type": "string",
+            "pattern": "^-?\\d*\\.?\\d+$",
+            "title": "Magnitude"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/WasteReason"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "magnitude",
+          "reason"
+        ],
+        "title": "WasteInput",
+        "description": "Something thrown away (UC-5.4). The magnitude is in the lot's own unit."
+      },
+      "WasteReason": {
+        "type": "string",
+        "enum": [
+          "spoiled",
+          "expired",
+          "uneaten",
+          "damaged",
+          "other"
+        ],
+        "title": "WasteReason",
+        "description": "Why food left the kitchen without being eaten.\n\n`SPOILED` and `EXPIRED` are kept apart deliberately, and they are the whole point of\nasking. Food that actually went off was bought or stored badly; food binned on its\ndate was very often still fine, and that is the waste a cook can most easily stop.\nCollapsing the two into \"off\" throws away the only distinction worth acting on."
       }
     }
   }

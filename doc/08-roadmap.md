@@ -122,7 +122,12 @@ This is the phase that determines whether the product is worth using.
 
 **Goal:** the week actually gets planned.
 
-- `PantryAccess`, `PantryManager`: receive, adjust, expire, waste (UC-5.*)
+- ~~`PantryAccess`, `PantryManager`: receive, adjust, expire, waste (UC-5.*)~~ **Built** — stock is
+  held as lots rather than a total per ingredient
+  ([ADR-034](07-decisions.md#adr-034-stock-is-held-as-lots-not-as-a-total-per-ingredient)), and
+  adjusting is a different act from wasting
+  ([ADR-035](07-decisions.md#adr-035-adjusting-stock-and-recording-waste-are-different-acts))
+- The pantry screen (UC-5.1–5.4)
 - Reservation model ([ADR-004](07-decisions.md#adr-004-plans-reserve-stock-cooking-consumes-it)); releasing a reservation is a first-class path, as well tested as consuming one
 - `PlanAccess`, `PlanningManager`, `PlanningEngine`: slots, attendance, suitability checks (UC-4.1–4.3)
 - A recipe's `serves` alongside its yield, so "makes 12 pancakes" can be scaled to a table — see [the domain model](06-domain-model.md#appetite-multiplier)

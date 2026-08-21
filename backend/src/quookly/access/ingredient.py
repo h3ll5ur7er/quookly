@@ -237,6 +237,33 @@ async def canonical_names_within(
     return resolved
 
 
+async def for_ids(ingredient_ids: list[int], locale: str) -> dict[int, Ingredient]:
+    """Whole registry entries by id, named in `locale`.
+
+    For a caller that holds ids and needs the entries behind them together — the pantry,
+    whose lots carry an ingredient id and which has to show a name, a kind and a density
+    at once. Names fall back the way `name_for` does, and to the slug when neither locale
+    has one, so an entry is never nameless on screen.
+    """
+    if not ingredient_ids:
+        return {}
+    async with session() as active:
+        rows = (
+            await active.exec(
+                select(IngredientRow).where(col(IngredientRow.id).in_(ingredient_ids))
+            )
+        ).all()
+        names = await canonical_names_within(active, ingredient_ids, locale)
+        carried = await allergens_within(active, ingredient_ids)
+    return {
+        row.id: _to_contract(
+            row, names.get(row.id, row.slug), carried.get(row.id, (frozenset(), False))[0]
+        )
+        for row in rows
+        if row.id is not None
+    }
+
+
 async def densities_for(ingredient_ids: list[int]) -> dict[int, Decimal | None]:
     """Densities for a whole recipe at once, rather than one query per line."""
     if not ingredient_ids:

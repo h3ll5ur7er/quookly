@@ -202,6 +202,12 @@ past the one below it — so *Client must not call Resource Access* and *Engine 
 Resource Access* are each stated separately. The first of those was missing until Phase 2,
 and a route had already taken the shortcut.
 
+*Manager must not call Manager* is stated as an **independence** contract rather than a forbidden
+one, because the prohibition runs in every direction and a list of pairs would go stale the moment a
+manager was added. It arrived with `PantryManager` — the first phase in which several managers touch
+the same nouns, and so the first in which one could plausibly reach for another. Nothing violated it
+when it was added, which is the point of adding it then rather than after something did.
+
 These rules are mechanically enforced — see
 [ADR-008](07-decisions.md#adr-008-enforce-the-call-rules-with-import-linter). The template already
 anticipates this: `just backend clean` removes `.import_linter_cache`.
@@ -246,6 +252,12 @@ assignments → verify suitability → reserve stock → derive shopping list.
 Separate from `PlanningManager` because stock is true independently of whether anyone is planning:
 a cook adjusts the pantry constantly outside any plan, and expiry advances whether or not the app
 is opened.
+
+**Built** for UC-5.*: receiving, adjusting, wasting, and the expiry view. Storage keeps lots; this
+is where lots become a shelf — grouped by ingredient, named in the cook's own language, totalled
+where a total is honest, and marked with how soon each packet wants using
+([ADR-034](07-decisions.md#adr-034-stock-is-held-as-lots-not-as-a-total-per-ingredient)). Reserving
+and consuming arrive with planning and with cooking mode.
 
 ### CookingManager
 
@@ -331,7 +343,7 @@ Each service exposes atomic business verbs. Illustrative, not exhaustive:
 | `RecipeAccess` | Database | `store`, `fetch`, `list_for_cook`, `publish`, `derive_variant` |
 | `IngredientAccess` | Database | `resolve_by_name`, `nutrients_for`, `density_for`, `localised_name` |
 | `EaterAccess` | Database | `add`, `fetch`, `list_for_cook`, `for_ids`, `amend`, `restate_constraints`, `remove` |
-| `PantryAccess` | Database | `receive`, `reserve`, `release`, `consume`, `record_waste`, `expiring_before` |
+| `PantryAccess` | Database | `receive`, `adjust`, `record_waste`, `expiring_before`, `for_ingredients` — **Built**; `reserve`, `release`, `consume` arrive with planning ([ADR-034](07-decisions.md#adr-034-stock-is-held-as-lots-not-as-a-total-per-ingredient), [ADR-035](07-decisions.md#adr-035-adjusting-stock-and-recording-waste-are-different-acts)) |
 | `PlanAccess` | Database | `store_plan`, `fetch_plan`, `assign_slot`, `mark_cooked` |
 | `CommunityAccess` | Database | `follow`, `rate`, `comment`, `award`, `leaderboard` |
 | `AcademyAccess` | Database | `fetch_term`, `store_contribution`, `list_modules` |
@@ -444,8 +456,8 @@ backend/src/quookly/
 │   ├── instance.py         # what this instance is pointed at (Built)
 │   ├── preferences.py      # unit preferences (Built)
 │   ├── dependencies.py     # resolving the caller (Built)
+│   ├── pantry.py           # stock, adjustment, waste (Built)
 │   ├── plans.py            # (Planned)
-│   ├── pantry.py           # (Planned)
 │   └── community.py        # (Planned)
 ├── managers/
 │   ├── account.py          # bootstrap, registration, sign-in (Built)
@@ -454,6 +466,7 @@ backend/src/quookly/
 │   ├── ingredient.py       # finding registry entries to name (Built)
 │   ├── instance.py         # reporting on the instance itself (Built)
 │   ├── onboarding.py       # gathering a profile to be assessed (Built)
+│   ├── pantry.py           # lots into a shelf a cook can read (Built)
 │   ├── preferences.py      # a cook's units, choice or default (Built)
 │   └── seed.py             # stocking a fresh instance (Built)
 ├── engines/
@@ -471,6 +484,7 @@ backend/src/quookly/
 │   ├── model.py            # reaching an inference provider (Built)
 │   ├── web.py              # fetching and reducing a page (Built)
 │   ├── preferences.py      # a cook's unit preferences (Built)
+│   ├── pantry.py           # stock lots and waste, in domain verbs (Built)
 │   ├── models.py           # SQLModel tables — never leave this layer (Built)
 │   └── cook.py             # cook accounts, in domain verbs (Built)
 ├── utilities/
@@ -491,6 +505,7 @@ backend/src/quookly/
 │   ├── web.py              # ReadableContent (Built)
 │   ├── suitability.py      # Outcome, Finding, Verdict (Built)
 │   ├── measure.py          # Dimension, Unit, Quantity (Built)
+│   ├── pantry.py           # StockItem, WasteRecord, Freshness (Built)
 │   ├── security.py         # Principal (Built)
 │   └── errors.py           # errors that cross layers (Built)
 └── ../alembic/             # migrations; the schema of record (Built)
