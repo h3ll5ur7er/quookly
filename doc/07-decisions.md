@@ -1074,3 +1074,46 @@ safety path.
 **Cost.** A table of translations, a per-request cache decision, and a dependency on a model for
 something a cook may reasonably expect to work offline. An instance with no model configured must
 degrade to showing the original — which is exactly what it does today, and is not a failure.
+
+---
+
+## ADR-033 The inference provider is configured by environment, and reported by the app
+
+**Status:** Accepted
+
+**Context.** UC-8.2 asks for the inference backend to be configurable, and FR-8 requires provider and
+model to be *configuration, not code*. The obvious reading is a settings form that writes to the
+database.
+
+**Decision.** Configuration stays in `QUOOKLY_INFERENCE_*` environment variables. What the
+application provides is a **report**: an administrator-only view of what the instance is pointed at
+and whether it answers, on the settings screen and through `quookly-cli inference status`.
+
+**Rationale.** A self-hoster's container, compose file or systemd unit already speaks environment
+variables, and that is where the rest of this instance's configuration lives. Adding a database
+override would create two sources of truth for the same setting and a class of question — "why is my
+env var not taking effect" — that has no good answer.
+
+An API key in the database is also a key in every backup of that database, in plaintext, and a key
+in a settings form is a key in a browser's autofill. Neither is wrong forever, and neither is worth
+doing before somebody actually needs it.
+
+The reporting half is where the value is anyway. An operator's questions are "is a model configured"
+and "does it answer", and until now the only way to find out was to try an import and read the
+failure.
+
+**What is reported, and what is not.** The address, the model, whether a credential is set, and
+whether the provider answered — with a reason when it did not, because *could not reach it* and
+*check the key* send somebody to two different places. Never the credential itself: a status page
+that prints a key has published it into a screenshot, a support thread, a browser cache.
+
+Administrators only. It names an address on the operator's network, which is a map of what the
+server can see.
+
+The reachability probe has its own short timeout rather than a completion's. A model that is slow to
+answer is working; one that is slow to list its own models is not, and an operator staring at a
+status page for three minutes has learned nothing except that.
+
+**Cost.** Changing provider means restarting the instance. For a container that is the ordinary way
+to change any setting; for somebody running it by hand it is a papercut. A database-backed override
+remains available later, and would be a considered addition rather than the default.

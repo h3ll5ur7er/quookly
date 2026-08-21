@@ -885,6 +885,28 @@
         }
       }
     },
+    "/api/v1/instance/inference": {
+      "get": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "Get Inference Status",
+        "description": "What model this instance will ask, and whether it is answering.\n\nAdministrators only. It names an address on the operator's network and says whether a\ncredential is set \u2014 the first of those is a map of what the server can see, and\nneither is an ordinary cook's business.",
+        "operationId": "getInferenceStatus",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InferenceStatusView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Read Root",
@@ -1499,6 +1521,69 @@
         ],
         "title": "ImportedRecipe",
         "description": "What importing a page did, as well as what it produced.\n\n`ingredients_added` is the part a cook has to act on: names the registry had never\nseen are recorded so the recipe can exist, and nothing is known about their allergens\nuntil somebody looks. Reporting them is what stops that being a silent addition."
+      },
+      "InferenceStatusView": {
+        "properties": {
+          "configured": {
+            "type": "boolean",
+            "title": "Configured"
+          },
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "authenticated": {
+            "type": "boolean",
+            "title": "Authenticated",
+            "default": false
+          },
+          "reachable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reachable"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "configured"
+        ],
+        "title": "InferenceStatusView",
+        "description": "What this instance is pointed at, for the person running it (UC-8.2).\n\nThe credential is deliberately absent, and `authenticated` says only whether one is\nset. A status page that prints a key has published it \u2014 into a screenshot, a support\nthread, a browser cache."
       },
       "IngredientKind": {
         "type": "string",

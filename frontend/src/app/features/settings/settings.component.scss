@@ -39,3 +39,52 @@ h2 {
     opacity: 0.6;
   }
 }
+
+.settings__facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+
+  dt {
+    color: var(--on-surface-muted);
+    font-size: var(--text-sm);
+  }
+
+  dd {
+    margin: 0;
+    /* An address and a model name are identifiers. They wrap anywhere rather than
+       overflowing a phone. */
+    font-family: var(--font-numeric);
+    font-size: var(--text-sm);
+    overflow-wrap: anywhere;
+  }
+}
+
+.settings__reachable {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 0;
+  color: var(--success);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+/* Never colour alone: the tick carries the meaning where hue cannot. */
+.settings__mark {
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid currentcolor;
+  border-radius: var(--radius-full);
+  font-size: 0.7em;
+  line-height: 1;
+}
+
+.settings__detail {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}

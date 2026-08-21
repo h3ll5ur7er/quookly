@@ -269,3 +269,45 @@ Backend and CLI codegen do not need it.
 `just backend run`.
 
 **Port already in use** — set `PORT`.
+
+## Pointing the instance at a model
+
+Quookly reads a recipe out of a page's own metadata when the site publishes it, which the large
+recipe sites do. A page that does not — a blog, most personally-run sites — has to be read through
+by a model, and that is what this configures. **An instance without one is not broken:** every other
+part works, and imports from sites that publish properly still work.
+
+Any OpenAI-compatible server ([ADR-026](07-decisions.md#adr-026-one-openai-shaped-wire-format-not-a-provider-plugin-system)):
+vLLM, Ollama, llama.cpp or LM Studio locally, or a hosted provider with a key.
+
+| Variable | Meaning |
+| --- | --- |
+| `QUOOKLY_INFERENCE_BASE_URL` | The API root, ending in `/v1` |
+| `QUOOKLY_INFERENCE_MODEL` | Which model to ask for |
+| `QUOOKLY_INFERENCE_API_KEY` | Only for a hosted provider; leave unset for a local one |
+| `QUOOKLY_INFERENCE_TIMEOUT_SECONDS` | Default 180. A local model on modest hardware is slow |
+
+A local vLLM, for example:
+
+```bash
+QUOOKLY_INFERENCE_BASE_URL=http://your-server:8000/v1
+QUOOKLY_INFERENCE_MODEL=Qwen/Qwen3-32B
+```
+
+Configuration is by environment rather than by a form
+([ADR-033](07-decisions.md#adr-033-the-inference-provider-is-configured-by-environment-and-reported-by-the-app)),
+so a change takes effect on restart. To check it took:
+
+```bash
+QUOOKLY_TOKEN=<an administrator's token> just cli run inference status
+```
+
+which prints the address, the model, whether a key is set — never the key — and whether the provider
+answered. The same is on the **Settings** screen for administrators.
+
+### Fetching from your own network
+
+By default an instance refuses to fetch a URL that resolves to a private address
+([ADR-027](07-decisions.md#adr-027-an-instance-will-not-fetch-its-own-network)): without that, a
+pasted link is a way to make the server read your router's admin page. If your recipes genuinely
+live on your own network, set `QUOOKLY_ALLOW_PRIVATE_FETCH=true`.

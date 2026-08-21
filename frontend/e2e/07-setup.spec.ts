@@ -90,6 +90,15 @@ test.describe('doing the work settles a step', () => {
     await expect(stepFor(page, 'What they avoid')).not.toHaveClass(/setup__step--done/);
   });
 
+  test('the operator can see what the instance is pointed at', async ({ page }) => {
+    /* UC-8.2. The e2e instance has no provider configured, which is a realistic
+       self-hosted setup and the state most worth reporting clearly. */
+    await page.goto('/settings');
+    await expect(page.getByRole('heading', { name: 'Recipe reading' })).toBeVisible();
+    await expect(page.getByText('No model is configured')).toBeVisible();
+    await expect(page.getByText('QUOOKLY_INFERENCE_BASE_URL')).toBeVisible();
+  });
+
   test('choosing a unit settles the units step', async ({ page }) => {
     await page.goto('/settings');
     await page.getByLabel('Liquids').selectOption('dl');

@@ -111,10 +111,10 @@ claims; having the structural judge already in place removes the temptation and 
 - ~~`InterpretationEngine`: content to canonical recipe (V2)~~ **Built** — metadata first, a model over the prose otherwise; verified against live pages and a local Qwen3.6
 - ~~URL import (UC-1.3), validation and failure reporting (FR-9)~~ **Built** — verified against live pages ([ADR-029](07-decisions.md#adr-029-an-ingredient-the-registry-does-not-know-is-recorded-and-reported), [ADR-030](07-decisions.md#adr-030-a-recipe-whose-yield-cannot-be-read-is-refused)); the screen for it follows
 - ~~The screen for it: paste a link, see what came back and what needs a look~~ **Built**
-- Provider configuration in settings and via CLI (UC-8.2)
+- ~~Provider configuration in settings and via CLI (UC-8.2)~~ **Built** — configured by environment, reported by the app ([ADR-033](07-decisions.md#adr-033-the-inference-provider-is-configured-by-environment-and-reported-by-the-app))
 
 **Done when:** pasting a recipe URL yields a structured recipe with resolved ingredients, or an
-explicit, legible failure.
+explicit, legible failure. **Met.**
 
 This is the phase that determines whether the product is worth using.
 

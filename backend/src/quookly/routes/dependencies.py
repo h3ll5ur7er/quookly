@@ -40,3 +40,21 @@ def current_principal(request: Request) -> Principal:
 
 
 CurrentCook = Annotated[Principal, Depends(current_principal)]
+
+
+def require_admin(cook: "CurrentCook") -> Principal:
+    """Who is asking, if they administer this instance.
+
+    A 403 rather than a 404: the caller is known and the resource is not a secret, only
+    the answer is. Pretending an operator's settings page does not exist would send an
+    ordinary cook looking for a bug.
+    """
+    if not cook.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only an administrator of this instance may see that.",
+        )
+    return cook
+
+
+CurrentAdmin = Annotated[Principal, Depends(require_admin)]

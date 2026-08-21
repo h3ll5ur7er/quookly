@@ -161,6 +161,17 @@
     "importNewIngredients": "Diese Zutaten waren noch nicht in Ihrer Zutatenliste; über ihren Inhalt ist deshalb nichts bekannt. Rezepte damit lassen sich erst dann auf Ihren Haushalt prüfen, wenn Sie es erfassen.",
     "importOpen": "Rezept öffnen",
     "importFailedUnknown": "Das hat nicht geklappt. Bitte versuchen Sie es erneut.",
-    "recipesImport": "Aus einem Link importieren"
+    "recipesImport": "Aus einem Link importieren",
+    "settingsInference": "Rezepte lesen",
+    "settingsInferenceWhy": "Seiten, die ihre Rezepte sauber veröffentlichen, werden ohne Modell gelesen. Eine, die das nicht tut, muss von einem Modell durchgelesen werden – dieses hier fragt diese Instanz an.",
+    "settingsProvider": "Anbieter",
+    "settingsModel": "Modell",
+    "settingsKey": "Schlüssel",
+    "settingsKeySet": "Gesetzt",
+    "settingsKeyNone": "Keiner – ein lokaler Anbieter",
+    "settingsReachable": "Antwortet.",
+    "settingsUnreachable": "Antwortet nicht.",
+    "settingsNoProvider": "Es ist kein Modell konfiguriert. Alle übrigen Teile von Quookly funktionieren auch ohne.",
+    "settingsInferenceLoading": "Wird geladen …"
   }
 }

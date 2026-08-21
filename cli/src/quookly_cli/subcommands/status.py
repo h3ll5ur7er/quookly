@@ -1,3 +1,4 @@
+import httpx
 from rich.console import Console
 from typer import Typer
 
@@ -16,8 +17,12 @@ console = Console()
 @cli.command()
 @coro
 async def get_status() -> None:
-    with get_container().api_client() as client:
-        response = await get_status_api.asyncio(client=client)
+    try:
+        with get_container().api_client() as client:
+            response = await get_status_api.asyncio(client=client)
+    except httpx.HTTPError:
+        # An unreachable server is the answer this command exists to give, not a crash.
+        response = None
     if response is None:
         console.print("[red]Quookly API is unreachable or returned no status.[/red]")
         raise SystemExit(1)

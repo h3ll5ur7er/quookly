@@ -1,5 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { IngredientKind, PreferencesService, UnitPreferenceView } from '@api';
+import {
+  InferenceStatusView,
+  IngredientKind,
+  InstanceService,
+  PreferencesService,
+  UnitPreferenceView,
+} from '@api';
+import { AuthStore } from '../../core/auth/auth.store';
 import { LocalePickerComponent } from '../../core/locale/locale-picker.component';
 
 /** The units worth offering per kind. A countable is counted; the rest are measured. */
@@ -38,11 +45,26 @@ export class SettingsComponent {
   protected readonly units = signal<UnitPreferenceView[] | null>(null);
   protected readonly failed = signal(false);
 
+  /** Only an administrator sees the inference section, and only they can act on it. */
+  protected readonly isAdmin = inject(AuthStore).isAdmin;
+  protected readonly inference = signal<InferenceStatusView | null>(null);
+
   constructor() {
     this.preferences.listUnitPreferences().subscribe({
       next: (units) => this.units.set(units),
       error: () => this.failed.set(true),
     });
+
+    if (this.isAdmin()) {
+      // Its own request and its own failure: a provider that is not answering must not
+      // take the units section down with it.
+      inject(InstanceService)
+        .getInferenceStatus()
+        .subscribe({
+          next: (status) => this.inference.set(status),
+          error: () => this.inference.set(null),
+        });
+    }
   }
 
   protected optionsFor(kind: IngredientKind): readonly { value: string; label: string }[] {

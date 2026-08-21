@@ -19,6 +19,7 @@ operator would do next.
 """
 
 import json
+from dataclasses import replace
 from typing import Any
 
 import httpx
@@ -38,6 +39,11 @@ log = get_logger("inference")
 # Extraction is not creative writing: the same page should yield the same recipe twice.
 DETERMINISTIC = 0.0
 DEFAULT_MAX_TOKENS = 4096
+
+#: How long a "is this thing on" check waits. Deliberately short: a model that is slow to
+#: answer is working, one that is slow to list its own models is not, and an operator
+#: staring at a status page for three minutes has learned nothing but that.
+PROBE_TIMEOUT_SECONDS = 5.0
 
 # Refusals an operator can act on, as opposed to faults they can only wait out.
 _REFUSAL_STATUSES = frozenset({401, 402, 403, 429})
@@ -69,7 +75,13 @@ async def describe() -> ProviderStatus:
     settings = get_settings()
     base_url = settings.inference_base_url.strip().rstrip("/")
     if not base_url:
-        return ProviderStatus(configured=False)
+        return ProviderStatus(
+            configured=False,
+            detail=(
+                "No inference provider is configured. Set QUOOKLY_INFERENCE_BASE_URL and "
+                "QUOOKLY_INFERENCE_MODEL to point this instance at one."
+            ),
+        )
     return ProviderStatus(
         configured=True,
         base_url=base_url,
@@ -84,23 +96,46 @@ async def reachable() -> bool:
     Returns rather than raises: this is asked in order to *report* a state, and a
     diagnostic that throws when the thing it diagnoses is broken is no diagnostic.
     """
+    return (await probe()).reachable is True
+
+
+async def probe() -> ProviderStatus:
+    """What this instance is pointed at, and whether it answers (UC-8.2).
+
+    The probe has its own short timeout rather than the one an actual completion gets. A
+    model that takes three minutes to think is working; one that takes three minutes to
+    list its own models is not, and an operator waiting that long for a status page has
+    been told nothing except that something is wrong.
+    """
+    described = await describe()
+    if not described.configured:
+        return described
+
+    base_url, _, api_key = _configuration()
     try:
-        base_url, _, api_key = _configuration()
-    except InferenceNotConfigured:
-        return False
-    try:
-        async with _client(base_url, api_key) as client:
+        async with _client(base_url, api_key, timeout=PROBE_TIMEOUT_SECONDS) as client:
             response = await client.get("/models")
-            return response.status_code < 400
-    except httpx.HTTPError:
-        return False
+    except httpx.HTTPError as unreachable:
+        return replace(described, reachable=False, detail=f"could not reach it: {unreachable}")
+
+    if response.status_code in _REFUSAL_STATUSES:
+        # The address is right and the credential is not, which is a different thing to
+        # go and fix from a provider that is switched off.
+        return replace(
+            described,
+            reachable=False,
+            detail=f"it refused the request ({response.status_code}) — check the key",
+        )
+    if response.status_code >= 400:
+        return replace(described, reachable=False, detail=f"it answered {response.status_code}")
+    return replace(described, reachable=True)
 
 
-def _client(base_url: str, api_key: str) -> httpx.AsyncClient:
+def _client(base_url: str, api_key: str, timeout: float | None = None) -> httpx.AsyncClient:
     return httpx.AsyncClient(
         base_url=base_url,
         headers=_headers(api_key),
-        timeout=get_settings().inference_timeout_seconds,
+        timeout=timeout or get_settings().inference_timeout_seconds,
         transport=_transport(),
     )
 

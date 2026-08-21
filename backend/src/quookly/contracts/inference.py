@@ -6,6 +6,8 @@ belongs to the engines above it — so nothing here describes a prompt or a reci
 
 from dataclasses import dataclass
 
+from pydantic import BaseModel, ConfigDict
+
 
 @dataclass(frozen=True, slots=True)
 class Completion:
@@ -34,3 +36,29 @@ class ProviderStatus:
     base_url: str | None = None
     model: str | None = None
     authenticated: bool = False
+    #: None when nothing was tried — which is not the same as tried and failed.
+    reachable: bool | None = None
+    #: Why, in words an operator can act on. "Check the key" and "could not reach it" send
+    #: somebody to two different places.
+    detail: str | None = None
+
+
+# What crosses the API.
+
+
+class InferenceStatusView(BaseModel):
+    """What this instance is pointed at, for the person running it (UC-8.2).
+
+    The credential is deliberately absent, and `authenticated` says only whether one is
+    set. A status page that prints a key has published it — into a screenshot, a support
+    thread, a browser cache.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    configured: bool
+    base_url: str | None = None
+    model: str | None = None
+    authenticated: bool = False
+    reachable: bool | None = None
+    detail: str | None = None

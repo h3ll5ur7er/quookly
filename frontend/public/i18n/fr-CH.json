@@ -161,6 +161,17 @@
     "importNewIngredients": "Ces ingrédients ne figuraient pas dans votre liste ; on ne sait donc rien de leur composition. Les recettes qui les utilisent ne pourront être contrôlées pour votre foyer que lorsque vous l’aurez indiqué.",
     "importOpen": "Ouvrir la recette",
     "importFailedUnknown": "Cela n’a pas fonctionné. Veuillez réessayer.",
-    "recipesImport": "Importer depuis un lien"
+    "recipesImport": "Importer depuis un lien",
+    "settingsInference": "Lecture des recettes",
+    "settingsInferenceWhy": "Les pages qui publient correctement leurs recettes sont lues sans modèle. Celles qui ne le font pas doivent être lues en entier par un modèle, et c’est celui-ci que cette instance interroge.",
+    "settingsProvider": "Fournisseur",
+    "settingsModel": "Modèle",
+    "settingsKey": "Clé",
+    "settingsKeySet": "Définie",
+    "settingsKeyNone": "Aucune – un fournisseur local",
+    "settingsReachable": "Répond.",
+    "settingsUnreachable": "Ne répond pas.",
+    "settingsNoProvider": "Aucun modèle n’est configuré. Toutes les autres parties de Quookly fonctionnent sans.",
+    "settingsInferenceLoading": "Chargement …"
   }
 }

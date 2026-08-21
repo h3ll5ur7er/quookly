@@ -43,4 +43,61 @@
       <p i18n="@@settingsLoading">Loading…</p>
     }
   </section>
+  @if (isAdmin()) {
+    <section aria-labelledby="inference-heading">
+      <h2 id="inference-heading" i18n="@@settingsInference">Recipe reading</h2>
+      <p class="settings__why" i18n="@@settingsInferenceWhy">
+        Pages that publish their recipes properly are read without one. A page that does not has to
+        be read through by a model, and this is the one this instance asks.
+      </p>
+
+      @if (inference(); as provider) {
+        @if (provider.configured) {
+          <dl class="settings__facts">
+            <dt i18n="@@settingsProvider">Provider</dt>
+            <dd>{{ provider.base_url }}</dd>
+            <dt i18n="@@settingsModel">Model</dt>
+            <dd>{{ provider.model }}</dd>
+            <dt i18n="@@settingsKey">Key</dt>
+            <dd>
+              @if (provider.authenticated) {
+                <span i18n="@@settingsKeySet">Set</span>
+              } @else {
+                <span i18n="@@settingsKeyNone">None — a local provider</span>
+              }
+            </dd>
+          </dl>
+
+          @if (provider.reachable) {
+            <p class="settings__reachable" role="status">
+              <span class="settings__mark" aria-hidden="true">✓</span>
+              <span i18n="@@settingsReachable">Answering.</span>
+            </p>
+          } @else {
+            <div class="notice notice--danger" role="status">
+              <div>
+                <p i18n="@@settingsUnreachable">Not answering.</p>
+                @if (provider.detail) {
+                  <p class="settings__detail">{{ provider.detail }}</p>
+                }
+              </div>
+            </div>
+          }
+        } @else {
+          <div class="notice notice--info" role="status">
+            <div>
+              <p i18n="@@settingsNoProvider">
+                No model is configured. Every other part of Quookly works without one.
+              </p>
+              @if (provider.detail) {
+                <p class="settings__detail">{{ provider.detail }}</p>
+              }
+            </div>
+          </div>
+        }
+      } @else {
+        <p i18n="@@settingsInferenceLoading">Loading…</p>
+      }
+    </section>
+  }
 </main>
