@@ -129,8 +129,11 @@ This is the phase that determines whether the product is worth using.
   ([ADR-035](07-decisions.md#adr-035-adjusting-stock-and-recording-waste-are-different-acts))
 - ~~The pantry screen (UC-5.1–5.4)~~ **Built** — the shelf, what wants using, and one packet at a
   time; adjusting, wasting and removing are three different acts on that screen too
-- Reservation model ([ADR-004](07-decisions.md#adr-004-plans-reserve-stock-cooking-consumes-it)); releasing a reservation is a first-class path, as well tested as consuming one
-- `PlanAccess`, `PlanningManager`, `PlanningEngine`: slots, attendance, suitability checks (UC-4.1–4.3)
+- ~~Reservation model ([ADR-004](07-decisions.md#adr-004-plans-reserve-stock-cooking-consumes-it)); releasing a reservation is a first-class path, as well tested as consuming one~~ **Built** — a
+  claim exists only while it is held ([ADR-036](07-decisions.md#adr-036-a-reservation-exists-only-while-it-is-held)), and where the pantry and the plan disagree the fridge wins
+- ~~`PlanAccess`: periods, slots, attendance (UC-4.1, UC-4.2)~~ **Built** — a slot exists before it
+  has a recipe, because that is most of a week most of the time
+- `PlanningManager`, `PlanningEngine`: proposing and checking suitability (UC-4.1–4.3)
 - A recipe's `serves` alongside its yield, so "makes 12 pancakes" can be scaled to a table — see [the domain model](06-domain-model.md#appetite-multiplier)
 - `ReplenishmentEngine`: shopping list net of stock (UC-4.4, V8)
 - Cook a meal, consume reservations (UC-4.5)

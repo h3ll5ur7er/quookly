@@ -344,7 +344,7 @@ Each service exposes atomic business verbs. Illustrative, not exhaustive:
 | `IngredientAccess` | Database | `resolve_by_name`, `nutrients_for`, `density_for`, `localised_name` |
 | `EaterAccess` | Database | `add`, `fetch`, `list_for_cook`, `for_ids`, `amend`, `restate_constraints`, `remove` |
 | `PantryAccess` | Database | `receive`, `adjust`, `record_waste`, `expiring_before`, `for_ingredients` — **Built**; `reserve`, `release`, `consume` arrive with planning ([ADR-034](07-decisions.md#adr-034-stock-is-held-as-lots-not-as-a-total-per-ingredient), [ADR-035](07-decisions.md#adr-035-adjusting-stock-and-recording-waste-are-different-acts)) |
-| `PlanAccess` | Database | `store_plan`, `fetch_plan`, `assign_slot`, `mark_cooked` |
+| `PlanAccess` | Database | `create`, `fetch`, `list_for_cook`, `open_slot`, `assign`, `attend`, `close_slot` — **Built** |
 | `CommunityAccess` | Database | `follow`, `rate`, `comment`, `award`, `leaderboard` |
 | `AcademyAccess` | Database | `fetch_term`, `store_contribution`, `list_modules` |
 | `ModelAccess` | Inference backend | `complete`, `complete_structured`, `describe`, `reachable` ([ADR-026](07-decisions.md#adr-026-one-openai-shaped-wire-format-not-a-provider-plugin-system)) |
@@ -484,7 +484,8 @@ backend/src/quookly/
 │   ├── model.py            # reaching an inference provider (Built)
 │   ├── web.py              # fetching and reducing a page (Built)
 │   ├── preferences.py      # a cook's unit preferences (Built)
-│   ├── pantry.py           # stock lots and waste, in domain verbs (Built)
+│   ├── pantry.py           # stock, waste and reservations (Built)
+│   ├── plan.py             # plans, slots and who is at them (Built)
 │   ├── models.py           # SQLModel tables — never leave this layer (Built)
 │   └── cook.py             # cook accounts, in domain verbs (Built)
 ├── utilities/
@@ -505,7 +506,8 @@ backend/src/quookly/
 │   ├── web.py              # ReadableContent (Built)
 │   ├── suitability.py      # Outcome, Finding, Verdict (Built)
 │   ├── measure.py          # Dimension, Unit, Quantity (Built)
-│   ├── pantry.py           # StockItem, WasteRecord, Freshness (Built)
+│   ├── pantry.py           # StockItem, WasteRecord, Reservation (Built)
+│   ├── plan.py             # MealPlan, PlanSlot, Meal (Built)
 │   ├── security.py         # Principal (Built)
 │   └── errors.py           # errors that cross layers (Built)
 └── ../alembic/             # migrations; the schema of record (Built)

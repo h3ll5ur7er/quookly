@@ -71,6 +71,59 @@ class WasteRecord:
     recorded_at: datetime
 
 
+@dataclass(frozen=True, slots=True)
+class Reservation:
+    """Some of one lot, held aside for one planned meal (ADR-004).
+
+    Against a lot rather than against an ingredient, so a plan can hold the carton that
+    goes off on Thursday rather than "some milk" — which is the reservation worth making
+    if the point is to eat food before it spoils.
+
+    The row exists exactly while the claim is held. Releasing deletes it and cooking
+    deletes it, so there is no status to read and no way for a stale one to keep stock
+    invisible (ADR-036).
+    """
+
+    id: int
+    stock_item_id: int
+    plan_slot_id: int
+    quantity: Quantity
+
+
+@dataclass(frozen=True, slots=True)
+class Availability:
+    """One lot, and how much of it nothing has claimed yet.
+
+    `free` is computed from the reservations, never stored. A `reserved` column beside the
+    quantity would be a second source of truth about the same butter, and the two would
+    disagree the first time anything went wrong halfway through.
+    """
+
+    lot: StockItem
+    free: Quantity
+
+
+@dataclass(frozen=True, slots=True)
+class Released:
+    """A claim that had to give way, and the meal that was counting on it."""
+
+    plan_slot_id: int
+    quantity: Quantity
+
+
+@dataclass(frozen=True, slots=True)
+class Adjusted:
+    """A lot after a cook has said what is really there, and what that cost.
+
+    The fridge is the authority. If a cook reports less than a plan has claimed, the plan
+    is wrong rather than the cook — so the excess claims are let go and named here, and
+    the caller can say which meal now needs shopping for.
+    """
+
+    lot: StockItem
+    released: list[Released]
+
+
 # What crosses the API.
 
 

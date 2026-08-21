@@ -200,7 +200,14 @@ async def _owned(stock_item_id: int, cook_id: int) -> StockItem | None:
 async def adjust(
     stock_item_id: int, submitted: AdjustInput, cook_id: int, locale: str | None = None
 ) -> PantryEntry | None:
-    """Say how much is actually there (UC-5.3)."""
+    """Say how much is actually there (UC-5.3).
+
+    Restating downward can cost a planned meal its claim on this stock, and access
+    reports what it had to let go. Nothing is done with it here on purpose: the place a
+    cook should learn that Thursday dinner is short is the plan, where it is derived from
+    the reservations and is therefore always right — not a passing message on this screen,
+    which would be a second and weaker channel for the same fact.
+    """
     lot = await _owned(stock_item_id, cook_id)
     if lot is None:
         return None

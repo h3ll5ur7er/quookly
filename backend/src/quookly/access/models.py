@@ -15,6 +15,7 @@ from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.contracts.measure import Unit
 from quookly.contracts.onboarding import SetupStep
 from quookly.contracts.pantry import WasteReason
+from quookly.contracts.plan import Meal
 from quookly.contracts.recipe import Provenance, Visibility
 
 
@@ -245,3 +246,73 @@ class WasteRow(SQLModel, table=True):
     reason: WasteReason
     note: str | None = Field(default=None)
     recorded_at: datetime = Field(default_factory=_now)
+
+
+class MealPlanRow(SQLModel, table=True):
+    """A period a cook has planned, or means to.
+
+    Both dates inclusive. A plan for one day starts and ends on that day, which is the
+    reading that does not need explaining at every call site.
+    """
+
+    __tablename__ = "meal_plan"
+
+    id: int | None = Field(default=None, primary_key=True)
+    cook_id: int = Field(foreign_key="cook.id", index=True)
+    starts_on: date = Field(index=True)
+    ends_on: date
+    created_at: datetime = Field(default_factory=_now)
+
+
+class PlanSlotRow(SQLModel, table=True):
+    """One meal on one day inside a plan.
+
+    `recipe_id` is nullable because a week is planned in passes: "Thursday, dinner, the
+    four of us, something quick" is a real state and has to be storable, or the plan
+    cannot be built up the way anybody actually builds one.
+    """
+
+    __tablename__ = "plan_slot"
+    __table_args__ = (UniqueConstraint("plan_id", "on_date", "meal", name="uq_plan_slot"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    plan_id: int = Field(foreign_key="meal_plan.id", index=True)
+    on_date: date = Field(index=True)
+    meal: Meal
+    recipe_id: int | None = Field(default=None, foreign_key="recipe.id", index=True)
+
+
+class SlotAttendeeRow(SQLModel, table=True):
+    """One person expected at one planned meal.
+
+    Rows rather than a count: who is coming decides both the portions and the verdict, and
+    a number can answer neither (FR-18, UC-4.3).
+    """
+
+    __tablename__ = "slot_attendee"
+    __table_args__ = (UniqueConstraint("slot_id", "eater_id", name="uq_slot_attendee"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    slot_id: int = Field(foreign_key="plan_slot.id", index=True)
+    eater_id: int = Field(foreign_key="eater.id", index=True)
+
+
+class ReservationRow(SQLModel, table=True):
+    """Some of one lot, held aside for one planned meal (ADR-004).
+
+    The row exists exactly while the claim is held: releasing deletes it, and cooking
+    decrements the lot and deletes it. No status column, deliberately. A status is a
+    second thing to get right, and getting it wrong leaves stock that is neither free nor
+    gone — which is the invisible-forever failure ADR-004 exists to avoid.
+    """
+
+    __tablename__ = "reservation"
+
+    id: int | None = Field(default=None, primary_key=True)
+    stock_item_id: int = Field(foreign_key="stock_item.id", index=True)
+    plan_slot_id: int = Field(foreign_key="plan_slot.id", index=True)
+    # In the lot's own unit. Nothing here converts, so this is the one unit in which
+    # "how much of that packet is still free" is answerable without arithmetic.
+    magnitude: Decimal = Field(max_digits=12, decimal_places=4)
+    unit: Unit
+    created_at: datetime = Field(default_factory=_now)

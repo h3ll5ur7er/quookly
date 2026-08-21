@@ -1196,3 +1196,69 @@ the top rather than a free-text box, so the cost is one tap.
 and a chart of it belongs with the rest of the reporting surface. The records are complete from the
 first one, so the report can be written later without a migration — which is the whole reason for
 storing the fact rather than the subtraction.
+
+---
+
+## ADR-036 A reservation exists only while it is held
+
+**Status:** Accepted
+
+**Context.** [ADR-004](#adr-004-plans-reserve-stock-cooking-consumes-it) settled that planning
+reserves and cooking consumes. It did not settle how a reservation is stored, and the obvious
+model — a row with a status of `held`, `consumed` or `released` — carries the history for free.
+
+**Decision.** A reservation row exists **exactly while the claim is held**. Releasing deletes it;
+cooking decrements the lot and deletes it. There is no status column.
+
+A reservation is against a **lot**, not an ingredient. How much of a lot is free is **computed** from
+the claims against it, never stored.
+
+**Rationale.** A status is a second thing to get right on every read. Every availability query would
+have to filter on it, and the cost of one query forgetting is stock that is neither free nor gone —
+invisible forever, which is precisely the failure ADR-004 exists to prevent and precisely the waste
+this product exists to reduce. A row that exists only while it means something cannot be misread:
+if it is there, the claim is held; if it is not, it is not.
+
+Nothing is lost. What actually happened to food is recorded elsewhere and better: waste has its own
+record ([ADR-035](#adr-035-adjusting-stock-and-recording-waste-are-different-acts)), and a meal
+having been cooked is a fact about the cooking session, not about a reservation. A released
+reservation has no history worth keeping — the butter is still in the fridge, and nothing happened.
+
+Against a lot rather than an ingredient because that is the reservation worth making: "the carton
+that goes off on Thursday", not "some milk"
+([ADR-034](#adr-034-stock-is-held-as-lots-not-a-total-per-ingredient)). Two plans cannot claim the
+same carton, and the shopping list falls out of what could not be claimed.
+
+A stored `reserved` column beside the quantity would be a second source of truth about the same
+butter, and the two would disagree the first time anything failed halfway through. Computing costs a
+join per query, on a household's worth of rows.
+
+**The fridge wins over the plan.** A cook who says there are 100 g left when a meal has claimed 400 g
+is telling the truth about their own kitchen. The claim yields, not the report — and what it yielded
+is returned, so a caller can say which meal now needs shopping for. The claim is **cut down rather
+than dropped**: 300 g claimed against 100 g remaining is a claim on 100 g, and freeing all of it
+would give away stock the meal is still going to use. Where several claims must yield, the newest
+goes first: something has to, and "last to ask, first to go" is a rule a person accepts without
+needing it explained.
+
+Recording waste takes the same path, because waste is also a fall in what is there.
+
+**Release is not an error path.** Cancelling a plan, moving a slot to another recipe and abandoning
+a cooking session all release, and each is an ordinary thing to do. Releasing a meal that holds
+nothing is therefore not a failure — cancelling a plan releases every slot, and most slots hold
+nothing.
+
+Two deletions are refused rather than cascaded: a plan slot that still holds stock, and a lot a
+planned meal is counting on. Both would leave a claim pointing at nothing. Making the order an error
+rather than a cascade is what makes it impossible to get wrong, and the refusal sends the cook to
+the meal that needs replanning instead of silently breaking it.
+
+**What the pantry screen does with a released claim: nothing.** The place to learn that Thursday
+dinner is short is the plan, where it is derived from the reservations and is therefore always
+right. A passing message on the pantry screen would be a second and weaker channel for the same
+fact. The information crosses the access boundary anyway, because a caller that *does* need it must
+not have to work it out again.
+
+**Cost.** No answer to "what was this stock reserved for last week". If that question is ever worth
+asking, it is a log of plan changes rather than a status column on a live claim — a different table,
+written for that purpose, and not one that any availability query has to read.

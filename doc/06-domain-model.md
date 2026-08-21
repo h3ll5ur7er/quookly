@@ -195,7 +195,15 @@ kilos when 200 g are at risk or never warns at all
 ([ADR-034](07-decisions.md#adr-034-stock-is-held-as-lots-not-as-a-total-per-ingredient)). The shelf
 a cook reads is lots grouped and totalled, which is presentation rather than storage.
 
-A **reservation** links a plan slot to stock it intends to consume.
+A **reservation** links a plan slot to a *lot* it intends to consume. It exists exactly while the
+claim is held: releasing deletes it and cooking deletes it, so there is no status to read and no way
+for a stale one to keep stock invisible
+([ADR-036](07-decisions.md#adr-036-a-reservation-exists-only-while-it-is-held)). How much of a lot
+is free is computed from its claims rather than stored beside the quantity.
+
+Where the two disagree, **the fridge wins**. A cook reporting less than a plan claimed is telling the
+truth about their own kitchen, so the claim is cut down to what survives and the meal is left needing
+shopping for.
 
 Reservations exist so that planning does not lie about the pantry
 ([ADR-004](07-decisions.md#adr-004-plans-reserve-stock-cooking-consumes-it)). Planned-but-not-yet-cooked
