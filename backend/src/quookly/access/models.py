@@ -13,6 +13,7 @@ from sqlmodel import Field, SQLModel
 from quookly.contracts.eater import AgeBand, Severity
 from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.contracts.measure import Unit
+from quookly.contracts.onboarding import SetupStep
 from quookly.contracts.recipe import Provenance, Visibility
 
 
@@ -31,6 +32,9 @@ class CookRow(SQLModel, table=True):
     password_hash: str
     is_admin: bool = Field(default=False)
     registered_at: datetime = Field(default_factory=_now)
+    # The language this cook chose, as opposed to the one their browser happens to ask
+    # for. Absent until they choose, which is what the locale setup step is asking.
+    locale: str | None = Field(default=None)
 
 
 class IngredientRow(SQLModel, table=True):
@@ -174,3 +178,19 @@ class EaterConstraintRow(SQLModel, table=True):
     allergen: Allergen | None = Field(default=None)
     ingredient_slug: str | None = Field(default=None)
     severity: Severity
+
+
+class SetupDeclarationRow(SQLModel, table=True):
+    """One setup question this cook has answered with "none" or "the defaults are fine".
+
+    The only stored part of onboarding (ADR-014). Everything else is derived from the
+    profile; this exists because no amount of derivation can tell a household where
+    nobody has a dietary restriction from one nobody has been asked about (FR-15).
+    """
+
+    __tablename__ = "setup_declaration"
+    __table_args__ = (UniqueConstraint("cook_id", "step", name="uq_setup_declaration"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    cook_id: int = Field(foreign_key="cook.id", index=True)
+    step: SetupStep

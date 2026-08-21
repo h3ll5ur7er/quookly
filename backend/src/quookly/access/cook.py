@@ -30,6 +30,7 @@ def _to_contract(row: CookRow) -> Cook:
         display_name=row.display_name,
         is_admin=row.is_admin,
         registered_at=row.registered_at,
+        locale=row.locale,
     )
 
 
@@ -80,3 +81,26 @@ async def any_registered() -> bool:
     async with session() as active:
         total = (await active.exec(select(func.count()).select_from(CookRow))).one()
     return bool(total)
+
+
+async def fetch(cook_id: int) -> Cook | None:
+    async with session() as active:
+        row = await active.get(CookRow, cook_id)
+    return _to_contract(row) if row else None
+
+
+async def choose_locale(cook_id: int, locale: str) -> Cook | None:
+    """Remember the language this cook reads in, rather than the one their browser asks for.
+
+    Stored on the account so it travels with them: signing in on a borrowed phone should
+    not put the interface into that phone's language.
+    """
+    async with session() as active:
+        row = await active.get(CookRow, cook_id)
+        if row is None:
+            return None
+        row.locale = locale
+        active.add(row)
+        await active.commit()
+        await active.refresh(row)
+        return _to_contract(row)

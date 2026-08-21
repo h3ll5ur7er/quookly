@@ -12,6 +12,7 @@ from quookly.contracts.accounts import (
     Credentials,
     Registration,
 )
+from quookly.contracts.cook import Cook
 from quookly.contracts.errors import (
     BootstrapClosed,
     EmailAlreadyRegistered,
@@ -19,6 +20,7 @@ from quookly.contracts.errors import (
 )
 from quookly.managers import account as account_manager
 from quookly.managers import seed as seed_manager
+from quookly.routes.dependencies import CurrentCook
 
 router = APIRouter()
 
@@ -62,6 +64,20 @@ async def register_cook(registration: Registration) -> Authenticated:
             status_code=status.HTTP_409_CONFLICT,
             detail="That email is already registered.",
         ) from None
+
+
+@router.get("/accounts/me", response_model=Cook)
+async def get_current_cook(cook: CurrentCook) -> Cook:
+    """The signed-in account, for a client that has a token and wants the rest.
+
+    A token carries an id and an admin flag and deliberately nothing else, so a page that
+    needs the cook's name or chosen language asks for it rather than reading it out of a
+    credential.
+    """
+    account = await account_manager.fetch(cook.cook_id)
+    if account is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such account.")
+    return account
 
 
 @router.post("/accounts/sign-in", response_model=Authenticated)

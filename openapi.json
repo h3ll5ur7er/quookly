@@ -130,6 +130,28 @@
         }
       }
     },
+    "/api/v1/accounts/me": {
+      "get": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Get Current Cook",
+        "description": "The signed-in account, for a client that has a token and wants the rest.\n\nA token carries an id and an admin flag and deliberately nothing else, so a page that\nneeds the cook's name or chosen language asks for it rather than reading it out of a\ncredential.",
+        "operationId": "getCurrentCook",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cook"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/accounts/sign-in": {
       "post": {
         "tags": [
@@ -633,6 +655,194 @@
         }
       }
     },
+    "/api/v1/setup": {
+      "get": {
+        "tags": [
+          "setup"
+        ],
+        "summary": "Get Setup",
+        "description": "What is still missing from this cook's setup, and what comes next.",
+        "operationId": "getSetup",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupProgressView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/setup/declarations/{step}": {
+      "post": {
+        "tags": [
+          "setup"
+        ],
+        "summary": "Declare Step",
+        "description": "Answer a setup question outright \u2014 \"nobody has any\", \"the defaults are fine\".\n\nThe one stored part of setup. Without it a household where nobody has a dietary\nrestriction is indistinguishable from one nobody has been asked about, and setup\nwould go on asking forever (FR-15).",
+        "operationId": "declareStep",
+        "parameters": [
+          {
+            "name": "step",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SetupStep"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupProgressView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/setup/locale": {
+      "put": {
+        "tags": [
+          "setup"
+        ],
+        "summary": "Choose Locale",
+        "description": "Remember the language this cook reads in, wherever they sign in from.",
+        "operationId": "chooseLocale",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocaleChoice"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupProgressView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/preferences/units": {
+      "get": {
+        "tags": [
+          "preferences"
+        ],
+        "summary": "List Unit Preferences",
+        "description": "Every kind of ingredient, and the unit this cook reads it in.",
+        "operationId": "listUnitPreferences",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UnitPreferenceView"
+                  },
+                  "type": "array",
+                  "title": "Response Listunitpreferences"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/preferences/units/{kind}": {
+      "put": {
+        "tags": [
+          "preferences"
+        ],
+        "summary": "Choose Unit",
+        "description": "Choose the unit for one kind of ingredient.",
+        "operationId": "chooseUnit",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/IngredientKind"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnitChoice"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnitPreferenceView"
+                  },
+                  "title": "Response Chooseunit"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Read Root",
@@ -774,6 +984,17 @@
             "type": "string",
             "format": "date-time",
             "title": "Registered At"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
           }
         },
         "type": "object",
@@ -1277,6 +1498,20 @@
         "title": "IngredientView",
         "description": "A registry entry as a client reads it."
       },
+      "LocaleChoice": {
+        "properties": {
+          "locale": {
+            "type": "string",
+            "title": "Locale"
+          }
+        },
+        "type": "object",
+        "required": [
+          "locale"
+        ],
+        "title": "LocaleChoice",
+        "description": "The language a cook reads in."
+      },
       "Outcome": {
         "type": "string",
         "enum": [
@@ -1599,6 +1834,50 @@
         "title": "Registration",
         "description": "A request to create an account.\n\nThe password rule lives here rather than in the manager: it constrains the shape of\nthe input, so it is the contract's business, and stating it here means the API\nrejects a short password before any work is done."
       },
+      "SetupProgressView": {
+        "properties": {
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/StepStatusView"
+            },
+            "type": "array",
+            "title": "Steps"
+          },
+          "next_step": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SetupStep"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "complete": {
+            "type": "boolean",
+            "title": "Complete"
+          }
+        },
+        "type": "object",
+        "required": [
+          "steps",
+          "next_step",
+          "complete"
+        ],
+        "title": "SetupProgressView",
+        "description": "What is still missing from the setup, and what to do next (UC-10.3)."
+      },
+      "SetupStep": {
+        "type": "string",
+        "enum": [
+          "household",
+          "constraints",
+          "units",
+          "locale"
+        ],
+        "title": "SetupStep",
+        "description": "The things worth establishing, in the order they are worth asking for.\n\nWho is eating comes first because it is what the product is about; everything after it\nis a preference about how the answer is shown."
+      },
       "Severity": {
         "type": "string",
         "enum": [
@@ -1666,6 +1945,65 @@
           "instruction"
         ],
         "title": "StepInput"
+      },
+      "StepStatusView": {
+        "properties": {
+          "step": {
+            "$ref": "#/components/schemas/SetupStep"
+          },
+          "done": {
+            "type": "boolean",
+            "title": "Done"
+          },
+          "declared": {
+            "type": "boolean",
+            "title": "Declared"
+          }
+        },
+        "type": "object",
+        "required": [
+          "step",
+          "done",
+          "declared"
+        ],
+        "title": "StepStatusView"
+      },
+      "UnitChoice": {
+        "properties": {
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unit"
+        ],
+        "title": "UnitChoice",
+        "description": "The unit a cook wants this kind of ingredient shown in."
+      },
+      "UnitPreferenceView": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/IngredientKind"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "chosen": {
+            "type": "boolean",
+            "title": "Chosen"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "unit",
+          "chosen"
+        ],
+        "title": "UnitPreferenceView",
+        "description": "One kind of ingredient and the unit this cook reads it in.\n\n`chosen` separates a preference from a default. Everybody has defaults, and having\nthem is not an answer \u2014 which is what lets guided setup tell the two apart (FR-15)."
       },
       "ValidationError": {
         "properties": {

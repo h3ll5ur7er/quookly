@@ -65,3 +65,8 @@ async def sign_in(credentials: Credentials) -> Authenticated:
     if cook is None:
         raise InvalidCredentials
     return _authenticated(cook)
+
+
+async def fetch(cook_id: int) -> Cook | None:
+    """The account behind a token."""
+    return await cook_access.fetch(cook_id)

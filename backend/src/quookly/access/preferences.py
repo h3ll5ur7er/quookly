@@ -42,3 +42,19 @@ async def choose(cook_id: int, kind: IngredientKind, unit: Unit) -> None:
             existing.unit = unit
             active.add(existing)
         await active.commit()
+
+
+async def chosen_kinds(cook_id: int) -> set[IngredientKind]:
+    """Which kinds this cook has actually chosen a unit for.
+
+    `for_cook` merges the defaults over the top, which is what callers want and which
+    makes a chosen unit indistinguishable from an unchosen one. Setup needs to tell them
+    apart: everybody has defaults, and having them is not an answer.
+    """
+    async with session() as active:
+        rows = (
+            await active.exec(
+                select(UnitPreferenceRow).where(col(UnitPreferenceRow.cook_id) == cook_id)
+            )
+        ).all()
+    return {row.kind for row in rows}

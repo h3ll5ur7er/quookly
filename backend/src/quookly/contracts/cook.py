@@ -24,6 +24,8 @@ class Cook(BaseModel):
     display_name: str
     is_admin: bool
     registered_at: datetime
+    # The language they chose, if they have. Absent means "follow the browser".
+    locale: str | None = None
 
 
 class StoredCredential(BaseModel):
