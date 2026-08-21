@@ -89,3 +89,27 @@ class VerdictView(BaseModel):
 
     outcome: Outcome
     findings: list[FindingView]
+
+    @classmethod
+    def of(cls, verdict: "Verdict") -> "VerdictView":
+        """The verdict as a client reads it.
+
+        Here rather than in each manager: recipes and plans both report suitability, and
+        two copies of this mapping are two chances for one of them to stop carrying
+        `unknown` — which is the field that keeps "nobody has looked" from reading as
+        "contains none" (ADR-006).
+        """
+        return cls(
+            outcome=verdict.outcome,
+            findings=[
+                FindingView(
+                    eater=finding.eater,
+                    ingredient=finding.ingredient,
+                    severity=finding.severity,
+                    allergen=finding.allergen,
+                    avoidable=finding.avoidable,
+                    unknown=finding.unknown,
+                )
+                for finding in verdict.findings
+            ],
+        )

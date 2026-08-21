@@ -1373,3 +1373,50 @@ edit, and never the thing the recipe screen reads.
 **Deferred to Phase 5**, with `ExecutionEngine`. The schema could land earlier, but the number is
 only honest once something knows about overlap, and a wrong time on a recipe card is worse than no
 time at all.
+
+---
+
+## ADR-038 A plan's reservations are restated, not adjusted
+
+**Status:** Accepted
+
+**Context.** [ADR-004](#adr-004-plans-reserve-stock-cooking-consumes-it) settled that planning
+reserves and [ADR-036](#adr-036-a-reservation-exists-only-while-it-is-held) settled how a claim is
+stored. Neither says what happens when a plan *changes* — and a plan changes constantly, which is
+what planning is.
+
+The obvious approach adjusts: work out the difference a change makes and reserve or release that
+much.
+
+**Decision.** Every change to a plan **releases every claim it holds and makes them again from
+scratch**. There is no incremental path.
+
+Reading a plan never writes. The week is presented from the claims that exist, and the shopping list
+is what those claims do not cover.
+
+**Rationale.** "The plan's reservations match the plan" becomes true by construction rather than by
+remembering. The incremental version needs arithmetic that stays right across every kind of edit —
+a recipe swapped, a guest added, a meal moved to Thursday, an appetite corrected, a slot emptied —
+and the one that is got wrong leaves stock spoken for by a meal nobody is cooking. That stock is
+invisible forever, which is the failure ADR-004 exists to prevent.
+
+Same argument as restating an eater's constraints wholesale: a merge needs a way to say *and let
+this one go*, and the version that forgets to is the one that keeps something the cook removed.
+
+**Reading never writes** for a plainer reason. A GET that reserved would reserve twice when a plan is
+opened on a phone and a tablet, and a shopping list would grow by being looked at.
+
+**The shopping list is read from the reservations**, not worked out a second time from what is on the
+shelf. FR-7 says the list is the requirement net of stock; two calculations of that are two answers,
+and the day they disagree is the day a cook trusts neither. So netting decides what to reserve, and
+the list is the remainder of the requirements the reservations did not cover — derived *from* them,
+so it cannot contradict them.
+
+**Cost.** More writes than an adjustment would make: a week of twenty-one slots re-reserves all of
+them when one changes. On a household instance that is a few dozen rows, and the alternative buys
+speed with a class of bug that cannot be seen from the interface.
+
+Between the release and the re-reserve, this plan's stock is briefly free. On a single-household
+instance nothing else is looking; on a shared one a concurrent plan could take it, and the shortfall
+would simply grow. Worth revisiting if households ever share a pantry — which is
+[an open question](06-domain-model.md#open-questions) already.

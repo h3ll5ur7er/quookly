@@ -157,6 +157,7 @@ source_modules = [
     "quookly.engines.exchange",
     "quookly.engines.measure",
     "quookly.engines.onboarding",
+    "quookly.engines.planning",
     "quookly.engines.replenishment",
     "quookly.engines.suitability",
 ]
@@ -180,6 +181,7 @@ modules = [
     "quookly.managers.instance",
     "quookly.managers.onboarding",
     "quookly.managers.pantry",
+    "quookly.managers.plan",
     "quookly.managers.preferences",
     "quookly.managers.recipe",
     "quookly.managers.seed",

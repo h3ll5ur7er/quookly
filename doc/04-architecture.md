@@ -243,6 +243,11 @@ policy, and that is `RankingEngine`.
 **Sequences:** establish period and slots → resolve attending eaters → propose or accept recipe
 assignments → verify suitability → reserve stock → derive shopping list.
 
+**Built**, minus proposing: a cook fills slots by hand today, and `PlanningEngine` sizes each meal to
+the people at it rather than choosing what they eat. Every change to a plan restates its
+reservations wholesale, and reading one never writes
+([ADR-038](07-decisions.md#adr-038-a-plans-reservations-are-restated-not-adjusted)).
+
 ### PantryManager
 
 **Volatility:** V9 inventory truth.
@@ -307,7 +312,7 @@ what allows scoring rules to change without touching a single line in recipe or 
 | `MeasureEngine` | V4 | Unit conversion, density-aware mass/volume, yield scaling, portion sizing from appetite multipliers, preferred-unit rendering. |
 | `SuitabilityEngine` | V5 | Evaluates a structured recipe against structured eater constraints. Safety-critical. |
 | `NutritionEngine` | V6 | Aggregates nutrient profiles; per-serving and per-recipe bases. |
-| `PlanningEngine` | V7 | Proposes assignments satisfying constraints and objectives. |
+| `PlanningEngine` | V7 | Sizes each planned meal to the people at it, and says how sure it is. **Built.** Proposing assignments arrives with generation (Phase 6). |
 | `ReplenishmentEngine` | V8 | Nets requirement against availability; aggregates and rounds a shopping list. **Built** — netting and aggregation; rounding to purchasable pack sizes waits for somebody to want it. |
 | `RankingEngine` | V10 | Orders candidate recipes by relevance, pantry coverage, and expiry urgency. |
 | `ScoringEngine` | V11 | Applies point and badge rules to activity. |
@@ -457,7 +462,7 @@ backend/src/quookly/
 │   ├── preferences.py      # unit preferences (Built)
 │   ├── dependencies.py     # resolving the caller (Built)
 │   ├── pantry.py           # stock, adjustment, waste (Built)
-│   ├── plans.py            # (Planned)
+│   ├── plans.py            # the week and its shopping list (Built)
 │   └── community.py        # (Planned)
 ├── managers/
 │   ├── account.py          # bootstrap, registration, sign-in (Built)
@@ -467,10 +472,12 @@ backend/src/quookly/
 │   ├── instance.py         # reporting on the instance itself (Built)
 │   ├── onboarding.py       # gathering a profile to be assessed (Built)
 │   ├── pantry.py           # lots into a shelf a cook can read (Built)
+│   ├── plan.py             # a week, checked, reserved and shopped for (Built)
 │   ├── preferences.py      # a cook's units, choice or default (Built)
 │   └── seed.py             # stocking a fresh instance (Built)
 ├── engines/
 │   ├── measure.py          # units, conversion, scaling (Built)
+│   ├── planning.py         # what a planned week takes (Built)
 │   ├── replenishment.py    # what to draw, what to buy (Built)
 │   ├── exchange.py         # the interchange format (Built)
 │   ├── interpretation.py   # content to canonical structure (Built) — capability engine
@@ -508,8 +515,9 @@ backend/src/quookly/
 │   ├── suitability.py      # Outcome, Finding, Verdict (Built)
 │   ├── measure.py          # Dimension, Unit, Quantity (Built)
 │   ├── pantry.py           # StockItem, WasteRecord, Reservation (Built)
-│   ├── provisioning.py     # Requirement, Draw, Shortfall (Built)
 │   ├── plan.py             # MealPlan, PlanSlot, Meal (Built)
+│   ├── planning.py         # PlannedMeal, Sizing (Built)
+│   ├── provisioning.py     # Requirement, Draw, Shortfall (Built)
 │   ├── security.py         # Principal (Built)
 │   └── errors.py           # errors that cross layers (Built)
 └── ../alembic/             # migrations; the schema of record (Built)

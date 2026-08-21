@@ -1035,6 +1035,254 @@
         }
       }
     },
+    "/api/v1/plans": {
+      "get": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "List Plans",
+        "description": "This cook's plans.",
+        "operationId": "listPlans",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PlanSummaryView"
+                  },
+                  "type": "array",
+                  "title": "Response Listplans"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Create Plan",
+        "description": "Open a period to plan (UC-4.1).",
+        "operationId": "createPlan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plans/{plan_id}": {
+      "get": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Get Plan",
+        "description": "The week, with its shopping list. A read \u2014 nothing here reserves or releases.",
+        "operationId": "getPlan",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Plan Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Delete Plan",
+        "description": "Forget a plan, giving back everything it was holding.",
+        "operationId": "deletePlan",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Plan Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plans/{plan_id}/slots": {
+      "put": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Place Slot",
+        "description": "State one meal whole: the day, the dish, and who is coming (UC-4.1, UC-4.2).\n\nReturns the whole plan rather than the slot, because changing one meal changes the\nshopping list \u2014 and a client that worked out how would be a second copy of the\nmanager.",
+        "operationId": "placeSlot",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Plan Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SlotInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plans/{plan_id}/slots/{slot_id}": {
+      "delete": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Clear Slot",
+        "description": "Take a meal off the plan, releasing what it was holding.\n\nA body on a delete, unusually, for the same reason as above: the list has changed and\nthe cook is looking at it.",
+        "operationId": "clearSlot",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Plan Id"
+            }
+          },
+          {
+            "name": "slot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Slot Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/preferences/units": {
       "get": {
         "tags": [
@@ -1962,6 +2210,17 @@
         "title": "LocaleChoice",
         "description": "The language a cook reads in."
       },
+      "Meal": {
+        "type": "string",
+        "enum": [
+          "breakfast",
+          "lunch",
+          "dinner",
+          "snack"
+        ],
+        "title": "Meal",
+        "description": "Which meal of the day a slot is.\n\nFour coarse ones rather than free text or a clock time. A plan is read as a grid, and\na grid needs a fixed number of rows; \"18:30\" would sort correctly and group not at all."
+      },
       "Outcome": {
         "type": "string",
         "enum": [
@@ -2024,6 +2283,100 @@
         ],
         "title": "PantryEntry",
         "description": "Everything the cook has of one ingredient, lot by lot.\n\n`total` is absent when the lots cannot honestly be added up \u2014 a jar and 200 g of the\nsame thing have no sum. Absent rather than approximated: the lots are all listed\nanyway, so nothing is hidden by declining to invent a number."
+      },
+      "PlanInput": {
+        "properties": {
+          "starts_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Starts On"
+          },
+          "ends_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Ends On"
+          }
+        },
+        "type": "object",
+        "required": [
+          "starts_on",
+          "ends_on"
+        ],
+        "title": "PlanInput",
+        "description": "A period to plan (UC-4.1). Both dates inclusive."
+      },
+      "PlanSummaryView": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "starts_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Starts On"
+          },
+          "ends_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Ends On"
+          },
+          "planned": {
+            "type": "integer",
+            "title": "Planned"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "starts_on",
+          "ends_on",
+          "planned"
+        ],
+        "title": "PlanSummaryView",
+        "description": "Enough to list a plan without working out what it takes."
+      },
+      "PlanView": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "starts_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Starts On"
+          },
+          "ends_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Ends On"
+          },
+          "slots": {
+            "items": {
+              "$ref": "#/components/schemas/SlotView"
+            },
+            "type": "array",
+            "title": "Slots"
+          },
+          "shopping": {
+            "items": {
+              "$ref": "#/components/schemas/ShoppingLineView"
+            },
+            "type": "array",
+            "title": "Shopping"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "starts_on",
+          "ends_on",
+          "slots",
+          "shopping"
+        ],
+        "title": "PlanView",
+        "description": "A plan whole: the week, and what it means the cook has to buy.\n\nThe list travels with the plan rather than behind its own request. It is derived from\nwhat the plan managed to reserve, so fetching the two separately would let a screen\nshow a week and a list that disagree about the same butter."
       },
       "PresentedLine": {
         "properties": {
@@ -2483,6 +2836,176 @@
         ],
         "title": "Severity",
         "description": "How seriously a constraint is meant, which is what decides behaviour.\n\nWithout this every constraint is treated alike, and either a disliked ingredient bars a\nmenu or a life-threatening allergen appears as a suggestion. Both are wrong."
+      },
+      "ShoppingLineView": {
+        "properties": {
+          "ingredient_id": {
+            "type": "integer",
+            "title": "Ingredient Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "quantity": {
+            "type": "string",
+            "title": "Quantity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ingredient_id",
+          "name",
+          "quantity"
+        ],
+        "title": "ShoppingLineView",
+        "description": "One thing to buy. Named and rendered as this cook reads quantities."
+      },
+      "Sizing": {
+        "type": "string",
+        "enum": [
+          "to_the_table",
+          "as_written",
+          "unscalable"
+        ],
+        "title": "Sizing",
+        "description": "How confidently a meal was sized, which the cook has to be able to see.\n\nOnly the first is the product working as intended. The other two produce a shopping\nlist for one batch, which is right often enough to be worth doing and wrong often\nenough that saying nothing would be the failure \u2014 somebody shops for one tray and\nfeeds four of the six people they invited."
+      },
+      "SlotInput": {
+        "properties": {
+          "on_date": {
+            "type": "string",
+            "format": "date",
+            "title": "On Date"
+          },
+          "meal": {
+            "$ref": "#/components/schemas/Meal"
+          },
+          "recipe_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipe Id"
+          },
+          "attendee_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Attendee Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "on_date",
+          "meal"
+        ],
+        "title": "SlotInput",
+        "description": "One meal, stated whole (UC-4.1, UC-4.2).\n\nA statement rather than a patch, for the same reason an eater is: a partial update\nwould need a way to say \"and nobody is coming after all\", and the version that\nforgets to is the one that quietly keeps somebody at the table \u2014 with their\nconstraints still being checked against a meal they are not at."
+      },
+      "SlotView": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "on_date": {
+            "type": "string",
+            "format": "date",
+            "title": "On Date"
+          },
+          "meal": {
+            "$ref": "#/components/schemas/Meal"
+          },
+          "recipe_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipe Id"
+          },
+          "recipe_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipe Title"
+          },
+          "attendee_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Attendee Ids"
+          },
+          "attendees": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Attendees"
+          },
+          "factor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Factor"
+          },
+          "sizing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Sizing"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "suitability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VerdictView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "on_date",
+          "meal",
+          "recipe_id",
+          "recipe_title",
+          "attendee_ids",
+          "attendees",
+          "factor",
+          "sizing",
+          "suitability"
+        ],
+        "title": "SlotView",
+        "description": "One meal on one day, as a client reads it.\n\nCarries three things a plan screen cannot work out for itself: how the meal was sized\nand how sure that is, whether the people coming can eat it, and the names rather than\nthe ids of both."
       },
       "Source": {
         "type": "string",

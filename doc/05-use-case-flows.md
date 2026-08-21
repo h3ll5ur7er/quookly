@@ -144,6 +144,16 @@ Note `ReplenishmentEngine` calling `MeasureEngine` — an Engine calling an Engi
 call rules. Shopping units differ from cooking units: a recipe wants 150 g of butter, a shop sells
 250 g blocks.
 
+**Built, with one departure.** `PlanningEngine.propose` is not there: a cook fills slots by hand
+today, and what the engine does instead is *size* each meal to the people at it — the volatile part
+that planning actually needed first. Proposing arrives with generation (Phase 6).
+
+Two other things the diagram does not show. Every change to a plan releases its claims and makes
+them again ([ADR-038](07-decisions.md#adr-038-a-plans-reservations-are-restated-not-adjusted)), so
+the loop above runs whole on each edit. And the shopping list is read back from the reservations
+rather than netted a second time — the diagram's `RE: net(...)` decides what to reserve, and what
+those reservations do not cover is the list.
+
 ## UC-9 Cooking mode, start to finish
 
 Two flows: opening a session, and completing it. Together they replace what used to be a single

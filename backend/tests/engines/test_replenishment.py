@@ -16,7 +16,7 @@ import pytest
 
 from quookly.contracts.measure import Quantity, Unit
 from quookly.contracts.pantry import Availability, StockItem
-from quookly.contracts.provisioning import Requirement
+from quookly.contracts.provisioning import Covered, Requirement
 from quookly.engines import replenishment
 
 FLOUR = 1
@@ -276,3 +276,76 @@ def test_the_same_question_gets_the_same_answer_twice() -> None:
     again = replenishment.net(requirements, shelf, {})
 
     assert first == again
+
+
+# What is still to buy, given what the plan already holds. The shopping list as *read*
+# rather than as computed a second time: `net` decides what to reserve, and this reports
+# the remainder from the reservations that were really made (FR-7).
+
+
+def covering(ingredient_id: int, amount: str, unit: Unit = Unit.GRAM, slot: int = 10) -> Covered:
+    return Covered(
+        plan_slot_id=slot,
+        ingredient_id=ingredient_id,
+        quantity=Quantity(Decimal(amount), unit),
+    )
+
+
+def test_nothing_held_means_the_whole_thing_is_on_the_list() -> None:
+    missing = replenishment.outstanding([needs(FLOUR, "300")], [], {})
+
+    assert [one.quantity for one in missing] == [Quantity(Decimal("300"), Unit.GRAM)]
+
+
+def test_a_fully_covered_need_is_not_on_the_list() -> None:
+    missing = replenishment.outstanding([needs(FLOUR, "300")], [covering(FLOUR, "300")], {})
+
+    assert missing == []
+
+
+def test_a_partly_covered_need_leaves_the_remainder() -> None:
+    missing = replenishment.outstanding([needs(FLOUR, "500")], [covering(FLOUR, "200")], {})
+
+    assert [one.quantity for one in missing] == [Quantity(Decimal("300"), Unit.GRAM)]
+
+
+def test_what_is_held_in_another_unit_still_counts() -> None:
+    missing = replenishment.outstanding(
+        [needs(FLOUR, "1500")], [covering(FLOUR, "1", unit=Unit.KILOGRAM)], {}
+    )
+
+    assert [one.quantity for one in missing] == [Quantity(Decimal("500"), Unit.GRAM)]
+
+
+def test_one_meals_stock_does_not_cover_anothers_need() -> None:
+    """Reservations belong to a meal. Counting Thursday's flour against Tuesday's would
+    leave one of the two short on the day."""
+    missing = replenishment.outstanding(
+        [needs(FLOUR, "300", slot=10), needs(FLOUR, "300", slot=11)],
+        [covering(FLOUR, "300", slot=10)],
+        {},
+    )
+
+    assert [one.quantity for one in missing] == [Quantity(Decimal("300"), Unit.GRAM)]
+
+
+def test_a_line_with_no_quantity_is_never_on_the_list() -> None:
+    assert replenishment.outstanding([needs(FLOUR, None)], [], {}) == []
+
+
+def test_reading_the_list_agrees_with_making_it() -> None:
+    """The two must not disagree about the same butter, which is the whole of FR-7.
+
+    Netting decides what to reserve; reading reports what is left once those reservations
+    exist. Given the same facts they produce the same list.
+    """
+    requirements = [needs(FLOUR, "500", slot=10), needs(FLOUR, "400", slot=11)]
+    shelf = [lot(1, FLOUR, "600", expires_on=MONDAY)]
+
+    provided = replenishment.net(requirements, shelf, {})
+    reserved = [
+        covering(FLOUR, str(draw.quantity.magnitude), draw.quantity.unit, draw.plan_slot_id)
+        for draw in provided.draws
+    ]
+
+    assert replenishment.outstanding(requirements, reserved, {}) == provided.shortfall

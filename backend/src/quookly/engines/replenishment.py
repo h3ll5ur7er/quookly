@@ -17,7 +17,13 @@ from decimal import Decimal
 from quookly.contracts.errors import DensityRequired, IncompatibleUnits
 from quookly.contracts.measure import Quantity, Unit
 from quookly.contracts.pantry import Availability
-from quookly.contracts.provisioning import Draw, Provisioning, Requirement, Shortfall
+from quookly.contracts.provisioning import (
+    Covered,
+    Draw,
+    Provisioning,
+    Requirement,
+    Shortfall,
+)
 from quookly.engines import measure
 
 #: A date every real one sorts before, for lots that carry none. An undated packet cannot
@@ -151,3 +157,40 @@ def _record(
             missing[position] = Shortfall(ingredient_id=ingredient_id, quantity=combined)
             return
     missing.append(Shortfall(ingredient_id=ingredient_id, quantity=amount))
+
+
+def outstanding(
+    requirements: Sequence[Requirement],
+    covered: Sequence[Covered],
+    densities: Mapping[int, Decimal | None],
+) -> list[Shortfall]:
+    """What is still to buy, given what the plan is already holding aside (UC-4.4).
+
+    The shopping list as read rather than as computed: `net` decides what to reserve, and
+    this reports the remainder from the reservations that were actually made. Working it
+    out from the availability a second time would be a second answer to the same
+    question, and FR-7 is the promise that there is only one.
+
+    Aggregation is shared with `net`, so a list read after planning has the same shape as
+    the one planning produced.
+    """
+    held: dict[tuple[int, int], list[Quantity]] = {}
+    for entry in covered:
+        held.setdefault((entry.plan_slot_id, entry.ingredient_id), []).append(entry.quantity)
+
+    missing: list[Shortfall] = []
+    for requirement in requirements:
+        wanted = requirement.quantity
+        if wanted is None:
+            continue
+        density = densities.get(requirement.ingredient_id)
+        still_needed = wanted.magnitude
+        for amount in held.get((requirement.plan_slot_id, requirement.ingredient_id), []):
+            in_our_terms = _converted(amount, wanted.unit, density)
+            if in_our_terms is not None:
+                still_needed -= in_our_terms.magnitude
+        if still_needed > NOTHING:
+            _record(
+                missing, requirement.ingredient_id, Quantity(still_needed, wanted.unit), density
+            )
+    return missing

@@ -39,6 +39,20 @@ class Draw:
 
 
 @dataclass(frozen=True, slots=True)
+class Covered:
+    """How much of one meal's need for one ingredient is already held aside.
+
+    What a `Draw` became once it was really reserved. The shopping list is worked out
+    from these rather than from a second pass over the availability, so the list and the
+    reservations cannot come to disagree about the same butter (FR-7).
+    """
+
+    plan_slot_id: int
+    ingredient_id: int
+    quantity: Quantity
+
+
+@dataclass(frozen=True, slots=True)
 class Shortfall:
     """What has to be bought, per ingredient, across the whole plan."""
 

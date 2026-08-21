@@ -133,7 +133,12 @@ This is the phase that determines whether the product is worth using.
   claim exists only while it is held ([ADR-036](07-decisions.md#adr-036-a-reservation-exists-only-while-it-is-held)), and where the pantry and the plan disagree the fridge wins
 - ~~`PlanAccess`: periods, slots, attendance (UC-4.1, UC-4.2)~~ **Built** — a slot exists before it
   has a recipe, because that is most of a week most of the time
-- `PlanningManager`, `PlanningEngine`: proposing and checking suitability (UC-4.1–4.3)
+- ~~`PlanningManager`, `PlanningEngine`: slots, attendance, suitability checks (UC-4.1–4.3)~~
+  **Built** — a meal is sized to the appetites at it, flagged when it cannot be, and checked against
+  the people coming; every change restates the plan's reservations
+  ([ADR-038](07-decisions.md#adr-038-a-plans-reservations-are-restated-not-adjusted)). *Proposing*
+  what to cook belongs with generation (Phase 6)
+- The plan screen (UC-4.1–4.4)
 - ~~A recipe's `serves` alongside its yield, so "makes 12 pancakes" can be scaled to a table~~
   **Built** — the deferred half of [ADR-030](07-decisions.md#adr-030-a-recipe-whose-yield-cannot-be-read-is-refused);
   read from a page's metadata and from its prose, and carried by

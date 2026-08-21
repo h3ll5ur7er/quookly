@@ -35,7 +35,7 @@ from quookly.contracts.recipe import (
     RecipeSummaryView,
     StepDraft,
 )
-from quookly.contracts.suitability import FindingView, JudgedLine, Outcome, VerdictView
+from quookly.contracts.suitability import JudgedLine, Outcome, VerdictView
 from quookly.contracts.web import ReadableContent
 from quookly.engines import exchange, interpretation, measure, suitability
 
@@ -194,31 +194,7 @@ async def _judge(recipe: Recipe, cook_id: int) -> VerdictView | None:
     if not household:
         return None
 
-    facts = [
-        suitability.IngredientFacts(
-            slug=line.ingredient.slug,
-            name=line.ingredient.name,
-            allergens=line.ingredient.allergens,
-            classified=line.ingredient.classified,
-            optional=line.optional,
-        )
-        for line in recipe.lines
-    ]
-    verdict = suitability.evaluate(facts, household)
-    return VerdictView(
-        outcome=verdict.outcome,
-        findings=[
-            FindingView(
-                eater=finding.eater,
-                ingredient=finding.ingredient,
-                severity=finding.severity,
-                allergen=finding.allergen,
-                avoidable=finding.avoidable,
-                unknown=finding.unknown,
-            )
-            for finding in verdict.findings
-        ],
-    )
+    return VerdictView.of(suitability.evaluate(suitability.facts_for(recipe.lines), household))
 
 
 async def _present(

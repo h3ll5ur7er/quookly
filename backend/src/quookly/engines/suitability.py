@@ -13,10 +13,12 @@ from what anybody said about the recipe.
 the answer *unknown*, never suitable. Silence about a nut is not an absence of nuts.
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from quookly.contracts.eater import Constraint, Eater, Severity
 from quookly.contracts.ingredient import Allergen
+from quookly.contracts.recipe import IngredientLine
 from quookly.contracts.suitability import Finding, Outcome, Verdict
 
 
@@ -54,6 +56,26 @@ def _worst(constraints: list[Constraint]) -> Severity:
         for severity in _GRAVITY
         if any(constraint.severity is severity for constraint in constraints)
     )
+
+
+def facts_for(lines: Sequence[IngredientLine]) -> list[IngredientFacts]:
+    """What this engine needs to know about a stored recipe's lines.
+
+    A convenience over the same data, so recipes and plans ask the safety question in
+    exactly the same terms. `classified` travels because an empty allergen set means
+    "contains none" only when somebody has looked (ADR-006), and a caller building this
+    by hand is a caller who can forget that.
+    """
+    return [
+        IngredientFacts(
+            slug=line.ingredient.slug,
+            name=line.ingredient.name,
+            allergens=line.ingredient.allergens,
+            classified=line.ingredient.classified,
+            optional=line.optional,
+        )
+        for line in lines
+    ]
 
 
 def evaluate(ingredients: list[IngredientFacts], eaters: list[Eater]) -> Verdict:
