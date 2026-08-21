@@ -147,6 +147,10 @@ a correct shopping list, and cooking a meal updates the pantry.
 **Goal:** the app is useful while standing at the hob, not just while planning at a desk.
 
 - `ExecutionEngine`: mise-en-place grouping, step ordering, parallelism, timer specs (V15)
+- Per-step attention, and a recipe's hands-on and total time derived from it (UC-2.6, FR-23,
+  [ADR-037](07-decisions.md#adr-037-proposed-how-long-a-recipe-takes-is-two-numbers-both-derived)) —
+  here rather than earlier because the number is only honest once something knows about overlap, and
+  a wrong time on a recipe card is worse than none
 - `CookingSessionAccess` and `CookingManager`: sessions, progress, resumption (UC-9.1–9.3, 9.7)
 - Timers held as instants server-side, ticked on the client (UC-9.4,
   [ADR-013](07-decisions.md#adr-013-cooking-sessions-are-server-side-state-timers-store-instants))

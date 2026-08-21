@@ -15,7 +15,7 @@ of it. Concretely, a recipe is:
 | --- | --- |
 | **Yield** | What the quantities produce — servings, or a mass or volume. Every quantity is relative to this. |
 | **Ingredient lines** | An ordered set of (ingredient, quantity, unit, preparation note, optionality). |
-| **Steps** | An ordered set of actions, with timings, temperatures, and equipment. *Built.* References to the ingredient lines a step consumes arrive with cooking mode, which is what needs them. |
+| **Steps** | An ordered set of actions, with timings, temperatures, and equipment. *Built.* References to the ingredient lines a step consumes arrive with cooking mode, which is what needs them. Each step's *attention* — hands-on, waiting, or ahead — is [proposed](07-decisions.md#adr-037-proposed-how-long-a-recipe-takes-is-two-numbers-both-derived). |
 | **Technique references** | Links from steps into the Academy, so an unfamiliar term is one click from its definition. *Planned with the Academy.* |
 | **Provenance** | How this recipe came to exist: authored, imported from JSON, scraped from a URL, generated, or derived. |
 | **Visibility** | Private by default; explicitly published. |
@@ -225,6 +225,22 @@ is the waste a cook can most easily stop.
 Correcting a quantity is a different act from wasting it. Adjusting says the number was wrong;
 wasting says food left the kitchen. Only the second belongs in the figure the cook is trying to
 bring down.
+
+### How long it takes
+
+*Proposed — see [ADR-037](07-decisions.md#adr-037-proposed-how-long-a-recipe-takes-is-two-numbers-both-derived).*
+
+Two numbers, not one. **Hands-on time** is how long the cook has to be doing something; **total
+time** is how long from starting to eating. A cake is twenty minutes of work and ninety of waiting,
+and a single figure loses whichever of those the reader was asking about.
+
+Both are derived from the steps rather than stored on the recipe, because a stored total is wrong
+from the first step edited. Each step carries an attention of its own — hands-on, waiting, or ahead —
+and *ahead* is not a number at all: proving overnight is eight hours in which the cook is asleep, so
+it is surfaced as *start the day before* rather than added to a total.
+
+A step with no duration contributes nothing and makes both totals a **lower bound**, marked as such.
+Zero would be a lie in the direction that makes every recipe look quicker than it is.
 
 ### A line without a quantity
 

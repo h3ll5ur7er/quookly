@@ -1262,3 +1262,89 @@ not have to work it out again.
 **Cost.** No answer to "what was this stock reserved for last week". If that question is ever worth
 asking, it is a log of plan changes rather than a status column on a live claim — a different table,
 written for that purpose, and not one that any availability query has to read.
+
+---
+
+## ADR-037 (Proposed) How long a recipe takes is two numbers, both derived
+
+**Status:** Proposed
+
+**Context.** A recipe has no time on it at all, which is a real gap: "how long does this take" is one
+of the first two questions anybody asks of a recipe, alongside "can we eat it". Every recipe site
+answers it, usually with a single figure.
+
+A single figure is worse than none. A cake is twenty minutes of work and ninety minutes of waiting;
+shown as "1 h 50" it reads as a weekend project when it is a Tuesday-evening one with a gap in the
+middle. Bread shown as "30 min" — its hands-on time — reads as a half-hour job, and somebody starts
+it at six and eats at midnight. Both numbers are true and each alone is misleading.
+
+**Decision.** A recipe reports **two** numbers:
+
+- **Hands-on time** — how long the cook has to be doing something.
+- **Total time** — how long from starting to eating.
+
+Both are **derived from the steps**, never stored as recipe fields.
+
+Each step gains an **attention** of its own, provisionally three values:
+
+| Attention | Meaning | Counts towards |
+| --- | --- | --- |
+| Hands-on | The cook is doing something — chopping, stirring, shaping | Hands-on and total |
+| Waiting | It is cooking and the cook is around — baking, simmering, resting | Total only |
+| Ahead | It happens without the cook — proving overnight, marinating, chilling | Neither; surfaced as *"start the day before"* |
+
+**Rationale.** The two numbers answer two different questions, and a cook asks both. *Can I do this
+tonight* is hands-on time. *When do we eat* is total time. Collapsing them loses whichever question
+the reader was actually asking.
+
+The third category is not a third number. Soaking beans overnight is eight hours in which the cook
+is asleep; adding it to a total makes an ordinary dish read as a nine-hour ordeal, and dropping it
+silently means somebody starts dinner at six and discovers the beans needed starting yesterday.
+Surfacing it as a lead — *start the day before* — is the only framing that is neither alarming nor
+a trap. Cooking mode already needs long-lead work brought forward
+([V15](03-volatility-analysis.md#v15-execution-guidance) names it), so this is the same fact serving
+two purposes.
+
+**Derived, not stored,** for the reason onboarding progress is derived
+([ADR-014](#adr-014-onboarding-progress-is-derived-not-stored)) and free stock is computed
+([ADR-036](#adr-036-a-reservation-exists-only-while-it-is-held)): a stored total is a second source
+of truth that is wrong from the first step edited. The derivation belongs in `ExecutionEngine`,
+whose charter already includes which steps can run in parallel — and overlap is exactly why total
+time is not the sum of the durations. *While the oven heats, make the batter* is two steps and one
+stretch of clock.
+
+**Unknown stays unknown.** A step with no duration must not contribute zero. Zero is a lie in the
+direction that makes every recipe look quicker than it is, and a cook who is late for dinner once
+because of it stops reading the number at all. Where any step's duration is missing, both totals are
+reported as **lower bounds** and marked as such — "at least 25 min hands-on". The same rule as an
+unclassified allergen ([ADR-006](#adr-006-allergen-determination-is-structural)), an unresolved
+ingredient ([ADR-029](#adr-029-an-ingredient-the-registry-does-not-know-is-recorded-and-reported))
+and an unreadable yield ([ADR-030](#adr-030-a-recipe-whose-yield-cannot-be-read-is-refused)): this
+codebase does not let absence read as a value.
+
+**Not a new volatility.** What varies — whether stirring occasionally is hands-on, how overlap is
+inferred, whether waiting by the hob counts as work — is judgement about steps, which is
+[V15](03-volatility-analysis.md#v15-execution-guidance). A service of its own would encapsulate
+nothing that `ExecutionEngine` does not already own.
+
+**What it unlocks.** V7 already names *"optimisation for effort on weeknights"* among the ways
+planning strategy varies, and it has had nothing to optimise against. UC-3.2 offers filtering by
+time. Both become possible the moment this exists.
+
+**Import gets it nearly free.** schema.org/Recipe publishes `prepTime`, `cookTime` and `totalTime`.
+They map imperfectly — `prepTime` is roughly hands-on, `cookTime` roughly waiting — but a recipe
+imported with them is better off than one imported without, and the model already reads prose into
+structure where the metadata is absent.
+
+**Cost.** A column on every step, a migration, and a question on the step form that most authors
+will leave alone — so the default has to be right. *Hands-on* is the safe default: it over-reports
+the work rather than under-reporting it, which fails in the direction that does not make anybody
+late.
+
+Derived values cannot be indexed, so filtering a large collection by time would eventually want a
+cached column recomputed on write. That would be explicitly a **cache**, invalidated by any step
+edit, and never the thing the recipe screen reads.
+
+**Deferred to Phase 5**, with `ExecutionEngine`. The schema could land earlier, but the number is
+only honest once something knows about overlap, and a wrong time on a recipe card is worse than no
+time at all.

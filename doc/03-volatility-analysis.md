@@ -238,6 +238,8 @@ regional product availability.
 **Question:** how does a recipe become something a person can actually follow while cooking?
 **Varies:** how mise-en-place is grouped (by step, by prep type, by station), how steps are ordered
 and which can run in parallel, where timers belong and how long-lead work is surfaced ahead of time,
+how much attention a step demands and therefore what counts towards hands-on time
+([ADR-037](07-decisions.md#adr-037-proposed-how-long-a-recipe-takes-is-two-numbers-both-derived)),
 how much detail a step carries for a given skill level, how jargon is offered without interrupting,
 and how a session survives interruption.
 **Stable:** the recipe's ingredient lines and steps, which execution guidance reads but never

@@ -48,6 +48,7 @@ UC-1.3 is the founding use case: the product exists because this is currently pa
 | UC-2.3 | View estimated nutrition per serving and per recipe |
 | UC-2.4 | See whether a recipe is suitable for a named set of eaters, and why not |
 | UC-2.5 | Look up an unfamiliar technique or term from within a recipe |
+| UC-2.6 | See how long a recipe takes, separating hands-on work from waiting *(proposed — [ADR-037](07-decisions.md#adr-037-proposed-how-long-a-recipe-takes-is-two-numbers-both-derived))* |
 
 ### UC-3 Find a recipe
 
@@ -166,6 +167,7 @@ UC-8.4 is **Built** — `/api/v1/status` exists and the CLI can query it.
 | FR-20 | Every nutrient profile records its data source and licence. The application displays the attribution required by the sources actually in use — mandatory for the Swiss, UK, and French overlays. |
 | FR-21 | The interface ships light, dark, playful and decorative themes. Selection follows the system preference until the cook chooses, and the choice is remembered. |
 | FR-22 | Themes are sets of design-token values, so an instance can add one without rebuilding the application. |
+| FR-23 | *(Proposed)* A recipe reports hands-on time and total elapsed time separately, derived from its steps. Where any step's duration is unknown, both are reported as lower bounds and marked as such. |
 
 FR-11 matters more than it looks: it is the guarantee that self-hosters are not trapped, and it
 makes the import path (UC-1.2) and the export path the same contract.
