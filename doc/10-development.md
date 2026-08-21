@@ -367,8 +367,10 @@ pull request rather than forcing it into the nearest service.
 ```
 quookly/
 ├── doc/                    These documents
+├── reference/              Published documents the seed data is derived from
 ├── backend/                FastAPI — owns the API contract, serves the built frontend
 │   ├── src/quookly/
+│   ├── seed/               Shipped content, and the builders that produce it
 │   └── tests/
 ├── cli/                    Typer management CLI
 │   └── src/quookly_cli/
@@ -417,3 +419,28 @@ cd backend && uv run python tests/fixtures/capture.py
 
 The suite never fetches. A test failing *after* a refresh is real news about how a site has changed
 its shape, and worth reading as such rather than fixing by adjusting the assertion.
+
+## Reference data
+
+`reference/` holds the published documents the shipped nutrition seed is derived from — today the
+Swiss Food Composition Database as an `.xlsx`. They are in the repository rather than downloaded on
+demand for two reasons.
+
+They are the **provenance** of every figure a cook sees. `backend/seed/nutrition.swiss.json` is
+derived; this is what it was derived from, and a number on a screen should be traceable to a
+published row in a document somebody can open.
+
+And **the links do not survive**. The Swiss workbook is published at a path containing the month it
+was released, so a build step that fetched it would work until the next edition came out and then
+quietly stop.
+
+Each builder checks the document's SHA-256 before reading it, because the mappings pick rows by
+number: a different edition can renumber, rename or withdraw one, and the failure would be silent —
+plausible figures against the wrong food. Refreshing a dataset therefore means replacing the file,
+updating the digest in the builder *and* in `reference/README.md`, re-running the builder, and
+reading the diff. A publisher revising a figure is news worth looking at.
+
+    cd backend && uv run --with openpyxl python seed/swiss.py
+
+`openpyxl` is not a project dependency: the builders run by hand when a publisher releases an
+edition, and the application never reads a spreadsheet.
