@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     # default is patient rather than snappy; a self-hoster on a slower box raises it.
     inference_timeout_seconds: float = 180.0
 
+    # Fetching a page a cook pasted a link to (UC-1.3). The URL is user input and the
+    # fetch runs on the server's network, so private addresses are refused by default.
+    # A self-hoster with a recipe box on their LAN turns this on deliberately.
+    allow_private_fetch: bool = False
+    fetch_timeout_seconds: float = 20.0
+
     @model_validator(mode="after")
     def resolve_secret_key(self) -> "Settings":
         """Require a secret in production; generate a throwaway in development.

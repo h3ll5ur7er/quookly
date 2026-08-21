@@ -868,3 +868,56 @@ An answer refused for being the wrong shape is not repaired. A fenced answer has
 — models add those often enough that refusing them wastes good answers — but what is inside still
 has to parse on its own, and an answer cut short by the token limit is refused even when what
 arrived happens to parse. For a recipe, truncation means missing ingredients.
+
+---
+
+## ADR-027 An instance will not fetch its own network
+
+**Status:** Accepted
+
+**Context.** UC-1.3 has a cook paste a URL, which the server then fetches. The URL is user input
+and the fetch runs inside whatever network the instance sits in — a home LAN, a container network,
+a cloud VPC.
+
+**Decision.** `WebContentAccess` fetches only `http` and `https`, and only addresses that are
+globally routable. Loopback, link-local, and the private ranges are refused. Every redirect hop is
+checked, not only the URL that was pasted. A self-hoster who genuinely wants to import from
+something on their own network sets `QUOOKLY_ALLOW_PRIVATE_FETCH=true`.
+
+**Rationale.** Without it, a pasted link is a way to make the server read things the person pasting
+it cannot: a router's admin page, a cloud metadata endpoint, Quookly's own API from inside. That is
+worth guarding even on a single-user instance, and it is the sort of guard that is cheap now and a
+retrofit later.
+
+**Cost.** Two real ones, both stated rather than papered over.
+
+The name is resolved for the check and resolved again by the connection, so a server that answers
+differently the second time is still reachable. Closing that needs the resolved address pinned
+through the connection, which the HTTP client does not offer without a custom transport. The
+realistic case this stops — a link to `localhost` or to `169.254.169.254` — does not need that
+sophistication.
+
+And a self-hoster whose recipes live on their own network has to find a setting. That is the right
+way round: the safe behaviour is the default, and the person who wants the other one knows why.
+
+---
+
+## ADR-028 Structured metadata is fetched, not preferred
+
+**Status:** Accepted
+
+**Context.** Most recipe sites embed `schema.org/Recipe` as JSON-LD. Checked against real pages,
+BBC Good Food, Allrecipes and Jamie Oliver all publish a complete recipe that way — name, yield,
+ingredient list, ordered instructions — which is a better answer than any interpretation of the
+surrounding prose.
+
+**Decision.** `WebContentAccess` returns the readable text **and** every embedded JSON-LD block,
+without preferring either. Choosing between them is `InterpretationEngine`'s job.
+
+**Rationale.** Which source to believe is the product's core competence and will be refined
+indefinitely — that is the definition of V2. A page may carry a stale metadata block and a correct
+article, or the reverse. Deciding in the access layer would put the most volatile judgement in the
+least volatile place.
+
+**Cost.** The engine receives two representations and has to reconcile them, which is more work
+than being handed one. That work is the thing the engine exists to do.

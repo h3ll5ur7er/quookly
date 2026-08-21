@@ -96,3 +96,34 @@ class StructuredOutputUnusable(QuooklyError):
     Refused rather than repaired. A half-read answer is a recipe missing ingredients, and
     guessing at what a model meant is exactly the failure FR-9 exists to prevent.
     """
+
+
+class AddressNotAllowed(QuooklyError):
+    """This instance will not fetch that address.
+
+    A URL is user input and the fetch happens on the server's network. Without this an
+    instance is a way to read whatever it can reach and nobody else can — its own admin
+    API, a router, a cloud metadata endpoint.
+    """
+
+
+class ContentUnreachable(QuooklyError):
+    """The page could not be fetched: no such host, no answer, or an error status."""
+
+
+class ContentRefused(QuooklyError):
+    """The site declined to serve the page to an automated reader.
+
+    Large recipe sites sit behind bot protection and answer 403 to anything that is not a
+    browser. Kept apart from unreachability because the remedy is different and the cook
+    has it: the page works in their browser, and the words can be brought across by hand.
+    """
+
+
+class ContentUnreadable(QuooklyError):
+    """The page was fetched and there is nothing in it worth reading.
+
+    A PDF, a video, an empty shell rendered entirely by script, or a page so large that
+    reading it is itself the problem. Reported rather than passed on: handing an empty
+    page to a model produces an invented recipe.
+    """

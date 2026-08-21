@@ -326,7 +326,7 @@ Each service exposes atomic business verbs. Illustrative, not exhaustive:
 | `CommunityAccess` | Database | `follow`, `rate`, `comment`, `award`, `leaderboard` |
 | `AcademyAccess` | Database | `fetch_term`, `store_contribution`, `list_modules` |
 | `ModelAccess` | Inference backend | `complete`, `complete_structured`, `describe`, `reachable` ([ADR-026](07-decisions.md#adr-026-one-openai-shaped-wire-format-not-a-provider-plugin-system)) |
-| `WebContentAccess` | External websites | `fetch_readable` |
+| `WebContentAccess` | External websites | `fetch_readable` — prose and embedded metadata, neither preferred ([ADR-027](07-decisions.md#adr-027-an-instance-will-not-fetch-its-own-network), [ADR-028](07-decisions.md#adr-028-structured-metadata-is-fetched-not-preferred)) |
 | `MediaAccess` | Media store | `store_image`, `fetch_image`, `delete_image` |
 | `SearchIndexAccess` | Index | `index_recipe`, `query`, `remove` |
 | `CookingSessionAccess` | Database | `open_session`, `fetch_active`, `advance_step`, `record_timer`, `close_session` |
@@ -456,6 +456,7 @@ backend/src/quookly/
 │   ├── eater.py            # eaters and their constraints (Built)
 │   ├── setup.py            # answers given during setup (Built)
 │   ├── model.py            # reaching an inference provider (Built)
+│   ├── web.py              # fetching and reducing a page (Built)
 │   ├── preferences.py      # a cook's unit preferences (Built)
 │   ├── models.py           # SQLModel tables — never leave this layer (Built)
 │   └── cook.py             # cook accounts, in domain verbs (Built)
@@ -473,6 +474,7 @@ backend/src/quookly/
 │   ├── eater.py            # Eater, Constraint, Severity, AgeBand (Built)
 │   ├── onboarding.py       # SetupStep, ProfileState, SetupProgress (Built)
 │   ├── inference.py        # Completion, ProviderStatus (Built)
+│   ├── web.py              # ReadableContent (Built)
 │   ├── suitability.py      # Outcome, Finding, Verdict (Built)
 │   ├── measure.py          # Dimension, Unit, Quantity (Built)
 │   ├── security.py         # Principal (Built)

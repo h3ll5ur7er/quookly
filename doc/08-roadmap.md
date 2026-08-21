@@ -105,7 +105,7 @@ claims; having the structural judge already in place removes the temptation and 
 **Goal:** the founding use case.
 
 - ~~`ModelAccess` with at least one local and one hosted provider (V3, FR-8)~~ **Built** — one OpenAI-shaped client ([ADR-026](07-decisions.md#adr-026-one-openai-shaped-wire-format-not-a-provider-plugin-system)), verified against a local vLLM
-- `WebContentAccess`: fetch and extract readable content
+- ~~`WebContentAccess`: fetch and extract readable content~~ **Built** — prose plus embedded schema.org metadata ([ADR-028](07-decisions.md#adr-028-structured-metadata-is-fetched-not-preferred)), refusing the instance's own network ([ADR-027](07-decisions.md#adr-027-an-instance-will-not-fetch-its-own-network))
 - `InterpretationEngine`: content to canonical recipe (V2)
 - URL import (UC-1.3), validation and failure reporting (FR-9)
 - Provider configuration in settings and via CLI (UC-8.2)
@@ -208,7 +208,7 @@ whose absence costs the product least.
 
 | Risk | Mitigation |
 | --- | --- |
-| Interpretation quality (V2) is the product, and is hard | Phase 3 is deliberately early; build a fixture corpus of real messy pages and measure against it |
+| Interpretation quality (V2) is the product, and is hard | Phase 3 is deliberately early; build a fixture corpus of real messy pages and measure against it. Checked against live pages, the major publishers embed complete schema.org recipes, which moves much of the risk from *reading prose well* to *knowing when to trust the metadata* |
 | Overlay datasets carry mandatory attribution, which is easy to omit | FR-20 stores source and licence per nutrient profile, so attribution is generated from the data actually used rather than remembered by hand |
 | Ingredient registry needs curation a self-hoster cannot provide | Ship a base registry, allow local additions; decide ownership in [open questions](06-domain-model.md#open-questions) |
 | Local models may be too weak for reliable structured extraction | Support hosted providers from Phase 3; treat structured-output failure as a normal, reported outcome |
