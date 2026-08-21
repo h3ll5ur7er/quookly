@@ -27,6 +27,7 @@ function entry(overrides: object = {}): object {
     name: 'plain flour',
     kind: 'powder',
     total: '500 g',
+    spoken_for: null,
     freshness: 'undated',
     lots: [lot()],
     ...overrides,
@@ -152,5 +153,19 @@ describe('PantryComponent', () => {
   it('offers a way to add stock', async () => {
     await answer([]);
     expect(fixture.nativeElement.querySelector('a[href="/pantry/add"]')).not.toBeNull();
+  });
+
+  it('says how much of a total a planned meal has claimed', async () => {
+    /* The total stays what is in the cupboard — planning reserves rather than deducts.
+       But "how much can I use today" is a different question, and a cook who uses the lot
+       leaves Thursday short with nothing having warned them. */
+    await answer([entry({ spoken_for: '200 g' })]);
+    expect(text()).toContain('200 g');
+    expect(text()).toContain('is planned for a meal');
+  });
+
+  it('says nothing where nothing has been claimed', async () => {
+    await answer([entry()]);
+    expect(text()).not.toContain('is planned for a meal');
   });
 });

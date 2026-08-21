@@ -1,0 +1,52 @@
+<main class="page">
+  <h1 i18n="@@plansHeading">Plans</h1>
+
+  @if (failed()) {
+    <p class="notice notice--danger" role="alert" i18n="@@plansFailed">
+      Could not load your plans. Please try again.
+    </p>
+  } @else if (weeks(); as planned) {
+    @if (planned.length === 0) {
+      <p class="plans__empty" i18n="@@plansEmpty">
+        Nothing planned yet. Lay out a week and Quookly will check every meal against the people at
+        it, hold back what you already have, and tell you what is left to buy.
+      </p>
+    } @else {
+      <ul class="plans__list">
+        @for (week of planned; track week.id) {
+          <li>
+            <a class="plans__row" [routerLink]="['/plans', week.id]">
+              <span class="plans__period">{{ period(week.starts_on, week.ends_on) }}</span>
+              <span class="plans__count">
+                @if (week.planned === 0) {
+                  <span i18n="@@plansNoMeals">Nothing planned</span>
+                } @else if (week.planned === 1) {
+                  <span i18n="@@plansOneMeal">One meal</span>
+                } @else {
+                  <span i18n="@@plansMeals">{{ week.planned }}:count: meals</span>
+                }
+              </span>
+            </a>
+          </li>
+        }
+      </ul>
+    }
+  } @else {
+    <p class="plans__loading" i18n="@@plansLoading">Loading…</p>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="open()">
+    <h2 i18n="@@plansOpenHeading">Plan a week</h2>
+    <div class="plans__dates">
+      <span class="plans__field">
+        <label for="starts_on" i18n="@@plansFrom">From</label>
+        <input id="starts_on" type="date" formControlName="starts_on" />
+      </span>
+      <span class="plans__field">
+        <label for="ends_on" i18n="@@plansTo">To</label>
+        <input id="ends_on" type="date" formControlName="ends_on" />
+      </span>
+    </div>
+    <button type="submit" [disabled]="opening()" i18n="@@plansOpen">Start planning</button>
+  </form>
+</main>

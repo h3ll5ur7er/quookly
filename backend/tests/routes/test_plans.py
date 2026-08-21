@@ -221,3 +221,16 @@ async def test_one_cooks_week_is_not_anothers(
         await client.put(f"{PLANS}/{plan_id}/slots", json=slot(), headers=neighbour)
     ).status_code == 404
     assert (await client.delete(f"{PLANS}/{plan_id}", headers=neighbour)).status_code == 404
+
+
+async def test_a_period_longer_than_a_month_is_refused(
+    client: AsyncClient, cook: dict[str, str]
+) -> None:
+    """Beyond about a month it is a calendar rather than a plan — nobody knows who is
+    coming to dinner in November — and it is what stops a screen laying out a row per day
+    for a period somebody typed by accident."""
+    response = await client.post(
+        PLANS, json={"starts_on": MONDAY, "ends_on": "2027-08-30"}, headers=cook
+    )
+
+    assert response.status_code == 422

@@ -133,6 +133,12 @@ class PlanSummaryView(BaseModel):
     planned: int
 
 
+#: The longest period that is still a plan. Beyond about a month it is a calendar, and
+#: nobody knows who is coming to dinner in November. It is also what stops a screen laying
+#: out a row per day for a period somebody typed by accident.
+LONGEST_PLAN_DAYS = 31
+
+
 class PlanInput(BaseModel):
     """A period to plan (UC-4.1). Both dates inclusive."""
 
@@ -142,9 +148,11 @@ class PlanInput(BaseModel):
     ends_on: date
 
     @model_validator(mode="after")
-    def ends_after_it_begins(self) -> "PlanInput":
+    def is_a_period_somebody_could_plan(self) -> "PlanInput":
         if self.ends_on < self.starts_on:
             raise ValueError("a plan does not end before it begins")
+        if (self.ends_on - self.starts_on).days >= LONGEST_PLAN_DAYS:
+            raise ValueError(f"a plan covers at most {LONGEST_PLAN_DAYS} days")
         return self
 
 

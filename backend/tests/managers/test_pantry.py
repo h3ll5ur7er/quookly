@@ -20,6 +20,7 @@ from sqlmodel import SQLModel
 from quookly.access import cook as cook_access
 from quookly.access import ingredient as registry
 from quookly.access import pantry as pantry_access
+from quookly.access import plan as plan_access
 from quookly.access.database import dispose_engine, get_engine
 from quookly.contracts.ingredient import IngredientKind
 from quookly.contracts.measure import Quantity, Unit
@@ -30,6 +31,7 @@ from quookly.contracts.pantry import (
     WasteInput,
     WasteReason,
 )
+from quookly.contracts.plan import Meal
 from quookly.managers import pantry as pantry_manager
 from quookly.utilities.configuration import get_settings
 
@@ -278,3 +280,31 @@ async def test_using_soon_includes_what_is_already_past(cook_id: int, flour: int
     pressing = await pantry_manager.using_soon(cook_id)
 
     assert pressing[0].freshness is Freshness.PAST
+
+
+class TestWhatAPlanHasClaimed:
+    """The total stays what is in the cupboard — planning reserves rather than deducts
+    (ADR-004). But "how much can I use today" is a different question from "how much is
+    there", and a cook who cooks the lot because the screen said 800 g leaves Thursday
+    short with nothing having warned them."""
+
+    async def test_a_card_says_how_much_is_spoken_for(self, cook_id: int, flour: int) -> None:
+        lot = await stock(cook_id, flour, "500", Unit.GRAM)
+        plan = await plan_access.create(cook_id=cook_id, starts_on=TODAY, ends_on=date(2026, 8, 30))
+        slot = await plan_access.open_slot(plan.id, on_date=TODAY, meal=Meal.DINNER)
+        await pantry_access.reserve_against(
+            lot, plan_slot_id=slot.id, quantity=Quantity(Decimal("200"), Unit.GRAM)
+        )
+
+        shelf = await pantry_manager.present(cook_id)
+
+        assert shelf[0].total == "500 g"
+        assert shelf[0].spoken_for == "200 g"
+
+    async def test_a_card_nothing_has_claimed_says_nothing(self, cook_id: int, flour: int) -> None:
+        """Rather than "0 g", which reads as a fact worth noticing."""
+        await stock(cook_id, flour, "500", Unit.GRAM)
+
+        shelf = await pantry_manager.present(cook_id)
+
+        assert shelf[0].spoken_for is None

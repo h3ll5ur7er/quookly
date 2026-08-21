@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Outcome, RecipeSummaryView, RecipesService } from '@api';
-import { outcomeBadge } from '../../core/dietary/labels';
+import { RecipeSummaryView, RecipesService } from '@api';
+import { outcomeBadge, worthMarking } from '../../core/dietary/labels';
 
 @Component({
   selector: 'app-recipe-list',
@@ -15,7 +15,7 @@ export class RecipeListComponent {
   protected readonly failed = signal(false);
 
   protected readonly outcomeBadge = outcomeBadge;
-  protected readonly suitable = Outcome.suitable;
+  protected readonly worthMarking = worthMarking;
 
   /**
    * Whether anything here was judged at all.

@@ -25,13 +25,11 @@
               @if (recipe.summary) {
                 <span class="recipes__summary">{{ recipe.summary }}</span>
               }
-              @if (recipe.suitability; as outcome) {
-                @if (outcome !== suitable) {
-                  <span class="badge badge--{{ outcome }}">
-                    <span class="badge__mark" aria-hidden="true"></span>
-                    {{ outcomeBadge(outcome) }}
-                  </span>
-                }
+              @if (worthMarking(recipe.suitability); as outcome) {
+                <span class="badge badge--{{ outcome }}">
+                  <span class="badge__mark" aria-hidden="true"></span>
+                  {{ outcomeBadge(outcome) }}
+                </span>
               }
               <span class="recipes__yield">
                 <span i18n="@@recipeMakes">Makes</span>

@@ -9,6 +9,7 @@ adjusts the pantry constantly outside any plan, and expiry advances whether or n
 app is opened (V9).
 """
 
+from collections.abc import Mapping
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -83,33 +84,46 @@ def _lot_view(lot: StockItem, today: date) -> StockLotView:
     )
 
 
-def _total(lots: list[StockItem], density: Decimal | None) -> str | None:
-    """What the cook has of this ingredient altogether, or nothing.
+def _added_up(amounts: list[Quantity], density: Decimal | None) -> str | None:
+    """These quantities as one, or nothing where they do not add up.
 
-    Absent rather than approximated when the lots do not add up — six eggs and 200 g of
-    egg have no sum. Nothing is hidden by declining: every lot is listed underneath.
+    Absent rather than approximated — six eggs and 200 g of egg have no sum. Nothing is
+    hidden by declining: every lot is listed underneath.
     """
-    if not lots:
+    if not amounts:
         return None
-    target = lots[0].quantity.unit
+    target = amounts[0].unit
     running = Decimal(0)
-    for lot in lots:
+    for amount in amounts:
         try:
-            running += measure.convert(lot.quantity, target, density).magnitude
+            running += measure.convert(amount, target, density).magnitude
         except (IncompatibleUnits, DensityRequired):
             return None
     return str(measure.round_for_display(measure.humanise(Quantity(running, target))))
 
 
-def _entry(entry: Ingredient, lots: list[StockItem], today: date) -> PantryEntry:
+def _entry(
+    entry: Ingredient,
+    lots: list[StockItem],
+    today: date,
+    free: Mapping[int, Quantity],
+) -> PantryEntry:
     ordered = sorted(lots, key=lambda lot: (lot.expires_on is None, lot.expires_on, lot.id))
     views = [_lot_view(lot, today) for lot in ordered]
+    # Only the lots something has actually claimed. A card where nothing is spoken for
+    # says nothing, rather than saying "0 g" — which reads as a fact worth noticing.
+    claimed = [
+        Quantity(lot.quantity.magnitude - free[lot.id].magnitude, lot.quantity.unit)
+        for lot in ordered
+        if lot.id in free and lot.quantity.magnitude > free[lot.id].magnitude
+    ]
     return PantryEntry(
         ingredient_id=entry.id,
         slug=entry.slug,
         name=entry.name,
         kind=entry.kind,
-        total=_total(ordered, entry.density),
+        total=_added_up([lot.quantity for lot in ordered], entry.density),
+        spoken_for=_added_up(claimed, entry.density) if claimed else None,
         freshness=min(
             (view.freshness for view in views), key=lambda f: _URGENCY[f], default=Freshness.UNDATED
         ),
@@ -124,13 +138,15 @@ async def _shelf(cook_id: int, lots: list[StockItem], locale: str | None) -> lis
     reading = locale or await cook_access.locale_for(cook_id)
     entries = await registry.for_ids(sorted({lot.ingredient_id for lot in lots}), reading)
     today = _today()
+    # What nothing has claimed, so a card can say how much of its total is spoken for.
+    free = {one.lot.id: one.free for one in await pantry_access.available(cook_id)}
 
     grouped: dict[int, list[StockItem]] = {}
     for lot in lots:
         grouped.setdefault(lot.ingredient_id, []).append(lot)
 
     shelf = [
-        _entry(entries[ingredient_id], held, today)
+        _entry(entries[ingredient_id], held, today, free)
         for ingredient_id, held in grouped.items()
         if ingredient_id in entries
     ]
@@ -165,7 +181,8 @@ async def _entry_for(cook_id: int, ingredient_id: int, locale: str | None) -> Pa
     if ingredient_id not in entries:
         return None
     held = await pantry_access.for_ingredients(cook_id, [ingredient_id])
-    return _entry(entries[ingredient_id], held, _today())
+    free = {one.lot.id: one.free for one in await pantry_access.available(cook_id)}
+    return _entry(entries[ingredient_id], held, _today(), free)
 
 
 async def receive(

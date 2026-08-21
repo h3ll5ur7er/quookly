@@ -1,0 +1,69 @@
+@use '../../../styles/page';
+@use '../../../styles/controls';
+@use '../../../styles/form';
+
+.meal__lede {
+  color: var(--on-surface-muted);
+}
+
+.meal__who {
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.meal__people {
+  display: grid;
+  gap: var(--space-1);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The whole row is the target, not the box. A 16px checkbox is not something to aim at
+   with a thumb while holding a shopping bag. */
+.meal__person {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--on-surface);
+  font-size: var(--text-md);
+  font-weight: 400;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--surface-sunken);
+  }
+
+  input {
+    width: 1.15rem;
+    min-height: 1.15rem;
+    height: 1.15rem;
+    padding: 0;
+    accent-color: var(--primary);
+  }
+
+  span:nth-of-type(1) {
+    flex: 1 1 auto;
+  }
+}
+
+/* How much they eat, beside their name: the number the yield actually follows from. */
+.meal__appetite {
+  display: flex;
+  gap: 0.35em;
+  color: var(--on-surface-subtle);
+  font-size: var(--text-sm);
+}
+
+button[type='submit'] {
+  margin-top: var(--space-5);
+}
+
+button.destructive {
+  margin-top: var(--space-3);
+}

@@ -176,6 +176,13 @@ class PantryEntry(BaseModel):
     name: str
     kind: IngredientKind
     total: str | None
+    # How much of the total a planned meal has claimed, or nothing where nothing has.
+    #
+    # The total stays what is in the cupboard — planning reserves rather than deducts
+    # (ADR-004). But "how much can I use today" is a different question from "how much is
+    # there", and a cook who cooks the lot because the screen said 800 g leaves Thursday
+    # short with nothing having warned them.
+    spoken_for: str | None
     # The most urgent band across the lots, so a card can be marked without the client
     # re-deriving a rule that lives on the server.
     freshness: Freshness

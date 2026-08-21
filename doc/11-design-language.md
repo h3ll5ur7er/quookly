@@ -219,6 +219,17 @@ A quantity is a number **and** its unit, so where a field takes one, the unit si
 field's own outline rather than beside it. A cook reading "0.5" and then looking elsewhere to find
 out 0.5 of what has been asked one question in two places.
 
+**Badge** lives in `styles/_badges.scss` — a small mark saying whether the people eating something
+can. Shown **only when there is something to say**: a tick on every recipe that is fine drowns the
+one that is not, and a mark that is always on stops being read. The rule that decides is
+`worthMarking` rather than a condition in each template, because the day one screen starts showing a
+tick is the day the other's warnings get skimmed past.
+
+**The section bar** holds whatever the app grows, so its links share the width rather than taking a
+fixed one. Two sections fitted at any size; four did not fit a 360px phone (NFR-11), and an
+overflowing sticky bar looks correct until the last word is cut off the edge. An end-to-end test
+measures it.
+
 Each primitive: one responsibility, tokens only, keyboard-operable, and a visible focus ring that
 is never removed without a replacement.
 

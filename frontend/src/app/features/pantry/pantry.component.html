@@ -45,6 +45,15 @@
                 <span class="numeric pantry__total">{{ entry.total }}</span>
               }
             </p>
+            <!-- The total is what is in the cupboard; planning reserves rather than
+                 deducts. But a cook who uses the lot because the screen said 800 g
+                 leaves Thursday short with nothing having warned them. -->
+            @if (entry.spoken_for; as claimed) {
+              <p class="pantry__claimed">
+                <span class="numeric">{{ claimed }}</span>
+                <span i18n="@@pantrySpokenFor">is planned for a meal</span>
+              </p>
+            }
             <ul class="pantry__lots">
               @for (lot of entry.lots; track lot.id) {
                 <li>

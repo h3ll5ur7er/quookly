@@ -109,6 +109,16 @@
   font-weight: 500;
 }
 
+/* Quiet. It is a caveat on the number above it, not a warning: the food is there, it
+   simply has somewhere to be. */
+.pantry__claimed {
+  display: flex;
+  gap: 0.35em;
+  margin: var(--space-1) 0 0;
+  color: var(--on-surface-subtle);
+  font-size: var(--text-sm);
+}
+
 .pantry__lots {
   display: grid;
   gap: var(--space-1);

@@ -33,19 +33,25 @@
   z-index: 5;
   display: flex;
   justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
+  gap: var(--space-1);
+  padding: var(--space-2);
   border-top: 1px solid var(--border);
   background: var(--surface);
 }
 
 /* Full-height targets rather than padded text: the bar is the tap area on a phone. */
+/* An equal share each, capped so a wide screen does not stretch four words across it.
+   Fixed widths were fine with two sections and overflowed the narrowest phone at four —
+   the bar has to hold whatever the app grows, and it grows. */
 .shell__link {
   display: grid;
+  flex: 1 1 0;
   place-items: center;
   min-height: 44px;
-  min-width: 5.5rem;
-  padding-inline: var(--space-4);
+  min-width: 0;
+  max-width: 8rem;
+  padding-inline: var(--space-1);
+  white-space: nowrap;
   border-radius: var(--radius-md);
   color: var(--on-surface-muted);
   font-size: var(--text-sm);

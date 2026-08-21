@@ -349,3 +349,33 @@ def test_reading_the_list_agrees_with_making_it() -> None:
     ]
 
     assert replenishment.outstanding(requirements, reserved, {}) == provided.shortfall
+
+
+def test_you_cannot_buy_six_tenths_of_an_egg() -> None:
+    """A recipe scaled to one small appetite wants 0.6 eggs. A list that asks for that
+    has stopped being a list somebody can act on."""
+    provided = replenishment.net([needs(EGG, "0.6", unit=Unit.PIECE)], [], {})
+
+    assert [one.quantity for one in provided.shortfall] == [Quantity(Decimal("1"), Unit.PIECE)]
+
+
+def test_a_countable_rounds_up_rather_than_to_the_nearest() -> None:
+    """1.2 eggs is two eggs. One is not enough, and going home short of an ingredient is
+    the failure that stops a meal — an extra egg becomes tomorrow's breakfast."""
+    provided = replenishment.net([needs(EGG, "1.2", unit=Unit.PIECE)], [], {})
+
+    assert [one.quantity.magnitude for one in provided.shortfall] == [Decimal("2")]
+
+
+def test_things_you_weigh_are_left_as_they_are() -> None:
+    """67.5 g of flour is what the recipe wants, and a shop sells flour by weight. Pack
+    sizes vary by shop and by country; an egg is indivisible everywhere."""
+    provided = replenishment.net([needs(FLOUR, "67.5")], [], {})
+
+    assert [one.quantity.magnitude for one in provided.shortfall] == [Decimal("67.5")]
+
+
+def test_reading_the_list_rounds_the_same_way_as_making_it() -> None:
+    missing = replenishment.outstanding([needs(EGG, "0.6", unit=Unit.PIECE)], [], {})
+
+    assert [one.quantity.magnitude for one in missing] == [Decimal("1")]

@@ -1,0 +1,88 @@
+<main class="page">
+  @if (missing()) {
+    <h1 i18n="@@planMissingHeading">No such plan</h1>
+    <p class="plan__lede" i18n="@@planMissing">
+      This plan is not one of yours. It may already have been deleted.
+    </p>
+  } @else if (plan(); as week) {
+    <h1>{{ heading() }}</h1>
+
+    <ol class="week">
+      @for (day of days(); track day.on) {
+        <li class="week__day">
+          @if (day.slots.length === 0) {
+            <!-- The whole row is the way to fill it. An empty day has nothing else to
+                 offer, and a separate button per day would be seven of them. -->
+            <a
+              class="week__empty"
+              [routerLink]="['/plans', planId, 'meal']"
+              [queryParams]="{ on: day.on }"
+            >
+              <span class="week__date">{{ weekday(day.on) }}</span>
+              <span class="week__nothing" i18n="@@planNothingOn">Nothing planned</span>
+            </a>
+          } @else {
+            <p class="week__date">{{ weekday(day.on) }}</p>
+            <ul class="week__meals">
+              @for (slot of day.slots; track slot.id) {
+                <li>
+                  <a
+                    class="week__meal"
+                    [routerLink]="['/plans', planId, 'meal']"
+                    [queryParams]="{ on: slot.on_date, meal: slot.meal }"
+                  >
+                    <span class="week__when">{{ mealLabel(slot.meal) }}</span>
+                    <span class="week__recipe">{{ slot.recipe_title }}</span>
+                    <span class="week__who">{{ attending(slot) }}</span>
+                    @if (badge(slot); as outcome) {
+                      <span class="badge badge--{{ outcome }}">
+                        <span class="badge__mark" aria-hidden="true"></span>
+                        {{ outcomeBadge(outcome) }}
+                      </span>
+                    }
+                  </a>
+                  @if (sizingNote(slot); as note) {
+                    <p class="notice notice--info week__note">{{ note }}</p>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </li>
+      }
+    </ol>
+
+    <!-- The payoff, and the thing that leaves the house with the cook. -->
+    <section class="shopping" aria-labelledby="shopping-heading">
+      <h2 id="shopping-heading" i18n="@@planShopping">Shopping list</h2>
+      @if (week.shopping.length === 0) {
+        <p class="shopping__empty" i18n="@@planNothingToBuy">
+          Nothing to buy. Everything this week needs is already in your kitchen, and Quookly is
+          holding it back for these meals.
+        </p>
+      } @else {
+        <ul class="shopping__list">
+          @for (line of week.shopping; track line.ingredient_id) {
+            <li class="shopping__line">
+              <span>{{ line.name }}</span>
+              <span class="numeric">{{ line.quantity }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    @if (failed()) {
+      <p class="notice notice--danger" role="alert" i18n="@@planFailed">
+        Could not do that. Please try again.
+      </p>
+    }
+
+    <a class="action" [routerLink]="['/plans', planId, 'meal']" i18n="@@planAddMeal">Add a meal</a>
+    <button type="button" class="destructive" (click)="discard()" i18n="@@planDiscard">
+      Delete this plan
+    </button>
+  } @else {
+    <p class="plan__lede" i18n="@@planLoading">Loading…</p>
+  }
+</main>

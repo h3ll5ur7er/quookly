@@ -12,7 +12,7 @@ second way, so the list and the reservations cannot come to disagree (FR-7).
 
 from collections.abc import Mapping, Sequence
 from datetime import date
-from decimal import Decimal
+from decimal import ROUND_CEILING, Decimal
 
 from quookly.contracts.errors import DensityRequired, IncompatibleUnits
 from quookly.contracts.measure import Quantity, Unit
@@ -31,6 +31,34 @@ from quookly.engines import measure
 _NEVER = date.max
 
 NOTHING = Decimal(0)
+
+#: Units you cannot buy a fraction of. Three-fifths of an egg is a number, not something a
+#: shop will sell — and a list that asks for one has stopped being a list somebody can act
+#: on. This is the smallest case of the rounding V8 names, and the only one that needs no
+#: data: pack sizes vary by shop and by country, but an egg is indivisible everywhere.
+INDIVISIBLE = frozenset({Unit.PIECE})
+
+
+def _buyable(missing: list[Shortfall]) -> list[Shortfall]:
+    """Round what has to be bought up to something a shop can sell.
+
+    **Up**, never to the nearest. Needing 0.6 of an egg means one egg; needing 1.2 means
+    two, because one is not enough. Rounding down would send somebody home short of an
+    ingredient, which is the failure that stops a meal — rounding up leaves them with an
+    egg, which is the failure that becomes tomorrow's breakfast.
+    """
+    return [
+        Shortfall(
+            ingredient_id=line.ingredient_id,
+            quantity=Quantity(
+                line.quantity.magnitude.to_integral_value(rounding=ROUND_CEILING),
+                line.quantity.unit,
+            ),
+        )
+        if line.quantity.unit in INDIVISIBLE
+        else line
+        for line in missing
+    ]
 
 
 def _urgency(entry: Availability) -> tuple[date, Decimal, int]:
@@ -134,7 +162,7 @@ def net(
                 missing, requirement.ingredient_id, Quantity(still_needed, wanted.unit), density
             )
 
-    return Provisioning(draws=draws, shortfall=missing)
+    return Provisioning(draws=draws, shortfall=_buyable(missing))
 
 
 def _record(
@@ -193,4 +221,4 @@ def outstanding(
             _record(
                 missing, requirement.ingredient_id, Quantity(still_needed, wanted.unit), density
             )
-    return missing
+    return _buyable(missing)

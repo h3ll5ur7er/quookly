@@ -133,6 +133,20 @@ export function outcomeLabel(outcome: Outcome): string {
 }
 
 /**
+ * The outcome a badge should carry, or nothing.
+ *
+ * *Suitable* is nothing: a tick on every recipe that is fine drowns the one that is not,
+ * and a mark that is always on stops being read. Absent is also nothing — no verdict is
+ * not a clean bill of health, it is a question nobody has asked yet (ADR-006).
+ *
+ * Here rather than in each template, because two screens carry the badge now and the day
+ * one of them starts showing a tick is the day the other's warnings get skimmed past.
+ */
+export function worthMarking(outcome: Outcome | null | undefined): Outcome | null {
+  return outcome === null || outcome === undefined || outcome === Outcome.suitable ? null : outcome;
+}
+
+/**
  * The same outcome, short enough for a list row.
  *
  * Separate from `outcomeLabel` because a headline and a badge are different lengths of

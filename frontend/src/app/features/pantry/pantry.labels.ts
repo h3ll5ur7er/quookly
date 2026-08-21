@@ -1,5 +1,7 @@
 import { Freshness, StockLotView, WasteReason } from '@api';
-import { preferredLocale } from '../../core/locale/locale.store';
+import { day } from '../../core/dates/format';
+
+export { day };
 
 /**
  * How soon a packet wants using, in words.
@@ -33,21 +35,6 @@ export function urgency(lot: StockLotView): string | null {
     return $localize`:@@pantryDueTomorrow:Use by tomorrow`;
   }
   return $localize`:@@pantryDueInDays:Use within ${days}:count: days`;
-}
-
-/**
- * The date on the packet, as this cook's language writes it.
- *
- * `Intl` rather than Angular's date pipe: the application fixes its locale before
- * bootstrap and never registers Angular's locale data (ADR-025), so the pipe would
- * silently format a Swiss cook's dates the American way.
- */
-export function day(iso: string): string {
-  return new Intl.DateTimeFormat(preferredLocale(), {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(`${iso}T00:00:00`));
 }
 
 /** Commonest first: most of what gets binned went off or ran out of date. */

@@ -72,6 +72,22 @@ export const routes: Routes = [
     loadComponent: () => import('./features/pantry/lot.component').then((m) => m.LotComponent),
   },
   {
+    path: 'plans',
+    canActivate: [requireSignedIn],
+    loadComponent: () => import('./features/plans/plans.component').then((m) => m.PlansComponent),
+  },
+  {
+    // `meal` before `:id`-shaped routes: they share a shape, and the first match wins.
+    path: 'plans/:id/meal',
+    canActivate: [requireSignedIn],
+    loadComponent: () => import('./features/plans/meal.component').then((m) => m.MealComponent),
+  },
+  {
+    path: 'plans/:id',
+    canActivate: [requireSignedIn],
+    loadComponent: () => import('./features/plans/plan.component').then((m) => m.PlanComponent),
+  },
+  {
     path: 'setup',
     canActivate: [requireSignedIn],
     loadComponent: () => import('./features/setup/setup.component').then((m) => m.SetupComponent),

@@ -1,0 +1,94 @@
+<main class="page">
+  @if (missing()) {
+    <h1 i18n="@@planMissingHeading">No such plan</h1>
+    <p class="meal__lede" i18n="@@planMissing">
+      This plan is not one of yours. It may already have been deleted.
+    </p>
+  } @else if (plan() === null) {
+    <h1 i18n="@@mealHeading">A meal</h1>
+    <!-- Nothing to fill in until the plan has arrived. Until then this screen does not
+         know whether it is opening a meal or making one, and a form that is typeable
+         before it knows overwrites what was typed the moment it finds out. -->
+    <p class="meal__lede" i18n="@@mealLoading">Loading…</p>
+  } @else {
+    <h1 i18n="@@mealHeading">A meal</h1>
+
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <label for="on_date" i18n="@@mealFieldDay">Day</label>
+      <input id="on_date" type="date" formControlName="on_date" />
+
+      <label for="meal" i18n="@@mealFieldMeal">Meal</label>
+      <select id="meal" formControlName="meal">
+        @for (option of meals; track option) {
+          <option [value]="option">{{ mealLabel(option) }}</option>
+        }
+      </select>
+
+      <label for="recipe_id" i18n="@@mealFieldRecipe">What are you cooking</label>
+      <select id="recipe_id" formControlName="recipe_id">
+        <option [value]="undecided" i18n="@@mealUndecided">Not decided yet</option>
+        @for (recipe of recipes(); track recipe.id) {
+          <option [value]="recipe.id">{{ recipe.title }}</option>
+        }
+      </select>
+      <p class="hint" i18n="@@mealUndecidedHint">
+        A meal without a dish still holds its place, and nothing is reserved for it.
+      </p>
+
+      <fieldset class="meal__who">
+        <legend i18n="@@mealWhoIsComing">Who is coming</legend>
+        @if (household().length === 0) {
+          <p class="hint" i18n="@@mealNoHousehold">
+            Nobody is in your household yet. Without that, this meal is shopped for as the recipe
+            writes it rather than for your table.
+          </p>
+        } @else {
+          <ul class="meal__people">
+            @for (person of household(); track person.id) {
+              <li>
+                <label class="meal__person">
+                  <input
+                    type="checkbox"
+                    [checked]="isAttending(person.id)"
+                    (change)="toggle(person.id)"
+                  />
+                  <span>{{ person.name }}</span>
+                  <!-- The word too: a bare 1.2 beside a name is a number nobody can
+                       read, and this is the figure the whole yield follows from. -->
+                  <span class="meal__appetite">
+                    <span class="numeric">{{ person.appetite }}</span>
+                    <span i18n="@@householdPortions">portions</span>
+                  </span>
+                </label>
+              </li>
+            }
+          </ul>
+          <p class="hint" i18n="@@mealWhoHint">
+            The recipe is scaled to the appetites you tick, not to how many people they are.
+          </p>
+        }
+      </fieldset>
+
+      @if (verdict(); as judgement) {
+        <app-verdict [verdict]="judgement" />
+      }
+
+      @if (failed()) {
+        <p class="error" role="alert" i18n="@@mealFailed">Could not save that. Please try again.</p>
+      }
+
+      <button type="submit" [disabled]="saving()">
+        @if (saving()) {
+          <span i18n="@@mealSaving">Saving…</span>
+        } @else {
+          <span i18n="@@mealSave">Save this meal</span>
+        }
+      </button>
+      @if (existing()) {
+        <button type="button" class="destructive" (click)="clear()" i18n="@@mealClear">
+          Take this meal off the plan
+        </button>
+      }
+    </form>
+  }
+</main>

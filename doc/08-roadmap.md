@@ -138,7 +138,8 @@ This is the phase that determines whether the product is worth using.
   the people coming; every change restates the plan's reservations
   ([ADR-038](07-decisions.md#adr-038-a-plans-reservations-are-restated-not-adjusted)). *Proposing*
   what to cook belongs with generation (Phase 6)
-- The plan screen (UC-4.1–4.4)
+- ~~The plan screen (UC-4.1–4.4)~~ **Built** — a week laid out day by day with the gaps
+  showing, one meal stated at a time, and the shopping list underneath it
 - ~~A recipe's `serves` alongside its yield, so "makes 12 pancakes" can be scaled to a table~~
   **Built** — the deferred half of [ADR-030](07-decisions.md#adr-030-a-recipe-whose-yield-cannot-be-read-is-refused);
   read from a page's metadata and from its prose, and carried by

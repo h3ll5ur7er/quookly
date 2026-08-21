@@ -2260,6 +2260,17 @@
             ],
             "title": "Total"
           },
+          "spoken_for": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spoken For"
+          },
           "freshness": {
             "$ref": "#/components/schemas/Freshness"
           },
@@ -2278,6 +2289,7 @@
           "name",
           "kind",
           "total",
+          "spoken_for",
           "freshness",
           "lots"
         ],

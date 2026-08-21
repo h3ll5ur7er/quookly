@@ -313,7 +313,7 @@ what allows scoring rules to change without touching a single line in recipe or 
 | `SuitabilityEngine` | V5 | Evaluates a structured recipe against structured eater constraints. Safety-critical. |
 | `NutritionEngine` | V6 | Aggregates nutrient profiles; per-serving and per-recipe bases. |
 | `PlanningEngine` | V7 | Sizes each planned meal to the people at it, and says how sure it is. **Built.** Proposing assignments arrives with generation (Phase 6). |
-| `ReplenishmentEngine` | V8 | Nets requirement against availability; aggregates and rounds a shopping list. **Built** — netting and aggregation; rounding to purchasable pack sizes waits for somebody to want it. |
+| `ReplenishmentEngine` | V8 | Nets requirement against availability; aggregates and rounds a shopping list. **Built** — netting, aggregation, and rounding a countable up to something a shop will sell. Rounding to pack sizes waits for pack-size data. |
 | `RankingEngine` | V10 | Orders candidate recipes by relevance, pantry coverage, and expiry urgency. |
 | `ScoringEngine` | V11 | Applies point and badge rules to activity. |
 | `ExecutionEngine` | V15 | Turns a scaled recipe into an execution plan: mise-en-place groups, ordered steps, parallelism, timer specifications, technique links. |

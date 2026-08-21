@@ -1,0 +1,73 @@
+@use '../../../styles/page';
+@use '../../../styles/controls';
+@use '../../../styles/form';
+
+.plans__list {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plans__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color var(--motion-fast) var(--ease-standard);
+
+  &:hover {
+    border-color: var(--border-strong);
+  }
+}
+
+.plans__period {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.plans__count {
+  color: var(--on-surface-subtle);
+  font-size: var(--text-sm);
+}
+
+/* Under the list rather than above it: the weeks are what a returning cook came for, and
+   starting a new one is what they do once. */
+.plans__dates {
+  display: flex;
+  gap: var(--space-3);
+  /* The heading is a heading, not a label. Without this the fields sit against it and
+     "From" reads as part of "Plan a week". */
+  margin-top: var(--space-2);
+}
+
+.plans__field {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: var(--space-2);
+
+  input {
+    height: 48px;
+  }
+}
+
+form h2 {
+  margin: 0;
+  font-size: var(--text-md);
+}
+
+.plans__empty,
+.plans__loading {
+  color: var(--on-surface-muted);
+}
