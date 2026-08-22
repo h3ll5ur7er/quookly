@@ -255,14 +255,60 @@ Placed after Phase 6 because there was nothing to tie together before there was 
 screen, and before Phase 7 because an Academy inside a product that reads as a prototype is
 studying for an exam nobody has sat.
 
-## Phase 7 — Academy
+**This phase is the cut line for a first release.** When it is done the working branch merges to
+`main`; Phases 7 and 8 are add-ons that ship afterwards.
 
-**Goal:** the learning surface.
+## Phase 7 — Academy and the registry
+
+**Goal:** the learning surface, and the reference data behind it.
+
+The two belong together. An Academy is where a cook goes to look something up, and the largest
+body of things to look up in Quookly is the ingredient registry — which is also the one part of the
+system a cook currently cannot see or correct without editing code.
+
+### The Academy
 
 - `AcademyAccess`, techniques, definitions, tips
 - Technique references from recipe steps (UC-2.5)
+- In-step technique lookup while cooking (UC-9.5)
 - Contribution and moderation (UC-7.4)
 - Public Academy page
+
+### The ingredient registry, visible and correctable
+
+**Today:** importing a recipe already creates registry entries for ingredients nobody has recorded
+(`RecipeManager`, `Origin.USER`). It has to — a line that resolves to nothing cannot be shopped for,
+scaled or judged. But what it creates is a guess: `kind` is assumed `SOLID`, `density` is absent, and
+allergens are deliberately left **unclassified** rather than empty, because nobody has looked
+([ADR-006](07-decisions.md#adr-006-allergen-determination-is-structural)).
+
+Nothing surfaces those guesses and nothing can correct them. A cook who imports a French recipe gets
+`crème fraîche` filed as a solid with no density, and the only way to fix it is a migration.
+
+What this phase owes:
+
+- **A registry screen** — every ingredient, its kind, density, per-locale names, allergen
+  classification, and where it came from. Searchable, because it is the largest list in the app.
+- **Editing an ingredient**, and merging two that are the same thing under different names. Merging
+  is the operation that matters: an import that created `plain flour` beside a registry that already
+  had `wheat flour` has split one ingredient in two, and every allergen and nutrition fact now
+  answers for half a kitchen.
+- **A "needs approval" state.** Distinct from *unclassified allergens*, which is a fact about
+  knowledge; this is a fact about **review**. An entry an import invented is usable immediately —
+  refusing to import until an admin wakes up would be absurd — but it is flagged, and an admin can
+  approve it, correct it, or merge it away.
+- **Best-effort nutrition matching on creation.** Ask the configured source tree (Swiss, then
+  European, then the rest, then American — [ADR-045](07-decisions.md#adr-045-composition-data-is-tried-in-a-configured-order-nearest-table-first)) for a row matching the
+  new name, and attach it as a *proposal* rather than as a figure. A matched profile a human has not
+  confirmed is not the same fact as a seeded one, and the same rule applies as everywhere: an
+  unconfirmed match must not read as a confirmed one.
+- **The registry as an Academy page** — what an ingredient is, what it is called elsewhere, what it
+  weighs, what it contains, what it can be swapped for. That is reference material, which is what an
+  Academy is for.
+
+Placed here rather than in Phase 6b because none of it blocks a first release: the guesses are
+already conservative in the direction that matters — an unclassified allergen never claims a recipe
+is safe.
 
 ## Phase 8 — Community and engagement
 
