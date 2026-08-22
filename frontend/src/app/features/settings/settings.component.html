@@ -79,6 +79,16 @@
     }
   </section>
   @if (isAdmin()) {
+    <section aria-labelledby="applications-heading">
+      <h2 id="applications-heading" i18n="@@settingsApplications">Who wants in</h2>
+      <p class="settings__why" i18n="@@settingsApplicationsWhy">
+        Anybody can apply to this Quookly. Nobody gets in until you say so.
+      </p>
+      <a class="settings__go" routerLink="/settings/applications" i18n="@@settingsSeeApplications">
+        See who is waiting
+      </a>
+    </section>
+
     <section aria-labelledby="inference-heading">
       <h2 id="inference-heading" i18n="@@settingsInference">Recipe reading</h2>
       <p class="settings__why" i18n="@@settingsInferenceWhy">

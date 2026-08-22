@@ -27,6 +27,18 @@
         Those credentials did not match an account.
       </p>
     }
+    <!-- Not an error: nothing is wrong, and there is nothing to try again. -->
+    @if (waiting()) {
+      <p class="notice notice--info" role="alert" i18n="@@signInWaiting">
+        Your application is waiting for an administrator of this instance. You will be able to sign
+        in once they have answered.
+      </p>
+    }
+    @if (declined()) {
+      <p class="notice notice--danger" role="alert" i18n="@@signInDeclined">
+        An administrator of this instance declined this account.
+      </p>
+    }
 
     <button type="submit" [disabled]="form.invalid || submitting()">
       @if (submitting()) {
@@ -36,4 +48,9 @@
       }
     </button>
   </form>
+
+  <p class="auth__alt">
+    <span i18n="@@signInNoAccount">No account here yet?</span>&ngsp;
+    <a class="auth__apply" routerLink="/apply" i18n="@@signInApply">Apply for one</a>
+  </p>
 </main>

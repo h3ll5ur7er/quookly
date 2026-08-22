@@ -1,3 +1,4 @@
+@use '../../../styles/a11y';
 @use '../../../styles/form';
 @use '../../../styles/controls';
 
@@ -191,15 +192,6 @@
 
 .recipe__vary-row input {
   flex: 1 1 14rem;
-}
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
 }
 
 /* Side by side even on a phone: two words each, and stacking them would push the summary

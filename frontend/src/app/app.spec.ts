@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AuthStore } from './core/auth/auth.store';
 import { App } from './app';
+import { Standing } from '@api';
 
 describe('App', () => {
   let fixture: ComponentFixture<App>;
@@ -34,6 +35,7 @@ describe('App', () => {
       email: 'chef@example.com',
       display_name: 'Emanuel',
       is_admin: true,
+      standing: Standing.approved,
       registered_at: '2026-01-01T00:00:00Z',
     },
   };

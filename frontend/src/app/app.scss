@@ -159,7 +159,10 @@
 }
 
 @include from($lg) {
-  .shell {
+  /* Only the chromed shell turns into a row — that row exists to put the sidebar beside
+     the content. The bare shell has no sidebar, and letting it inherit this laid sign-in,
+     cooking mode and the landing page out in a column beside their own footer. */
+  .shell:not(.shell--bare) {
     flex-direction: row;
   }
 

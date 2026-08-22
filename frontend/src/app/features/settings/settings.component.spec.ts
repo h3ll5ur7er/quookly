@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { provideApi } from '@api';
+import { provideApi, Standing } from '@api';
 import { AuthStore } from '../../core/auth/auth.store';
 import { SettingsComponent } from './settings.component';
 
@@ -22,6 +22,7 @@ function session(isAdmin: boolean) {
       email: 'chef@example.com',
       display_name: 'Emanuel',
       is_admin: isAdmin,
+      standing: Standing.approved,
       registered_at: '2026-01-01T00:00:00Z',
       locale: null,
     },

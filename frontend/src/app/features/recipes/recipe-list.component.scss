@@ -1,3 +1,4 @@
+@use '../../../styles/a11y';
 @use '../../../styles/breakpoints' as *;
 @use '../../../styles/page';
 @use '../../../styles/badges';
@@ -159,26 +160,9 @@
   font-style: italic;
 }
 
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-/* The second way in, and the less usual one. Outline rather than filled: two filled
-   buttons side by side ask a cook to choose before they know the difference. */
+/* Closer to the button above it than the shared spacing allows: these two are a pair. */
 .action--quiet {
   margin-top: var(--space-3);
-  border: 1px solid var(--border-strong);
-  background: transparent;
-  color: var(--on-surface);
-}
-
-.action--quiet:hover {
-  background: var(--surface-sunken);
 }
 
 /* Side by side once they are not the only two things on the screen. Stacked full-width

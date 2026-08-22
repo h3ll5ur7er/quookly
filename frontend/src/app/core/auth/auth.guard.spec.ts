@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import type { Authenticated } from '@api';
 import { requireSignedIn } from './auth.guard';
 import { AuthStore } from './auth.store';
+import { Standing } from '@api';
 
 const SESSION: Authenticated = {
   token: 'a-token',
@@ -13,6 +14,7 @@ const SESSION: Authenticated = {
     email: 'cook@example.com',
     display_name: 'Emanuel',
     is_admin: false,
+    standing: Standing.approved,
     registered_at: '2026-08-20T12:00:00Z',
   },
 };

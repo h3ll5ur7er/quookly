@@ -1,0 +1,17 @@
+/* Present to a screen reader, absent to an eye.
+ *
+ * Lived as three identical copies in three component stylesheets before a fourth screen
+ * wanted it — and the fourth one forgot, which is how a heading meant to be heard ended
+ * up printed across a landing page and taking a grid cell with it.
+ *
+ * `clip-path` rather than `display: none` or `visibility: hidden`: both of those take the
+ * element out of the accessibility tree as well, which is the opposite of the point.
+ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

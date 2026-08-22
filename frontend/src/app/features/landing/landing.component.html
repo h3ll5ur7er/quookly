@@ -1,0 +1,81 @@
+<main class="landing">
+  <section class="landing__hero">
+    <img
+      class="landing__mark"
+      ngSrc="icons/icon-192.png"
+      width="192"
+      height="192"
+      alt="Quookly"
+      priority
+    />
+    <h1 class="landing__title" i18n="@@landingTitle">The recipe. Not the life story.</h1>
+    <p class="landing__lede" i18n="@@landingLede">
+      Quookly keeps what you cook from: the amounts, the method, what it takes and how long. It
+      scales to the people at your table, checks it against what they can eat, and tells you what
+      you actually need to buy.
+    </p>
+
+    <div class="landing__actions">
+      <a class="action landing__apply" routerLink="/apply" i18n="@@landingApply">
+        Ask for an account
+      </a>
+      <a class="action action--quiet" routerLink="/sign-in" i18n="@@landingSignIn">Sign in</a>
+    </div>
+    <!-- Said here rather than discovered on the next screen. Somebody who taps "ask" and
+         then learns they have to wait for a stranger has been surprised by the product. -->
+    <p class="landing__whose" i18n="@@landingWhose">
+      This Quookly belongs to somebody. They decide who gets in.
+    </p>
+  </section>
+
+  <section class="landing__points" aria-labelledby="points-heading">
+    <h2 id="points-heading" class="visually-hidden" i18n="@@landingWhatItDoes">
+      What Quookly does
+    </h2>
+
+    <article class="landing__point">
+      <p class="landing__mark-glyph" aria-hidden="true">☰</p>
+      <h3 i18n="@@landingReadTitle">Bring a recipe in from anywhere</h3>
+      <p i18n="@@landingReadBody">
+        Paste a link. Quookly reads the page — or asks a model you host yourself — and keeps the
+        recipe. The eleven paragraphs about somebody's holiday stay behind.
+      </p>
+    </article>
+
+    <article class="landing__point">
+      <p class="landing__mark-glyph" aria-hidden="true">▦</p>
+      <h3 i18n="@@landingPantryTitle">Cook what you already have</h3>
+      <p i18n="@@landingPantryBody">
+        Tell it what is in the cupboard and it will say what is worth cooking, starting with
+        whatever is about to go off. Waste is mostly a memory problem.
+      </p>
+    </article>
+
+    <article class="landing__point">
+      <p class="landing__mark-glyph" aria-hidden="true">▤</p>
+      <h3 i18n="@@landingPlanTitle">Plan a week, shop once</h3>
+      <p i18n="@@landingPlanBody">
+        Meals are sized to the appetites at the table, not the head count. The shopping list is what
+        your kitchen has not got — and you tick it off in the shop.
+      </p>
+    </article>
+
+    <article class="landing__point">
+      <p class="landing__mark-glyph" aria-hidden="true">✓</p>
+      <h3 i18n="@@landingEatersTitle">Made for the people you cook for</h3>
+      <p i18n="@@landingEatersBody">
+        Record an allergy once. Every recipe is judged against it, and a recipe nobody has
+        classified says so rather than saying it is safe.
+      </p>
+    </article>
+  </section>
+
+  <section class="landing__yours" aria-labelledby="yours-heading">
+    <h2 id="yours-heading" i18n="@@landingYoursTitle">It runs on your machine</h2>
+    <p i18n="@@landingYoursBody">
+      Quookly is self-hosted. Your recipes, your household's allergies and what you ate last Tuesday
+      stay on hardware you control. If it talks to a model at all, it talks to the one you point it
+      at.
+    </p>
+  </section>
+</main>

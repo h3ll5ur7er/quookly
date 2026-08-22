@@ -84,6 +84,11 @@ Rules that follow:
   capping a collection at one column is what makes a laptop look empty rather than calm. The test is
   whether widening helps the reader scan, not whether it fills the pixels.
 - **The page body never scrolls horizontally.** Wide things scroll inside their own container.
+- **A shared rule lives in `src/styles/`, not in whichever screen needed it first.**
+  `.visually-hidden`, `.action--quiet` and the breakpoints were each written into one component's
+  stylesheet and then wanted by a second. Both of the first two failed silently when the landing
+  page used them — a heading meant only to be heard was printed across the page, and the second
+  button came out as loud as the first. A class that reads as global has to be global.
 
 ## Typography
 

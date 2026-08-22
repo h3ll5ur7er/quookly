@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { provideApi } from '@api';
+import { provideApi, Standing } from '@api';
 import { AuthStore } from '../../core/auth/auth.store';
 import { SignInComponent } from './sign-in.component';
 
@@ -14,6 +14,7 @@ const AUTHENTICATED = {
     email: 'cook@example.com',
     display_name: 'Emanuel',
     is_admin: false,
+    standing: Standing.approved,
     registered_at: '2026-08-20T12:00:00Z',
   },
 };
@@ -97,5 +98,46 @@ describe('SignInComponent', () => {
     backend.expectOne('/api/v1/accounts/sign-in').flush(AUTHENTICATED);
     await fixture.whenStable();
     expect(TestBed.inject(AuthStore).isSignedIn()).toBe(true);
+  });
+
+  describe('when the door is not open yet', () => {
+    /**
+     * Three different refusals, three different sentences. The API tells them apart only
+     * once the password has matched (ADR-049), so repeating that distinction here reveals
+     * nothing — and collapsing them would leave an applicant retyping a password that was
+     * right all along.
+     */
+    async function refusedWith(status: number, detail: string): Promise<void> {
+      fill('cook@example.com', 'a-sufficiently-long-password');
+      submit();
+      await fixture.whenStable();
+      backend
+        .expectOne('/api/v1/accounts/sign-in')
+        .flush({ detail }, { status, statusText: 'Refused' });
+      await fixture.whenStable();
+      fixture.detectChanges();
+    }
+
+    it('tells an applicant they are waiting on a person', async () => {
+      await refusedWith(403, 'Your application is waiting for an administrator.');
+      expect(fixture.nativeElement.textContent).toContain('waiting');
+      expect(fixture.nativeElement.textContent).not.toContain('did not match');
+    });
+
+    it('tells somebody who was turned away, rather than leaving them waiting forever', async () => {
+      await refusedWith(403, 'An administrator of this instance declined this account.');
+      expect(fixture.nativeElement.textContent).toContain('declined');
+    });
+
+    it('still says nothing at all about a wrong password', async () => {
+      await refusedWith(401, 'Those credentials did not match an account.');
+      expect(fixture.nativeElement.textContent).toContain('did not match');
+    });
+
+    it('offers the way to apply, for somebody with no account at all', async () => {
+      expect(fixture.nativeElement.querySelector('.auth__apply').getAttribute('href')).toBe(
+        '/apply',
+      );
+    });
   });
 });

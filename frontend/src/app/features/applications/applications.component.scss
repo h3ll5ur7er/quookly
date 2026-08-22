@@ -1,0 +1,49 @@
+@use '../../../styles/page';
+@use '../../../styles/breakpoints' as *;
+
+.applications__why,
+.applications__quiet {
+  color: var(--on-surface-muted);
+}
+
+.applications__list {
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Stacked on a phone, side by side once there is room. An admin doing this on a laptop is
+   working down a queue and wants the answer buttons in one column. */
+.applications__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-block: var(--space-4);
+  border-bottom: 1px solid var(--border);
+
+  @include from($md) {
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+  }
+}
+
+.applications__name {
+  margin: 0;
+  font-weight: 600;
+}
+
+.applications__email {
+  margin: 0;
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
+.applications__answer {
+  display: flex;
+  gap: var(--space-3);
+
+  button {
+    margin: 0;
+  }
+}

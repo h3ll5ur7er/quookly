@@ -88,14 +88,38 @@
         }
       }
     },
-    "/api/v1/accounts": {
+    "/api/v1/accounts/applications": {
+      "get": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "List Applications",
+        "description": "Who is waiting to be let in, oldest first (UC-10.6).",
+        "operationId": "listApplications",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Cook"
+                  },
+                  "type": "array",
+                  "title": "Response Listapplications"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "accounts"
         ],
-        "summary": "Register Cook",
-        "description": "Create an account.",
-        "operationId": "registerCook",
+        "summary": "Apply For Account",
+        "description": "Ask to be let in (UC-10.6).\n\nPublic, and no token comes back. An application is not an account yet, and an endpoint\nthat handed one over would be open registration wearing a different name.",
+        "operationId": "applyForAccount",
         "requestBody": {
           "content": {
             "application/json": {
@@ -112,7 +136,93 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Authenticated"
+                  "$ref": "#/components/schemas/Cook"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/applications/{cook_id}/approved": {
+      "post": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Approve Application",
+        "description": "Let somebody in (UC-10.6).\n\nThey land on a kitchen with something in it, for the same reason the first admin does\n(UC-10.4): an empty app teaches nobody what it is for.",
+        "operationId": "approveApplication",
+        "parameters": [
+          {
+            "name": "cook_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Cook Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cook"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/applications/{cook_id}/refused": {
+      "post": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Refuse Application",
+        "description": "Turn somebody away (UC-10.6). Reversible: an admin can approve them later.",
+        "operationId": "refuseApplication",
+        "parameters": [
+          {
+            "name": "cook_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Cook Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cook"
                 }
               }
             }
@@ -2323,6 +2433,9 @@
             "type": "boolean",
             "title": "Is Admin"
           },
+          "standing": {
+            "$ref": "#/components/schemas/Standing"
+          },
           "registered_at": {
             "type": "string",
             "format": "date-time",
@@ -2346,6 +2459,7 @@
           "email",
           "display_name",
           "is_admin",
+          "standing",
           "registered_at"
         ],
         "title": "Cook",
@@ -4310,6 +4424,16 @@
         ],
         "title": "SpanView",
         "description": "A stretch of time as a client reads it.\n\nSeconds rather than a rendered string: \"1 h 50\" is four words in three languages, and\nthe client already knows which one it is speaking. `at_least` is carried separately for\nthe same reason \u2014 a screen decides whether that reads as a prefix, a tilde or a mark."
+      },
+      "Standing": {
+        "type": "string",
+        "enum": [
+          "applied",
+          "approved",
+          "refused"
+        ],
+        "title": "Standing",
+        "description": "Where an account is in the process of being let in (FR-16, UC-10.6).\n\nAnybody may apply to a Quookly instance; an administrator decides. Three states rather\nthan a boolean, because *not yet looked at* and *looked at and declined* are different\nfacts and the applicant is owed a different sentence for each.\n\n`APPLIED` is the default on purpose. A code path that forgets to set this leaves\nsomebody locked out, which is recoverable; the opposite mistake lets a stranger into a\nhousehold's kitchen."
       },
       "StartInput": {
         "properties": {

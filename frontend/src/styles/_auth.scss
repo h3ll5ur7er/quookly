@@ -35,3 +35,12 @@ form {
 button[type='submit'] {
   margin-top: var(--space-5);
 }
+
+/* The way to the other door. Quiet, below the form: somebody who is on the right screen
+   should not have to read past an offer to be somewhere else. */
+.auth__alt {
+  margin-block-start: var(--space-6);
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}

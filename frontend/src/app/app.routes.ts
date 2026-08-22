@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { requireSignedIn } from './core/auth/auth.guard';
+import { requireSignedIn, whileSignedOut } from './core/auth/auth.guard';
 import { requireClaimedInstance, requireUnclaimedInstance } from './core/auth/entry.guard';
 
 export const routes: Routes = [
@@ -10,10 +10,28 @@ export const routes: Routes = [
       import('./features/bootstrap/bootstrap.component').then((m) => m.BootstrapComponent),
   },
   {
+    // Public, like sign-in: somebody applying has no account by definition. Guarded the
+    // same way, because an instance nobody has claimed wants its first admin rather than
+    // an applicant with nobody to answer them.
+    path: 'apply',
+    canActivate: [requireClaimedInstance],
+    loadComponent: () => import('./features/apply/apply.component').then((m) => m.ApplyComponent),
+  },
+  {
     path: 'sign-in',
     canActivate: [requireClaimedInstance],
     loadComponent: () =>
       import('./features/sign-in/sign-in.component').then((m) => m.SignInComponent),
+  },
+  {
+    // The front door for somebody who has not signed in. Same address as home: a visitor
+    // and a cook arrive at the same place and are shown what is useful to each.
+    path: '',
+    pathMatch: 'full',
+    canMatch: [whileSignedOut],
+    canActivate: [requireClaimedInstance],
+    loadComponent: () =>
+      import('./features/landing/landing.component').then((m) => m.LandingComponent),
   },
   {
     // What is happening now: what wants eating, what is on tonight, what to do next.
@@ -122,6 +140,14 @@ export const routes: Routes = [
     path: 'setup',
     canActivate: [requireSignedIn],
     loadComponent: () => import('./features/setup/setup.component').then((m) => m.SetupComponent),
+  },
+  {
+    // Under settings rather than in the navigation: an admin answers this when somebody
+    // tells them they applied, not several times a day.
+    path: 'settings/applications',
+    canActivate: [requireSignedIn],
+    loadComponent: () =>
+      import('./features/applications/applications.component').then((m) => m.ApplicationsComponent),
   },
   {
     path: 'settings',

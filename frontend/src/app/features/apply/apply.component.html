@@ -1,0 +1,71 @@
+<main class="auth">
+  <img
+    class="auth__mark"
+    ngSrc="icons/icon-192.png"
+    width="192"
+    height="192"
+    alt="Quookly"
+    priority
+  />
+
+  @if (applied()) {
+    <h1 i18n="@@applyDoneHeading">Your application is in</h1>
+    <p class="auth__lede" i18n="@@applyDone">
+      An administrator of this instance will decide. Once they have, sign in with the password you
+      just chose — there is nothing else to fill in.
+    </p>
+    <a class="action" routerLink="/sign-in" i18n="@@applyToSignIn">Go to sign in</a>
+  } @else {
+    <h1 i18n="@@applyHeading">Apply for an account</h1>
+    <!-- Said before the form, not after it. Somebody who fills this in expecting to be
+         cooking in a minute has been misled by the button. -->
+    <p class="auth__lede" i18n="@@applyLede">
+      This Quookly belongs to somebody. Tell them who you are and they will decide whether to let
+      you in.
+    </p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <label for="display_name" i18n="@@fieldName">Your name</label>
+      <input
+        id="display_name"
+        type="text"
+        formControlName="display_name"
+        autocomplete="name"
+        required
+      />
+
+      <label for="email" i18n="@@fieldEmail">Email</label>
+      <input id="email" type="email" formControlName="email" autocomplete="email" required />
+
+      <label for="password" i18n="@@fieldPassword">Password</label>
+      <input
+        id="password"
+        type="password"
+        formControlName="password"
+        autocomplete="new-password"
+        [attr.minlength]="minimumPasswordLength"
+        required
+      />
+      <p class="hint" i18n="@@applyPasswordHint">
+        At least {{ minimumPasswordLength }} characters. You will use it once you are let in.
+      </p>
+
+      @if (error(); as why) {
+        <p class="error" role="alert">{{ why }}</p>
+      }
+
+      <button type="submit" [disabled]="form.invalid || submitting()">
+        @if (submitting()) {
+          <span i18n="@@applySubmitting">Sending…</span>
+        } @else {
+          <span i18n="@@applySubmit">Ask to be let in</span>
+        }
+      </button>
+    </form>
+
+    <p class="auth__alt">
+      <span i18n="@@applyHaveAccount">Already have an account?</span>&ngsp;
+      <a routerLink="/sign-in" i18n="@@applySignIn">Sign in</a>
+    </p>
+  }
+</main>

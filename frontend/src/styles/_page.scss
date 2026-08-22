@@ -95,3 +95,16 @@
     background: var(--primary-hover);
   }
 }
+
+/* The second way in, and the less usual one. Outline rather than filled: two filled
+   buttons side by side ask a cook to choose before they know the difference — which is
+   exactly what the landing page did while this rule lived in one screen's stylesheet. */
+.action--quiet {
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--on-surface);
+
+  &:hover {
+    background: var(--surface-sunken);
+  }
+}

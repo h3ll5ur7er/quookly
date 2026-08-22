@@ -1,0 +1,124 @@
+@use '../../../styles/page';
+@use '../../../styles/a11y';
+@use '../../../styles/breakpoints' as *;
+
+/* Wider than a page, because this one is not read the way a recipe is: it is scanned, and
+   the points want to sit beside each other the moment there is room. */
+.landing {
+  max-inline-size: 68rem;
+  margin-inline: auto;
+  padding: var(--space-6) var(--space-4) var(--space-10);
+}
+
+.landing__hero {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  text-align: center;
+  padding-block: var(--space-6) var(--space-8);
+}
+
+.landing__mark {
+  inline-size: 72px;
+  block-size: 72px;
+  border-radius: var(--radius-lg);
+
+  @include from($md) {
+    inline-size: 96px;
+    block-size: 96px;
+  }
+}
+
+/* The one piece of type on the site allowed to be loud. Everything else in Quookly is
+   sized to be read while doing something else; this is read while deciding. */
+.landing__title {
+  margin: 0;
+  max-inline-size: 18ch;
+  font-size: clamp(2.25rem, 7vw, 4rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.landing__lede {
+  margin: 0;
+  max-inline-size: 56ch;
+  color: var(--on-surface-muted);
+  font-size: var(--text-lg);
+  text-wrap: pretty;
+}
+
+.landing__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-block-start: var(--space-3);
+
+  .action {
+    margin: 0;
+    min-inline-size: 13rem;
+  }
+}
+
+.landing__whose {
+  margin: 0;
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
+.landing__points {
+  display: grid;
+  gap: var(--space-5);
+  margin-block-start: var(--space-6);
+
+  @include from($md) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-6);
+  }
+}
+
+.landing__point {
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+
+  h3 {
+    margin: var(--space-2) 0 var(--space-2);
+    font-size: var(--text-lg);
+  }
+
+  p:last-child {
+    margin: 0;
+    color: var(--on-surface-muted);
+  }
+}
+
+/* The same glyphs the navigation uses, so the words on this page and the icons in the app
+   are recognisably about the same four things. */
+.landing__mark-glyph {
+  margin: 0;
+  color: var(--accent);
+  font-size: var(--text-xl);
+  line-height: 1;
+}
+
+.landing__yours {
+  margin-block-start: var(--space-8);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+  text-align: center;
+
+  h2 {
+    margin: 0 0 var(--space-3);
+  }
+
+  p {
+    margin: 0 auto;
+    max-inline-size: 56ch;
+    color: var(--on-surface-muted);
+    text-wrap: pretty;
+  }
+}

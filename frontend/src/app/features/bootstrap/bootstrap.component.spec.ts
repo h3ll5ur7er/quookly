@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { provideApi } from '@api';
+import { provideApi, Standing } from '@api';
 import { AuthStore } from '../../core/auth/auth.store';
 import { BootstrapComponent } from './bootstrap.component';
 
@@ -14,6 +14,7 @@ const ADMIN = {
     email: 'admin@example.com',
     display_name: 'Emanuel',
     is_admin: true,
+    standing: Standing.approved,
     registered_at: '2026-08-20T12:00:00Z',
   },
 };

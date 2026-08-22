@@ -1,0 +1,54 @@
+<main class="page">
+  <h1 i18n="@@applicationsHeading">Who wants in</h1>
+  <p class="applications__why" i18n="@@applicationsWhy">
+    Anybody can apply to this Quookly. Nobody gets in until you say so.
+  </p>
+
+  @if (failed()) {
+    <p class="notice notice--danger" role="alert" i18n="@@applicationsFailed">
+      Something went wrong. Please try again.
+    </p>
+  }
+  @if (decided(); as said) {
+    <p class="notice notice--info" role="status">{{ said }}</p>
+  }
+
+  @if (!loaded()) {
+    <p i18n="@@applicationsLoading">Loading…</p>
+  } @else if (quiet()) {
+    <p class="applications__quiet" i18n="@@applicationsNobody">
+      Nobody is waiting. When somebody applies, they will be here.
+    </p>
+  } @else {
+    <ul class="applications__list">
+      @for (applicant of waiting(); track applicant.id) {
+        <li class="applications__row">
+          <div class="applications__who">
+            <p class="applications__name">{{ applicant.display_name }}</p>
+            <p class="applications__email">{{ applicant.email }}</p>
+          </div>
+          <div class="applications__answer">
+            <button
+              type="button"
+              class="applications__approve"
+              [disabled]="deciding() !== null"
+              (click)="decide(applicant, true)"
+            >
+              <span i18n="@@applicationsApprove">Let them in</span>
+            </button>
+            <!-- Not styled as destructive: it is reversible, and an admin who refuses a
+                 stranger should not be made to feel they have done something drastic. -->
+            <button
+              type="button"
+              class="applications__refuse secondary"
+              [disabled]="deciding() !== null"
+              (click)="decide(applicant, false)"
+            >
+              <span i18n="@@applicationsRefuse">Turn away</span>
+            </button>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</main>

@@ -247,16 +247,19 @@ there was no way in for somebody who did not already have an account, and no scr
   plan~~ **Built** — and it turned out to be no change to V15 at all. ADR-042 had already written
   the answer: cooking a recipe outright is *plan it for today, then cook it*, composed in the route
 - A landing page for somebody who arrives without an account
-- ~~**Signing up by application** — anybody may apply, an admin approves~~ **Built** on the API
-  ([ADR-049](07-decisions.md#adr-049-an-account-is-applied-for-and-an-administrator-answers)); the
-  apply form, the sign-in messages and the admin queue are the client half
+- ~~**Signing up by application** — anybody may apply, an admin approves~~ **Built**
+  ([ADR-049](07-decisions.md#adr-049-an-account-is-applied-for-and-an-administrator-answers)) —
+  the apply form, three different sign-in refusals, and the admin queue under Settings
+- ~~A landing page for somebody who arrives without an account~~ **Built** — `/` is the landing
+  page to a visitor and the home dashboard to a cook, matched by `canMatch` rather than redirected,
+  so the front door is not at a URL nobody would type
 
 Placed after Phase 6 because there was nothing to tie together before there was something on each
 screen, and before Phase 7 because an Academy inside a product that reads as a prototype is
 studying for an exam nobody has sat.
 
-**This phase is the cut line for a first release.** When it is done the working branch merges to
-`main`; Phases 7 and 8 are add-ons that ship afterwards.
+**This phase is the cut line for a first release.** Everything above is built, so the working branch
+merges to `main`; Phases 7 and 8 are add-ons that ship afterwards.
 
 ## Phase 7 — Academy and the registry
 
