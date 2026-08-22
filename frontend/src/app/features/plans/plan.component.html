@@ -47,6 +47,14 @@
                       </span>
                     }
                   </a>
+                  <!-- Beside the cell, not inside it: the cell already leads to the meal,
+                       and an anchor inside an anchor is not a thing a browser can make
+                       sense of. -->
+                  @if (slot.recipe_id; as recipeId) {
+                    <a class="week__show" [routerLink]="['/recipes', recipeId]">
+                      <span i18n="@@planShowRecipe">Show recipe</span>
+                    </a>
+                  }
                   @if (sizingNote(slot); as note) {
                     <p class="notice notice--info week__note">{{ note }}</p>
                   }

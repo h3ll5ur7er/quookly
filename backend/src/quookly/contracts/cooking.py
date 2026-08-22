@@ -164,6 +164,14 @@ class StartInput(BaseModel):
     plan_slot_id: int
 
 
+class CookNowInput(BaseModel):
+    """Which recipe is being cooked outright, with nothing planned (UC-9.1b)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    recipe_id: int
+
+
 class AtStepInput(BaseModel):
     """Where the cook has got to (UC-9.3)."""
 

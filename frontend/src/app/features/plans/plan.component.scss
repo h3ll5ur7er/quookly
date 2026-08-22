@@ -163,3 +163,11 @@
 button.destructive {
   margin-top: var(--space-5);
 }
+
+/* Quiet, and small. It is the second thing to do with a meal, after opening it. */
+.week__show {
+  display: inline-block;
+  padding-block: var(--space-2);
+  color: var(--colour-muted);
+  font-size: var(--text-sm);
+}

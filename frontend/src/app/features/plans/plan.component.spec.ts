@@ -176,4 +176,24 @@ describe('PlanComponent', () => {
     expect(text()).toContain('Cooked');
     expect(fixture.nativeElement.querySelector('.week__meal--cooked')).not.toBeNull();
   });
+
+  describe('reaching the dish itself', () => {
+    /**
+     * A plan that names a recipe and will not show it. A cook looking at Thursday wants to
+     * read what they signed themselves up for, and the way there was to remember the
+     * title, go to Recipes and search for it.
+     */
+    it('links each planned dish to the recipe', async () => {
+      await answer(week());
+      const link = fixture.nativeElement.querySelector('.week__show');
+      expect(link.getAttribute('href')).toBe('/recipes/1');
+    });
+
+    it('offers nothing to show for a meal with no dish yet', async () => {
+      // A slot holding its place is not a recipe, and a link to nothing is worse than the
+      // absence of one.
+      await answer(week({ slots: [slot({ recipe_id: null, recipe_title: null })] }));
+      expect(fixture.nativeElement.querySelector('.week__show')).toBeNull();
+    });
+  });
 });

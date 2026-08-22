@@ -10,7 +10,7 @@ finishing reaches it and abandoning does not.
 """
 
 from collections.abc import AsyncIterator
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -554,3 +554,138 @@ class TestGivingUp:
         )
         assert again.status_code == 201
         assert again.json()["id"] != session["id"]
+
+
+class TestCookingSomethingNobodyPlanned:
+    """UC-9.1b. A cook opens a recipe and decides to make it now. There is no slot, and
+    everything in cooking mode hangs off one.
+
+    What happens instead of a special case: the meal is *put on the plan* and then cooked
+    by the path that already exists. That is not a workaround. ADR-042 says the plan is
+    where a meal is recorded and where "what did we eat on Tuesday" is answered, and a
+    meal somebody actually cooked is the strongest example of one worth recording.
+    """
+
+    async def start(self, client: AsyncClient, headers: dict[str, str], recipe_id: int) -> Any:
+        return await client.post(
+            f"{SESSIONS}/for-recipe", json={"recipe_id": recipe_id}, headers=headers
+        )
+
+    async def test_a_recipe_can_be_cooked_without_planning_it_first(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        recipe_id = await a_recipe(client, cook, flour, butter)
+        started = await self.start(client, cook, recipe_id)
+        assert started.status_code == 201, started.text
+        assert started.json()["title"] == "Shortbread"
+
+    async def test_it_is_a_session_like_any_other(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        """The prep list, the steps and the timers are the same ones. A second kind of
+        session would be a second thing to keep working."""
+        recipe_id = await a_recipe(client, cook, flour, butter)
+        session = (await self.start(client, cook, recipe_id)).json()
+        assert session["mise_en_place"]
+        assert session["steps"]
+        assert session["at_step"] is None
+
+    async def test_the_meal_lands_on_the_plan(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        """So that a week's record includes what was improvised in it, and so the stock it
+        used comes out of the pantry by the path that already does that."""
+        recipe_id = await a_recipe(client, cook, flour, butter)
+        await self.start(client, cook, recipe_id)
+        plan = (await client.get(f"{PLANS}/current", headers=cook)).json()
+        assert [slot["recipe_id"] for slot in plan["slots"]] == [recipe_id]
+
+    async def test_it_is_put_in_the_week_already_being_cooked(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        """Not in a plan of its own. A cook who improvises on a Wednesday of a planned week
+        should find it in that week, beside everything else they meant to eat."""
+        recipe_id = await a_recipe(client, cook, flour, butter)
+        today = date.today()
+        opened = await client.post(
+            PLANS,
+            json={
+                "starts_on": (today - timedelta(days=2)).isoformat(),
+                "ends_on": (today + timedelta(days=4)).isoformat(),
+            },
+            headers=cook,
+        )
+        await self.start(client, cook, recipe_id)
+        plans = (await client.get(PLANS, headers=cook)).json()
+        assert [plan["id"] for plan in plans] == [opened.json()["id"]]
+
+    async def test_a_week_that_has_already_ended_is_not_written_into(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        """A plan is a period. A meal cooked today does not belong in one that finished
+        last month, whatever the plan screen happens to be showing."""
+        recipe_id = await a_recipe(client, cook, flour, butter)
+        stale = await client.post(
+            PLANS, json={"starts_on": "2026-01-05", "ends_on": "2026-01-11"}, headers=cook
+        )
+        await self.start(client, cook, recipe_id)
+        plans = (await client.get(PLANS, headers=cook)).json()
+        assert len(plans) == 2
+        placed = [plan for plan in plans if plan["id"] != stale.json()["id"]]
+        assert len(placed) == 1
+
+    async def test_cooking_two_things_in_one_evening_opens_one_plan_not_two(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        recipe_id = await a_recipe(client, cook, flour, butter)
+        await self.start(client, cook, recipe_id)
+        await self.start(client, cook, recipe_id)
+        assert len((await client.get(PLANS, headers=cook)).json()) == 1
+
+    async def test_starting_the_same_recipe_twice_resumes_rather_than_restarts(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        """Same reason as a planned meal: a cook who reopened the app came back to what
+        they were doing, and a second session throws away every timer."""
+        recipe_id = await a_recipe(client, cook, flour, butter)
+        first = (await self.start(client, cook, recipe_id)).json()
+        again = (await self.start(client, cook, recipe_id)).json()
+        assert again["id"] == first["id"]
+
+    async def test_what_it_used_comes_out_of_the_pantry(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        """The test that caught the first version of this.
+
+        Cooking outright used to open the slot through the store directly. Everything
+        looked right — the session ran, the meal appeared on the plan, it was marked
+        cooked — and the flour never moved, because stock is consumed against a claim and
+        nothing had claimed any. Going through `PlanManager.place` is what makes the
+        claim, and this is the assertion that says so (ADR-042).
+        """
+        stocked = await client.post(
+            "/api/v1/pantry",
+            json={"ingredient_id": flour, "magnitude": "1", "unit": "kg"},
+            headers=cook,
+        )
+        assert stocked.status_code == 201, stocked.text
+
+        recipe_id = await a_recipe(client, cook, flour, butter)
+        session = (await self.start(client, cook, recipe_id)).json()
+        finished = await client.post(f"{SESSIONS}/{session['id']}/completed", headers=cook)
+        assert finished.status_code == 200, finished.text
+
+        shelf = (await client.get("/api/v1/pantry", headers=cook)).json()
+        held = next(entry for entry in shelf if entry["ingredient_id"] == flour)
+        # 1 kg less the 300 g the recipe asks for, at the yield it is written at.
+        assert held["total"] == "700 g"
+
+    async def test_a_recipe_that_is_not_there_is_not_cooked(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        assert (await self.start(client, cook, 9999)).status_code == 404
+
+    async def test_signing_in_is_required(self, client: AsyncClient) -> None:
+        assert (
+            await client.post(f"{SESSIONS}/for-recipe", json={"recipe_id": 1})
+        ).status_code == 401

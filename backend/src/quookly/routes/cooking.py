@@ -2,8 +2,9 @@
 
 from fastapi import APIRouter, HTTPException, status
 
-from quookly.contracts.cooking import AtStepInput, SessionView, StartInput
+from quookly.contracts.cooking import AtStepInput, CookNowInput, SessionView, StartInput
 from quookly.managers import cooking as cooking_manager
+from quookly.managers import plan as plan_manager
 from quookly.routes.dependencies import CurrentCook
 
 router = APIRouter()
@@ -32,6 +33,31 @@ async def start_session(submitted: StartInput, cook: CurrentCook) -> SessionView
     throw away where they were and every timer with it.
     """
     started = await cooking_manager.start(submitted.plan_slot_id, cook.cook_id)
+    if started is None:
+        raise NOT_FOUND
+    return started
+
+
+@router.post(
+    "/cooking/sessions/for-recipe",
+    response_model=SessionView,
+    status_code=status.HTTP_201_CREATED,
+)
+async def start_recipe(submitted: CookNowInput, cook: CurrentCook) -> SessionView:
+    """Cook a recipe outright, without planning it first (UC-9.1b).
+
+    *Plan it for today, then cook it* — the two calls ADR-042 said this would be, composed
+    here because a route is the one layer allowed to reach two managers. Neither manager
+    learns about the other, and the meal is reserved for and recorded exactly as a planned
+    one is, because it **is** a planned one by the time cooking sees it.
+
+    Its own path rather than a nullable field on the endpoint above: that one names a meal,
+    this one names a dish.
+    """
+    placed = await plan_manager.slot_for_now(submitted.recipe_id, cook.cook_id)
+    if placed is None:
+        raise NOT_FOUND
+    started = await cooking_manager.start(placed.id, cook.cook_id)
     if started is None:
         raise NOT_FOUND
     return started

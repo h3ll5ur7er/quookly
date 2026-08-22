@@ -10,15 +10,63 @@ double on a Monday.
 """
 
 from collections.abc import Sequence
+from datetime import date, time
 from decimal import Decimal
 
 from quookly.contracts.errors import PortionsUnknown
+from quookly.contracts.plan import Meal, MealPlan
 from quookly.contracts.planning import PlannedMeal, PlanRequirements, SizedMeal, Sizing
 from quookly.contracts.provisioning import Requirement
 from quookly.engines import measure
 
 #: One batch, as the recipe writes it.
 AS_WRITTEN = Decimal(1)
+
+#: When each meal is taken to begin. The hours a Swiss household keeps, roughly, and the
+#: only evidence available when a cook starts cooking something that was never planned.
+MEAL_BEGINS: tuple[tuple[time, Meal], ...] = (
+    (time(4, 0), Meal.BREAKFAST),
+    (time(11, 0), Meal.LUNCH),
+    (time(16, 0), Meal.DINNER),
+)
+
+
+def covering(plans: Sequence[MealPlan], today: date) -> MealPlan | None:
+    """The plan today falls inside, if any. Both ends are inclusive.
+
+    The strict question, and the one to ask before *writing*: a meal cooked today can only
+    go on a plan whose period contains today. Putting it on last month's week would make
+    the plan say something untrue.
+    """
+    return next((plan for plan in plans if plan.starts_on <= today <= plan.ends_on), None)
+
+
+def running(plans: Sequence[MealPlan], today: date) -> MealPlan | None:
+    """The plan a cook means by "now".
+
+    The one covering today if there is one; otherwise the most recent, because the
+    shopping for a week that ended yesterday is still shopping that was not done and an
+    empty screen is a worse answer than a stale one.
+
+    The loose question, and the one to ask before *reading*. Reading a stale plan shows a
+    cook something true about a week that has passed; writing to one would not.
+    """
+    if not plans:
+        return None
+    return covering(plans, today) or max(plans, key=lambda plan: plan.ends_on)
+
+
+def meal_at(clock: time) -> Meal:
+    """Which meal it is at this hour.
+
+    Before the first boundary is the evening before, not the morning after: 01:00 is the
+    end of a long dinner. Wrong sometimes and editable when it is, which is a better trade
+    than stopping a cook holding a pan to ask which meal this is.
+    """
+    for begins, meal in reversed(MEAL_BEGINS):
+        if clock >= begins:
+            return meal
+    return Meal.DINNER
 
 
 def _size(meal: PlannedMeal) -> SizedMeal:

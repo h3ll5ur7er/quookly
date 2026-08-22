@@ -112,6 +112,21 @@ describe('MealComponent', () => {
 
   afterEach(() => backend.verify());
 
+  it('arrives with the dish already chosen, when a recipe sent the cook here', async () => {
+    /* The other half of "add to plan" on a recipe. The empty week matters: filling the
+       form when the plan lands is what put the picker back to "not decided yet", and a
+       week that already had this dish on it would have hidden that. */
+    await open({ recipe: '1' }, { ...WEEK, slots: [] });
+    expect((field('recipe_id') as HTMLSelectElement).value).toBe('1');
+  });
+
+  it('shows the dish a meal already has, not the one the cook arrived with', async () => {
+    // Looking at a meal that exists. What they arrived with was a suggestion for an empty
+    // slot, and overwriting a planned dish with it would be an edit nobody asked for.
+    await open({ on: '2026-08-24', meal: 'dinner', recipe: '2' });
+    expect((field('recipe_id') as HTMLSelectElement).value).toBe('1');
+  });
+
   it('opens on the day and meal it was pointed at', async () => {
     await open({ on: '2026-08-26', meal: 'lunch' });
     expect((field('on_date') as HTMLInputElement).value).toBe('2026-08-26');

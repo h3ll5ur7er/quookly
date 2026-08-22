@@ -2,8 +2,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { provideApi } from '@api';
+import { vi } from 'vitest';
 import { RecipeDetailComponent } from './recipe-detail.component';
 
 function pancakes(flour = '125 g', yieldDisplay = '12 piece', serves: string | null = null) {
@@ -356,6 +357,75 @@ describe('RecipeDetailComponent', () => {
       backend.expectOne('/api/v1/recipes/1').flush(pancakes());
       await settle();
       expect(fixture.nativeElement.querySelector('.recipe__derived')).toBeNull();
+    });
+  });
+
+  describe('what a cook does next', () => {
+    /**
+     * The complaint this answers: a recipe screen you can read and then not act on. The
+     * two things a cook wants from a dish they have just decided on are to make it now
+     * and to make it on Thursday, and neither was reachable from here.
+     */
+    function router(): Router {
+      return TestBed.inject(Router);
+    }
+
+    async function shown(): Promise<void> {
+      backend.expectOne('/api/v1/recipes/1').flush(pancakes());
+      await settle();
+    }
+
+    it('starts cooking this recipe, planned or not', async () => {
+      await shown();
+      const go = vi.spyOn(router(), 'navigateByUrl').mockResolvedValue(true);
+
+      fixture.nativeElement.querySelector('.recipe__cook').click();
+      await settle();
+
+      const asked = backend.expectOne('/api/v1/cooking/sessions/for-recipe');
+      expect(asked.request.body).toEqual({ recipe_id: 1 });
+      asked.flush({ id: 7 });
+      await settle();
+
+      expect(go).toHaveBeenCalledWith('/cook/7');
+    });
+
+    it('says so rather than going quiet when cooking will not start', async () => {
+      await shown();
+      fixture.nativeElement.querySelector('.recipe__cook').click();
+      await settle();
+      backend
+        .expectOne('/api/v1/cooking/sessions/for-recipe')
+        .flush({}, { status: 404, statusText: 'Not Found' });
+      await settle();
+
+      expect(text()).toContain('could not be started');
+    });
+
+    it('takes a cook to the week they are planning, with the dish already chosen', async () => {
+      await shown();
+      const go = vi.spyOn(router(), 'navigateByUrl').mockResolvedValue(true);
+
+      fixture.nativeElement.querySelector('.recipe__plan').click();
+      await settle();
+      backend.expectOne('/api/v1/plans/current').flush({ id: 4, slots: [] });
+      await settle();
+
+      expect(go).toHaveBeenCalledWith('/plans/4/meal?recipe=1');
+    });
+
+    it('sends a cook with no plan yet to make one', async () => {
+      // Rather than a dead button or an error. Nothing is wrong; there is simply a step
+      // in front of the one they asked for.
+      await shown();
+      const go = vi.spyOn(router(), 'navigateByUrl').mockResolvedValue(true);
+
+      fixture.nativeElement.querySelector('.recipe__plan').click();
+      await settle();
+      backend.expectOne('/api/v1/plans/current').flush(null);
+      await settle();
+
+      expect(go).toHaveBeenCalledWith('/plans');
     });
   });
 });

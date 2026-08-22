@@ -47,10 +47,19 @@ export class MealComponent {
 
   protected readonly attending = signal<number[]>([]);
 
+  /**
+   * The dish a recipe sent the cook here with ("add to plan"), if one did.
+   *
+   * Held rather than only seeded into the form, because the form is refilled every time
+   * the day or meal changes. Seeding alone put the picker back to "not decided yet" as
+   * soon as the plan arrived, and asked the cook to choose the dish they had just chosen.
+   */
+  private readonly arrivedWith = this.route.queryParamMap.get('recipe') ?? UNDECIDED;
+
   protected readonly form = inject(FormBuilder).nonNullable.group({
     on_date: [this.route.queryParamMap.get('on') ?? '', Validators.required],
     meal: [(this.route.queryParamMap.get('meal') as Meal) ?? Meal.dinner, Validators.required],
-    recipe_id: [UNDECIDED],
+    recipe_id: [this.arrivedWith],
   });
 
   /**
@@ -241,9 +250,11 @@ export class MealComponent {
   private fill(): void {
     const slot = this.existing();
     this.form.patchValue({
+      // A slot that already names a dish wins: the cook is looking at a meal that exists,
+      // and what they arrived with was a suggestion for an empty one.
       recipe_id:
         slot?.recipe_id === undefined || slot?.recipe_id === null
-          ? UNDECIDED
+          ? this.arrivedWith
           : String(slot.recipe_id),
     });
     this.attending.set(slot === null ? [] : [...slot.attendee_ids]);

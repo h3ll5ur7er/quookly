@@ -201,3 +201,17 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Side by side even on a phone: two words each, and stacking them would push the summary
+   below the fold on the screen where the fold is tightest. */
+.recipe__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-block-end: var(--space-5);
+
+  button {
+    flex: 1 1 12rem;
+    margin: 0;
+  }
+}

@@ -9,7 +9,7 @@ say so, because the silent version is somebody shopping for one tray and feeding
 the six people they invited.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, time
 from decimal import Decimal
 
 import pytest
@@ -17,6 +17,7 @@ import pytest
 from quookly.contracts.eater import AgeBand, Eater
 from quookly.contracts.ingredient import Ingredient, IngredientKind, Origin
 from quookly.contracts.measure import Quantity, Unit
+from quookly.contracts.plan import Meal, MealPlan
 from quookly.contracts.planning import PlannedMeal, Sizing
 from quookly.contracts.recipe import IngredientLine, Provenance, Recipe, Visibility
 from quookly.engines import planning
@@ -201,3 +202,80 @@ def test_an_unusual_table_is_still_a_table(appetite: str) -> None:
 
     assert needed.meals[0].sizing is Sizing.TO_THE_TABLE
     assert needed.meals[0].factor == Decimal(appetite) / 4
+
+
+class TestWhichPlanIsRunning:
+    """The rule two managers need: which of a cook's plans is the one they mean by "now".
+
+    Extracted here when cooking a recipe outright wanted the same answer the plan screen
+    already had. A rule with two callers is a rule, not a line inside one of them.
+    """
+
+    def a_plan(self, starts: str, ends: str) -> MealPlan:
+        return MealPlan(
+            id=hash((starts, ends)) % 1000,
+            cook_id=1,
+            starts_on=date.fromisoformat(starts),
+            ends_on=date.fromisoformat(ends),
+            slots=[],
+        )
+
+    def test_nothing_planned_is_nothing_running(self) -> None:
+        assert planning.running([], date(2026, 8, 21)) is None
+
+    def test_the_week_today_falls_in(self) -> None:
+        last = self.a_plan("2026-08-10", "2026-08-16")
+        this = self.a_plan("2026-08-17", "2026-08-23")
+        assert planning.running([this, last], date(2026, 8, 21)) is this
+
+    def test_the_first_day_and_the_last_day_are_both_in_it(self) -> None:
+        """A plan that does not cover its own last day would drop a cook on a Sunday."""
+        week = self.a_plan("2026-08-17", "2026-08-23")
+        assert planning.running([week], date(2026, 8, 17)) is week
+        assert planning.running([week], date(2026, 8, 23)) is week
+
+    def test_between_weeks_the_most_recent_is_what_is_meant(self) -> None:
+        """Not None. The shopping for a week that ended yesterday is still shopping that
+        was not done, and an empty screen is a worse answer than a stale one."""
+        last = self.a_plan("2026-08-10", "2026-08-16")
+        older = self.a_plan("2026-08-03", "2026-08-09")
+        assert planning.running([last, older], date(2026, 8, 21)) is last
+
+    def test_writing_asks_the_stricter_question(self) -> None:
+        """`covering` is what a meal being placed on today must ask. Last week is a fine
+        answer to "what am I looking at" and a wrong one to "where does this go"."""
+        last = self.a_plan("2026-08-10", "2026-08-16")
+        assert planning.covering([last], date(2026, 8, 21)) is None
+        assert planning.running([last], date(2026, 8, 21)) is last
+
+    def test_the_most_recent_is_found_however_they_arrive(self) -> None:
+        """Callers hand over whatever order the store gave them; the rule does not depend
+        on it."""
+        last = self.a_plan("2026-08-10", "2026-08-16")
+        older = self.a_plan("2026-08-03", "2026-08-09")
+        assert planning.running([older, last], date(2026, 8, 21)) is last
+
+
+class TestWhichMealItIs:
+    """Cooking something outright has to record *a* meal, and the clock is the only
+    evidence available. A guess that is right most of the time and editable when it is
+    wrong beats asking a cook holding a pan which meal this is."""
+
+    @pytest.mark.parametrize(
+        ("hour", "expected"),
+        [
+            (6, Meal.BREAKFAST),
+            (9, Meal.BREAKFAST),
+            (11, Meal.LUNCH),
+            (14, Meal.LUNCH),
+            (17, Meal.DINNER),
+            (21, Meal.DINNER),
+        ],
+    )
+    def test_the_hour_says_which_meal(self, hour: int, expected: Meal) -> None:
+        assert planning.meal_at(time(hour, 0)) is expected
+
+    def test_cooking_after_midnight_is_still_the_evening(self) -> None:
+        """01:00 is the end of a long dinner, not the beginning of breakfast. A snack at
+        that hour lands on the day the cook thinks they are still in."""
+        assert planning.meal_at(time(1, 30)) is Meal.DINNER

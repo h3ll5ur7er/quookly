@@ -2,7 +2,15 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { PresentedLine, PresentedRecipe, PresentedStep, RecipesService, VerdictView } from '@api';
+import {
+  CookingService,
+  PlansService,
+  PresentedLine,
+  PresentedRecipe,
+  PresentedStep,
+  RecipesService,
+  VerdictView,
+} from '@api';
 import { VerdictComponent } from '../../core/dietary/verdict.component';
 import { NutritionComponent } from '../../core/nutrition/nutrition.component';
 import { minutes } from '../../core/time/duration';
@@ -29,6 +37,12 @@ export class RecipeDetailComponent {
     change: ['', [Validators.required, Validators.maxLength(300)]],
   });
   protected readonly varying = signal(false);
+
+  /** Acting on the dish rather than reading it: cooking it now, or putting it on a week. */
+  private readonly cooking = inject(CookingService);
+  private readonly plans = inject(PlansService);
+  protected readonly leaving = signal(false);
+  protected readonly wontStart = signal(false);
   protected readonly varyFailed = signal<string | null>(null);
   protected readonly refused = signal<VerdictView | null>(null);
 
@@ -132,5 +146,48 @@ export class RecipeDetailComponent {
         },
         error: () => this.missing.set(true),
       });
+  }
+
+  /**
+   * Cook this now (UC-9.1b).
+   *
+   * The backend puts the meal on the plan and opens a session; this only has to know
+   * where to send the cook. A recipe screen that cannot lead to cooking is a recipe
+   * screen a cook has to leave and find their way back from.
+   */
+  cookNow(): void {
+    if (this.leaving()) {
+      return;
+    }
+    this.leaving.set(true);
+    this.wontStart.set(false);
+    this.cooking.startRecipe({ recipe_id: this.recipeId }).subscribe({
+      next: (session) => void this.router.navigateByUrl(`/cook/${session.id}`),
+      error: () => {
+        this.leaving.set(false);
+        this.wontStart.set(true);
+      },
+    });
+  }
+
+  /**
+   * Put this on the plan (UC-4.2).
+   *
+   * The meal screen belongs to a plan, so which plan has to be settled first. A cook with
+   * no plan yet is sent to make one rather than shown an error: nothing is wrong, there
+   * is simply a step in front of the one they asked for.
+   */
+  addToPlan(): void {
+    if (this.leaving()) {
+      return;
+    }
+    this.leaving.set(true);
+    this.plans.currentPlan().subscribe({
+      next: (plan) =>
+        void this.router.navigateByUrl(
+          plan ? `/plans/${plan.id}/meal?recipe=${this.recipeId}` : '/plans',
+        ),
+      error: () => this.leaving.set(false),
+    });
   }
 }

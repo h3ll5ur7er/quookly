@@ -1583,6 +1583,48 @@
         }
       }
     },
+    "/api/v1/cooking/sessions/for-recipe": {
+      "post": {
+        "tags": [
+          "cooking"
+        ],
+        "summary": "Start Recipe",
+        "description": "Cook a recipe outright, without planning it first (UC-9.1b).\n\nIts own path rather than a nullable field on the one above, because the two carry\ndifferent things: that one names a meal, this one names a dish. The meal it lands on\nis worked out from the clock and appears on the plan.",
+        "operationId": "startRecipe",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CookNowInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/cooking/sessions/{session_id}": {
       "get": {
         "tags": [
@@ -2232,6 +2274,20 @@
         ],
         "title": "Cook",
         "description": "A cook account, safe to pass anywhere in the application.\n\nThe password hash is deliberately absent. Anything needing it asks for a\n`StoredCredential`, which keeps credentials on the authentication path instead of\nriding along in every value that happens to describe a cook."
+      },
+      "CookNowInput": {
+        "properties": {
+          "recipe_id": {
+            "type": "integer",
+            "title": "Recipe Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipe_id"
+        ],
+        "title": "CookNowInput",
+        "description": "Which recipe is being cooked outright, with nothing planned (UC-9.1b)."
       },
       "Credentials": {
         "properties": {

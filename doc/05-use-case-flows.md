@@ -207,6 +207,22 @@ A session is opened for a **planned meal**, not for a bare recipe
 meal is already recorded, where its guest list lives, and where its stock is held aside; cooking
 something unplanned means putting it on today's plan first, which is one form the cook already has.
 
+### UC-9.1b Cook a recipe that was never planned
+
+`POST /cooking/sessions/for-recipe` — "Start cooking now", from the recipe itself. The route composes
+two managers, which is what a route is for:
+
+1. `PlanManager.slot_for_now` finds the plan covering today, or opens a one-day plan if there is
+   none, and **places** the meal there — through `place`, so the meal is provisioned exactly as a
+   planned one is. The day is today; the meal comes from `PlanningEngine.meal_at`, which reads it off
+   the clock. Nobody is seated: the cook is looking at the recipe as written, and rescaling it to the
+   household between one screen and the next would change the quantities they just read.
+2. `CookingManager.start` opens the session on that slot, by the path above.
+
+From there it is a session like any other — the same prep list, steps, timers and completion. What
+was cooked on a whim therefore appears in the week's record, and what it used comes out of the
+pantry, without either manager learning about the other.
+
 The yield is the **sum of the attending eaters' appetite multipliers**, not the head count (FR-18) —
 worked out by `PlanningEngine`, the same rule and the same code that sized the meal when it was
 planned. A session and the shopping list that bought for it therefore cannot come to different

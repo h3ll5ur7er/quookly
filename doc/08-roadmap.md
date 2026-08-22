@@ -241,9 +241,9 @@ there was no way in for somebody who did not already have an account, and no scr
   should not navigate a plan to reach it
 - ~~Signing out~~ **Built**, under Settings
 - Ticking items off the shopping list — the list is still read-only
-- Cross-links: **start cooking now** and **add to plan** on a recipe, **show recipe** on a plan.
-  Cooking currently starts only from a plan slot (`CookingManager.start`), so cooking a recipe
-  outright is a change to V15, not only to the client
+- ~~Cross-links: **start cooking now** and **add to plan** on a recipe, **show recipe** on a
+  plan~~ **Built** — and it turned out to be no change to V15 at all. ADR-042 had already written
+  the answer: cooking a recipe outright is *plan it for today, then cook it*, composed in the route
 - A landing page for somebody who arrives without an account
 - **Signing up by application** — anybody may apply, an admin approves. A pending account is a
   state V12 does not have yet: applied, approved, refused. Sign-in must refuse a pending account

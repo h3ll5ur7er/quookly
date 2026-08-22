@@ -105,6 +105,7 @@ Guided execution. The cook is standing up, hands busy, phone or tablet propped s
 | ID | Use case |
 | --- | --- |
 | UC-9.1 | Start a cooking session for a recipe and a chosen set of eaters |
+| UC-9.1b | Start cooking a recipe outright; it is placed on today's plan and cooked from there |
 | UC-9.2 | Work through mise-en-place: what to prep, in what quantity, grouped sensibly |
 | UC-9.3 | Be guided through the steps one at a time, with progress preserved |
 | UC-9.4 | Start, pause, and reset a timer belonging to a step |

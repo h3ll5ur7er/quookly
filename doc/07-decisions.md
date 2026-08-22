@@ -1678,6 +1678,19 @@ distinction ADR-039 draws between a fact worth publishing and a state worth reco
 slot they create is the record of what they cooked, which they wanted regardless. If it proves to be
 friction, the fix is a button, not a second model.
 
+**As built, the button exists.** `POST /cooking/sessions/for-recipe` is that button: it composes
+`PlanManager.slot_for_now` and `CookingManager.start`, in the route, because a route is the one layer
+allowed to reach two managers. The day is today and the meal is read off the clock by
+`PlanningEngine.meal_at`; nobody is seated, so the recipe is cooked at the yield the cook was just
+reading rather than quietly rescaled between one screen and the next. Both are editable on the plan.
+
+The first version of it went straight to `PlanAccess` from `CookingManager` instead, and it looked
+entirely correct: the session ran, the meal appeared on the plan, and it was marked cooked. It also
+never touched the pantry, because stock is consumed against a **claim** and nothing had claimed any —
+`place` is where provisioning happens, and skipping it skipped that. This is the ADR's "one
+consumption path" argument arriving as a bug rather than as a paragraph. The test that names it is
+`test_what_it_used_comes_out_of_the_pantry`.
+
 ---
 
 ## ADR-043 A page's method is edited on the way in

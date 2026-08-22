@@ -25,6 +25,28 @@
       }
     </header>
 
+    <!-- Directly under the title, above everything a cook reads to decide. By the time
+         somebody has scrolled past the method they have decided; the buttons have to be
+         where the decision is made, not where the reading ends. -->
+    <div class="recipe__actions">
+      <button type="button" class="recipe__cook" [disabled]="leaving()" (click)="cookNow()">
+        <span i18n="@@recipeCookNow">Start cooking now</span>
+      </button>
+      <button
+        type="button"
+        class="recipe__plan secondary"
+        [disabled]="leaving()"
+        (click)="addToPlan()"
+      >
+        <span i18n="@@recipeAddToPlan">Add to plan</span>
+      </button>
+    </div>
+    @if (wontStart()) {
+      <p class="error" role="alert" i18n="@@recipeCookFailed">
+        Cooking could not be started. Please try again.
+      </p>
+    }
+
     <!-- Above the ingredients on purpose: a cook who reads this after starting to weigh
          has been told too late. -->
     @if (shown.suitability; as verdict) {

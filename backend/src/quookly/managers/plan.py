@@ -260,13 +260,60 @@ async def current(cook_id: int, locale: str | None = None) -> PlanView | None:
     a cook between weeks wants the last one they made rather than an empty screen — the
     shopping for a plan that ended yesterday is still the shopping they did not do.
     """
-    plans = await plan_access.list_for_cook(cook_id)
-    if not plans:
+    running = planning.running(await plan_access.list_for_cook(cook_id), _today())
+    if running is None:
         return None
-
-    today = _today()
-    running = next((plan for plan in plans if plan.starts_on <= today <= plan.ends_on), plans[0])
     return await _view(running, locale or await cook_access.locale_for(cook_id))
+
+
+async def _here() -> datetime:
+    """Now on the cook's wall clock.
+
+    Deliberately naive: "which meal is this" is a question about the hour a cook reads off
+    the oven, not about UTC. A function so the tests can hold it still.
+    """
+    return datetime.now()  # noqa: DTZ005
+
+
+async def slot_for_now(recipe_id: int, cook_id: int, locale: str | None = None) -> SlotView | None:
+    """Put a dish on today, so that it can be cooked (UC-4.2, UC-9.1b).
+
+    What "cook this now" means, and the reason it is planning's business rather than
+    cooking's: a meal that is not on the plan holds no stock, and a session that finished
+    would consume nothing ([ADR-042](../../../doc/07-decisions.md)). Going through `place`
+    rather than straight to the store is what makes the reservation happen, in the one
+    place that knows how.
+
+    The day is today and the meal is read off the clock. Nobody is seated: the cook is
+    looking at the recipe as it is written, and quietly rescaling it to the household
+    between one screen and the next would change the quantities they just read. Both are
+    editable on the plan.
+    """
+    reading = locale or await cook_access.locale_for(cook_id)
+    now = await _here()
+    today = now.date()
+
+    plan = planning.covering(await plan_access.list_for_cook(cook_id), today)
+    if plan is None:
+        # A day, not a week. A cook who has planned nothing has not asked for a week to be
+        # planned either, and the smallest period that makes the record true presumes least.
+        plan = await plan_access.create(cook_id=cook_id, starts_on=today, ends_on=today)
+
+    meal = planning.meal_at(now.time())
+    placed = await place(
+        plan.id,
+        SlotInput(on_date=today, meal=meal, recipe_id=recipe_id, attendee_ids=[]),
+        cook_id,
+        reading,
+    )
+    if placed is None:
+        return None
+    slot = next(
+        (one for one in placed.slots if one.on_date == today and one.meal is meal),
+        None,
+    )
+    # A slot that came back holding no dish means the recipe was not this cook's to cook.
+    return None if slot is None or slot.recipe_id != recipe_id else slot
 
 
 async def open_plan(submitted: PlanInput, cook_id: int, locale: str | None = None) -> PlanView:
