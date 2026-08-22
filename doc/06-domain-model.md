@@ -342,6 +342,12 @@ from the *resolved* ingredients, which is the guarantee. A model asserting a rec
 carries no weight — and on the first live run, one told not to use milk wrote a recipe with parmesan
 in it.
 
+A **version** of a recipe is the same thing with a history: `provenance = derived` and a link to the
+recipe it came from. Kept apart from `generated` because the histories differ — one was invented from
+nothing and this one started from something the cook already had — and the link is what puts a cook
+one tap from the original. A version of a version is an ordinary thing to make, so the link is a plain
+self-reference with nothing clever about it.
+
 ### A line without a quantity
 
 "Salt, to taste." "Oil, for frying." "A pinch of nutmeg." These are ordinary lines in every

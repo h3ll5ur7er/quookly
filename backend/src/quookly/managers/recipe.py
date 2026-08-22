@@ -55,6 +55,7 @@ from quookly.contracts.recipe import (
     RecipeSummaryView,
     Step,
     StepDraft,
+    VariantInput,
 )
 from quookly.contracts.suitability import JudgedLine, Outcome, VerdictView
 from quookly.contracts.web import ReadableContent
@@ -396,6 +397,12 @@ async def _present(
         serves=measure.servings_of(recipe.serves, factor),
         visibility=recipe.visibility,
         provenance=recipe.provenance,
+        derived_from=recipe.derived_from,
+        derived_from_title=(
+            None
+            if recipe.derived_from is None
+            else (await recipe_access.titles_of([recipe.derived_from])).get(recipe.derived_from)
+        ),
         lines=lines,
         steps=[
             PresentedStep(
@@ -664,6 +671,75 @@ async def generate(
         # Judged before it is stored, from the ingredients as the registry knows them.
         # Generation and judgement are separate services precisely so that the judgement
         # cannot be talked out of its conclusion.
+        verdict = suitability.evaluate(
+            suitability.facts_for(await _lines_as_registered(draft, reading)), household
+        )
+        if verdict.outcome is not Outcome.SUITABLE:
+            raise UnsuitableForTheTable(VerdictView.of(verdict))
+
+    stored = await recipe_access.store(draft, cook_id)
+    return await _present(stored, await preference_access.for_cook(cook_id), None, cook_id)
+
+
+def _as_a_cookbook_prints_it(recipe: Recipe) -> tuple[list[str], list[str]]:
+    """A stored recipe's lines and steps as words, for handing to a model.
+
+    Back to text on purpose. A model adapts a recipe better when it is reading a recipe than
+    when it is reading a data structure — and the answer comes back in the shape, so the
+    question does not have to.
+    """
+    lines = []
+    for line in recipe.lines:
+        # Rounded for reading, not for storing. A column keeps 400.0000; a recipe says
+        # 400 g, and handing a model the zeros invites it to hand them back.
+        written = (
+            line.ingredient.name
+            if line.quantity is None
+            else f"{measure.round_for_display(line.quantity)} {line.ingredient.name}"
+        )
+        if line.preparation:
+            written = f"{written}, {line.preparation}"
+        if line.optional:
+            written = f"{written} (optional)"
+        lines.append(written)
+    return lines, [step.instruction for step in recipe.steps]
+
+
+async def vary(
+    recipe_id: int, submitted: VariantInput, cook_id: int, locale: str | None = None
+) -> PresentedRecipe | None:
+    """Make a version of a recipe the cook already has (UC-1.7).
+
+    The same sequence as writing one outright, with one thing added and one thing changed:
+    the original goes into the asking, and what comes back records which recipe it came
+    from. A cook looking at a dairy-free shortbread should be one tap from the shortbread.
+
+    Judged the same way and refused the same way. Somebody asking for a *dairy-free* version
+    and being handed one with cream in it is the case this rule was written for.
+    """
+    reading = locale or await cook_access.locale_for(cook_id)
+    original = await recipe_access.fetch(recipe_id, reading)
+    if original is None or original.cook_id != cook_id:
+        return None
+
+    household = await eater_access.list_for_cook(cook_id)
+    lines, steps = _as_a_cookbook_prints_it(original)
+    written = await generation.vary(
+        title=original.title,
+        made=str(measure.round_for_display(original.yield_quantity)),
+        lines=lines,
+        steps=steps,
+        change=submitted.change,
+        constraints=_to_avoid(household),
+    )
+    if written.yield_magnitude is None or written.yield_unit is None:
+        raise YieldUnknown("the version that came back does not say how much it makes")
+
+    written = replace(written, steps=await interpretation.tidy_steps(written.steps))
+    resolved, _ = await _resolve(written.lines, reading)
+    draft = replace(_draft_from(written, resolved, Provenance.DERIVED), derived_from=original.id)
+
+    if household:
         verdict = suitability.evaluate(
             suitability.facts_for(await _lines_as_registered(draft, reading)), household
         )

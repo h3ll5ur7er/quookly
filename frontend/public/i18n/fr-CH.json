@@ -338,6 +338,13 @@
     "inventPatience": "Cela prend un moment. Une recette est écrite depuis le début.",
     "inventFailedUnknown": "Cela n’a pas fonctionné. Veuillez réessayer.",
     "inventBack": "Retour à vos recettes",
-    "recipesInvent": "Écris-moi une recette"
+    "recipesInvent": "Écris-moi une recette",
+    "recipeVersionOf": "Une variante de",
+    "recipeVaryHeading": "Faire une variante",
+    "recipeVaryLabel": "Qu’est-ce qui doit changer",
+    "recipeVaryPlaceholder": "Sans produits laitiers, sans œufs, huile d’olive au lieu du beurre",
+    "recipeVary": "Faire",
+    "recipeVarying": "Rédaction…",
+    "recipeVaryFailed": "Cela n’a pas fonctionné. Veuillez réessayer."
   }
 }

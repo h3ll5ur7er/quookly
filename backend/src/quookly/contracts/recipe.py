@@ -41,6 +41,10 @@ class Provenance(Enum):
     IMPORTED_JSON = "imported_json"
     IMPORTED_URL = "imported_url"
     GENERATED = "generated"
+    #: A version of another recipe: made dairy-free, or with the butter swapped out. Kept
+    #: apart from `GENERATED` because the histories differ — one was invented from nothing
+    #: and this one started from something the cook already had.
+    DERIVED = "derived"
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,6 +120,8 @@ class RecipeDraft:
     lines: list[IngredientLineDraft]
     steps: list[StepDraft]
     summary: str | None = None
+    #: The recipe this one was made from, for a version of something.
+    derived_from: int | None = None
     origin: Origin = Origin.USER
     #: Absent where the yield already says. See `_servings_of`.
     serves: Decimal | None = None
@@ -173,6 +179,8 @@ class Recipe:
     visibility: Visibility
     origin: Origin
     created_at: datetime
+    #: The recipe this one was made from, for a version of something (UC-1.7).
+    derived_from: int | None = None
     lines: list[IngredientLine] = field(default_factory=list)
     steps: list[Step] = field(default_factory=list)
     #: Absent where the yield already says. See `_servings_of`.
@@ -265,6 +273,10 @@ class PresentedRecipe(BaseModel):
     serves: str | None
     visibility: Visibility
     provenance: Provenance
+    # The recipe this one is a version of, where it is a version of one. A cook looking at
+    # a dairy-free shortbread should be one tap from the shortbread.
+    derived_from: int | None = None
+    derived_from_title: str | None = None
     lines: list[PresentedLine]
     steps: list[PresentedStep]
     # Absent when there is nobody to judge against, which is not the same as suitable.
@@ -341,6 +353,19 @@ class RecipeInput(BaseModel):
     serves: DecimalString | None = Field(default=None, gt=0, le=1000)
     lines: list[IngredientLineInput] = Field(min_length=1)
     steps: list[StepInput] = Field(min_length=1)
+
+
+class VariantInput(BaseModel):
+    """What to change about a recipe (UC-1.7).
+
+    One field, because the change is a sentence: "make it dairy-free", "without the eggs",
+    "swap the butter for olive oil". Offering a menu of adaptations would be guessing at the
+    list before anybody has asked for one.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    change: str = Field(min_length=1, max_length=300)
 
 
 class GenerationInput(BaseModel):

@@ -37,6 +37,7 @@ async def store(draft: RecipeDraft, cook_id: int) -> Recipe:
         serves=draft.serves,
         provenance=draft.provenance,
         origin=draft.origin,
+        derived_from=draft.derived_from,
     )
     async with session() as active:
         active.add(row)
@@ -111,6 +112,7 @@ async def fetch(recipe_id: int, locale: str) -> Recipe | None:
         visibility=row.visibility,
         origin=row.origin,
         created_at=row.created_at,
+        derived_from=row.derived_from,
         lines=lines,
         steps=[
             Step(
@@ -288,3 +290,16 @@ async def lines_to_judge(cook_id: int, locale: str) -> list[JudgedLine]:
             )
         )
     return judged
+
+
+async def titles_of(recipe_ids: list[int]) -> dict[int, str]:
+    """What these recipes are called, and nothing else.
+
+    For naming the recipe a version was made from. Fetching the parent whole to print one
+    line of it would be three queries for a link.
+    """
+    if not recipe_ids:
+        return {}
+    async with session() as active:
+        rows = (await active.exec(select(RecipeRow).where(col(RecipeRow.id).in_(recipe_ids)))).all()
+    return {row.id: row.title for row in rows if row.id is not None}

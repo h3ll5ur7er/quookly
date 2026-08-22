@@ -295,3 +295,143 @@ class TestWhenItCannotHelp:
 
         assert refused.status_code == 422
         assert "how much it makes" in refused.json()["detail"]
+
+
+class TestMakingAVersionOfSomething:
+    """UC-1.7. The same sequence as writing one outright, with the original in the asking
+    and a record of where it came from."""
+
+    async def an_original(
+        self, client: AsyncClient, cook: dict[str, str], pantry: dict[str, int]
+    ) -> int:
+        created = await client.post(
+            "/api/v1/recipes",
+            json={
+                "title": "Spinach Bake",
+                "yield_magnitude": "4",
+                "yield_unit": "serving",
+                "lines": [
+                    {"ingredient_id": pantry["spinach"], "magnitude": "400", "unit": "g"},
+                    {"ingredient_id": pantry["ricotta"], "magnitude": "250", "unit": "g"},
+                ],
+                "steps": [{"instruction": "Bake it."}],
+            },
+            headers=cook,
+        )
+        return int(created.json()["id"])
+
+    async def test_a_version_comes_back_and_is_kept(
+        self,
+        client: AsyncClient,
+        cook: dict[str, str],
+        pantry: dict[str, int],
+        monkeypatch: MonkeyPatch,
+    ) -> None:
+        original = await self.an_original(client, cook, pantry)
+        answering(ANSWER, monkeypatch)
+
+        made = await client.post(
+            f"/api/v1/recipes/{original}/variants",
+            json={"change": "make it dairy-free"},
+            headers=cook,
+        )
+        assert made.status_code == 201
+        assert made.json()["provenance"] == "derived"
+
+    async def test_it_records_what_it_came_from(
+        self,
+        client: AsyncClient,
+        cook: dict[str, str],
+        pantry: dict[str, int],
+        monkeypatch: MonkeyPatch,
+    ) -> None:
+        """A cook looking at a dairy-free shortbread should be one tap from the shortbread."""
+        original = await self.an_original(client, cook, pantry)
+        answering(ANSWER, monkeypatch)
+
+        made = await client.post(
+            f"/api/v1/recipes/{original}/variants",
+            json={"change": "make it dairy-free"},
+            headers=cook,
+        )
+        assert made.json()["derived_from"] == original
+        assert made.json()["derived_from_title"] == "Spinach Bake"
+
+    async def test_the_original_goes_into_the_asking(
+        self,
+        client: AsyncClient,
+        cook: dict[str, str],
+        pantry: dict[str, int],
+        monkeypatch: MonkeyPatch,
+    ) -> None:
+        """As words rather than as a data structure: a model adapts a recipe better when it
+        is reading a recipe."""
+        original = await self.an_original(client, cook, pantry)
+        asked = answering(ANSWER, monkeypatch)
+
+        await client.post(
+            f"/api/v1/recipes/{original}/variants",
+            json={"change": "make it dairy-free"},
+            headers=cook,
+        )
+        assert "Spinach Bake" in asked["prompt"]
+        assert "400 g spinach" in asked["prompt"]
+        assert "Bake it." in asked["prompt"]
+        assert "make it dairy-free" in asked["prompt"]
+
+    async def test_a_version_the_table_cannot_eat_is_refused(
+        self,
+        client: AsyncClient,
+        cook: dict[str, str],
+        pantry: dict[str, int],
+        monkeypatch: MonkeyPatch,
+    ) -> None:
+        """Asking for a dairy-free version and being handed one with cream in it is the
+        case this rule exists for."""
+        original = await self.an_original(client, cook, pantry)
+        await an_eater(client, cook, "peanuts")
+        answering(WITH_PEANUTS, monkeypatch)
+
+        refused = await client.post(
+            f"/api/v1/recipes/{original}/variants",
+            json={"change": "make it nut-free"},
+            headers=cook,
+        )
+        assert refused.status_code == 422
+        assert refused.json()["detail"]["verdict"]["outcome"] == "unsuitable"
+
+    async def test_another_cooks_recipe_cannot_be_adapted(
+        self, client: AsyncClient, cook: dict[str, str], pantry: dict[str, int]
+    ) -> None:
+        original = await self.an_original(client, cook, pantry)
+        signed_up = await client.post(
+            "/api/v1/accounts",
+            json={
+                "email": "neighbour@example.com",
+                "display_name": "Someone",
+                "password": "a-long-enough-password",
+            },
+        )
+        other = {"Authorization": f"Bearer {signed_up.json()['token']}"}
+
+        refused = await client.post(
+            f"/api/v1/recipes/{original}/variants", json={"change": "vegan"}, headers=other
+        )
+        assert refused.status_code == 404
+
+    async def test_a_recipe_that_is_not_there(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        refused = await client.post(
+            "/api/v1/recipes/9999/variants", json={"change": "vegan"}, headers=cook
+        )
+        assert refused.status_code == 404
+
+    async def test_saying_nothing_to_change_is_refused(
+        self, client: AsyncClient, cook: dict[str, str], pantry: dict[str, int]
+    ) -> None:
+        original = await self.an_original(client, cook, pantry)
+        refused = await client.post(
+            f"/api/v1/recipes/{original}/variants", json={"change": ""}, headers=cook
+        )
+        assert refused.status_code == 422

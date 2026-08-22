@@ -88,3 +88,27 @@ test.describe('asking for a recipe', () => {
     });
   });
 });
+
+test.describe('making a version of a recipe', () => {
+  /* Same story as above: no model here, so what is proved is that the way in exists on the
+     recipe it belongs to, and that the refusal is a sentence somebody can act on. */
+
+  test('is offered on the recipe it would be a version of', async ({ page }) => {
+    await page.getByText('Shortbread').first().click();
+    await expect(page.getByRole('heading', { name: 'Make a version of this' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Make it' })).toBeDisabled();
+  });
+
+  test('says plainly that this instance has no model', async ({ page }) => {
+    await page.getByText('Shortbread').first().click();
+    await page.getByPlaceholder('Dairy-free').fill('make it dairy-free');
+    await page.getByRole('button', { name: 'Make it' }).click();
+
+    await expect(page.getByRole('alert')).toContainText('none configured');
+  });
+
+  test('an ordinary recipe does not claim to be a version of anything', async ({ page }) => {
+    await page.getByText('Shortbread').first().click();
+    await expect(page.locator('.recipe__derived')).toHaveCount(0);
+  });
+});

@@ -1,3 +1,6 @@
+@use '../../../styles/form';
+@use '../../../styles/controls';
+
 @use '../../../styles/page';
 
 .recipe__summary {
@@ -159,4 +162,42 @@
   margin: var(--space-3) 0 0;
   color: var(--on-surface-muted);
   font-size: var(--text-sm);
+}
+
+/* Where this one came from, for a version of something. Beside the timing rather than
+   below the method: it is part of what the recipe *is*. */
+.recipe__derived {
+  display: flex;
+  gap: 0.35em;
+  margin: var(--space-2) 0 0;
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
+.recipe__vary {
+  margin-top: var(--space-7);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
+}
+
+/* One line on a laptop, two on a phone. The button is not squeezed into a corner at 360px
+   — it wraps under the field and keeps its height (NFR-11). */
+.recipe__vary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.recipe__vary-row input {
+  flex: 1 1 14rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

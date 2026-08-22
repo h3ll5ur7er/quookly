@@ -34,18 +34,23 @@ from quookly.contracts.recipe import (
 from quookly.engines import measure
 
 #: What this build writes.
-FORMAT_VERSION = 3
+FORMAT_VERSION = 4
 
 #: What this build reads. Format 2 added a recipe's `serves`; format 3 added each step's
-#: `attention`. Nothing else changed, and an older document is a complete recipe that
-#: simply does not say those things. Reading them all is what keeps every document a
-#: self-hoster has already exported valid.
+#: `attention`; format 4 added `derived` to the provenances a recipe can carry. Nothing
+#: else changed, and an older document is a complete recipe that simply does not say those
+#: things. Reading them all is what keeps every document a self-hoster has already
+#: exported valid.
+#:
+#: Format 4 is the one bump that is not about a *missing* field. An older build reading
+#: `"provenance": "derived"` would refuse the whole document over one recipe, with a
+#: validation error rather than an explanation — so the version says why first.
 #:
 #: The version is bumped rather than the field quietly added to the older format, because
 #: an older build reading a document with an unknown field would drop it in silence —
 #: which is the partial honouring this check exists to prevent. Refusing outright tells
 #: them why.
-READABLE_VERSIONS = frozenset({1, 2, FORMAT_VERSION})
+READABLE_VERSIONS = frozenset({1, 2, 3, FORMAT_VERSION})
 
 
 @dataclass(frozen=True, slots=True)

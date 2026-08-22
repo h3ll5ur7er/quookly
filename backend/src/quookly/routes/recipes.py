@@ -32,6 +32,7 @@ from quookly.contracts.recipe import (
     RecipeInput,
     RecipeSummaryView,
     UrlImport,
+    VariantInput,
 )
 from quookly.managers import recipe as recipe_manager
 from quookly.routes.dependencies import CurrentCook
@@ -145,6 +146,65 @@ async def generate_recipe(submitted: GenerationInput, cook: CurrentCook) -> Pres
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="The model could not be reached, or did not answer usefully. Please try again.",
         ) from None
+
+
+@router.post(
+    "/recipes/{recipe_id}/variants",
+    response_model=PresentedRecipe,
+    status_code=status.HTTP_201_CREATED,
+)
+async def vary_recipe(
+    recipe_id: int, submitted: VariantInput, cook: CurrentCook
+) -> PresentedRecipe:
+    """Make a version of a recipe the cook already has (UC-1.7).
+
+    Dairy-free, without the eggs, olive oil instead of butter. The original goes into the
+    asking and the new recipe records which one it came from.
+
+    Judged and refused exactly as a written-from-nothing recipe is: somebody asking for a
+    *dairy-free* version and being handed one with cream in it is the case that rule exists
+    for.
+    """
+    try:
+        varied = await recipe_manager.vary(recipe_id, submitted, cook.cook_id)
+    except UnsuitableForTheTable as refused:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={
+                "message": "The version that came back is not suitable for your household, "
+                "so it has not been kept. Try saying more about what you want changed.",
+                "verdict": jsonable_encoder(refused.verdict),
+            },
+        ) from None
+    except NotARecipe:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Nothing usable came back. Try saying more about what you want changed.",
+        ) from None
+    except YieldUnknown:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="What came back does not say how much it makes, so it cannot be scaled.",
+        ) from None
+    except InferenceNotConfigured:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Adapting a recipe needs a model, and this instance has none configured.",
+        ) from None
+    except InferenceRefused:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="The model provider refused the request. Check the instance's key.",
+        ) from None
+    except (InferenceUnavailable, StructuredOutputUnusable):
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="The model could not be reached, or did not answer usefully. Please try again.",
+        ) from None
+
+    if varied is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such recipe.")
+    return varied
 
 
 @router.get("/recipes/export", response_model=ExchangeDocument)

@@ -102,3 +102,46 @@ class TestWhenTheAnswerRunsAway:
         for _ in range(3):
             written = await generation.compose(description="something with rhubarb")
             assert written.title
+
+
+class TestMakingAVersion:
+    """UC-1.7. What is checked is that a version is still the same dish — a dairy-free
+    shortbread that comes back as a salad has not answered the question."""
+
+    async def shortbread(self, change: str) -> InterpretedRecipe:
+        return await generation.vary(
+            title="Shortbread",
+            made="16 pieces",
+            lines=[
+                "225 g unsalted butter, softened",
+                "110 g caster sugar",
+                "340 g plain flour",
+            ],
+            steps=[
+                "Cream the butter and sugar until pale.",
+                "Work in the flour until it just comes together.",
+                "Press into a tin and bake at 160 °C until the palest gold.",
+            ],
+            change=change,
+        )
+
+    async def test_the_change_is_made(self) -> None:
+        varied = await self.shortbread("make it dairy-free")
+        named = " ".join(line.ingredient.lower() for line in varied.lines)
+        assert "butter" not in named or "dairy" in named, named
+
+    async def test_it_is_still_the_same_dish(self) -> None:
+        """The failure mode worth guarding: a version that quietly becomes something else."""
+        varied = await self.shortbread("make it dairy-free")
+        named = " ".join(line.ingredient.lower() for line in varied.lines)
+        assert "flour" in named
+        assert "sugar" in named
+
+    async def test_it_is_named_as_a_version(self) -> None:
+        varied = await self.shortbread("make it dairy-free")
+        assert "shortbread" in varied.title.lower()
+
+    async def test_a_substitution_rather_than_a_diet(self) -> None:
+        varied = await self.shortbread("use olive oil instead of butter")
+        named = " ".join(line.ingredient.lower() for line in varied.lines)
+        assert "oil" in named

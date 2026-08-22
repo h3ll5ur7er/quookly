@@ -131,6 +131,10 @@ class RecipeRow(SQLModel, table=True):
     # be two numbers for one fact.
     serves: Decimal | None = Field(default=None, max_digits=8, decimal_places=2)
     provenance: Provenance
+    # The recipe this one is a version of. Nullable and self-referencing: most recipes are
+    # not versions of anything, and a version of a version is a perfectly ordinary thing
+    # for a cook to make.
+    derived_from: int | None = Field(default=None, foreign_key="recipe.id", index=True)
     visibility: Visibility = Field(default=Visibility.PRIVATE)
     origin: Origin = Field(default=Origin.USER)
     created_at: datetime = Field(default_factory=_now)

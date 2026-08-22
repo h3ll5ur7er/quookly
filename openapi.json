@@ -359,6 +359,59 @@
         }
       }
     },
+    "/api/v1/recipes/{recipe_id}/variants": {
+      "post": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Vary Recipe",
+        "description": "Make a version of a recipe the cook already has (UC-1.7).\n\nDairy-free, without the eggs, olive oil instead of butter. The original goes into the\nasking and the new recipe records which one it came from.\n\nJudged and refused exactly as a written-from-nothing recipe is: somebody asking for a\n*dairy-free* version and being handed one with cream in it is the case that rule exists\nfor.",
+        "operationId": "varyRecipe",
+        "parameters": [
+          {
+            "name": "recipe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Recipe Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VariantInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentedRecipe"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/recipes/export": {
       "get": {
         "tags": [
@@ -3311,6 +3364,28 @@
           "provenance": {
             "$ref": "#/components/schemas/Provenance"
           },
+          "derived_from": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Derived From"
+          },
+          "derived_from_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Derived From Title"
+          },
           "lines": {
             "items": {
               "$ref": "#/components/schemas/PresentedLine"
@@ -3421,7 +3496,8 @@
           "authored",
           "imported_json",
           "imported_url",
-          "generated"
+          "generated",
+          "derived"
         ],
         "title": "Provenance",
         "description": "How a recipe came to exist (V1).\n\nRecorded because it is worth knowing, but a recipe's usefulness never depends on it \u2014\nevery path ends in the same canonical structure."
@@ -4434,6 +4510,22 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VariantInput": {
+        "properties": {
+          "change": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Change"
+          }
+        },
+        "type": "object",
+        "required": [
+          "change"
+        ],
+        "title": "VariantInput",
+        "description": "What to change about a recipe (UC-1.7).\n\nOne field, because the change is a sentence: \"make it dairy-free\", \"without the eggs\",\n\"swap the butter for olive oil\". Offering a menu of adaptations would be guessing at the\nlist before anybody has asked for one."
       },
       "VerdictView": {
         "properties": {

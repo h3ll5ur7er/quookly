@@ -36,11 +36,15 @@ ROOM_TO_WRITE = 2500
 #: How many times to ask again when the answer runs away with itself.
 #:
 #: Guided decoding sometimes loops — the model fills an array and cannot find its way to the
-#: closing bracket. Bounding the arrays took that from four times in five to about one in
-#: five, and a second ask takes it to one in twenty-five. Asking again is right *here* and
-#: would be wrong in `read_prose`: the same page should yield the same recipe twice, and a
-#: silent re-read would be a second opinion nobody asked for.
-ANOTHER_GO = 1
+#: closing bracket. Bounding the shape took that from four times in five to something like
+#: one in ten, and each further ask divides it again. Two, because one still let a live run
+#: fail; each retry costs a few seconds and only in the case that was already failing.
+#:
+#: Retrying is right *here* and would be wrong in `read_prose`: the same page should yield
+#: the same recipe twice, and a silent re-read would be a second opinion nobody asked for.
+#: It works at all because the asking is not deterministic — the same question asked again
+#: is genuinely a different attempt.
+ANOTHER_GO = 2
 
 #: Not deterministic, unlike extraction. The same page should yield the same recipe twice —
 #: that is what makes reading trustworthy. But a cook who asks twice for "a quick pasta" and
@@ -107,13 +111,23 @@ async def compose(
     Raises `NotARecipe` where the answer has no title or no ingredients — the two things
     without which there is nothing to store, and the shape a model's refusal takes.
     """
-    asked = _asked_for(description, ingredients, constraints, serves)
+    return await _ask_for_one(
+        _asked_for(description, ingredients, constraints, serves), _INSTRUCTIONS
+    )
+
+
+async def _ask_for_one(asked: str, instructions: str) -> InterpretedRecipe:
+    """Ask once, and once more if the answer runs away with itself.
+
+    Shared by writing a recipe and adapting one: the two differ in what they ask and in
+    nothing else, which is the point of the engine.
+    """
     for attempt in range(ANOTHER_GO + 1):
         try:
             answer, _ = await model.complete_structured(
                 asked,
                 RECIPE_SHAPE,
-                system=_INSTRUCTIONS,
+                system=instructions,
                 max_tokens=ROOM_TO_WRITE,
                 temperature=IMAGINATIVE,
             )
@@ -127,3 +141,66 @@ async def compose(
         return read_answer(answer, "nothing usable came back")
 
     raise StructuredOutputUnusable("nothing usable came back")
+
+
+_VARYING = """You are adapting a recipe a cook already has, to a change they asked for.
+
+Change what the change requires and leave the rest alone. A dairy-free shortbread is still
+shortbread: the same shape, the same method, the same amounts wherever they still work. A
+version that quietly becomes a different dish has not answered the question.
+
+Where an ingredient has to go, put something in its place that does the same job, and adjust
+the amount if the substitute behaves differently. Where a step depended on what was removed,
+rewrite that step and only that step.
+
+Everything else about writing a recipe still holds: real metric quantities, plain ingredient
+names, one or two plain sentences a step, and a yield the recipe states itself.
+
+Give the new recipe a name a cook would recognise as a version of the original."""
+
+
+def _as_written(title: str, made: str, lines: Sequence[str], steps: Sequence[str]) -> str:
+    """The original, written out the way a cookbook would print it.
+
+    As text rather than as JSON, because a model adapts a recipe better when it is reading a
+    recipe than when it is reading a data structure — and because the answer comes back in
+    the shape, so the question does not have to.
+    """
+    return "\n".join(
+        [
+            f"{title}",
+            f"Makes: {made}",
+            "",
+            "Ingredients:",
+            *(f"- {line}" for line in lines),
+            "",
+            "Method:",
+            *(f"{position}. {step}" for position, step in enumerate(steps, start=1)),
+        ]
+    )
+
+
+async def vary(
+    *,
+    title: str,
+    made: str,
+    lines: Sequence[str],
+    steps: Sequence[str],
+    change: str,
+    constraints: Sequence[str] = (),
+) -> InterpretedRecipe:
+    """Ask for a version of a recipe the cook already has (UC-1.7).
+
+    The same shape back, the same reader, and the same refusal when nothing usable arrives.
+    What differs from writing one outright is only what is asked — which is the whole of
+    what this engine is for.
+    """
+    asked = [
+        _as_written(title, made, lines, steps),
+        "",
+        f"Change asked for: {change}",
+    ]
+    if constraints:
+        asked.append("It must also not contain: " + ", ".join(constraints) + ".")
+
+    return await _ask_for_one("\n".join(asked), _VARYING)

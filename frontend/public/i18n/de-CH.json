@@ -338,6 +338,13 @@
     "inventPatience": "Das dauert einen Moment. Ein Rezept wird von Grund auf geschrieben.",
     "inventFailedUnknown": "Das hat nicht geklappt. Bitte versuchen Sie es erneut.",
     "inventBack": "Zurück zu Ihren Rezepten",
-    "recipesInvent": "Schreib mir ein Rezept"
+    "recipesInvent": "Schreib mir ein Rezept",
+    "recipeVersionOf": "Eine Variante von",
+    "recipeVaryHeading": "Eine Variante davon machen",
+    "recipeVaryLabel": "Was soll anders sein",
+    "recipeVaryPlaceholder": "Ohne Milchprodukte, ohne Eier, Olivenöl statt Butter",
+    "recipeVary": "Machen",
+    "recipeVarying": "Wird geschrieben …",
+    "recipeVaryFailed": "Das hat nicht geklappt. Bitte versuchen Sie es erneut."
   }
 }

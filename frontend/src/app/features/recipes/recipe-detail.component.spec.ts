@@ -79,7 +79,8 @@ describe('RecipeDetailComponent', () => {
       imports: [RecipeDetailComponent],
       providers: [
         provideZonelessChangeDetection(),
-        provideRouter([]),
+        // A made version navigates to itself, so the route has to exist to be reached.
+        provideRouter([{ path: 'recipes/:id', children: [] }]),
         provideHttpClient(),
         provideHttpClientTesting(),
         provideApi(''),
@@ -277,6 +278,84 @@ describe('RecipeDetailComponent', () => {
       await settle();
 
       expect(fixture.nativeElement.querySelector('app-timing')).toBeNull();
+    });
+  });
+
+  describe('making a version of it', () => {
+    it('will not ask with nothing to change', async () => {
+      backend.expectOne('/api/v1/recipes/1').flush(pancakes());
+      await settle();
+      expect(fixture.nativeElement.querySelector('.recipe__vary button').disabled).toBe(true);
+    });
+
+    function ask(change: string): void {
+      const field = fixture.nativeElement.querySelector('#change');
+      field.value = change;
+      field.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      fixture.nativeElement.querySelector('.recipe__vary form').dispatchEvent(new Event('submit'));
+    }
+
+    it('sends what the cook wants changed', async () => {
+      backend.expectOne('/api/v1/recipes/1').flush(pancakes());
+      await settle();
+      ask('make it dairy-free');
+
+      const asked = backend.expectOne('/api/v1/recipes/1/variants');
+      expect(asked.request.body).toEqual({ change: 'make it dairy-free' });
+      asked.flush({ ...pancakes(), id: 4 });
+    });
+
+    it('shows who and what when the version is refused', async () => {
+      // Not an error string: asking for a dairy-free version and being handed one with
+      // cream in it is the case that rule exists for (ADR-047).
+      backend.expectOne('/api/v1/recipes/1').flush(pancakes());
+      await settle();
+      ask('make it dairy-free');
+
+      backend.expectOne('/api/v1/recipes/1/variants').flush(
+        {
+          detail: {
+            message: 'The version that came back is not suitable for your household.',
+            verdict: {
+              outcome: 'unsuitable',
+              findings: [
+                {
+                  eater: 'Mira',
+                  ingredient: 'double cream',
+                  severity: 'medical',
+                  allergen: 'milk',
+                  avoidable: false,
+                  unknown: false,
+                },
+              ],
+            },
+          },
+        },
+        { status: 422, statusText: 'Unprocessable Content' },
+      );
+      await settle();
+
+      expect(text()).toContain('Mira');
+      expect(text()).toContain('double cream');
+      expect(text()).toContain('not suitable for your household');
+    });
+
+    it('says where a version came from, and links back', async () => {
+      backend
+        .expectOne('/api/v1/recipes/1')
+        .flush({ ...pancakes(), derived_from: 9, derived_from_title: 'Buttermilk Pancakes' });
+      await settle();
+
+      const back = fixture.nativeElement.querySelector('.recipe__derived a');
+      expect(back.textContent).toContain('Buttermilk Pancakes');
+      expect(back.getAttribute('href')).toBe('/recipes/9');
+    });
+
+    it('says nothing about where it came from when it came from nowhere', async () => {
+      backend.expectOne('/api/v1/recipes/1').flush(pancakes());
+      await settle();
+      expect(fixture.nativeElement.querySelector('.recipe__derived')).toBeNull();
     });
   });
 });

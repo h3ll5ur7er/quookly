@@ -203,7 +203,9 @@ which lands after the Academy without blocking anything here.
   ([ADR-047](07-decisions.md#adr-047-a-generated-recipe-is-refused-not-warned-about)) — it was asked
   for on these people's behalf. From a **photograph** (UC-1.6) waits for a vision model: ADR-026's
   wire format carries text, and images are an addition to `ModelAccess` rather than to this engine
-- Variant derivation (UC-1.7)
+- ~~Variant derivation (UC-1.7)~~ **Built** for dietary adaptation and substitution. Scaling is left
+  out on purpose: a recipe already scales to any yield through `MeasureEngine`, and asking a model to
+  multiply is asking it to do arithmetic
 - ~~`SearchIndexAccess` and full-text search (UC-3.1)~~ **Built** over SQLite FTS5: titles, the
   ingredients in every language the registry knows them by, and summaries. UC-3.2's filters by tag,
   cuisine and difficulty wait for a recipe to have those fields; time and dietary suitability are

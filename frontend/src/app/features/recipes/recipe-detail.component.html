@@ -16,6 +16,13 @@
       @if (shown.timing; as timing) {
         <app-timing [timing]="timing" />
       }
+      <!-- Where this came from, for a version of something. One tap back to the original. -->
+      @if (shown.derived_from; as parent) {
+        <p class="recipe__derived">
+          <span i18n="@@recipeVersionOf">A version of</span>
+          <a [routerLink]="['/recipes', parent]">{{ shown.derived_from_title }}</a>
+        </p>
+      }
     </header>
 
     <!-- Above the ingredients on purpose: a cook who reads this after starting to weigh
@@ -92,6 +99,42 @@
     @if (shown.nutrition; as nutrition) {
       <app-nutrition [nutrition]="nutrition" />
     }
+
+    <!-- After the method, not before it: adapting a recipe is something a cook decides
+         once they have read what it is. -->
+    <section class="recipe__vary" aria-labelledby="vary-heading">
+      <h2 id="vary-heading" class="recipe__section-title" i18n="@@recipeVaryHeading">
+        Make a version of this
+      </h2>
+      <form [formGroup]="variant" (ngSubmit)="makeVersion()">
+        <label class="visually-hidden" for="change" i18n="@@recipeVaryLabel">
+          What to change
+        </label>
+        <div class="recipe__vary-row">
+          <input
+            id="change"
+            type="text"
+            formControlName="change"
+            i18n-placeholder="@@recipeVaryPlaceholder"
+            placeholder="Dairy-free, without the eggs, olive oil instead of butter"
+          />
+          <button type="submit" [disabled]="!variant.valid || varying()">
+            @if (varying()) {
+              <span i18n="@@recipeVarying">Writing…</span>
+            } @else {
+              <span i18n="@@recipeVary">Make it</span>
+            }
+          </button>
+        </div>
+      </form>
+
+      @if (refused(); as verdict) {
+        <app-verdict [verdict]="verdict" />
+      }
+      @if (varyFailed(); as why) {
+        <p class="error" role="alert">{{ why }}</p>
+      }
+    </section>
 
     <section class="recipe__section" aria-labelledby="steps-heading">
       <h2 id="steps-heading" i18n="@@recipeMethod">Method</h2>

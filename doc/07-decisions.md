@@ -1987,5 +1987,31 @@ answer costs forty seconds before anybody finds out; here, a few — and then it
 
 Generation is also the one place a model is asked for something other than determinism. Extraction is
 deterministic because the same page should yield the same recipe twice; a cook who asks twice for "a
-quick pasta" and is handed the identical answer has been given a lookup table.
+quick pasta" and is handed the identical answer has been given a lookup table. That is also what makes
+the retry work: the same question asked again is genuinely a different attempt.
+
+### Adapting one (UC-1.7)
+
+A **version** of a recipe — dairy-free, without the eggs, olive oil instead of butter — is the same
+sequence with one thing added and one changed. The original goes into the asking, **as words rather
+than as a data structure**: a model adapts a recipe better when it is reading a recipe, and the answer
+comes back in the shape so the question does not have to.
+
+What comes back records which recipe it came from (`derived_from`) and carries `provenance = derived`
+rather than `generated`. The histories differ and V1 exists to record that: one was invented from
+nothing, and this one started from something the cook already had. A cook looking at a dairy-free
+shortbread should be one tap from the shortbread.
+
+The refusal rule is the same one, and this is where it bites hardest: somebody asking for a
+*dairy-free* version and being handed one with cream in it is precisely the case it was written for.
+
+Scaling is deliberately **not** part of this. UC-1.7 lists it alongside substitution, but a recipe
+already scales to any yield through `MeasureEngine` (UC-2.1) — asking a model to multiply is asking it
+to do arithmetic, which is the one thing this codebase never asks of one.
+
+**The exchange format goes to 4** for the new provenance value. This is the one bump that is not about
+a missing field: an older build reading `"provenance": "derived"` would refuse the whole document over
+one recipe, with a validation error rather than an explanation. The version check says why first. The
+`derived_from` link itself does not travel — a recipe id belongs to the instance that issued it, and a
+document is a set of recipes rather than a graph.
 
