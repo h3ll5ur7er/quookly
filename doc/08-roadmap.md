@@ -246,7 +246,6 @@ there was no way in for somebody who did not already have an account, and no scr
 - ~~Cross-links: **start cooking now** and **add to plan** on a recipe, **show recipe** on a
   plan~~ **Built** — and it turned out to be no change to V15 at all. ADR-042 had already written
   the answer: cooking a recipe outright is *plan it for today, then cook it*, composed in the route
-- A landing page for somebody who arrives without an account
 - ~~**Signing up by application** — anybody may apply, an admin approves~~ **Built**
   ([ADR-049](07-decisions.md#adr-049-an-account-is-applied-for-and-an-administrator-answers)) —
   the apply form, three different sign-in refusals, and the admin queue under Settings
