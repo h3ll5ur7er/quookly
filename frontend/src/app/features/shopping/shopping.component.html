@@ -23,12 +23,31 @@
       Nothing to buy. Everything this week needs is already in your kitchen.
     </p>
   } @else {
-    <!-- Big, plain lines. This is read at arm's length in a shop, one-handed. -->
+    <!-- `&ngsp;` rather than plain spaces: Angular strips those, and a screen reader would
+         then read this as "1of2in the basket". -->
+    <p class="shopping__progress">
+      <span class="numeric">{{ got() }}</span
+      >&ngsp; <span i18n="@@shoppingOf">of</span>&ngsp;
+      <span class="numeric">{{ lines().length }}</span
+      >&ngsp;
+      <span i18n="@@shoppingInTheBasket">in the basket</span>
+    </p>
+
+    <!-- Big, plain lines. This is read at arm's length in a shop, one-handed, so the whole
+         row is the target rather than a checkbox somebody has to hit. -->
     <ul class="shopping__list">
       @for (line of lines(); track line.ingredient_id) {
-        <li class="shopping__line">
-          <span class="shopping__amount numeric">{{ line.quantity }}</span>
-          <span class="shopping__name">{{ line.name }}</span>
+        <li>
+          <label class="shopping__line" [class.shopping__line--got]="line.bought">
+            <input
+              type="checkbox"
+              class="shopping__tick"
+              [checked]="line.bought"
+              (change)="mark(line, !line.bought)"
+            />
+            <span class="shopping__amount numeric">{{ line.quantity }}</span>
+            <span class="shopping__name">{{ line.name }}</span>
+          </label>
         </li>
       }
     </ul>

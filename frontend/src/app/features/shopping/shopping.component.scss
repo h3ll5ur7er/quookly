@@ -10,6 +10,12 @@
   color: var(--on-surface-muted);
 }
 
+.shopping__progress {
+  margin: 0 0 var(--space-4);
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
 .shopping__list {
   margin: 0;
   padding: 0;
@@ -20,12 +26,33 @@
    holding something. Rows are tall enough to keep a place with a thumb. */
 .shopping__line {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-4);
   min-block-size: 56px;
   padding-block: var(--space-3);
   border-bottom: 1px solid var(--border);
   font-size: var(--text-lg);
+  cursor: pointer;
+}
+
+/* Kept on the list, struck through. A cook rereads this at the till to check what they
+   picked up, and a line that vanished cannot be checked. */
+.shopping__line--got {
+  color: var(--on-surface-muted);
+
+  .shopping__amount,
+  .shopping__name {
+    text-decoration: line-through;
+  }
+}
+
+/* Big enough to hit while holding a basket, and the whole row is a label besides. */
+.shopping__tick {
+  flex: none;
+  inline-size: 28px;
+  block-size: 28px;
+  margin: 0;
+  accent-color: var(--accent);
 }
 
 .shopping__amount {

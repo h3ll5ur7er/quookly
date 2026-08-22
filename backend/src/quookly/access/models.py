@@ -318,6 +318,27 @@ class MealPlanRow(SQLModel, table=True):
     created_at: datetime = Field(default_factory=_now)
 
 
+class ShoppingTickRow(SQLModel, table=True):
+    """One line of a shopping list, marked as already in the basket.
+
+    The quantity is stored alongside, and a tick counts only while the list still asks for
+    that much. A cook who ticks 500 g of flour and then plans another loaf needs to see
+    flour again — carrying the tick across the change would hide 300 g they have not
+    bought. Stale reads as unticked rather than as bought, for the same reason an
+    unmeasured line reads as unknown rather than as zero.
+    """
+
+    __tablename__ = "shopping_tick"
+    __table_args__ = (UniqueConstraint("plan_id", "ingredient_id", name="uq_shopping_tick"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    plan_id: int = Field(foreign_key="meal_plan.id", index=True)
+    ingredient_id: int = Field(foreign_key="ingredient.id", index=True)
+    magnitude: Decimal = Field(max_digits=12, decimal_places=4)
+    unit: Unit
+    ticked_at: datetime
+
+
 class PlanSlotRow(SQLModel, table=True):
     """One meal on one day inside a plan.
 

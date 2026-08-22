@@ -162,6 +162,20 @@ the loop above runs whole on each edit. And the shopping list is read back from 
 rather than netted a second time — the diagram's `RE: net(...)` decides what to reserve, and what
 those reservations do not cover is the list.
 
+### UC-4.4 Ticking the list off in a shop
+
+`PUT /plans/{id}/shopping/{ingredient_id}` with `{"bought": true}`. The tick is stored against the
+plan and the ingredient, **with the quantity the list was asking for at the time**, and a line reads
+as bought only while it still asks for that much
+([ADR-048](07-decisions.md#adr-048-a-ticked-shopping-line-remembers-what-it-was-ticked-at)). A cook
+who ticked 200 g of flour and then planned a second night of pancakes sees flour again, because they
+have half of what they now need.
+
+The whole plan comes back, not the line: the list is derived, and a client patching one line locally
+would be guessing at what the change did to the rest. A ticked line stays on the list, struck
+through — a cook rereads it at the till to check what they picked up, and a line that vanished cannot
+be checked.
+
 ## UC-9 Cooking mode, start to finish
 
 Two flows: opening a session, and completing it. Together they replace what used to be a single

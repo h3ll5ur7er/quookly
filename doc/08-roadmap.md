@@ -240,7 +240,9 @@ there was no way in for somebody who did not already have an account, and no scr
 - ~~A shopping list of its own~~ **Built** — its own destination, because a cook holding a basket
   should not navigate a plan to reach it
 - ~~Signing out~~ **Built**, under Settings
-- Ticking items off the shopping list — the list is still read-only
+- ~~Ticking items off the shopping list~~ **Built** — server-side, because shopping is the one
+  thing two people do at once, and a tick remembers the quantity it was made at
+  ([ADR-048](07-decisions.md#adr-048-a-ticked-shopping-line-remembers-what-it-was-ticked-at))
 - ~~Cross-links: **start cooking now** and **add to plan** on a recipe, **show recipe** on a
   plan~~ **Built** — and it turned out to be no change to V15 at all. ADR-042 had already written
   the answer: cooking a recipe outright is *plan it for today, then cook it*, composed in the route

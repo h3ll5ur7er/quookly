@@ -1517,6 +1517,68 @@
         }
       }
     },
+    "/api/v1/plans/{plan_id}/shopping/{ingredient_id}": {
+      "put": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Mark Bought",
+        "description": "Tick one line of the shopping list off, or put it back (UC-4.4).\n\nReturns the plan whole, like every other write here: the list is derived, and a client\nthat patched one line locally would be guessing at what the change did to the rest.",
+        "operationId": "markBought",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Plan Id"
+            }
+          },
+          {
+            "name": "ingredient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Ingredient Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoughtInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/cooking/sessions": {
       "get": {
         "tags": [
@@ -1589,7 +1651,7 @@
           "cooking"
         ],
         "summary": "Start Recipe",
-        "description": "Cook a recipe outright, without planning it first (UC-9.1b).\n\nIts own path rather than a nullable field on the one above, because the two carry\ndifferent things: that one names a meal, this one names a dish. The meal it lands on\nis worked out from the clock and appears on the plan.",
+        "description": "Cook a recipe outright, without planning it first (UC-9.1b).\n\n*Plan it for today, then cook it* \u2014 the two calls ADR-042 said this would be, composed\nhere because a route is the one layer allowed to reach two managers. Neither manager\nlearns about the other, and the meal is reserved for and recorded exactly as a planned\none is, because it **is** a planned one by the time cooking sees it.\n\nIts own path rather than a nullable field on the endpoint above: that one names a meal,\nthis one names a dish.",
         "operationId": "startRecipe",
         "requestBody": {
           "content": {
@@ -2192,6 +2254,20 @@
         ],
         "title": "BootstrapState",
         "description": "Whether the instance still needs its first admin."
+      },
+      "BoughtInput": {
+        "properties": {
+          "bought": {
+            "type": "boolean",
+            "title": "Bought"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bought"
+        ],
+        "title": "BoughtInput",
+        "description": "Whether one line of the shopping list is in the basket (UC-4.4)."
       },
       "ConstraintView": {
         "properties": {
@@ -4040,6 +4116,11 @@
           "quantity": {
             "type": "string",
             "title": "Quantity"
+          },
+          "bought": {
+            "type": "boolean",
+            "title": "Bought",
+            "default": false
           }
         },
         "type": "object",

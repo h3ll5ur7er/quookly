@@ -108,6 +108,17 @@ class ShoppingLineView(BaseModel):
     ingredient_id: int
     name: str
     quantity: str
+    # Whether it is already in the basket. A tick made at a different quantity does not
+    # count, so this is false again the moment the plan asks for more (ADR-048).
+    bought: bool = False
+
+
+class BoughtInput(BaseModel):
+    """Whether one line of the shopping list is in the basket (UC-4.4)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    bought: bool
 
 
 class PlanView(BaseModel):

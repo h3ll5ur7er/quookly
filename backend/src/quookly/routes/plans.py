@@ -2,7 +2,13 @@
 
 from fastapi import APIRouter, HTTPException, Response, status
 
-from quookly.contracts.plan import PlanInput, PlanSummaryView, PlanView, SlotInput
+from quookly.contracts.plan import (
+    BoughtInput,
+    PlanInput,
+    PlanSummaryView,
+    PlanView,
+    SlotInput,
+)
 from quookly.managers import plan as plan_manager
 from quookly.routes.dependencies import CurrentCook
 
@@ -92,3 +98,18 @@ async def delete_plan(plan_id: int, cook: CurrentCook) -> Response:
     if not await plan_manager.discard(plan_id, cook.cook_id):
         raise NOT_FOUND
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.put("/plans/{plan_id}/shopping/{ingredient_id}", response_model=PlanView)
+async def mark_bought(
+    plan_id: int, ingredient_id: int, submitted: BoughtInput, cook: CurrentCook
+) -> PlanView:
+    """Tick one line of the shopping list off, or put it back (UC-4.4).
+
+    Returns the plan whole, like every other write here: the list is derived, and a client
+    that patched one line locally would be guessing at what the change did to the rest.
+    """
+    marked = await plan_manager.mark_bought(plan_id, ingredient_id, submitted.bought, cook.cook_id)
+    if marked is None:
+        raise NOT_FOUND
+    return marked

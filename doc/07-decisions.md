@@ -2037,3 +2037,41 @@ one recipe, with a validation error rather than an explanation. The version chec
 `derived_from` link itself does not travel — a recipe id belongs to the instance that issued it, and a
 document is a set of recipes rather than a graph.
 
+## ADR-048 A ticked shopping line remembers what it was ticked at
+
+**Status:** Accepted
+
+**Context.** The shopping list is derived: it is what the plan could not reserve, recomputed on every
+read. A tick is the one piece of state a cook adds to it by hand, and the plan underneath keeps
+moving — a meal added on Wednesday changes what Monday's list asks for.
+
+So a tick has to survive being recomputed, and the question is what it means afterwards.
+
+**Decision.** A tick stores the plan, the ingredient, **and the quantity it was ticked at**. A line
+reads as bought only while the list still asks for exactly that much. Otherwise it comes back
+unticked.
+
+**Rationale.** The failure the naive version produces is silent and expensive. A cook ticks off 200 g
+of flour, plans a second night of pancakes, and the list now needs 400 g — with the tick carried
+across, flour reads as bought and they go home with half of what they need, having *looked* at the
+list. The one thing a shopping list must never do is confidently show a line as handled when it is
+not.
+
+It is the same rule as everywhere else here: **absence is never zero**, and a stale yes is worse than
+a no, because a no sends somebody to the shelf and a stale yes sends them past it. Storing the
+quantity is one column and one comparison; the alternative is a class of bug that only shows up in a
+kitchen.
+
+Ticking down is treated the same way, though it is the harmless direction: what was ticked answered a
+different question, so it is asked again.
+
+**Why the tick is on the server.** Shopping is the one thing in Quookly two people do at once — one in
+the shop, one at home adding to the list. A tick in a browser would be invisible to the other, and
+invisible to the same person on a second device. The screen still marks the line before the answer
+comes back, because a shop is where signal is worst and a checkbox that waits for a round trip reads
+as broken.
+
+**Cost.** A tick does not survive a change to the quantity, which will occasionally annoy a cook who
+bought the larger bag anyway. That is the direction the error should fall in, and unticking is one
+tap.
+

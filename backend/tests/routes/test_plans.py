@@ -29,6 +29,7 @@ from quookly.utilities.configuration import get_settings
 
 PLANS = "/api/v1/plans"
 MONDAY = "2026-08-24"
+TUESDAY = "2026-08-25"
 SUNDAY = "2026-08-30"
 
 
@@ -79,6 +80,18 @@ async def flour() -> int:
         kind=IngredientKind.POWDER,
         density=Decimal("0.53"),
         names={"en-GB": ["plain flour"]},
+    )
+    return entry.id
+
+
+@pytest.fixture
+async def butter() -> int:
+    """A second ingredient, for asking about a line that is not on the list."""
+    entry = await registry.register(
+        slug="unsalted-butter",
+        kind=IngredientKind.SOLID,
+        density=Decimal("0.911"),
+        names={"en-GB": ["unsalted butter"]},
     )
     return entry.id
 
@@ -284,6 +297,131 @@ async def test_a_meal_that_is_not_yours_cannot_be_cooked(
     response = await client.post(f"{PLANS}/{plan_id}/slots/{slot_id}/cooked", headers=neighbour)
 
     assert response.status_code == 404
+
+
+class TestTickingItOff:
+    """UC-4.4, the half that was missing. A list you cannot mark is a list a cook reads
+    once and then keeps in their head, which is the thing this app exists to stop."""
+
+    async def a_list(self, client: AsyncClient, headers: dict[str, str], flour: int) -> int:
+        """A week with one meal on it, so there is exactly one thing to buy."""
+        recipe_id = await a_recipe(client, headers, flour)
+        plan_id = await a_week(client, headers)
+        await client.put(
+            f"{PLANS}/{plan_id}/slots", json=slot(recipe_id=recipe_id), headers=headers
+        )
+        return plan_id
+
+    async def tick(
+        self, client: AsyncClient, headers: dict[str, str], plan_id: int, flour: int, bought: bool
+    ) -> Any:
+        return await client.put(
+            f"{PLANS}/{plan_id}/shopping/{flour}", json={"bought": bought}, headers=headers
+        )
+
+    async def test_a_line_starts_unbought(
+        self, client: AsyncClient, cook: dict[str, str], flour: int
+    ) -> None:
+        plan_id = await self.a_list(client, cook, flour)
+        plan = (await client.get(f"{PLANS}/{plan_id}", headers=cook)).json()
+        assert plan["shopping"][0]["bought"] is False
+
+    async def test_ticking_marks_it(
+        self, client: AsyncClient, cook: dict[str, str], flour: int
+    ) -> None:
+        plan_id = await self.a_list(client, cook, flour)
+        ticked = await self.tick(client, cook, plan_id, flour, True)
+        assert ticked.status_code == 200
+        assert ticked.json()["shopping"][0]["bought"] is True
+
+    async def test_it_stays_on_the_list(
+        self, client: AsyncClient, cook: dict[str, str], flour: int
+    ) -> None:
+        """Marked, not removed. A cook rereads the list at the till to check what they
+        picked up, and a line that vanished cannot be checked."""
+        plan_id = await self.a_list(client, cook, flour)
+        await self.tick(client, cook, plan_id, flour, True)
+        plan = (await client.get(f"{PLANS}/{plan_id}", headers=cook)).json()
+        assert len(plan["shopping"]) == 1
+
+    async def test_it_can_be_put_back(
+        self, client: AsyncClient, cook: dict[str, str], flour: int
+    ) -> None:
+        plan_id = await self.a_list(client, cook, flour)
+        await self.tick(client, cook, plan_id, flour, True)
+        back = await self.tick(client, cook, plan_id, flour, False)
+        assert back.json()["shopping"][0]["bought"] is False
+
+    async def test_ticking_twice_is_ticking_once(
+        self, client: AsyncClient, cook: dict[str, str], flour: int
+    ) -> None:
+        """A request that arrives again from a phone with one bar of signal in a shop."""
+        plan_id = await self.a_list(client, cook, flour)
+        await self.tick(client, cook, plan_id, flour, True)
+        again = await self.tick(client, cook, plan_id, flour, True)
+        assert again.json()["shopping"][0]["bought"] is True
+
+    async def test_needing_more_puts_it_back_on_the_list(
+        self, client: AsyncClient, cook: dict[str, str], flour: int
+    ) -> None:
+        """The reason a tick carries its quantity. A cook who ticked 200 g of flour and
+        then planned a second night of pancakes needs 400 g, and has bought half of it.
+        Carrying the tick across would hide 200 g they have not got.
+        """
+        recipe_id = await a_recipe(client, cook, flour)
+        plan_id = await a_week(client, cook)
+        await client.put(f"{PLANS}/{plan_id}/slots", json=slot(recipe_id=recipe_id), headers=cook)
+        await self.tick(client, cook, plan_id, flour, True)
+
+        added = await client.put(
+            f"{PLANS}/{plan_id}/slots",
+            json=slot(on_date=TUESDAY, recipe_id=recipe_id),
+            headers=cook,
+        )
+        line = added.json()["shopping"][0]
+        assert line["quantity"] == "400 g"
+        assert line["bought"] is False
+
+    async def test_needing_less_also_puts_it_back(
+        self, client: AsyncClient, cook: dict[str, str], flour: int
+    ) -> None:
+        """The same rule from the other side. What was ticked answered a different
+        question, and a stale yes is no better than a stale no."""
+        recipe_id = await a_recipe(client, cook, flour)
+        plan_id = await a_week(client, cook)
+        await client.put(f"{PLANS}/{plan_id}/slots", json=slot(recipe_id=recipe_id), headers=cook)
+        await client.put(
+            f"{PLANS}/{plan_id}/slots",
+            json=slot(on_date=TUESDAY, recipe_id=recipe_id),
+            headers=cook,
+        )
+        await self.tick(client, cook, plan_id, flour, True)
+
+        plan = (await client.get(f"{PLANS}/{plan_id}", headers=cook)).json()
+        assert plan["shopping"][0]["bought"] is True
+
+        cleared = await client.delete(
+            f"{PLANS}/{plan_id}/slots/{plan['slots'][1]['id']}", headers=cook
+        )
+        assert cleared.json()["shopping"][0]["bought"] is False
+
+    async def test_ticking_something_that_is_not_on_the_list_does_nothing(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        """No line to tick. Recording one anyway would leave a tick no screen could clear."""
+        plan_id = await self.a_list(client, cook, flour)
+        marked = await self.tick(client, cook, plan_id, butter, True)
+        assert marked.status_code == 200
+        assert [line["ingredient_id"] for line in marked.json()["shopping"]] == [flour]
+
+    async def test_another_cooks_list_is_absent_rather_than_forbidden(
+        self, client: AsyncClient, cook: dict[str, str], neighbour: dict[str, str], flour: int
+    ) -> None:
+        plan_id = await self.a_list(client, cook, flour)
+        assert (await self.tick(client, neighbour, plan_id, flour, True)).status_code == 404
+
+    async def test_signing_in_is_required(self, client: AsyncClient) -> None:
+        assert (await client.put(f"{PLANS}/1/shopping/1", json={"bought": True})).status_code == 401
 
 
 class TestTheWeekBeingCookedNow:

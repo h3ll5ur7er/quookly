@@ -57,7 +57,7 @@
   display: flex;
   align-items: stretch;
   gap: var(--space-1);
-  padding: var(--space-1) var(--space-2) var(--space-2);
+  padding: var(--space-1) var(--space-1) var(--space-2);
   border-top: 1px solid var(--border);
   background: var(--surface);
 }
@@ -77,7 +77,9 @@
 
 .shell__link {
   display: grid;
-  flex: 1 1 0;
+  /* Sized to the word, not to an equal share. Equal shares truncated the longest label —
+     "Shoppi…" — while "Home" sat in space it had no use for. */
+  flex: 1 1 auto;
   place-items: center;
   gap: 2px;
   min-height: 48px;
@@ -118,10 +120,13 @@
   color: var(--on-surface);
 }
 
+/* Narrower than the 48px a destination gets: it is one target among six on a 360px bar,
+   and every pixel it does not take is a pixel "Shopping" needs to stay a whole word. The
+   touch target stays 44px, which is the floor. */
 .shell__account {
   display: grid;
   place-items: center;
-  min-width: 48px;
+  min-width: 44px;
   min-height: 48px;
   border-radius: var(--radius-md);
   color: var(--on-surface-muted);

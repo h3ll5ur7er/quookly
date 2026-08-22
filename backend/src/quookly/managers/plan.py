@@ -25,6 +25,7 @@ from quookly.access import pantry as pantry_access
 from quookly.access import plan as plan_access
 from quookly.access import preferences as preference_access
 from quookly.access import recipe as recipe_access
+from quookly.access import shopping as shopping_access
 from quookly.contracts.eater import Eater
 from quookly.contracts.events import MealCooked
 from quookly.contracts.plan import (
@@ -173,6 +174,9 @@ async def _view(plan: MealPlan, locale: str) -> PlanView:
 
     names = await registry.for_ids([line.ingredient_id for line in missing], locale)
     preferences = await preference_access.for_cook(plan.cook_id)
+    # What is already in the basket. Compared by quantity as well as by ingredient: a tick
+    # for 500 g does not answer a list that has since come to ask for 800 g.
+    basket = await shopping_access.ticked(plan.id)
     shopping = [
         ShoppingLineView(
             ingredient_id=line.ingredient_id,
@@ -189,6 +193,7 @@ async def _view(plan: MealPlan, locale: str) -> PlanView:
                 if line.ingredient_id in names
                 else line.quantity
             ),
+            bought=basket.get(line.ingredient_id) == line.quantity,
         )
         for line in missing
     ]
@@ -316,6 +321,39 @@ async def slot_for_now(recipe_id: int, cook_id: int, locale: str | None = None) 
     return None if slot is None or slot.recipe_id != recipe_id else slot
 
 
+async def mark_bought(
+    plan_id: int, ingredient_id: int, bought: bool, cook_id: int, locale: str | None = None
+) -> PlanView | None:
+    """Tick one line of the shopping list off, or put it back (UC-4.4).
+
+    Recorded against the plan rather than kept on the phone that did it, because shopping
+    is the one thing in Quookly two people do at once: one in the shop, one at home adding
+    to the list. A tick that lived in a browser would be invisible to the other.
+
+    Ticking something the list is not asking for does nothing. There is no line to tick,
+    and inventing a row for it would leave a tick that no screen could ever clear.
+    """
+    reading = locale or await cook_access.locale_for(cook_id)
+    plan = await _owned(plan_id, cook_id)
+    if plan is None:
+        return None
+
+    if not bought:
+        await shopping_access.untick(plan_id, ingredient_id)
+        return await _view(plan, reading)
+
+    needed = planning.requirements_for((await _meals_of(plan, reading))[0])
+    outstanding = replenishment.outstanding(
+        needed.requirements, await _covered(plan), await _densities(needed)
+    )
+    line = next((one for one in outstanding if one.ingredient_id == ingredient_id), None)
+    if line is None:
+        return await _view(plan, reading)
+
+    await shopping_access.tick(plan_id, ingredient_id, line.quantity)
+    return await _view(plan, reading)
+
+
 async def open_plan(submitted: PlanInput, cook_id: int, locale: str | None = None) -> PlanView:
     """Open a period to plan (UC-4.1)."""
     plan = await plan_access.create(
@@ -425,6 +463,8 @@ async def discard(plan_id: int, cook_id: int) -> bool:
         return False
     for slot in plan.slots:
         await pantry_access.release_for_slot(slot.id)
+    # Ticks point at the plan by a foreign key; leaving them would refuse the delete.
+    await shopping_access.clear(plan_id)
     return await plan_access.remove(plan_id)
 
 
