@@ -176,6 +176,53 @@ would be guessing at what the change did to the rest. A ticked line stays on the
 through — a cook rereads it at the till to check what they picked up, and a line that vanished cannot
 be checked.
 
+## UC-10.6 Applying for an account
+
+```mermaid
+sequenceDiagram
+    participant Visitor
+    participant Admin
+    participant API as AccountRoutes
+    participant ACM as AccountManager
+    participant CA as CookAccess
+    participant SEED as SeedManager
+
+    Visitor->>API: POST /accounts/applications
+    API->>ACM: apply(registration)
+    ACM->>CA: register(..., standing=APPLIED)
+    CA-->>ACM: cook
+    ACM-->>API: cook, and deliberately no token
+    API-->>Visitor: 201, you have applied
+
+    Visitor->>API: POST /accounts/sign-in
+    API->>ACM: sign_in(credentials)
+    ACM-->>API: NotYetApproved
+    API-->>Visitor: 403, waiting for an administrator
+
+    Admin->>API: GET /accounts/applications
+    API-->>Admin: who is waiting, oldest first
+    Admin->>API: POST /accounts/applications/{id}/approved
+    API->>ACM: decide(id, approved=True)
+    API->>SEED: install_starter_recipes(id)
+    API-->>Admin: approved
+
+    Visitor->>API: POST /accounts/sign-in
+    API-->>Visitor: 200 and a token
+```
+
+Anybody may apply; an administrator answers
+([ADR-049](07-decisions.md#adr-049-an-account-is-applied-for-and-an-administrator-answers)). An
+instance is somebody's household server, so open registration is wrong — and a wall with no bell
+means a self-hosted product with one user.
+
+Two details the diagram understates. **No token comes back from applying**: an endpoint that handed
+one over would be open registration under another name. And **standing is only revealed once the
+password has matched** — a missing account and a wrong password still answer `401` with one message,
+because anything else is a way to ask which addresses have applied here.
+
+The route composes `AccountManager` and `SeedManager` on approval, the same shape as bootstrap: a
+cook let in should land on a kitchen with something in it (UC-10.4).
+
 ## UC-9 Cooking mode, start to finish
 
 Two flows: opening a session, and completing it. Together they replace what used to be a single

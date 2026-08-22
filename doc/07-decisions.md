@@ -2075,3 +2075,56 @@ as broken.
 bought the larger bag anyway. That is the direction the error should fall in, and unticking is one
 tap.
 
+## ADR-049 An account is applied for, and an administrator answers
+
+**Status:** Accepted
+
+**Context.** Quookly had a sign-in page and no way to get an account. The API had open
+registration; nothing in the interface reached it, which is the worst of both — a visitor sees a
+locked door, and anybody who reads the source finds it unlocked.
+
+Three ways to fix that, and the instance being *self-hosted* decides between them.
+
+**Rejected: open registration.** A Quookly instance is somebody's household server, running on their
+hardware, holding their family's dietary constraints. A stranger creating an account on it is not a
+sign-up, it is a person in the house.
+
+**Rejected: invitation only.** Correct, and unfriendly. A visitor who arrives at a friend's instance
+has nowhere to go and nothing to do but ask out of band. The instance cannot say "not you" without
+also saying "not anybody", and a self-hosted product that cannot welcome anybody is a product with
+one user.
+
+**Decision.** Anybody may **apply**. An administrator approves or refuses. An account carries a
+`Standing` — `APPLIED`, `APPROVED`, `REFUSED` — and only an approved one can sign in.
+
+**Rationale.** The door has a bell. A visitor can act, an owner decides, and neither has to leave the
+app to arrange it.
+
+**Three states, not a boolean.** *Nobody has looked yet* and *somebody looked and said no* are
+different facts, and the applicant is owed a different sentence for each. A boolean would tell
+somebody who was refused to keep waiting.
+
+**`APPLIED` is the default** on the column and in `CookAccess.register`. A code path that forgets to
+state a standing leaves somebody locked out, which they can report and an admin can fix; the opposite
+default lets a stranger in silently. Where the two errors are not equally bad, the default belongs on
+the recoverable side.
+
+**Standing is revealed only after the password matches.** Sign-in answers `401` with one message for
+a missing account and a wrong password, exactly as before — anything else is a way to ask which
+addresses have applied here. Once the password *has* matched, saying "you are waiting" or "you were
+declined" tells the asker nothing they could not already establish, and saying nothing instead leaves
+an applicant retyping a password that was right all along. The refusal is `403`, not `401`: the
+credentials were right, retrying changes nothing, and a client that read it as "sign in again" would
+loop.
+
+**The password is taken at application time** and kept hashed, rather than asked for again on
+approval. Being let in should be a message to read, not a second form to fill in.
+
+**Approval seeds a kitchen**, for the same reason bootstrap does (UC-10.4): an empty app is
+indistinguishable from a broken one.
+
+**Cost.** An administrator has to answer the bell, and nothing notifies them yet — the queue is a
+screen they visit. Email is a dependency a self-hosted instance should not need to work, so a
+notification channel is a later decision rather than a hidden requirement of this one. A refusal is
+also reversible on purpose, because an admin who mis-clicks should not have to reach for a database.
+

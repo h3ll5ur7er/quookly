@@ -26,6 +26,7 @@ from quookly.contracts.errors import InferenceNotConfigured
 from quookly.contracts.inference import Completion
 from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.utilities.configuration import get_settings
+from tests.support import sign_up
 
 GENERATED = "/api/v1/recipes/generated"
 
@@ -69,15 +70,7 @@ async def client() -> AsyncIterator[AsyncClient]:
 
 @pytest.fixture
 async def cook(client: AsyncClient) -> dict[str, str]:
-    response = await client.post(
-        "/api/v1/accounts",
-        json={
-            "email": "chef@example.com",
-            "display_name": "Emanuel",
-            "password": "a-long-enough-password",
-        },
-    )
-    return {"Authorization": f"Bearer {response.json()['token']}"}
+    return await sign_up(client, "chef@example.com")
 
 
 @pytest.fixture
@@ -404,15 +397,8 @@ class TestMakingAVersionOfSomething:
         self, client: AsyncClient, cook: dict[str, str], pantry: dict[str, int]
     ) -> None:
         original = await self.an_original(client, cook, pantry)
-        signed_up = await client.post(
-            "/api/v1/accounts",
-            json={
-                "email": "neighbour@example.com",
-                "display_name": "Someone",
-                "password": "a-long-enough-password",
-            },
-        )
-        other = {"Authorization": f"Bearer {signed_up.json()['token']}"}
+        signed_up = await sign_up(client, "neighbour@example.com")
+        other = signed_up
 
         refused = await client.post(
             f"/api/v1/recipes/{original}/variants", json={"change": "vegan"}, headers=other

@@ -5,11 +5,11 @@ rather than inserts and rows.
 """
 
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import func, select
+from sqlmodel import col, func, select
 
 from quookly.access.database import session
 from quookly.access.models import CookRow
-from quookly.contracts.cook import Cook, StoredCredential
+from quookly.contracts.cook import Cook, Standing, StoredCredential
 from quookly.contracts.errors import EmailAlreadyRegistered
 
 
@@ -29,20 +29,31 @@ def _to_contract(row: CookRow) -> Cook:
         email=row.email,
         display_name=row.display_name,
         is_admin=row.is_admin,
+        standing=row.standing,
         registered_at=row.registered_at,
         locale=row.locale,
     )
 
 
 async def register(
-    email: str, display_name: str, password_hash: str, *, is_admin: bool = False
+    email: str,
+    display_name: str,
+    password_hash: str,
+    *,
+    is_admin: bool = False,
+    standing: Standing = Standing.APPLIED,
 ) -> Cook:
-    """Create an account. Raises `EmailAlreadyRegistered` if the email is taken."""
+    """Create an account. Raises `EmailAlreadyRegistered` if the email is taken.
+
+    `standing` is stated by the caller rather than defaulted to approved, so that letting
+    somebody in is always a decision written at the call site.
+    """
     row = CookRow(
         email=normalise_email(email),
         display_name=display_name,
         password_hash=password_hash,
         is_admin=is_admin,
+        standing=standing,
     )
     async with session() as active:
         active.add(row)
@@ -115,6 +126,36 @@ async def choose_locale(cook_id: int, locale: str) -> Cook | None:
         if row is None:
             return None
         row.locale = locale
+        active.add(row)
+        await active.commit()
+        await active.refresh(row)
+        return _to_contract(row)
+
+
+async def applicants() -> list[Cook]:
+    """Everybody waiting to be let in, oldest first.
+
+    Oldest first because this is a queue somebody works through, and the person who has
+    been waiting longest is the one most owed an answer.
+    """
+    async with session() as active:
+        rows = (
+            await active.exec(
+                select(CookRow)
+                .where(col(CookRow.standing) == Standing.APPLIED)
+                .order_by(col(CookRow.registered_at))
+            )
+        ).all()
+    return [_to_contract(row) for row in rows]
+
+
+async def decide(cook_id: int, standing: Standing) -> Cook | None:
+    """Let an applicant in, or turn them away. Absent if there is no such account."""
+    async with session() as active:
+        row = await active.get(CookRow, cook_id)
+        if row is None:
+            return None
+        row.standing = standing
         active.add(row)
         await active.commit()
         await active.refresh(row)

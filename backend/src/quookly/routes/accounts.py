@@ -17,10 +17,12 @@ from quookly.contracts.errors import (
     BootstrapClosed,
     EmailAlreadyRegistered,
     InvalidCredentials,
+    NotYetApproved,
+    Refused,
 )
 from quookly.managers import account as account_manager
 from quookly.managers import seed as seed_manager
-from quookly.routes.dependencies import CurrentCook
+from quookly.routes.dependencies import CurrentAdmin, CurrentCook
 
 router = APIRouter()
 
@@ -54,16 +56,51 @@ async def bootstrap_admin(registration: Registration) -> Authenticated:
     return authenticated
 
 
-@router.post("/accounts", response_model=Authenticated, status_code=status.HTTP_201_CREATED)
-async def register_cook(registration: Registration) -> Authenticated:
-    """Create an account."""
+@router.post("/accounts/applications", response_model=Cook, status_code=status.HTTP_201_CREATED)
+async def apply_for_account(registration: Registration) -> Cook:
+    """Ask to be let in (UC-10.6).
+
+    Public, and no token comes back. An application is not an account yet, and an endpoint
+    that handed one over would be open registration wearing a different name.
+    """
     try:
-        return await account_manager.register(registration)
+        return await account_manager.apply(registration)
     except EmailAlreadyRegistered:
+        # Deliberately the same answer whether the address holds an account or an earlier
+        # application: which of the two it is, is not a stranger's business.
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="That email is already registered.",
         ) from None
+
+
+@router.get("/accounts/applications", response_model=list[Cook])
+async def list_applications(admin: CurrentAdmin) -> list[Cook]:
+    """Who is waiting to be let in, oldest first (UC-10.6)."""
+    return await account_manager.applicants()
+
+
+@router.post("/accounts/applications/{cook_id}/approved", response_model=Cook)
+async def approve_application(cook_id: int, admin: CurrentAdmin) -> Cook:
+    """Let somebody in (UC-10.6).
+
+    They land on a kitchen with something in it, for the same reason the first admin does
+    (UC-10.4): an empty app teaches nobody what it is for.
+    """
+    decided = await account_manager.decide(cook_id, approved=True)
+    if decided is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such account.")
+    await seed_manager.install_starter_recipes(decided.id)
+    return decided
+
+
+@router.post("/accounts/applications/{cook_id}/refused", response_model=Cook)
+async def refuse_application(cook_id: int, admin: CurrentAdmin) -> Cook:
+    """Turn somebody away (UC-10.6). Reversible: an admin can approve them later."""
+    decided = await account_manager.decide(cook_id, approved=False)
+    if decided is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such account.")
+    return decided
 
 
 @router.get("/accounts/me", response_model=Cook)
@@ -85,6 +122,18 @@ async def sign_in(credentials: Credentials) -> Authenticated:
     """Exchange credentials for a token."""
     try:
         return await account_manager.sign_in(credentials)
+    except NotYetApproved:
+        # 403 rather than 401: the credentials were right. Retrying them changes nothing,
+        # and a client that treats this as "sign in again" would loop.
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your application is waiting for an administrator of this instance.",
+        ) from None
+    except Refused:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="An administrator of this instance declined this account.",
+        ) from None
     except InvalidCredentials:
         # One message for both a missing account and a wrong password: anything more
         # specific tells a stranger which emails hold accounts.

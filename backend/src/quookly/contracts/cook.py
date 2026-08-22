@@ -5,8 +5,26 @@ they are separate concepts (ADR-005) and arrive separately.
 """
 
 from datetime import datetime
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict
+
+
+class Standing(Enum):
+    """Where an account is in the process of being let in (FR-16, UC-10.6).
+
+    Anybody may apply to a Quookly instance; an administrator decides. Three states rather
+    than a boolean, because *not yet looked at* and *looked at and declined* are different
+    facts and the applicant is owed a different sentence for each.
+
+    `APPLIED` is the default on purpose. A code path that forgets to set this leaves
+    somebody locked out, which is recoverable; the opposite mistake lets a stranger into a
+    household's kitchen.
+    """
+
+    APPLIED = "applied"
+    APPROVED = "approved"
+    REFUSED = "refused"
 
 
 class Cook(BaseModel):
@@ -23,6 +41,7 @@ class Cook(BaseModel):
     email: str
     display_name: str
     is_admin: bool
+    standing: Standing
     registered_at: datetime
     # The language they chose, if they have. Absent means "follow the browser".
     locale: str | None = None

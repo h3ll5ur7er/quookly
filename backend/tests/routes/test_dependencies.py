@@ -17,6 +17,7 @@ from quookly.access.database import dispose_engine, get_engine
 from quookly.api import app
 from quookly.utilities.configuration import get_settings
 from quookly.utilities.security import issue_token
+from tests.support import sign_up
 
 SIGNING_KEY = "a-test-signing-key-of-sufficient-length-01"
 
@@ -80,15 +81,5 @@ class TestRefusing:
 
 class TestAccepting:
     async def test_a_valid_token_gets_through(self, client: AsyncClient) -> None:
-        response = await client.post(
-            "/api/v1/accounts",
-            json={
-                "email": "chef@example.com",
-                "display_name": "Emanuel",
-                "password": "a-sufficiently-long-password",
-            },
-        )
-        token = response.json()["token"]
-        assert (
-            await client.get(PROTECTED, headers={"Authorization": f"Bearer {token}"})
-        ).status_code == 200
+        headers = await sign_up(client, "chef@example.com")
+        assert (await client.get(PROTECTED, headers=headers)).status_code == 200

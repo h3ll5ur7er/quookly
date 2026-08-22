@@ -21,6 +21,7 @@ from quookly.access import model as inference
 from quookly.access.database import dispose_engine, get_engine
 from quookly.api import app
 from quookly.utilities.configuration import get_settings
+from tests.support import sign_up
 
 INSTANCE = "/api/v1/instance/inference"
 
@@ -67,15 +68,7 @@ async def admin(client: AsyncClient) -> dict[str, str]:
 
 @pytest.fixture
 async def ordinary(client: AsyncClient, admin: dict[str, str]) -> dict[str, str]:
-    response = await client.post(
-        "/api/v1/accounts",
-        json={
-            "email": "cook@example.com",
-            "display_name": "Someone",
-            "password": "a-sufficiently-long-password",
-        },
-    )
-    return {"Authorization": f"Bearer {response.json()['token']}"}
+    return await sign_up(client, "cook@example.com")
 
 
 @pytest.fixture

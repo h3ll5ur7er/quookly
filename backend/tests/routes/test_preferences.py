@@ -15,6 +15,7 @@ from sqlmodel import SQLModel
 from quookly.access.database import dispose_engine, get_engine
 from quookly.api import app
 from quookly.utilities.configuration import get_settings
+from tests.support import sign_up
 
 UNITS = "/api/v1/preferences/units"
 
@@ -39,18 +40,6 @@ async def client() -> AsyncIterator[AsyncClient]:
         transport=ASGITransport(app=app), base_url="http://testserver"
     ) as client:
         yield client
-
-
-async def sign_up(client: AsyncClient, email: str) -> dict[str, str]:
-    response = await client.post(
-        "/api/v1/accounts",
-        json={
-            "email": email,
-            "display_name": "Emanuel",
-            "password": "a-sufficiently-long-password",
-        },
-    )
-    return {"Authorization": f"Bearer {response.json()['token']}"}
 
 
 @pytest.fixture

@@ -10,6 +10,7 @@ from decimal import Decimal
 from sqlalchemy import DDL, UniqueConstraint, event
 from sqlmodel import Field, SQLModel
 
+from quookly.contracts.cook import Standing
 from quookly.contracts.cooking import SessionOutcome
 from quookly.contracts.eater import AgeBand, Severity
 from quookly.contracts.execution import Attention
@@ -36,6 +37,9 @@ class CookRow(SQLModel, table=True):
     display_name: str
     password_hash: str
     is_admin: bool = Field(default=False)
+    # Whether this account has been let in. Defaults to `APPLIED`: forgetting to set it
+    # locks somebody out, which is recoverable, rather than letting a stranger in.
+    standing: Standing = Field(default=Standing.APPLIED)
     registered_at: datetime = Field(default_factory=_now)
     # The language this cook chose, as opposed to the one their browser happens to ask
     # for. Absent until they choose, which is what the locale setup step is asking.

@@ -247,9 +247,9 @@ there was no way in for somebody who did not already have an account, and no scr
   plan~~ **Built** — and it turned out to be no change to V15 at all. ADR-042 had already written
   the answer: cooking a recipe outright is *plan it for today, then cook it*, composed in the route
 - A landing page for somebody who arrives without an account
-- **Signing up by application** — anybody may apply, an admin approves. A pending account is a
-  state V12 does not have yet: applied, approved, refused. Sign-in must refuse a pending account
-  in a way that says so, and an admin needs somewhere to see the queue
+- ~~**Signing up by application** — anybody may apply, an admin approves~~ **Built** on the API
+  ([ADR-049](07-decisions.md#adr-049-an-account-is-applied-for-and-an-administrator-answers)); the
+  apply form, the sign-in messages and the admin queue are the client half
 
 Placed after Phase 6 because there was nothing to tie together before there was something on each
 screen, and before Phase 7 because an Academy inside a product that reads as a prototype is

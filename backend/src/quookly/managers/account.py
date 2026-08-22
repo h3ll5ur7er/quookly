@@ -1,14 +1,24 @@
-"""Getting into an instance: bootstrap, registration, sign-in.
+"""Getting into an instance: bootstrap, applying, being let in, signing in.
 
 Sequences the steps; the rules live elsewhere. Password shape is enforced by the
 `Registration` contract, hashing and token issue by the `Security` utility, and storage
 by `CookAccess`.
+
+Anybody may **apply** to an instance; an administrator decides
+([ADR-049](../../../doc/07-decisions.md)). A self-hosted Quookly is somebody's household
+server, so open registration is wrong and an invite-only wall that gives a visitor nowhere
+to go is unfriendly. Applying is the middle: the door has a bell.
 """
 
 from quookly.access import cook as cook_access
 from quookly.contracts.accounts import Authenticated, Credentials, Registration
-from quookly.contracts.cook import Cook
-from quookly.contracts.errors import BootstrapClosed, InvalidCredentials
+from quookly.contracts.cook import Cook, Standing
+from quookly.contracts.errors import (
+    BootstrapClosed,
+    InvalidCredentials,
+    NotYetApproved,
+    Refused,
+)
 from quookly.utilities.security import hash_password, issue_token, verify_password
 
 # Verified against when no account matches, so that a missing account and a wrong
@@ -38,18 +48,41 @@ async def bootstrap_admin(registration: Registration) -> Authenticated:
         registration.display_name,
         hash_password(registration.password),
         is_admin=True,
+        # The person claiming the instance is the one who would do the approving.
+        standing=Standing.APPROVED,
     )
     return _authenticated(cook)
 
 
-async def register(registration: Registration) -> Authenticated:
-    """Create an ordinary account and sign it in."""
-    cook = await cook_access.register(
+async def apply(registration: Registration) -> Cook:
+    """Ask to be let in (UC-10.6).
+
+    No token comes back, and that is the point: an application is not an account yet. The
+    password is hashed and kept now rather than asked for again on approval, so that being
+    let in is one message to read rather than a second form to fill in.
+    """
+    return await cook_access.register(
         registration.email,
         registration.display_name,
         hash_password(registration.password),
+        standing=Standing.APPLIED,
     )
-    return _authenticated(cook)
+
+
+async def applicants() -> list[Cook]:
+    """Who is waiting, oldest first (UC-10.6)."""
+    return await cook_access.applicants()
+
+
+async def decide(cook_id: int, *, approved: bool) -> Cook | None:
+    """Let an applicant in, or turn them away (UC-10.6).
+
+    Deciding again is allowed and says so plainly: an admin who refused somebody by
+    mistake can approve them, and one who approved a stranger can shut the door. What
+    cannot be undone is what the account did while it was open, which is the pantry's and
+    the plan's business rather than this manager's.
+    """
+    return await cook_access.decide(cook_id, Standing.APPROVED if approved else Standing.REFUSED)
 
 
 async def sign_in(credentials: Credentials) -> Authenticated:
@@ -64,6 +97,16 @@ async def sign_in(credentials: Credentials) -> Authenticated:
     cook = await cook_access.fetch_by_email(credentials.email)
     if cook is None:
         raise InvalidCredentials
+
+    # Only asked once the password has matched. Somebody who knows the password already
+    # knows the account exists, so saying which of the two states it is in tells them
+    # nothing they could not already see — and saying nothing would leave an applicant
+    # retyping a password that was right all along.
+    if cook.standing is Standing.APPLIED:
+        raise NotYetApproved
+    if cook.standing is Standing.REFUSED:
+        raise Refused
+
     return _authenticated(cook)
 
 

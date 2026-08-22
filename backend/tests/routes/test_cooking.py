@@ -27,6 +27,7 @@ from quookly.contracts.ingredient import IngredientKind
 from quookly.contracts.measure import Quantity, Unit
 from quookly.managers import cooking as cooking_manager
 from quookly.utilities.configuration import get_settings
+from tests.support import sign_up
 
 PLANS = "/api/v1/plans"
 SESSIONS = "/api/v1/cooking/sessions"
@@ -58,14 +59,6 @@ async def client() -> AsyncIterator[AsyncClient]:
         transport=ASGITransport(app=app), base_url="http://testserver"
     ) as client:
         yield client
-
-
-async def sign_up(client: AsyncClient, email: str) -> dict[str, str]:
-    response = await client.post(
-        "/api/v1/accounts",
-        json={"email": email, "display_name": "Emanuel", "password": "a-long-enough-password"},
-    )
-    return {"Authorization": f"Bearer {response.json()['token']}"}
 
 
 @pytest.fixture

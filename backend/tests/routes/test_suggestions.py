@@ -24,6 +24,7 @@ from quookly.api import app
 from quookly.contracts.ingredient import Allergen, IngredientKind
 from quookly.contracts.measure import Quantity, Unit
 from quookly.utilities.configuration import get_settings
+from tests.support import sign_up
 
 RECIPES = "/api/v1/recipes"
 SUGGESTIONS = f"{RECIPES}/suggestions"
@@ -53,15 +54,7 @@ async def client() -> AsyncIterator[AsyncClient]:
 
 @pytest.fixture
 async def cook(client: AsyncClient) -> dict[str, str]:
-    response = await client.post(
-        "/api/v1/accounts",
-        json={
-            "email": "chef@example.com",
-            "display_name": "Emanuel",
-            "password": "a-long-enough-password",
-        },
-    )
-    return {"Authorization": f"Bearer {response.json()['token']}"}
+    return await sign_up(client, "chef@example.com")
 
 
 @pytest.fixture
@@ -267,13 +260,6 @@ class TestSearching:
         self, client: AsyncClient, cook: dict[str, str], pantry: dict[str, int]
     ) -> None:
         await a_recipe(client, cook, "Rhubarb Fool", pantry["rhubarb"])
-        signed_up = await client.post(
-            "/api/v1/accounts",
-            json={
-                "email": "neighbour@example.com",
-                "display_name": "Someone",
-                "password": "a-long-enough-password",
-            },
-        )
-        other = {"Authorization": f"Bearer {signed_up.json()['token']}"}
+        signed_up = await sign_up(client, "neighbour@example.com")
+        other = signed_up
         assert (await client.get(f"{SUGGESTIONS}?q=rhubarb", headers=other)).json() == []

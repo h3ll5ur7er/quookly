@@ -13,6 +13,25 @@ class EmailAlreadyRegistered(QuooklyError):
     """An account already exists for that email address."""
 
 
+class NotYetApproved(QuooklyError):
+    """The credentials were right, but nobody has let this account in yet (UC-10.6).
+
+    Told plainly rather than folded into `InvalidCredentials`, and the distinction is safe
+    precisely because it is only reachable **after** the password has matched. Somebody
+    who knows the password already knows the account exists; what they do not know is that
+    they are waiting on a person rather than mistyping.
+    """
+
+
+class Refused(QuooklyError):
+    """The credentials were right, and an administrator declined this account.
+
+    A separate sentence from `NotYetApproved` for the same reason that exists at all: "we
+    have not looked yet" and "we looked and said no" are different facts, and telling
+    somebody the first when the second is true leaves them waiting forever.
+    """
+
+
 class InvalidCredentials(QuooklyError):
     """The email and password did not identify an account.
 

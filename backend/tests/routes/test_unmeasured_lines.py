@@ -22,6 +22,7 @@ from quookly.access.database import dispose_engine, get_engine
 from quookly.api import app
 from quookly.contracts.ingredient import IngredientKind, Origin
 from quookly.utilities.configuration import get_settings
+from tests.support import sign_up
 
 ENGLISH = "en-GB"
 RECIPES = "/api/v1/recipes"
@@ -51,15 +52,7 @@ async def client() -> AsyncIterator[AsyncClient]:
 
 @pytest.fixture
 async def cook(client: AsyncClient) -> dict[str, str]:
-    response = await client.post(
-        "/api/v1/accounts",
-        json={
-            "email": "chef@example.com",
-            "display_name": "Emanuel",
-            "password": "a-sufficiently-long-password",
-        },
-    )
-    return {"Authorization": f"Bearer {response.json()['token']}"}
+    return await sign_up(client, "chef@example.com")
 
 
 @pytest.fixture
@@ -161,15 +154,8 @@ class TestExchange:
         assert salt["magnitude"] is None
         assert salt["unit"] is None
 
-        neighbour = await client.post(
-            "/api/v1/accounts",
-            json={
-                "email": "neighbour@example.com",
-                "display_name": "Someone",
-                "password": "a-sufficiently-long-password",
-            },
-        )
-        theirs = {"Authorization": f"Bearer {neighbour.json()['token']}"}
+        neighbour = await sign_up(client, "neighbour@example.com")
+        theirs = neighbour
         imported = await client.post("/api/v1/recipes/import", json=document, headers=theirs)
         assert imported.status_code == 201, imported.text
 

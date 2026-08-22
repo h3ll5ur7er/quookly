@@ -30,6 +30,7 @@ from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.contracts.web import ReadableContent
 from quookly.managers import seed
 from quookly.utilities.configuration import get_settings
+from tests.support import sign_up
 
 ENGLISH = "en-GB"
 IMPORT = "/api/v1/recipes/import-url"
@@ -75,15 +76,7 @@ async def client() -> AsyncIterator[AsyncClient]:
 
 @pytest.fixture
 async def cook(client: AsyncClient) -> dict[str, str]:
-    response = await client.post(
-        "/api/v1/accounts",
-        json={
-            "email": "chef@example.com",
-            "display_name": "Emanuel",
-            "password": "a-sufficiently-long-password",
-        },
-    )
-    return {"Authorization": f"Bearer {response.json()['token']}"}
+    return await sign_up(client, "chef@example.com")
 
 
 @pytest.fixture

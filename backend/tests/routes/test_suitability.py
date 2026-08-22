@@ -20,6 +20,7 @@ from quookly.access.database import dispose_engine, get_engine
 from quookly.api import app
 from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.utilities.configuration import get_settings
+from tests.support import sign_up
 
 ENGLISH = "en-GB"
 EATERS = "/api/v1/eaters"
@@ -50,15 +51,7 @@ async def client() -> AsyncIterator[AsyncClient]:
 
 @pytest.fixture
 async def cook(client: AsyncClient) -> dict[str, str]:
-    response = await client.post(
-        "/api/v1/accounts",
-        json={
-            "email": "chef@example.com",
-            "display_name": "Emanuel",
-            "password": "a-sufficiently-long-password",
-        },
-    )
-    return {"Authorization": f"Bearer {response.json()['token']}"}
+    return await sign_up(client, "chef@example.com")
 
 
 @pytest.fixture
@@ -231,15 +224,8 @@ class TestSeveralEaters:
         self, client: AsyncClient, cook: dict[str, str], larder: dict[str, int]
     ) -> None:
         """A verdict built from somebody else's allergies is worse than none."""
-        neighbour = await client.post(
-            "/api/v1/accounts",
-            json={
-                "email": "neighbour@example.com",
-                "display_name": "Someone",
-                "password": "a-sufficiently-long-password",
-            },
-        )
-        theirs = {"Authorization": f"Bearer {neighbour.json()['token']}"}
+        neighbour = await sign_up(client, "neighbour@example.com")
+        theirs = neighbour
         await add_eater(client, theirs, "Stranger", [PEANUT_ALLERGY])
         recipe_id = await author(client, cook, recipe_of("peanut-butter", larder=larder))
         assert await verdict(client, cook, recipe_id) is None

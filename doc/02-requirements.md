@@ -126,6 +126,7 @@ the screen does is worse than a printed page.
 | UC-10.3 | See what is still missing from the setup, and resume it later |
 | UC-10.4 | Start with a usable ingredient registry and a set of starter recipes, not an empty app |
 | UC-10.5 | As an admin, manage users and instance settings |
+| UC-10.6 | Apply for an account on somebody else's instance, and be let in or turned away by an admin |
 
 UC-10.4 matters more than it sounds. An empty recipe app is indistinguishable from a broken one, and
 a cook with nothing to look at has no reason to return.

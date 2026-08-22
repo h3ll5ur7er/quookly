@@ -19,6 +19,7 @@ from quookly.access.database import dispose_engine, get_engine
 from quookly.api import app
 from quookly.managers import seed
 from quookly.utilities.configuration import get_settings
+from tests.support import sign_up
 
 RECIPES = "/api/v1/recipes"
 
@@ -48,15 +49,7 @@ async def client() -> AsyncIterator[AsyncClient]:
 
 @pytest.fixture
 async def cook(client: AsyncClient) -> dict[str, str]:
-    response = await client.post(
-        "/api/v1/accounts",
-        json={
-            "email": "chef@example.com",
-            "display_name": "Emanuel",
-            "password": "a-sufficiently-long-password",
-        },
-    )
-    return {"Authorization": f"Bearer {response.json()['token']}"}
+    return await sign_up(client, "chef@example.com")
 
 
 async def a_recipe(client: AsyncClient, cook: dict[str, str]) -> dict[str, Any]:
@@ -129,15 +122,8 @@ class TestTheCooksOwnLanguage:
         self, client: AsyncClient, cook: dict[str, str]
     ) -> None:
         await speaking(client, cook, "de-CH")
-        neighbour = await client.post(
-            "/api/v1/accounts",
-            json={
-                "email": "neighbour@example.com",
-                "display_name": "Someone",
-                "password": "a-sufficiently-long-password",
-            },
-        )
-        theirs = {"Authorization": f"Bearer {neighbour.json()['token']}"}
+        neighbour = await sign_up(client, "neighbour@example.com")
+        theirs = neighbour
         created = await client.post(RECIPES, json=await a_recipe(client, theirs), headers=theirs)
         detail = (await client.get(f"{RECIPES}/{created.json()['id']}", headers=theirs)).json()
         assert detail["lines"][0]["ingredient"] == "plain flour"
