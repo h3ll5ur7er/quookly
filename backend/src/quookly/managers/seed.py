@@ -15,7 +15,7 @@ from typing import Any
 
 from quookly.access import ingredient as registry
 from quookly.access import recipe as recipe_access
-from quookly.contracts.ingredient import Origin
+from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.contracts.nutrition import Nutrient, NutrientProfile, NutritionSource
 from quookly.contracts.recipe import Provenance
 from quookly.engines import exchange
@@ -66,6 +66,61 @@ async def name_ingredients() -> int:
             added += await registry.name_in(slug, locale, spellings)
     if added:
         log.info("named the registry in %s languages", len(TRANSLATED_LOCALES))
+    return added
+
+
+#: The registry of generic foods, derived from the Swiss database by `seed/generic.py`.
+#: Separate from the starter document because the two are different kinds of thing: the
+#: starter is hand-written and carries judgements — which of four wheat flours is "plain
+#: flour", what one egg weighs — while this is derived, regenerated wholesale, and never
+#: edited by hand.
+GENERIC_FOODS = SEED_DIRECTORY / "generic-foods.json"
+
+
+def read_generic_foods() -> list[dict[str, Any]]:
+    """The generic foods this build ships, or none if the file was not included."""
+    if not GENERIC_FOODS.exists():
+        return []
+    document: dict[str, Any] = json.loads(GENERIC_FOODS.read_text(encoding="utf-8"))
+    entries: list[dict[str, Any]] = document.get("ingredients", [])
+    return entries
+
+
+async def stock_generic_foods() -> int:
+    """Add the generic foods this instance does not have. Returns how many.
+
+    Runs after the starter set and never over it: the builder already leaves the starter's
+    slugs and names alone, and the skip here is the second guard — a cook's own entry with
+    the same slug is theirs (ADR-016).
+
+    `allergens=None` where the source could not answer completely. That is not the same as
+    an empty set: it is stored as *unclassified*, so a verdict says nobody has looked
+    rather than saying the food is safe (ADR-006).
+    """
+    entries = read_generic_foods()
+    if not entries:
+        return 0
+
+    added = await registry.register_many(
+        [
+            registry.NewEntry(
+                slug=entry["slug"],
+                kind=IngredientKind(entry["kind"]),
+                density=Decimal(entry["density"]) if entry["density"] else None,
+                names=entry["names"],
+                allergens=(
+                    None
+                    if entry["allergens"] is None
+                    else frozenset(Allergen(one) for one in entry["allergens"])
+                ),
+            )
+            for entry in entries
+        ],
+        origin=Origin.SEED,
+    )
+
+    if added:
+        log.info("stocked %s generic foods", added, extra={"added": added})
     return added
 
 
@@ -126,15 +181,23 @@ async def stock_nutrition() -> int:
     installed = 0
     for source in SHIPPED_NUTRITION:
         document = read_nutrition_file(source)
-        profiles = document["profiles"]
+        profiles = list(document["profiles"])
+        if source is NutritionSource.SWISS:
+            # The generic foods carry their own figures, from the same table and read by
+            # the same builder. They travel with the entry rather than in a second file
+            # because they came from the same published row.
+            profiles += [
+                {
+                    "slug": entry["slug"],
+                    "reference": entry["reference"],
+                    "amounts": entry["amounts"],
+                }
+                for entry in read_generic_foods()
+                if entry["amounts"]
+            ]
         ids = await registry.ids_by_slug([one["slug"] for one in profiles])
-        for one in profiles:
-            ingredient_id = ids.get(one["slug"])
-            if ingredient_id is None:
-                # An instance whose registry does not have this ingredient. Nothing to
-                # attach the figures to, and inventing the entry would be a different job.
-                continue
-            await registry.record_profile(
+        installed += await registry.record_profiles(
+            [
                 NutrientProfile(
                     ingredient_id=ingredient_id,
                     source=source,
@@ -143,8 +206,12 @@ async def stock_nutrition() -> int:
                         Nutrient(name): Decimal(value) for name, value in one["amounts"].items()
                     },
                 )
-            )
-            installed += 1
+                for one in profiles
+                # An instance whose registry does not have this ingredient. Nothing to
+                # attach the figures to, and inventing the entry would be a different job.
+                if (ingredient_id := ids.get(one["slug"])) is not None
+            ]
+        )
 
     if installed:
         log.info("stocked %s nutrient profiles", installed, extra={"profiles": installed})

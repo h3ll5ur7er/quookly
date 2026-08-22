@@ -1,10 +1,12 @@
 """Access to the ingredient registry, in domain verbs."""
 
 import re
+from collections.abc import Sequence
+from dataclasses import dataclass
 from decimal import Decimal
 
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import col, select
+from sqlmodel import col, delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from quookly.access.database import session
@@ -157,6 +159,92 @@ async def name_in(slug: str, locale: str, spellings: list[str]) -> int:
             await active.rollback()
             return 0
         return added
+
+
+@dataclass(frozen=True, slots=True)
+class NewEntry:
+    """One registry entry to add. `allergens=None` means nobody has classified it."""
+
+    slug: str
+    kind: IngredientKind
+    density: Decimal | None
+    names: dict[str, list[str]]
+    allergens: frozenset[Allergen] | None = None
+
+
+async def register_many(entries: Sequence[NewEntry], origin: Origin = Origin.SEED) -> int:
+    """Add many entries in one transaction. Returns how many were added.
+
+    Written for the shipped registry of generic foods, which is nine hundred entries: one
+    session each took nine seconds of a fresh instance's first start and made the test
+    suite four times longer.
+
+    Skips a slug that is already here rather than raising, because that is what every
+    caller of this wants — seeding is additive and must not touch what it finds
+    (ADR-016). A single `register` still raises, since adding one ingredient that already
+    exists is a mistake worth hearing about.
+    """
+    if not entries:
+        return 0
+
+    async with session() as active:
+        held = set(
+            (
+                await active.exec(
+                    select(IngredientRow.slug).where(
+                        col(IngredientRow.slug).in_([entry.slug for entry in entries])
+                    )
+                )
+            ).all()
+        )
+        # A spelling means one ingredient per language, enforced by a unique index. Losing
+        # that race would drop an entry silently, so the claim is settled here.
+        claimed = {
+            (row.locale, row.normalised)
+            for row in (await active.exec(select(IngredientNameRow))).all()
+        }
+
+        rows: list[tuple[IngredientRow, NewEntry]] = []
+        for entry in entries:
+            if entry.slug in held:
+                continue
+            held.add(entry.slug)
+            row = IngredientRow(
+                slug=entry.slug,
+                kind=entry.kind,
+                density=entry.density,
+                origin=origin,
+                allergens_classified=entry.allergens is not None,
+            )
+            active.add(row)
+            rows.append((row, entry))
+
+        await active.flush()
+
+        for row, entry in rows:
+            assert row.id is not None
+            for locale, spellings in entry.names.items():
+                position = 0
+                for spelling in spellings:
+                    wanted = normalise(spelling)
+                    if (locale, wanted) in claimed:
+                        continue
+                    claimed.add((locale, wanted))
+                    active.add(
+                        IngredientNameRow(
+                            ingredient_id=row.id,
+                            locale=locale,
+                            name=spelling,
+                            normalised=wanted,
+                            is_canonical=position == 0,
+                        )
+                    )
+                    position += 1
+            for allergen in entry.allergens or frozenset():
+                active.add(IngredientAllergenRow(ingredient_id=row.id, allergen=allergen))
+
+        await active.commit()
+        return len(rows)
 
 
 async def resolve(name: str, locale: str) -> Ingredient | None:
@@ -450,6 +538,56 @@ async def profiles_for(ingredient_ids: list[int]) -> list[NutrientProfile]:
             )
         gathered[key].amounts[row.nutrient] = row.amount
     return list(gathered.values())
+
+
+async def record_profiles(profiles: Sequence[NutrientProfile]) -> int:
+    """Restate what one table says about many ingredients, in one transaction.
+
+    The same operation as `record_profile` and the same wholesale-replacement rule; what
+    differs is that it is not paid nine hundred times. Seeding restates every shipped
+    figure on every start-up, deliberately — a refreshed table is a corrected table — and
+    once the registry held the whole Swiss database that cost nine seconds of every boot.
+
+    Grouped by source, because that is the unit the replacement is defined over: a source
+    withdrawing a nutrient must lose it here, and nothing another source published may go
+    with it.
+    """
+    if not profiles:
+        return 0
+
+    by_source: dict[NutritionSource, list[NutrientProfile]] = {}
+    for profile in profiles:
+        by_source.setdefault(profile.source, []).append(profile)
+
+    written = 0
+    async with session() as active:
+        for source, holding in by_source.items():
+            await active.exec(
+                delete(NutrientProfileRow)
+                .where(col(NutrientProfileRow.source) == source)
+                .where(
+                    col(NutrientProfileRow.ingredient_id).in_(
+                        [profile.ingredient_id for profile in holding]
+                    )
+                )
+            )
+            # Flushed before the inserts, or they race the delete into the unique index
+            # and a second seeding fails on figures it is only restating.
+            await active.flush()
+            for profile in holding:
+                for nutrient, amount in profile.amounts.items():
+                    active.add(
+                        NutrientProfileRow(
+                            ingredient_id=profile.ingredient_id,
+                            source=source,
+                            nutrient=nutrient,
+                            amount=amount,
+                            reference=profile.reference,
+                        )
+                    )
+                written += 1
+        await active.commit()
+    return written
 
 
 async def record_profile(profile: NutrientProfile) -> None:

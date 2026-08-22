@@ -2128,3 +2128,59 @@ screen they visit. Email is a dependency a self-hosted instance should not need 
 notification channel is a later decision rather than a hidden requirement of this one. A refusal is
 also reversible on purpose, because an admin who mis-clicks should not have to reach for a database.
 
+## ADR-050 The shipped registry is derived from a published table, and says when it does not know
+
+**Status:** Accepted
+
+**Context.** Quookly shipped twenty-nine ingredients. Everything else a cook typed resolved to
+nothing, so importing an ordinary recipe invented entries nobody had classified: no density, no
+allergens, no nutrition, and a fresh one per spelling. A registry that small is not a registry — it
+is a list of the things the starter recipes happen to use.
+
+The Swiss Food Composition Database publishes 1,216 generic foods with the nutrients an EU label
+declares, and the same database in German, French and Italian with **identical row ids**.
+
+**Decision.** Derive the registry from it. `seed/generic.py` reads all three editions we ship and
+builds `seed/generic-foods.json`: roughly nine hundred entries, each with names in three languages,
+a kind, a density where published, the nutrition from the same row, and an allergen answer that may
+be *no answer*.
+
+**Rationale for deriving rather than curating.** Nine hundred hand-written entries is not work
+anybody would finish, and the judgement that matters is not per-row — it is in the rules. The rules
+are in one file, tested, and re-runnable when the FSVO publishes an edition.
+
+**What is left out, and why.** Prepared dishes. A registry is the list of things a recipe *line* can
+name, and "Lasagne, homemade" is a recipe. Cooked variants of a food that also appears raw go too: a
+line says "carrot", and eight carrots in a picker is worse than one.
+
+**The allergen rule is asymmetric, on purpose.** Saying an ingredient *contains* something can only
+make a verdict more cautious — a wrong "contains" costs a cook a dish. Saying it contains *nothing*
+can put an allergen on a plate. So a keyword is enough to **add** an allergen, and only a category
+whose complete set is knowable from the category alone may be declared **complete**
+([ADR-006](#adr-006-allergen-determination-is-structural)). Sausages, sauces, breads and anything
+whose name says it was composed come back unclassified, which reads as "nobody has looked". Roughly
+four hundred entries are answered completely and five hundred are not, and that ratio is the honest
+one rather than a shortfall.
+
+Two guards earn their place. A hard cheese named *Sbrinz* or *Tête de Moine* contains no word a name
+table could match, so **the category answers for it** — twenty entries are in that position, and a
+registry judging on names alone would have handed every one of them to somebody avoiding dairy. And
+a *game terrine* is filed under "Meat and offal/Game": the first version declared it allergen-free,
+which is exactly the direction that must never happen.
+
+**A name means one ingredient per language**, enforced by a unique index. The builder settles every
+claim at build time rather than letting the loser vanish silently at seed time, and the hand-written
+starter set wins every collision — somebody chose which of four wheat flours answers for "plain
+flour", and it carries a density and a piece weight this table does not publish.
+
+**Cost.** Three workbooks, two megabytes, in `reference/`. A 550 KB seed file. About two seconds of a
+fresh instance's first start-up, and two more on each one after it while the published figures are
+restated — which is why `register_many` and `record_profiles` exist: one transaction rather than nine
+hundred. And the table's vocabulary is Swiss-English, so *zucchini*, *eggplant*, *shrimp* and
+*yogurt* need British spellings taught by hand, keyed by row id like every other judgement about this
+document.
+
+**What it does not fix.** The table has eleven spices and no bay leaf, chilli, oregano or vanilla. A
+cook will still create entries, and Phase 7 owes them a screen to see and correct what they and the
+importer have made.
+

@@ -14,7 +14,7 @@ from .access import search
 from .access.database import dispose_engine
 from .contracts.events import MealCooked
 from .managers import pantry
-from .managers.seed import stock_nutrition, stock_registry
+from .managers.seed import stock_generic_foods, stock_nutrition, stock_registry
 from .routes import (
     accounts_router,
     cooking_router,
@@ -74,6 +74,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     configure_logging()
     wire_subscriptions()
     await stock_registry()
+    # After the hand-written set, so the starter owns every name it wants. Separate from
+    # `stock_registry` because it answers a different question: that one makes sure the
+    # starter recipes have ingredients to point at, and a cook being let in needs it. This
+    # is the instance's reference data, and it is nobody's dependency.
+    await stock_generic_foods()
     await stock_nutrition()
     # Derived, so it is rebuilt rather than migrated: a change to what is indexed then
     # costs nothing to roll out and cannot be half-applied.

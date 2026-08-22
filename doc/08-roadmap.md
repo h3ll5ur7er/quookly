@@ -278,7 +278,12 @@ system a cook currently cannot see or correct without editing code.
 
 ### The ingredient registry, visible and correctable
 
-**Today:** importing a recipe already creates registry entries for ingredients nobody has recorded
+**Since [ADR-050](07-decisions.md#adr-050-the-shipped-registry-is-derived-from-a-published-table-and-says-when-it-does-not-know)**
+the registry ships with roughly nine hundred generic foods derived from the Swiss database, named in
+English, German and French, with nutrition and — where the source can answer completely — allergens.
+That closes most of the gap a fresh instance had. It does not close the rest:
+
+**Today:** importing a recipe still creates registry entries for ingredients nobody has recorded
 (`RecipeManager`, `Origin.USER`). It has to — a line that resolves to nothing cannot be shopped for,
 scaled or judged. But what it creates is a guess: `kind` is assumed `SOLID`, `density` is absent, and
 allergens are deliberately left **unclassified** rather than empty, because nobody has looked

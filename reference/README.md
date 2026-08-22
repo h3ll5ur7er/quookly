@@ -34,13 +34,36 @@ carried per source and shown on every recipe that uses it (FR-20).
 it reads anything: derived data should say which document it came from, not merely which
 *kind* of document.
 
+### `swiss-food-composition-database.de.xlsx` and `.fr.xlsx`
+
+| | |
+| --- | --- |
+| **Dataset** | The same database, V7.1, German and French editions |
+| **Retrieved** | 2026-08-22, from `https://naehrwertdaten.ch/de/downloads/` and `/fr/downloads/` |
+| **SHA-256 (de)** | `f4bb854944ef811f9b8463984389f8121e73278c4fd24fc3e8d16336cb711270` |
+| **SHA-256 (fr)** | `1692aa241728f25d4823a6c97bb36c393f7f64173a00a8ed4175b1bf926a5405` |
+
+**Why three copies of one database.** The row ids are identical across all three editions,
+which is what makes a trilingual registry possible without translating anything ourselves:
+row 368 is `Onion, raw`, `Zwiebel, roh` and `Oignon, cru`, and all three become names for
+one entry. A cook importing a German recipe resolves *Zwiebel* against the same ingredient
+an English one reaches by *onion* (FR-10).
+
+Without them, [`backend/seed/generic.py`](../backend/seed/generic.py) could still build the
+registry — and every one of its nine hundred entries would be named in English only, so a
+German recipe would resolve nothing and invent nine hundred duplicates nobody has
+classified. That is the failure this costs two megabytes to avoid.
+
 ## Refreshing one
 
-Replace the file, update its retrieval date and digest here, and re-run the builder. The
+Replace the file, update its retrieval date and digest here, and re-run the builders. The
 digest check will fail first and say so, which is the point — a refreshed table is a
 changed input, and it should be a thing somebody did rather than a thing that happened.
 
     cd backend && uv run --with openpyxl python seed/swiss.py
+    cd backend && uv run --with openpyxl python seed/generic.py
 
-Then read the diff on `backend/seed/nutrition.swiss.json`. A publisher revising a figure is
-news worth looking at.
+Then read the diff on `backend/seed/nutrition.swiss.json` and
+`backend/seed/generic-foods.json`. A publisher revising a figure is news worth looking at,
+and so is one withdrawing a food: an entry that disappears from the built file stays in a
+running instance's registry, because a cook may have used it.
