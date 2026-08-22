@@ -132,7 +132,7 @@ test.describe('a claimed instance', () => {
     await page.getByLabel('Email').fill(ADMIN.email);
     await page.getByLabel('Password').fill(ADMIN.password);
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page).toHaveURL(/\/recipes$/);
+    await expect(page).toHaveURL(/\/$/);
   });
 
   test('keeps a stranger out of the recipes and remembers where they were going', async ({

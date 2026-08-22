@@ -88,3 +88,60 @@ h2 {
   font-size: var(--text-sm);
   overflow-wrap: anywhere;
 }
+
+/* --- who is signed in ------------------------------------------------------------------ */
+
+.settings__who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-3) 0 var(--space-4);
+}
+
+.settings__avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.settings__name {
+  display: block;
+  font-weight: 600;
+}
+
+.settings__email {
+  display: block;
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
+/* A link that behaves like a row, because it leads somewhere rather than doing something. */
+.settings__go {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  margin-block-start: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--on-surface);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.settings__go::after {
+  content: '→';
+  color: var(--on-surface-muted);
+}
+
+.settings__go:hover {
+  background: var(--surface-sunken);
+}

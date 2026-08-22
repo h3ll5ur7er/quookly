@@ -17,7 +17,7 @@ function entryGuard(whenBootstrapRequired: string, otherwise: string): CanActiva
     const auth = inject(AuthStore);
 
     if (auth.isSignedIn()) {
-      return router.createUrlTree(['/recipes']);
+      return router.createUrlTree(['/']);
     }
 
     return inject(AccountsService)

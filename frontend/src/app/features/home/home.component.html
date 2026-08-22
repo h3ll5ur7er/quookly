@@ -1,0 +1,75 @@
+<main class="page home">
+  <header class="home__welcome">
+    <h1 class="home__greeting">
+      <span>{{ greeting() }}</span>
+      @if (name()) {
+        <span class="home__name">{{ name() }}</span>
+      }
+    </h1>
+  </header>
+
+  <div class="home__cards">
+    <!-- First, because it is the only thing here with a deadline. -->
+    @if (pressing(); as soon) {
+      @if (soon.length > 0) {
+        <section class="card card--urgent" aria-labelledby="soon-heading">
+          <h2 id="soon-heading" class="card__title" i18n="@@homeUsingSoon">Use these first</h2>
+          <ul class="home__list">
+            @for (entry of soon.slice(0, 5); track entry.ingredient_id) {
+              <li class="home__item">
+                <span>{{ entry.name }}</span>
+                @if (entry.total) {
+                  <span class="numeric">{{ entry.total }}</span>
+                }
+              </li>
+            }
+          </ul>
+          <a class="card__more" routerLink="/recipes" i18n="@@homeWhatToCook">
+            What can I cook with these
+          </a>
+        </section>
+      }
+    }
+
+    @if (tonight(); as meals) {
+      @if (meals.length > 0) {
+        <section class="card" aria-labelledby="tonight-heading">
+          <h2 id="tonight-heading" class="card__title" i18n="@@homeTonight">On today</h2>
+          <ul class="home__list">
+            @for (meal of meals; track meal.id) {
+              <li class="home__item">
+                <span>{{ meal.recipe_title }}</span>
+                @if (meal.cooked) {
+                  <span class="home__done" i18n="@@homeCooked">cooked</span>
+                }
+              </li>
+            }
+          </ul>
+          <a class="card__more" routerLink="/plans" i18n="@@homeSeeWeek">See the week</a>
+        </section>
+      }
+    }
+
+    @if (toBuy() > 0) {
+      <section class="card" aria-labelledby="shopping-heading">
+        <h2 id="shopping-heading" class="card__title" i18n="@@homeShopping">Still to buy</h2>
+        <p class="home__count">
+          <span class="numeric">{{ toBuy() }}</span>
+          <span i18n="@@homeThings">things</span>
+        </p>
+        <a class="card__more" routerLink="/shopping" i18n="@@homeOpenList">Open the list</a>
+      </section>
+    }
+
+    @if (quiet()) {
+      <!-- A quiet day is a real answer, and a better one than an empty screen. -->
+      <section class="card">
+        <h2 class="card__title" i18n="@@homeQuietHeading">Nothing needs you</h2>
+        <p class="home__quiet" i18n="@@homeQuiet">
+          Nothing is about to go off, nothing is planned for today, and there is nothing to buy.
+        </p>
+        <a class="card__more" routerLink="/plans" i18n="@@homePlanAWeek">Plan a week</a>
+      </section>
+    }
+  </div>
+</main>

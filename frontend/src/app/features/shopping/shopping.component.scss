@@ -1,0 +1,56 @@
+@use '../../../styles/page';
+@use '../../../styles/breakpoints' as *;
+
+.shopping__week {
+  margin: calc(var(--space-2) * -1) 0 var(--space-5);
+  color: var(--on-surface-muted);
+}
+
+.shopping__empty {
+  color: var(--on-surface-muted);
+}
+
+.shopping__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Set larger than a reading list on purpose: this is read at arm's length, in a shop,
+   holding something. Rows are tall enough to keep a place with a thumb. */
+.shopping__line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  min-block-size: 56px;
+  padding-block: var(--space-3);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--text-lg);
+}
+
+.shopping__amount {
+  min-inline-size: 6rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: end;
+}
+
+/* Two columns once the list is long enough to scroll on a laptop and short enough to fit
+   twice over. A shop is a phone; a kitchen table is not. */
+@include from($lg) {
+  .shopping__list {
+    columns: 2;
+    column-gap: var(--space-8);
+  }
+
+  .shopping__line {
+    break-inside: avoid;
+  }
+}
+
+.shopping__where {
+  display: inline-block;
+  margin-block-start: var(--space-5);
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}

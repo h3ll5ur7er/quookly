@@ -25,6 +25,17 @@ async def create_plan(submitted: PlanInput, cook: CurrentCook) -> PlanView:
     return await plan_manager.open_plan(submitted, cook.cook_id)
 
 
+@router.get("/plans/current", response_model=PlanView | None)
+async def current_plan(cook: CurrentCook) -> PlanView | None:
+    """The week being cooked now, and its shopping list (UC-4.4).
+
+    What a cook standing in a shop asks for, and what a home screen shows without making
+    anybody choose a week first. Absent where nothing has ever been planned — an empty
+    answer rather than an error, because having no plan is an ordinary state.
+    """
+    return await plan_manager.current(cook.cook_id)
+
+
 @router.get("/plans/{plan_id}", response_model=PlanView)
 async def get_plan(plan_id: int, cook: CurrentCook) -> PlanView:
     """The week, with its shopping list. A read — nothing here reserves or releases."""

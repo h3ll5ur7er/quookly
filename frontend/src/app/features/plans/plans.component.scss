@@ -45,17 +45,23 @@
    starting a new one is what they do once. */
 .plans__dates {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-3);
   /* The heading is a heading, not a label. Without this the fields sit against it and
      "From" reads as part of "Plan a week". */
   margin-top: var(--space-2);
 }
 
+/* `min-width: 0` because a flex item defaults to `min-width: auto` and will not shrink
+   below what its content insists on — and a native date input insists on a good deal. Two
+   of them side by side pushed a 390px phone twelve pixels sideways, invisibly, from the
+   day this screen was built until something measured it. */
 .plans__field {
   display: flex;
-  flex: 1 1 0;
+  flex: 1 1 9rem;
   flex-direction: column;
   gap: var(--space-2);
+  min-width: 0;
 
   input {
     height: 48px;

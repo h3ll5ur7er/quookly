@@ -6,6 +6,7 @@ deleting a plan gives its stock back rather than leaving it spoken for.
 """
 
 from collections.abc import AsyncIterator
+from datetime import date
 from decimal import Decimal
 from typing import Any
 
@@ -22,6 +23,7 @@ from quookly.contracts.events import MealCooked
 from quookly.contracts.ingredient import IngredientKind
 from quookly.contracts.measure import Quantity, Unit
 from quookly.managers import pantry as pantry_manager
+from quookly.managers import plan as plan_manager
 from quookly.utilities import events
 from quookly.utilities.configuration import get_settings
 
@@ -282,3 +284,56 @@ async def test_a_meal_that_is_not_yours_cannot_be_cooked(
     response = await client.post(f"{PLANS}/{plan_id}/slots/{slot_id}/cooked", headers=neighbour)
 
     assert response.status_code == 404
+
+
+class TestTheWeekBeingCookedNow:
+    """What a cook standing in a shop asks for, and what a home screen shows without
+    making anybody choose a week first."""
+
+    async def test_nothing_planned_is_an_empty_answer_rather_than_an_error(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        """Having no plan is an ordinary state, not a failure."""
+        answered = await client.get(f"{PLANS}/current", headers=cook)
+        assert answered.status_code == 200
+        assert answered.json() is None
+
+    async def test_the_week_containing_today(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, monkeypatch: MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(plan_manager, "_today", lambda: date(2026, 8, 26))
+        await client.post(PLANS, json={"starts_on": MONDAY, "ends_on": SUNDAY}, headers=cook)
+        await client.post(
+            PLANS, json={"starts_on": "2027-01-04", "ends_on": "2027-01-10"}, headers=cook
+        )
+
+        running = await client.get(f"{PLANS}/current", headers=cook)
+        assert running.json()["starts_on"] == MONDAY
+
+    async def test_between_weeks_the_last_one_stands(
+        self, client: AsyncClient, cook: dict[str, str], monkeypatch: MonkeyPatch
+    ) -> None:
+        """The shopping for a plan that ended yesterday is still shopping the cook has not
+        done. An empty screen would be the app forgetting on their behalf."""
+        monkeypatch.setattr(plan_manager, "_today", lambda: date(2026, 9, 30))
+        await client.post(PLANS, json={"starts_on": MONDAY, "ends_on": SUNDAY}, headers=cook)
+
+        running = await client.get(f"{PLANS}/current", headers=cook)
+        assert running.json()["starts_on"] == MONDAY
+
+    async def test_it_carries_the_shopping_list(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, monkeypatch: MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(plan_manager, "_today", lambda: date(2026, 8, 26))
+        recipe_id = await a_recipe(client, cook, flour)
+        plan_id = await a_week(client, cook)
+        await client.put(f"{PLANS}/{plan_id}/slots", json=slot(recipe_id=recipe_id), headers=cook)
+
+        running = await client.get(f"{PLANS}/current", headers=cook)
+        assert [line["quantity"] for line in running.json()["shopping"]] == ["200 g"]
+
+    async def test_another_cooks_week_is_not_it(
+        self, client: AsyncClient, cook: dict[str, str], neighbour: dict[str, str]
+    ) -> None:
+        await client.post(PLANS, json={"starts_on": MONDAY, "ends_on": SUNDAY}, headers=cook)
+        assert (await client.get(f"{PLANS}/current", headers=neighbour)).json() is None

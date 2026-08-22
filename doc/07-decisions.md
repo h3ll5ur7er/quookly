@@ -537,6 +537,15 @@ needed.
 ticking off shopping items, advancing steps — needing a reconciliation story. Confining offline to
 three surfaces keeps that bounded.
 
+**As built, the widening was owed.** For five phases "authored at the narrow viewport and widened"
+was only half done: everything was authored narrow and nothing was widened, which is the failure
+mode this ADR invites if the second half is never scheduled. A laptop got a phone layout with margin
+either side. The correction — real breakpoint mixins, chrome that becomes a sidebar, collections
+that become grids — is recorded in the design language's Layout section, and an end-to-end suite
+(`e2e/14-widths.spec.ts`) now asserts at 390px, 834px and 1440px that no page scrolls horizontally
+and that the chrome is in the right place, so the second half cannot silently lapse again. It found
+a real defect on its first run: `/plans` had overflowed a phone by 12px since the day it was written.
+
 **As built, for the cooking session.** The reconciliation story turned out to be smaller than
 feared, because of what these mutations *are*.
 

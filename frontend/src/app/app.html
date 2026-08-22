@@ -1,59 +1,62 @@
 <a class="skip" href="#content" i18n="@@skipToContent">Skip to content</a>
 
-<div class="shell">
-  <div id="content" class="shell__content">
-    <router-outlet />
+@if (chromed() && signedIn()) {
+  <div class="shell">
+    <!-- The brand, the person, and the way out. On a phone this is one slim row at the
+         top; from `lg` it becomes the head of the sidebar, which is where a persistent
+         navigation puts it. -->
+    <header class="shell__top">
+      <a class="shell__brand" routerLink="/">
+        <img class="shell__mark" src="/icons/icon-192.png" alt="" width="32" height="32" />
+        <span class="shell__name">Quookly</span>
+      </a>
+
+      <nav class="shell__nav" aria-label="Sections" i18n-aria-label="@@navLabel">
+        @for (section of sections; track section.path) {
+          <a
+            class="shell__link"
+            [routerLink]="section.path"
+            routerLinkActive="shell__link--current"
+            [routerLinkActiveOptions]="{ exact: section.path === '/' }"
+            ariaCurrentWhenActive="page"
+          >
+            <span class="shell__icon" aria-hidden="true">{{ section.mark }}</span>
+            <span class="shell__label">{{ sectionLabel(section.name) }}</span>
+          </a>
+        }
+      </nav>
+
+      <a
+        class="shell__account"
+        routerLink="/settings"
+        routerLinkActive="shell__account--current"
+        i18n-aria-label="@@navSettings"
+        aria-label="Settings and account"
+      >
+        <span class="shell__avatar" aria-hidden="true">{{ initial() }}</span>
+        <span class="shell__who">{{ name() }}</span>
+      </a>
+    </header>
+
+    <div id="content" class="shell__content">
+      <router-outlet />
+    </div>
   </div>
+} @else {
+  <!-- Signed out, or a screen that wants none of the furniture. -->
+  <div class="shell shell--bare">
+    <div id="content" class="shell__content">
+      <router-outlet />
+    </div>
 
-  <!-- Settings are set once and then left alone, so they sit at the end of the page
-       rather than in the bar that follows the cook around. The page's contentinfo, so
-       the controls are inside a landmark rather than loose at the end of the document.
-
-       Gone in cooking mode with the rest of the furniture: a language picker under a
-       recipe somebody is halfway through is a thing to knock with a wet thumb. -->
-  @if (chromed()) {
-    <footer class="shell__settings">
-      <app-locale-picker />
-      <app-theme-picker />
-    </footer>
-  }
-
-  <!-- Low, within thumb reach, and the same bar on every screen. Navigation is available
-       rather than present: two words, no icons competing with the content above them. -->
-  @if (signedIn()) {
-    <nav class="shell__nav" aria-label="Sections" i18n-aria-label="@@navLabel">
-      <a
-        class="shell__link"
-        routerLink="/recipes"
-        routerLinkActive="shell__link--current"
-        ariaCurrentWhenActive="page"
-        i18n="@@navRecipes"
-        >Recipes</a
-      >
-      <a
-        class="shell__link"
-        routerLink="/plans"
-        routerLinkActive="shell__link--current"
-        ariaCurrentWhenActive="page"
-        i18n="@@navPlans"
-        >Plan</a
-      >
-      <a
-        class="shell__link"
-        routerLink="/pantry"
-        routerLinkActive="shell__link--current"
-        ariaCurrentWhenActive="page"
-        i18n="@@navPantry"
-        >Pantry</a
-      >
-      <a
-        class="shell__link"
-        routerLink="/household"
-        routerLinkActive="shell__link--current"
-        ariaCurrentWhenActive="page"
-        i18n="@@navHousehold"
-        >Household</a
-      >
-    </nav>
-  }
-</div>
+    <!-- The two choices somebody makes *before* they have an account to keep them in. Once
+         signed in they live in Settings, where everything set-once-and-left-alone lives —
+         but a visitor who reads French should not have to sign in to say so. -->
+    @if (chromed()) {
+      <footer class="shell__aside">
+        <app-locale-picker />
+        <app-theme-picker />
+      </footer>
+    }
+  </div>
+}

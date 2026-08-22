@@ -1,7 +1,18 @@
+@use '../../../styles/breakpoints' as *;
 @use '../../../styles/page';
 @use '../../../styles/badges';
 
+/* A grid once there is room for one. A collection is the thing that should take the width
+   of a screen — capping *prose* keeps it readable, capping a list of cards just leaves a
+   laptop mostly empty. */
 .recipes__list {
+  display: grid;
+  gap: var(--space-3);
+
+  @include from($md) {
+    grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  }
+
   display: grid;
   gap: var(--space-3);
   margin: var(--space-5) 0 0;
@@ -168,4 +179,18 @@
 
 .action--quiet:hover {
   background: var(--surface-sunken);
+}
+
+/* Side by side once they are not the only two things on the screen. Stacked full-width
+   buttons are a phone pattern; on a laptop they read as a wall. */
+@include from($md) {
+  .action {
+    display: inline-grid;
+    min-width: 14rem;
+    margin-inline-end: var(--space-3);
+  }
+
+  .action--quiet {
+    margin-top: var(--space-6);
+  }
 }

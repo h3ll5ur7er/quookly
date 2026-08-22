@@ -1253,6 +1253,36 @@
         }
       }
     },
+    "/api/v1/plans/current": {
+      "get": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Current Plan",
+        "description": "The week being cooked now, and its shopping list (UC-4.4).\n\nWhat a cook standing in a shop asks for, and what a home screen shows without making\nanybody choose a week first. Absent where nothing has ever been planned \u2014 an empty\nanswer rather than an error, because having no plan is an ordinary state.",
+        "operationId": "currentPlan",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/PlanView"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Currentplan"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/plans/{plan_id}": {
       "get": {
         "tags": [

@@ -1,6 +1,41 @@
 <main class="page settings">
   <h1 i18n="@@settingsHeading">Settings</h1>
 
+  <!-- Who is signed in, and the way out. It was in the auth store from the beginning and
+       reachable from nowhere. -->
+  <section class="settings__account" aria-labelledby="account-heading">
+    <h2 id="account-heading" i18n="@@settingsAccount">Account</h2>
+    <p class="settings__who">
+      <span class="settings__avatar" aria-hidden="true">{{ initial() }}</span>
+      <span>
+        <span class="settings__name">{{ name() }}</span>
+        <span class="settings__email">{{ email() }}</span>
+      </span>
+    </p>
+    <button type="button" class="secondary" (click)="signOut()" i18n="@@settingsSignOut">
+      Sign out
+    </button>
+  </section>
+
+  <section aria-labelledby="household-heading">
+    <h2 id="household-heading" i18n="@@settingsHousehold">Household</h2>
+    <p class="settings__why" i18n="@@settingsHouseholdWhy">
+      Who you cook for, and what any of them cannot eat. Set once and then mostly left alone, which
+      is why it lives here rather than in the bar at the bottom of every screen.
+    </p>
+    <a class="settings__go" routerLink="/household" i18n="@@settingsWhoYouCookFor">
+      Who you cook for
+    </a>
+  </section>
+
+  <section aria-labelledby="theme-heading">
+    <h2 id="theme-heading" i18n="@@settingsTheme">Appearance</h2>
+    <p class="settings__why" i18n="@@settingsThemeWhy">
+      Follows your device until you choose otherwise, and then it is remembered.
+    </p>
+    <app-theme-picker />
+  </section>
+
   <section aria-labelledby="language-heading">
     <h2 id="language-heading" i18n="@@settingsLanguage">Language</h2>
     <p class="settings__why" i18n="@@settingsLanguageWhy">

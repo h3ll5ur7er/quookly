@@ -37,7 +37,7 @@ export class SignInComponent {
     this.accounts.signIn(this.form.getRawValue()).subscribe({
       next: (authenticated) => {
         this.auth.signIn(authenticated);
-        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/recipes';
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/';
         const theirs = authenticated.cook.locale;
         if (isLocale(theirs) && theirs !== preferredLocale()) {
           // Their language, not this device's. Catalogues are fixed for the life of the

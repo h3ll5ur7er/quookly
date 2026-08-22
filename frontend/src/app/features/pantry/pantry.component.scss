@@ -1,3 +1,4 @@
+@use '../../../styles/breakpoints' as *;
 @use '../../../styles/page';
 
 /* The reason to open this screen. Sunken rather than filled: it is a prompt, not an
@@ -159,4 +160,15 @@
 .pantry__empty,
 .pantry__loading {
   color: var(--on-surface-muted);
+}
+
+/* The shelf laid out as a shelf once there is room. On a phone it is a column because a
+   phone is a column; on anything wider a cook scans across. */
+@include from($md) {
+  .pantry__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    gap: var(--space-3);
+    align-items: start;
+  }
 }

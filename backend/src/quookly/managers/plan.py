@@ -248,6 +248,27 @@ async def list_for(cook_id: int) -> list[PlanSummaryView]:
     ]
 
 
+def _today() -> date:
+    """Today, as a value the tests can hold still."""
+    return date.today()
+
+
+async def current(cook_id: int, locale: str | None = None) -> PlanView | None:
+    """The week being cooked now, if there is one (UC-4.4).
+
+    "Now" first, most recent after. A cook standing in a shop wants *this* week's list, and
+    a cook between weeks wants the last one they made rather than an empty screen — the
+    shopping for a plan that ended yesterday is still the shopping they did not do.
+    """
+    plans = await plan_access.list_for_cook(cook_id)
+    if not plans:
+        return None
+
+    today = _today()
+    running = next((plan for plan in plans if plan.starts_on <= today <= plan.ends_on), plans[0])
+    return await _view(running, locale or await cook_access.locale_for(cook_id))
+
+
 async def open_plan(submitted: PlanInput, cook_id: int, locale: str | None = None) -> PlanView:
     """Open a period to plan (UC-4.1)."""
     plan = await plan_access.create(

@@ -82,7 +82,9 @@ test.beforeEach(async ({ page }) => {
   await page.getByLabel('Email').fill(COOK.email);
   await page.getByLabel('Password').fill(COOK.password);
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/recipes$/);
+  await expect(page).toHaveURL(/\/$/);
+  // Signing in lands on Home; this file is about the recipes.
+  await page.goto('/recipes');
 });
 
 test.describe('the recipe list', () => {
@@ -188,7 +190,10 @@ test.describe('a recipe', () => {
 
   test('looks like this', async ({ page }) => {
     await page.screenshot({ path: 'e2e/screenshots/recipe-detail.png', fullPage: true });
+    // The picker lives in Settings once somebody is signed in.
+    await page.goto('/settings');
     await page.getByLabel('Colour theme').selectOption('dark');
+    await page.goBack();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.screenshot({ path: 'e2e/screenshots/recipe-detail-dark.png', fullPage: true });
   });

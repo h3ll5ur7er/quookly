@@ -57,7 +57,9 @@ test.beforeEach(async ({ page }) => {
   await page.getByLabel('Email').fill(COOK.email);
   await page.getByLabel('Password').fill(COOK.password);
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/recipes$/);
+  await expect(page).toHaveURL(/\/$/);
+  // Signing in lands on Home; this file is about the recipes.
+  await page.goto('/recipes');
   await page.getByRole('button', { name: 'Worth cooking' }).click();
 });
 

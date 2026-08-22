@@ -22,12 +22,14 @@ test.beforeEach(async ({ page }) => {
   await page.getByLabel('Email').fill(COOK.email);
   await page.getByLabel('Password').fill(COOK.password);
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/recipes$/);
+  await expect(page).toHaveURL(/\/$/);
 });
 
 test.describe('finding the household', () => {
   test('is reachable from anywhere in the app', async ({ page }) => {
-    await page.getByRole('link', { name: 'Household' }).click();
+    // Under Settings now, not in the bar: it is set once and then left alone.
+    await page.getByRole('link', { name: 'Settings and account' }).click();
+    await page.getByRole('link', { name: 'Who you cook for' }).click();
     await expect(page).toHaveURL(/\/household$/);
     await expect(page.getByRole('heading', { name: 'Household' })).toBeVisible();
   });

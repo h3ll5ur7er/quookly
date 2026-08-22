@@ -1,0 +1,26 @@
+/// Where the layout is allowed to change shape.
+///
+/// The phone is the design target, so these only ever *add* width: every rule outside a
+/// query is the narrow one, and every query widens it. A component that only works once a
+/// query has fired is a bug (ADR-015).
+///
+/// The numbers are the ones the design language names, in one place so that two components
+/// cannot come to disagree about where a tablet begins.
+$md: 640px; // wider measure, two columns where the content wants them
+$lg: 1024px; // navigation becomes persistent, detail can sit side by side
+$xl: 1440px; // content capped, whitespace absorbs the rest
+
+@mixin from($width) {
+  @media (min-width: $width) {
+    @content;
+  }
+}
+
+/// Below a breakpoint. Used sparingly — for chrome that exists *only* on a phone, like the
+/// bar at the bottom of the screen, which is not a narrow version of the sidebar but a
+/// different thing in a different place.
+@mixin below($width) {
+  @media (max-width: $width - 1px) {
+    @content;
+  }
+}

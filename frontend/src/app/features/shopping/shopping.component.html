@@ -1,0 +1,39 @@
+<main class="page shopping">
+  <header class="shopping__head">
+    <h1 i18n="@@shoppingHeading">Shopping</h1>
+    @if (forWeek(); as week) {
+      <p class="shopping__week">{{ week }}</p>
+    }
+  </header>
+
+  @if (failed()) {
+    <p class="notice notice--danger" role="alert" i18n="@@shoppingFailed">
+      Could not load your list. Please try again.
+    </p>
+  } @else if (!loaded()) {
+    <p i18n="@@shoppingLoading">Loading…</p>
+  } @else if (plan() === null) {
+    <p class="shopping__empty" i18n="@@shoppingNoPlan">
+      Nothing is planned yet, so there is nothing to buy. Lay out a week and the list writes itself
+      from what your kitchen has not got.
+    </p>
+    <a class="action" routerLink="/plans" i18n="@@shoppingPlanAWeek">Plan a week</a>
+  } @else if (lines().length === 0) {
+    <p class="shopping__empty" i18n="@@shoppingNothing">
+      Nothing to buy. Everything this week needs is already in your kitchen.
+    </p>
+  } @else {
+    <!-- Big, plain lines. This is read at arm's length in a shop, one-handed. -->
+    <ul class="shopping__list">
+      @for (line of lines(); track line.ingredient_id) {
+        <li class="shopping__line">
+          <span class="shopping__amount numeric">{{ line.quantity }}</span>
+          <span class="shopping__name">{{ line.name }}</span>
+        </li>
+      }
+    </ul>
+    <a class="shopping__where" routerLink="/plans" i18n="@@shoppingFromWeek">
+      From the week you planned
+    </a>
+  }
+</main>

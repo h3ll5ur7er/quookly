@@ -12,16 +12,17 @@ import { filter, map, startWith } from 'rxjs';
 import { AuthStore } from './core/auth/auth.store';
 import { LocalePickerComponent } from './core/locale/locale-picker.component';
 import { ThemePickerComponent } from './core/theme/theme-picker.component';
+import { SECTIONS, sectionLabel } from './core/shell/sections';
 import { ThemeStore } from './core/theme/theme.store';
 
 @Component({
   selector: 'app-root',
   imports: [
+    LocalePickerComponent,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
     ThemePickerComponent,
-    LocalePickerComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -33,11 +34,20 @@ export class App {
   // Injected so the theme is resolved and applied from the first paint.
   private readonly theme = inject(ThemeStore);
 
-  /** Navigation to places that refuse you is worse than no navigation. */
-  private readonly authenticated = inject(AuthStore).isSignedIn;
-
+  private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
   private readonly root = inject(ActivatedRoute);
+
+  protected readonly sections = SECTIONS;
+  protected readonly sectionLabel = sectionLabel;
+
+  /** Navigation to places that refuse you is worse than no navigation. */
+  protected readonly signedIn = this.auth.isSignedIn;
+
+  protected readonly name = computed(() => this.auth.cook()?.display_name ?? '');
+
+  /** One letter, because a sidebar is not a place for a full name at every width. */
+  protected readonly initial = computed(() => this.name().trim().charAt(0).toUpperCase());
 
   /**
    * Whether this screen wants the application's furniture around it.
@@ -61,6 +71,4 @@ export class App {
     ),
     { initialValue: true },
   );
-
-  protected readonly signedIn = computed(() => this.authenticated() && this.chromed());
 }

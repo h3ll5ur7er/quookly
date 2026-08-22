@@ -16,6 +16,21 @@ export const routes: Routes = [
       import('./features/sign-in/sign-in.component').then((m) => m.SignInComponent),
   },
   {
+    // What is happening now: what wants eating, what is on tonight, what to do next.
+    path: '',
+    pathMatch: 'full',
+    canActivate: [requireSignedIn],
+    loadComponent: () => import('./features/home/home.component').then((m) => m.HomeComponent),
+  },
+  {
+    // Its own destination rather than a section of the plan. A cook holding a basket has
+    // one hand and thirty seconds.
+    path: 'shopping',
+    canActivate: [requireSignedIn],
+    loadComponent: () =>
+      import('./features/shopping/shopping.component').then((m) => m.ShoppingComponent),
+  },
+  {
     path: 'recipes',
     canActivate: [requireSignedIn],
     loadComponent: () =>
@@ -114,6 +129,5 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/settings/settings.component').then((m) => m.SettingsComponent),
   },
-  { path: '', redirectTo: 'recipes', pathMatch: 'full' },
-  { path: '**', redirectTo: 'recipes' },
+  { path: '**', redirectTo: '' },
 ];

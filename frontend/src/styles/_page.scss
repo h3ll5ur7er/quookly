@@ -1,13 +1,37 @@
+@use 'breakpoints' as *;
+
 /* The shape every content page shares: one column, capped measure, room to breathe. */
 :host {
   display: block;
   width: 100%;
 }
 
+/* Capped, and the cap grows once. Prose is unreadable across a 27-inch monitor, so the
+   measure stays bounded — but 44rem was the *phone* cap applied to every screen, which is
+   why a laptop showed more empty page than page. A collection that wants the width takes
+   it by laying out in columns, not by widening its lines.
+   
+   Left-aligned rather than centred from `lg`, because from there the sidebar is on the
+   left and content floating in the middle of the remaining space reads as unmoored. */
 .page {
   width: min(100% - var(--space-6), 44rem);
   margin-inline: auto;
   padding-block: var(--space-6) var(--space-7);
+
+  @include from($md) {
+    width: min(100% - var(--space-8), 52rem);
+  }
+
+  @include from($lg) {
+    width: min(100% - var(--space-8), 60rem);
+    margin-inline: 0;
+    padding-inline: var(--space-6);
+  }
+
+  @include from($xl) {
+    width: min(100% - var(--space-8), 68rem);
+    padding-inline: var(--space-8);
+  }
 }
 
 /* A message that is not the primary action: tinted, marked, never colour alone. */

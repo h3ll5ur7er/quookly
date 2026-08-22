@@ -58,7 +58,9 @@ accessibility requirement and, for dietary warnings, a safety one.
 ## Layout
 
 The phone is the design target (NFR-11). Base styles are the narrow viewport; media queries only
-ever add width.
+ever add width. The breakpoints live in `frontend/src/styles/_breakpoints.scss` as `$md`, `$lg` and
+`$xl`, reached through `@include from($lg)` — a component may not invent a width of its own, because
+four screens that each change shape at a different pixel are four designs.
 
 | Breakpoint | Width | Shape |
 | --- | --- | --- |
@@ -70,14 +72,17 @@ ever add width.
 Rules that follow:
 
 - **Primary actions sit low**, within thumb reach, not in a top bar.
-- **One row of permanent chrome.** The sticky bar carries navigation and nothing else.
-  Anything chosen once and then left alone — language, theme — sits at the end of the page
-  instead, where it costs no screen on every other visit.
+- **One region of permanent chrome**, carrying navigation and nothing else. Below `lg` it is a
+  bottom bar, within thumb reach; from `lg` the same markup becomes a left sidebar, because a
+  horizontal strip across a 1440px screen wastes the axis that screen actually has. Anything chosen
+  once and then left alone — household, units, theme, language — lives under Settings, reached from
+  the account at the foot of the chrome.
 - **Touch targets are at least 44px**, with at least 8px between them.
-- **One column until the content genuinely needs two.** A second column that exists to fill space
-  costs scanning speed.
-- **Measure is capped at ~68 characters** for prose and step text. A step spanning a 27-inch
-  monitor is unreadable.
+- **Prose is capped; collections are not.** Measure is capped at ~68 characters for summaries and
+  step text — a step spanning a 27-inch monitor is unreadable. A *list of cards* is not prose: the
+  recipe list and the pantry become `repeat(auto-fill, minmax(18rem, 1fr))` grids from `md`, because
+  capping a collection at one column is what makes a laptop look empty rather than calm. The test is
+  whether widening helps the reader scan, not whether it fills the pixels.
 - **The page body never scrolls horizontally.** Wide things scroll inside their own container.
 
 ## Typography

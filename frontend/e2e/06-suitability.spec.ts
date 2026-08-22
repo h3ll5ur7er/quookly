@@ -91,7 +91,7 @@ test.beforeEach(async ({ page }) => {
   await page.getByLabel('Email').fill(COOK.email);
   await page.getByLabel('Password').fill(COOK.password);
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/recipes$/);
+  await expect(page).toHaveURL(/\/$/);
 });
 
 async function open(page: import('@playwright/test').Page, title: string): Promise<void> {

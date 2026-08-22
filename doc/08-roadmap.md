@@ -223,6 +223,36 @@ which lands after the Academy without blocking anything here.
 **Done when:** "what should I cook this week" returns ranked, suitable suggestions that use up what
 is about to expire.
 
+## Phase 6b — One product, not five screens
+
+**Goal:** the parts stop reading as separate ideas taped together.
+
+Each phase built a screen and each screen was defensible on its own. Together they were not a
+product: a laptop got a phone layout, settings existed only for whoever had read the routing table,
+there was no way in for somebody who did not already have an account, and no screen led to the next.
+
+- ~~Real breakpoints, chrome that becomes a sidebar, collections that become grids~~ **Built** —
+  see [ADR-015](07-decisions.md#adr-015-mobile-first-installable-and-offline-where-it-matters)
+- ~~A reachable Settings page~~ **Built** — household, units, theme, language and the account moved
+  under it, and out of the navigation bar
+- ~~A home screen that answers "what now"~~ **Built** — a greeting, what is about to spoil, tonight's
+  meal, what is left to buy
+- ~~A shopping list of its own~~ **Built** — its own destination, because a cook holding a basket
+  should not navigate a plan to reach it
+- ~~Signing out~~ **Built**, under Settings
+- Ticking items off the shopping list — the list is still read-only
+- Cross-links: **start cooking now** and **add to plan** on a recipe, **show recipe** on a plan.
+  Cooking currently starts only from a plan slot (`CookingManager.start`), so cooking a recipe
+  outright is a change to V15, not only to the client
+- A landing page for somebody who arrives without an account
+- **Signing up by application** — anybody may apply, an admin approves. A pending account is a
+  state V12 does not have yet: applied, approved, refused. Sign-in must refuse a pending account
+  in a way that says so, and an admin needs somewhere to see the queue
+
+Placed after Phase 6 because there was nothing to tie together before there was something on each
+screen, and before Phase 7 because an Academy inside a product that reads as a prototype is
+studying for an exam nobody has sat.
+
 ## Phase 7 — Academy
 
 **Goal:** the learning surface.

@@ -52,7 +52,7 @@ test.beforeEach(async ({ page }) => {
   await page.getByLabel('Email').fill(COOK.email);
   await page.getByLabel('Password').fill(COOK.password);
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/recipes$/);
+  await expect(page).toHaveURL(/\/$/);
 });
 
 /** The one plan these tests build up, opened from the list each time. */
@@ -64,7 +64,7 @@ async function week(page: import('@playwright/test').Page): Promise<void> {
 
 test.describe('starting a week', () => {
   test('is reachable from anywhere in the app', async ({ page }) => {
-    await page.getByRole('link', { name: 'Plan', exact: true }).click();
+    await page.locator('.shell__link').filter({ hasText: 'Plan' }).click();
     await expect(page).toHaveURL(/\/plans$/);
     await expect(page.getByRole('heading', { name: 'Plans' })).toBeVisible();
   });
@@ -312,7 +312,8 @@ test.describe('the bar that carries the sections', () => {
      * off the edge — and the bar grows a section every time the app does. Planning made
      * it four, and four fixed-width links did not fit.
      *
-     * 360px is the width NFR-11 names as the target.
+     * 360px is the width NFR-11 names as the target, and the bar now carries five
+     * destinations rather than four.
      */
     await page.setViewportSize({ width: 360, height: 720 });
     await page.goto('/recipes');

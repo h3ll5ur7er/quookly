@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import {
   InferenceStatusView,
   IngredientKind,
@@ -9,16 +10,36 @@ import {
 import { AuthStore } from '../../core/auth/auth.store';
 import { unitsFor } from '../../core/measure/units';
 import { LocalePickerComponent } from '../../core/locale/locale-picker.component';
+import { ThemePickerComponent } from '../../core/theme/theme-picker.component';
 
 @Component({
   selector: 'app-settings',
-  imports: [LocalePickerComponent],
+  imports: [LocalePickerComponent, RouterLink, ThemePickerComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsComponent {
   private readonly preferences = inject(PreferencesService);
+
+  private readonly auth = inject(AuthStore);
+  private readonly router = inject(Router);
+
+  protected readonly name = computed(() => this.auth.cook()?.display_name ?? '');
+  protected readonly email = computed(() => this.auth.cook()?.email ?? '');
+  protected readonly initial = computed(() => this.name().trim().charAt(0).toUpperCase());
+
+  /**
+   * Leave.
+   *
+   * Navigated afterwards rather than left where they were: a signed-out cook standing on
+   * their own pantry would see it empty and read that as the pantry rather than as the
+   * signing out.
+   */
+  protected signOut(): void {
+    this.auth.signOut();
+    void this.router.navigate(['/sign-in']);
+  }
 
   protected readonly units = signal<UnitPreferenceView[] | null>(null);
   protected readonly failed = signal(false);

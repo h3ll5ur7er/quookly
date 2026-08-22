@@ -1,3 +1,6 @@
+@use 'sass:map';
+@use '../styles/breakpoints' as *;
+
 .skip {
   position: absolute;
   left: -9999px;
@@ -13,50 +16,79 @@
   }
 }
 
+/* A phone stacks: content, then the bar at the bottom where a thumb is. From `lg` the bar
+   becomes a column beside the content, which is what "persistent navigation" means on a
+   screen nobody holds. */
 .shell {
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
 }
 
-.shell__content {
+.shell--bare {
   display: flex;
-  flex: 1;
+  flex-direction: column;
 }
 
-/* Sticky, because a phone list is long and the way out of it should not require
-   scrolling to the end of it. It carries navigation and nothing else: it is the one
-   piece of chrome present on every screen, so it stays one row tall. */
-.shell__nav {
+/* Language and theme for somebody who has not signed in yet. Set once, before there is an
+   account to keep them in — after that they live in Settings. */
+.shell__aside {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-3) var(--space-5);
+  padding: var(--space-5) var(--space-4);
+  color: var(--on-surface-muted);
+}
+
+.shell__content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- the bar, and then the sidebar ---------------------------------------------------- */
+
+.shell__top {
   position: sticky;
   bottom: 0;
   z-index: 5;
+  order: 2;
   display: flex;
-  justify-content: center;
+  align-items: stretch;
   gap: var(--space-1);
-  padding: var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-2);
   border-top: 1px solid var(--border);
   background: var(--surface);
 }
 
-/* Full-height targets rather than padded text: the bar is the tap area on a phone. */
-/* An equal share each, capped so a wide screen does not stretch four words across it.
-   Fixed widths were fine with two sections and overflowed the narrowest phone at four —
-   the bar has to hold whatever the app grows, and it grows. */
+/* On a phone the brand is not worth a permanent share of the screen: the bar is for
+   getting somewhere, and the name of the app is not a destination. */
+.shell__brand {
+  display: none;
+}
+
+.shell__nav {
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
 .shell__link {
   display: grid;
   flex: 1 1 0;
   place-items: center;
-  min-height: 44px;
+  gap: 2px;
+  min-height: 48px;
   min-width: 0;
-  max-width: 8rem;
-  padding-inline: var(--space-1);
-  white-space: nowrap;
+  padding: var(--space-1) 2px;
   border-radius: var(--radius-md);
   color: var(--on-surface-muted);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   font-weight: 600;
   text-decoration: none;
+  text-align: center;
   transition:
     background var(--motion-fast) var(--ease-standard),
     color var(--motion-fast) var(--ease-standard);
@@ -66,20 +98,143 @@
   }
 }
 
+/* A glyph above the word rather than instead of it. Icons alone are a guessing game, and
+   five words alone do not fit a 360px phone — together they fit and they are readable. */
+.shell__icon {
+  font-size: var(--text-md);
+  line-height: 1;
+}
+
+.shell__label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Where you are is marked by weight and ground, not by hue alone. */
 .shell__link--current {
   background: var(--surface-sunken);
   color: var(--on-surface);
 }
 
-/* In the flow at the end of the page rather than in the sticky bar: chosen once and
-   then left alone, and not worth a permanent share of a phone screen. */
-.shell__settings {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: var(--space-3) var(--space-5);
-  flex-wrap: wrap;
-  padding: var(--space-5) var(--space-4);
+.shell__account {
+  display: grid;
+  place-items: center;
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: var(--radius-md);
   color: var(--on-surface-muted);
+  text-decoration: none;
+
+  &:hover {
+    background: var(--surface-sunken);
+  }
+}
+
+.shell__avatar {
+  display: grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.shell__who,
+.shell__account--current {
+  /* The name is for the sidebar; on a phone the initial is the whole of it. */
+}
+
+.shell__who {
+  display: none;
+}
+
+@include from($lg) {
+  .shell {
+    flex-direction: row;
+  }
+
+  /* A column, not a stretched bar. Sticky rather than fixed so it scrolls with a very
+     short window and stays put in every other case. */
+  .shell__top {
+    position: sticky;
+    top: 0;
+    bottom: auto;
+    order: 0;
+    flex: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+    inline-size: 15rem;
+    block-size: 100dvh;
+    padding: var(--space-5) var(--space-3);
+    border-top: none;
+    border-inline-end: 1px solid var(--border);
+  }
+
+  .shell__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    color: var(--on-surface);
+    text-decoration: none;
+  }
+
+  .shell__mark {
+    border-radius: var(--radius-md);
+  }
+
+  .shell__name {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 600;
+  }
+
+  .shell__nav {
+    flex-direction: column;
+    gap: 2px;
+    margin-block-start: var(--space-4);
+  }
+
+  /* Icon beside the word once there is room for the word.
+     `flex: none` because the base rule shares the *width* of a bar between five links —
+     in a column that same rule shares the height, and five links spread down a laptop
+     screen read as five unrelated things rather than as one list. */
+  .shell__link {
+    flex: none;
+    grid-template-columns: 1.5rem 1fr;
+    justify-items: start;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    font-size: var(--text-md);
+    text-align: start;
+  }
+
+  .shell__account {
+    grid-template-columns: 2rem 1fr;
+    justify-items: start;
+    align-items: center;
+    gap: var(--space-3);
+    margin-block-start: auto;
+    padding: var(--space-3);
+  }
+
+  .shell__who {
+    display: block;
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .shell__account--current {
+    background: var(--surface-sunken);
+    color: var(--on-surface);
+  }
 }
