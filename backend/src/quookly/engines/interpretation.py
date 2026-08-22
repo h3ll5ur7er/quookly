@@ -24,6 +24,9 @@ from quookly.contracts.interpretation import (
 )
 from quookly.contracts.measure import Unit
 from quookly.contracts.web import ReadableContent
+from quookly.utilities.diagnostics import get_logger
+
+log = get_logger("interpretation")
 
 # What a unit is called in the wild, mapped to what Quookly means by it.
 #
@@ -902,18 +905,49 @@ separately from what it makes: "Makes 12 pancakes (serves 4)" is a recipe_yield 
 recipe_yield already counts portions. Leave narrative, advertising, comments and navigation
 out."""
 
-_SCHEMA: dict[str, Any] = {
+#: How long a list of ingredients or steps is allowed to get.
+#:
+#: A bound rather than a hope. Reading a page is bounded by the page — there is only so much
+#: text — but *writing* one is bounded by nothing, and a schema with an open-ended array is
+#: an invitation to a decoder to keep filling it. Asked to invent a recipe, this model looped
+#: to the token limit four times in five until the arrays had an end.
+#:
+#: Forty is well past any real recipe and well short of a loop.
+MOST_LINES = 40
+
+#: How long any one string may get. The arrays were only half the problem: a decoder can
+#: run away *inside* a value as readily as between them, and a summary with no end is an
+#: end it cannot find. The limits match what `RecipeInput` accepts, so an answer that fills
+#: one is still a recipe this instance can store.
+MOST_TITLE = 200
+MOST_SUMMARY = 1000
+MOST_LINE = 200
+MOST_STEP = 2000
+
+#: The shape a recipe comes back in, whether it was read off a page or asked for from
+#: nothing. One shape, because the reader that makes sense of it is one reader — and a
+#: second spelling of "ingredients" would be a second set of parsing bugs.
+RECIPE_SHAPE: dict[str, Any] = {
     "type": "object",
     "properties": {
-        "title": {"type": "string"},
-        "summary": {"type": "string"},
-        "recipe_yield": {"type": "string"},
-        "serves": {"type": "string"},
-        "ingredients": {"type": "array", "items": {"type": "string"}},
+        "title": {"type": "string", "maxLength": MOST_TITLE},
+        "summary": {"type": "string", "maxLength": MOST_SUMMARY},
+        "recipe_yield": {"type": "string", "maxLength": 100},
+        "serves": {"type": "string", "maxLength": 100},
+        "ingredients": {
+            "type": "array",
+            "items": {"type": "string", "maxLength": MOST_LINE},
+            "minItems": 1,
+            "maxItems": MOST_LINES,
+        },
         # Plain strings. What a step *asks of the cook* is a question about steps, and
         # steps belong to the editing pass that runs after this — asking twice would be
         # two prompts answering one question, drifting apart at their own pace.
-        "steps": {"type": "array", "items": {"type": "string"}},
+        "steps": {
+            "type": "array",
+            "items": {"type": "string", "maxLength": MOST_STEP},
+            "maxItems": MOST_LINES,
+        },
     },
     # `recipe_yield` and `serves` are required so the model has to answer rather than omit
     # the field. Empty means the page does not say, which is a different thing from not
@@ -940,14 +974,24 @@ async def read_prose(content: ReadableContent) -> InterpretedRecipe:
 
     answer, _ = await model.complete_structured(
         f"Read this page and extract the recipe.\n\n{text[:MOST_TEXT_SENT]}",
-        _SCHEMA,
+        RECIPE_SHAPE,
         system=_INSTRUCTIONS,
     )
+    return read_answer(answer, f"no recipe was found at {content.url}")
 
+
+def read_answer(answer: dict[str, Any], nothing_there: str) -> InterpretedRecipe:
+    """Turn a model's filled-in shape into a recipe, or refuse it.
+
+    Shared with `GenerationEngine`, which asks a different question and gets the same shape
+    back. That is the whole of the division between them: generation knows *what to ask*,
+    this knows what an answer means, and "what does 225g mean" has one implementation
+    however the words arrived.
+    """
     title = _tidy_prose(str(answer.get("title") or ""))
     written_lines = answer.get("ingredients") or []
     if not title or not isinstance(written_lines, list) or not written_lines:
-        raise NotARecipe(f"no recipe was found at {content.url}")
+        raise NotARecipe(nothing_there)
 
     lines = [
         line
@@ -955,7 +999,7 @@ async def read_prose(content: ReadableContent) -> InterpretedRecipe:
         if line is not None
     ]
     if not lines:
-        raise NotARecipe(f"no recipe was found at {content.url}")
+        raise NotARecipe(nothing_there)
 
     magnitude, unit = read_yield(answer.get("recipe_yield"))
     return InterpretedRecipe(
@@ -1093,10 +1137,16 @@ async def tidy_steps(written: Sequence[InterpretedStep]) -> list[InterpretedStep
         answer, _ = await model.complete_structured(
             f"Rewrite this method.\n\n{method}", _EDITING_SCHEMA, system=_EDITING
         )
-    except Exception:
+    except Exception as failure:
         # Any failure at all. Editing is a courtesy, and a courtesy that can fail an import
         # is not one — an unreachable model must cost a cook a tidier recipe, not the
         # recipe.
+        #
+        # Logged, though. A catch-all this wide will swallow a programming error as
+        # readily as an unreachable provider, and it did once: a botched rename made this
+        # raise `NameError` on every import, and the only symptom was recipes quietly
+        # arriving untidied.
+        log.warning("could not tidy the method: %s", failure, exc_info=True)
         return list(written)
 
     edited = _steps_read(answer.get("steps"))

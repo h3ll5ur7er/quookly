@@ -367,10 +367,7 @@ test.describe('finding something to cook', () => {
 
   test('the alphabet is the default, and the other order is a choice', async ({ page }) => {
     /* A cook who came to find a recipe they already have in mind wants the alphabet. */
-    await expect(page.getByRole('button', { name: 'A–Z' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    await expect(page.getByRole('button', { name: 'A–Z' })).toHaveAttribute('aria-pressed', 'true');
     await page.getByRole('button', { name: 'Worth cooking' }).click();
     await expect(page.getByRole('button', { name: 'Worth cooking' })).toHaveAttribute(
       'aria-pressed',

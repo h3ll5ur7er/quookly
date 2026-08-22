@@ -5,7 +5,7 @@ Sequences the steps and owns none of the rules. Storage is `RecipeAccess`, prefe
 """
 
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
@@ -20,11 +20,16 @@ from quookly.access import recipe as recipe_access
 from quookly.access import search, web
 from quookly.access.ingredient import SOURCE_LOCALE
 from quookly.contracts.discovery import Candidate, SuggestionView
-from quookly.contracts.errors import UnsupportedDocument, YieldUnknown
+from quookly.contracts.eater import Eater
+from quookly.contracts.errors import (
+    UnsuitableForTheTable,
+    UnsupportedDocument,
+    YieldUnknown,
+)
 from quookly.contracts.exchange import ExchangeDocument
 from quookly.contracts.execution import TimingView
 from quookly.contracts.ingredient import IngredientKind, Origin
-from quookly.contracts.interpretation import InterpretedLine
+from quookly.contracts.interpretation import InterpretedLine, InterpretedRecipe
 from quookly.contracts.measure import Quantity
 from quookly.contracts.nutrition import (
     CREDITS,
@@ -36,7 +41,9 @@ from quookly.contracts.nutrition import (
 )
 from quookly.contracts.preferences import UnitPreferences
 from quookly.contracts.recipe import (
+    GenerationInput,
     ImportedRecipe,
+    IngredientLine,
     IngredientLineDraft,
     PresentedRecipe,
     PresentedStep,
@@ -54,6 +61,7 @@ from quookly.contracts.web import ReadableContent
 from quookly.engines import (
     exchange,
     execution,
+    generation,
     interpretation,
     measure,
     nutrition,
@@ -554,30 +562,26 @@ async def _reading_locale(content: ReadableContent, cook_id: int, fallback: str)
     return fallback
 
 
-async def import_from_url(url: str, cook_id: int, locale: str | None = None) -> ImportedRecipe:
-    """Read a recipe off a page and store it (UC-1.3) — the founding use case.
+def _draft_from(
+    read: InterpretedRecipe, resolved: Mapping[str, int], provenance: Provenance
+) -> RecipeDraft:
+    """A recipe a model produced, as a draft this instance can store.
 
-    The sequence, and only the sequence: fetch, interpret, resolve, store. Each of those
-    belongs to a service that knows nothing about the others, which is what lets the
-    quality of interpretation change constantly without the shape of importing changing
-    at all.
+    Here rather than in each caller, because two of them build it now — a page that was
+    read and a recipe that was asked for — and the last time two places built a draft from
+    the same shape, one of them was not remembered when a field was added and the starter
+    recipes silently lost how many people they feed (ADR-012).
+
+    The caller has already checked that the yield is readable; a recipe without one cannot
+    be scaled and is refused before it gets here.
     """
-    content = await web.fetch_readable(url)
-    read = await interpretation.read_page(content)
-    resolve_in = await _reading_locale(
-        content, cook_id, locale or await cook_access.locale_for(cook_id)
-    )
-
-    if read.yield_magnitude is None or read.yield_unit is None:
-        raise YieldUnknown(f"{content.url} does not say how much this makes")
-
-    resolved, added = await _resolve(read.lines, resolve_in)
-    draft = RecipeDraft(
+    assert read.yield_magnitude is not None and read.yield_unit is not None
+    return RecipeDraft(
         title=read.title,
         summary=read.summary,
         yield_quantity=Quantity(read.yield_magnitude, read.yield_unit),
         serves=read.serves,
-        provenance=Provenance.IMPORTED_URL,
+        provenance=provenance,
         lines=[
             IngredientLineDraft(
                 ingredient_id=resolved[line.ingredient],
@@ -601,7 +605,124 @@ async def import_from_url(url: str, cook_id: int, locale: str | None = None) -> 
             for step in read.steps
         ],
     )
+
+
+def _to_avoid(household: Sequence[Eater]) -> list[str]:
+    """What the people at this table cannot eat, in words a model can act on.
+
+    Names rather than codes, because that is what the prompt is for. It changes the odds
+    and nothing else: the guarantee is the verdict afterwards, taken from the resolved
+    ingredients (ADR-006).
+    """
+    avoid: list[str] = []
+    for eater in household:
+        for constraint in eater.constraints:
+            named = (
+                constraint.allergen.value.replace("_", " ")
+                if constraint.allergen is not None
+                else (constraint.ingredient_slug or "").replace("-", " ")
+            )
+            if named and named not in avoid:
+                avoid.append(named)
+    return avoid
+
+
+async def generate(
+    submitted: GenerationInput, cook_id: int, locale: str | None = None
+) -> PresentedRecipe:
+    """Write a recipe that did not exist, and only keep it if the table can eat it.
+
+    UC-1.4 and UC-1.5 are one sequence: a description, some ingredients to use up, or both.
+    "From my pantry" is this with the pantry filled in, which is a thing the caller does
+    rather than a second flow.
+
+    **The safety rule, mechanically.** The household's constraints go into the prompt to
+    improve the odds, and the result is then judged independently by `SuitabilityEngine`
+    against its *resolved* ingredients. A model asserting "this is dairy-free" carries no
+    weight. Where the verdict is anything but suitable the recipe is refused with its
+    reasons and nothing is stored — unlike an imported recipe, which exists in the world
+    whatever it contains, a generated one was asked for on these people's behalf and
+    producing something they cannot eat is a failure of the request.
+    """
+    reading = locale or await cook_access.locale_for(cook_id)
+    household = await eater_access.list_for_cook(cook_id)
+
+    written = await generation.compose(
+        description=submitted.description,
+        ingredients=await _named(submitted.ingredient_ids, reading),
+        constraints=_to_avoid(household),
+        serves=submitted.serves,
+    )
+    if written.yield_magnitude is None or written.yield_unit is None:
+        raise YieldUnknown("the recipe that came back does not say how much it makes")
+
+    written = replace(written, steps=await interpretation.tidy_steps(written.steps))
+    resolved, _ = await _resolve(written.lines, reading)
+    draft = _draft_from(written, resolved, Provenance.GENERATED)
+
+    if household:
+        # Judged before it is stored, from the ingredients as the registry knows them.
+        # Generation and judgement are separate services precisely so that the judgement
+        # cannot be talked out of its conclusion.
+        verdict = suitability.evaluate(
+            suitability.facts_for(await _lines_as_registered(draft, reading)), household
+        )
+        if verdict.outcome is not Outcome.SUITABLE:
+            raise UnsuitableForTheTable(VerdictView.of(verdict))
+
     stored = await recipe_access.store(draft, cook_id)
+    return await _present(stored, await preference_access.for_cook(cook_id), None, cook_id)
+
+
+async def _named(ingredient_ids: Sequence[int], locale: str) -> list[str]:
+    """The registry's own names for these ingredients, so the ask is in the cook's words."""
+    if not ingredient_ids:
+        return []
+    entries = await registry.for_ids(sorted(set(ingredient_ids)), locale)
+    return [entries[one].name for one in ingredient_ids if one in entries]
+
+
+async def _lines_as_registered(draft: RecipeDraft, locale: str) -> list[IngredientLine]:
+    """A draft's lines with their registry entries attached, ready to be judged.
+
+    The point of the round trip: what gets evaluated is what the *registry* says these
+    ingredients are, not what the model called them.
+    """
+    entries = await registry.for_ids(sorted({line.ingredient_id for line in draft.lines}), locale)
+    return [
+        IngredientLine(
+            id=0,
+            ingredient=entries[line.ingredient_id],
+            quantity=line.quantity,
+            preparation=line.preparation,
+            optional=line.optional,
+        )
+        for line in draft.lines
+        if line.ingredient_id in entries
+    ]
+
+
+async def import_from_url(url: str, cook_id: int, locale: str | None = None) -> ImportedRecipe:
+    """Read a recipe off a page and store it (UC-1.3) — the founding use case.
+
+    The sequence, and only the sequence: fetch, interpret, resolve, store. Each of those
+    belongs to a service that knows nothing about the others, which is what lets the
+    quality of interpretation change constantly without the shape of importing changing
+    at all.
+    """
+    content = await web.fetch_readable(url)
+    read = await interpretation.read_page(content)
+    resolve_in = await _reading_locale(
+        content, cook_id, locale or await cook_access.locale_for(cook_id)
+    )
+
+    if read.yield_magnitude is None or read.yield_unit is None:
+        raise YieldUnknown(f"{content.url} does not say how much this makes")
+
+    resolved, added = await _resolve(read.lines, resolve_in)
+    stored = await recipe_access.store(
+        _draft_from(read, resolved, Provenance.IMPORTED_URL), cook_id
+    )
     return ImportedRecipe(
         recipe=await _present(stored, await preference_access.for_cook(cook_id), None, cook_id),
         read_from=read.source,

@@ -3,6 +3,7 @@
 from typing import Annotated, Any
 
 from fastapi import APIRouter, HTTPException, Query, status
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 
 from quookly.contracts.discovery import SuggestionView
@@ -18,12 +19,14 @@ from quookly.contracts.errors import (
     NotARecipe,
     StructuredOutputUnusable,
     UnknownUnit,
+    UnsuitableForTheTable,
     UnsupportedDocument,
     YieldUnknown,
 )
 from quookly.contracts.exchange import ExchangeDocument
 from quookly.contracts.measure import DecimalString
 from quookly.contracts.recipe import (
+    GenerationInput,
     ImportedRecipe,
     PresentedRecipe,
     RecipeInput,
@@ -90,6 +93,60 @@ class ImportOutcome(BaseModel):
 
 
 # Declared before `/recipes/{recipe_id}`: they share a prefix, and the first match wins.
+@router.post(
+    "/recipes/generated", response_model=PresentedRecipe, status_code=status.HTTP_201_CREATED
+)
+async def generate_recipe(submitted: GenerationInput, cook: CurrentCook) -> PresentedRecipe:
+    """Write a recipe that did not exist (UC-1.4, UC-1.5).
+
+    A description, some ingredients to use up, or both. The household's constraints go into
+    the asking, and the answer is judged independently against its resolved ingredients
+    before anything is stored — a model asserting "this is dairy-free" carries no weight
+    (ADR-006).
+
+    A recipe the table cannot eat is refused **with its verdict**, because "no" without a
+    reason is not an answer. That is stricter than importing on purpose: an imported recipe
+    exists in the world whatever it contains, and this one was asked for on these people's
+    behalf.
+    """
+    try:
+        return await recipe_manager.generate(submitted, cook.cook_id)
+    except UnsuitableForTheTable as refused:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={
+                "message": "What came back is not suitable for your household, so it has "
+                "not been kept. Try again, or say more about what you want.",
+                "verdict": jsonable_encoder(refused.verdict),
+            },
+        ) from None
+    except NotARecipe:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Nothing usable came back. Try saying more about what you want.",
+        ) from None
+    except YieldUnknown:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="What came back does not say how much it makes, so it cannot be scaled.",
+        ) from None
+    except InferenceNotConfigured:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Writing a recipe needs a model, and this instance has none configured.",
+        ) from None
+    except InferenceRefused:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="The model provider refused the request. Check the instance's key.",
+        ) from None
+    except (InferenceUnavailable, StructuredOutputUnusable):
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="The model could not be reached, or did not answer usefully. Please try again.",
+        ) from None
+
+
 @router.get("/recipes/export", response_model=ExchangeDocument)
 async def export_recipes(cook: CurrentCook) -> ExchangeDocument:
     """Everything this cook owns, in the portable format (FR-11)."""

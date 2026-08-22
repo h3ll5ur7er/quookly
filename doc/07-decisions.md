@@ -1935,3 +1935,57 @@ the SQLite decision will strain first. It is a virtual table, so alembic can nei
 be allowed to see it — both the migration and the model metadata declare it, and autogenerate is told
 to leave it alone. Without that last part every future migration would offer to drop the search index.
 
+---
+
+## ADR-047 A generated recipe is refused, not warned about
+
+**Status:** Accepted
+
+**Context.** A cook can ask for a recipe that does not exist (UC-1.4, UC-1.5). The household's
+constraints go into the prompt, and the answer is then judged by `SuitabilityEngine` against its
+*resolved* ingredients — a model asserting "this is dairy-free" carries no weight
+([ADR-006](#adr-006-allergen-determination-is-structural)). The question is what to do when the
+verdict comes back badly.
+
+An imported recipe with a problem is **stored and marked**: it exists in the world whatever it
+contains, and hiding it would be the interface deciding something about an allergy on a cook's behalf
+([ADR-010](#adr-010-the-frontend-never-decides-suitability)).
+
+**Decision.** A *generated* one is **refused with its verdict, and not stored**.
+
+**Rationale.** The difference is who asked. An imported recipe is a thing the cook went and found; a
+generated one was written on these people's behalf, in response to a request that named them. Handing
+back something they cannot eat is a failure of the request, not a fact about a recipe — and putting it
+in their collection with a red badge would be answering "make me dinner" with "here is one that will
+hurt Mira".
+
+The refusal carries the verdict, because "no" without a reason is not an answer. *Mira — parmesan* is
+something a cook can act on: ask again, or reconsider the constraint.
+
+**It is not a hypothetical.** On the first live run against a real model, told plainly that a recipe
+must not contain milk, it wrote one with parmesan in it. The prompt changes the odds; the verdict is
+the guarantee. That is exactly the split
+[UC-1.4's flow](05-use-case-flows.md#uc-14-generate-a-recipe-from-pantry-stock) was drawn to make.
+
+**Cost.** A cook can be refused twice in a row and have nothing to show for the waiting. That is the
+right trade — but it is why the ask is retried on a *decoding* failure and not on a suitability one:
+one is a model losing its place, the other is a model being wrong about food.
+
+### What made generation work at all
+
+Two settings, both discovered by running it rather than by reasoning about it.
+
+**The shape is bounded.** `RECIPE_SHAPE` grew `maxItems` on its arrays and `maxLength` on its strings.
+Reading a page is bounded by the page; *writing* one is bounded by nothing, and an open-ended array is
+an invitation to a decoder to keep filling it. Asked to invent a recipe, this model looped to the
+token limit **four times in five** until the arrays had an end — and still sometimes until the strings
+did.
+
+**The budget is small on purpose.** 2500 tokens, against a real recipe's ~500. It is not really a
+budget: it is how long a loop is allowed to run before it is called one. At twelve thousand a runaway
+answer costs forty seconds before anybody finds out; here, a few — and then it asks again.
+
+Generation is also the one place a model is asked for something other than determinism. Extraction is
+deterministic because the same page should yield the same recipe twice; a cook who asks twice for "a
+quick pasta" and is handed the identical answer has been given a lookup table.
+

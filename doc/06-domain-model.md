@@ -325,6 +325,23 @@ somebody says what one weighs, rather than being given an invented figure.
 A line that cannot be weighed, or that no table answers for, contributes nothing and is **named**.
 The totals are then floors. A figure that quietly leaves out the butter is worse than no figure.
 
+### A recipe that was asked for
+
+A generated recipe is an ordinary recipe with `provenance = generated`. It goes through the same
+resolution, the same registry, and the same judgement as one read off a page — the only thing that
+differs is what happens when the judgement goes badly.
+
+An imported recipe with a problem is **kept and marked**: it exists in the world whatever it contains.
+A generated one is **refused with its reasons and not kept**
+([ADR-047](07-decisions.md#adr-047-a-generated-recipe-is-refused-not-warned-about)), because it was
+written on these people's behalf in answer to a request that named them, and producing something they
+cannot eat is a failure of the request rather than a fact about a recipe.
+
+The household's constraints go into the asking, which changes the odds. The verdict comes afterwards
+from the *resolved* ingredients, which is the guarantee. A model asserting a recipe is dairy-free
+carries no weight — and on the first live run, one told not to use milk wrote a recipe with parmesan
+in it.
+
 ### A line without a quantity
 
 "Salt, to taste." "Oil, for frying." "A pinch of nutmeg." These are ordinary lines in every

@@ -325,6 +325,19 @@
     "recipesNoMatch": "Rien ici ne correspond. Essayez moins de mots, ou un ingrédient.",
     "recipesOrder": "Ordre",
     "recipesSearchLabel": "Chercher dans vos recettes",
-    "recipesSearchPlaceholder": "Un plat, ou quelque chose à écouler"
+    "recipesSearchPlaceholder": "Un plat, ou quelque chose à écouler",
+    "inventHeading": "Écris-moi une recette",
+    "inventLede": "Dites ce qui vous ferait plaisir, ou choisissez ce qu’il faut écouler. Ce que quelqu’un à votre table ne peut pas manger est pris en compte.",
+    "inventFieldDescription": "De quoi avez-vous envie",
+    "inventDescriptionPlaceholder": "Quelque chose de rapide avec le reste de poulet",
+    "inventUseUp": "À écouler",
+    "inventSoon": "à consommer",
+    "inventFieldServes": "Pour combien de personnes",
+    "inventSubmit": "Écrire",
+    "inventWorking": "Rédaction…",
+    "inventPatience": "Cela prend un moment. Une recette est écrite depuis le début.",
+    "inventFailedUnknown": "Cela n’a pas fonctionné. Veuillez réessayer.",
+    "inventBack": "Retour à vos recettes",
+    "recipesInvent": "Écris-moi une recette"
   }
 }

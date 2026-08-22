@@ -198,7 +198,11 @@ which lands after the Academy without blocking anything here.
 
 **Goal:** the app proposes rather than waits.
 
-- `GenerationEngine`: from ingredients, name, description, tags, photograph (UC-1.4–1.6)
+- ~~`GenerationEngine`: from ingredients, name, description (UC-1.4, UC-1.5)~~ **Built**. A recipe
+  the household cannot eat is refused with its verdict rather than stored and marked
+  ([ADR-047](07-decisions.md#adr-047-a-generated-recipe-is-refused-not-warned-about)) — it was asked
+  for on these people's behalf. From a **photograph** (UC-1.6) waits for a vision model: ADR-026's
+  wire format carries text, and images are an addition to `ModelAccess` rather than to this engine
 - Variant derivation (UC-1.7)
 - ~~`SearchIndexAccess` and full-text search (UC-3.1)~~ **Built** over SQLite FTS5: titles, the
   ingredients in every language the registry knows them by, and summaries. UC-3.2's filters by tag,

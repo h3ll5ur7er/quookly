@@ -144,3 +144,20 @@ class YieldUnknown(QuooklyError):
     so an invented one misscales all of them at once — and does it silently, which is the
     kind of wrong a cook cannot see.
     """
+
+
+class UnsuitableForTheTable(QuooklyError):
+    """A recipe was written for people who cannot eat it (UC-1.4, UC-1.5).
+
+    Only generation raises this. An *imported* recipe exists in the world whatever it
+    contains, and hiding it would be the interface deciding something about an allergy on
+    a cook's behalf (ADR-010) — but a generated one was asked for on these people's behalf,
+    so producing something they cannot eat is a failure of the request rather than a fact
+    about a recipe.
+
+    Carries the verdict, because "no" without a reason is not an answer.
+    """
+
+    def __init__(self, verdict: object) -> None:
+        super().__init__("the recipe that came back is not suitable for this household")
+        self.verdict = verdict

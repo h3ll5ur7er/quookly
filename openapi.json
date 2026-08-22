@@ -317,6 +317,48 @@
         }
       }
     },
+    "/api/v1/recipes/generated": {
+      "post": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Generate Recipe",
+        "description": "Write a recipe that did not exist (UC-1.4, UC-1.5).\n\nA description, some ingredients to use up, or both. The household's constraints go into\nthe asking, and the answer is judged independently against its resolved ingredients\nbefore anything is stored \u2014 a model asserting \"this is dairy-free\" carries no weight\n(ADR-006).\n\nA recipe the table cannot eat is refused **with its verdict**, because \"no\" without a\nreason is not an answer. That is stricter than importing on purpose: an imported recipe\nexists in the world whatever it contains, and this one was asked for on these people's\nbehalf.",
+        "operationId": "generateRecipe",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentedRecipe"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/recipes/export": {
       "get": {
         "tags": [
@@ -2532,6 +2574,46 @@
         ],
         "title": "Freshness",
         "description": "How urgently a lot wants using, coarsely.\n\nA band rather than a number, because this drives colour and ordering. The precise\ncount of days travels beside it, so the interface can say \"in two days\" without this\nenum needing a case for every number."
+      },
+      "GenerationInput": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "ingredient_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 25,
+            "title": "Ingredient Ids"
+          },
+          "serves": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 50.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serves"
+          }
+        },
+        "type": "object",
+        "title": "GenerationInput",
+        "description": "A request for a recipe that does not exist yet (UC-1.4, UC-1.5).\n\nEverything is optional except that there has to be *something*: a description, some\ningredients to use up, or both. \"Write me a recipe\" with no constraints at all is a\nquestion with too many answers to be useful."
       },
       "GuidedStepView": {
         "properties": {

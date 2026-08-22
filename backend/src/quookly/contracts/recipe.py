@@ -343,6 +343,29 @@ class RecipeInput(BaseModel):
     steps: list[StepInput] = Field(min_length=1)
 
 
+class GenerationInput(BaseModel):
+    """A request for a recipe that does not exist yet (UC-1.4, UC-1.5).
+
+    Everything is optional except that there has to be *something*: a description, some
+    ingredients to use up, or both. "Write me a recipe" with no constraints at all is a
+    question with too many answers to be useful.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    description: str | None = Field(default=None, max_length=500)
+    #: Registry ids rather than names — the cook picked these from their own pantry, and a
+    #: name would have to be resolved back again.
+    ingredient_ids: list[int] = Field(default_factory=list, max_length=25)
+    serves: int | None = Field(default=None, ge=1, le=50)
+
+    @model_validator(mode="after")
+    def something_to_go_on(self) -> "GenerationInput":
+        if not (self.description and self.description.strip()) and not self.ingredient_ids:
+            raise ValueError("say what to cook, or what to use up")
+        return self
+
+
 class UrlImport(BaseModel):
     """A page to read a recipe out of (UC-1.3)."""
 

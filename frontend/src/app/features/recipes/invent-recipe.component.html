@@ -1,0 +1,73 @@
+<main class="page invent">
+  <h1 i18n="@@inventHeading">Write me a recipe</h1>
+  <p class="invent__lede" i18n="@@inventLede">
+    Say what you feel like, or pick what needs using up. Anything anyone at your table cannot eat is
+    taken into account.
+  </p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <label for="description" i18n="@@inventFieldDescription">What do you feel like</label>
+    <input
+      id="description"
+      type="text"
+      formControlName="description"
+      i18n-placeholder="@@inventDescriptionPlaceholder"
+      placeholder="Something quick with the leftover chicken"
+    />
+
+    @if (stocked().length > 0) {
+      <fieldset class="invent__pantry">
+        <legend i18n="@@inventUseUp">Use up</legend>
+        <ul class="invent__stock">
+          @for (entry of stocked(); track entry.ingredient_id) {
+            <li>
+              <label class="invent__pick" [class.invent__pick--on]="isChosen(entry.ingredient_id)">
+                <input
+                  type="checkbox"
+                  [checked]="isChosen(entry.ingredient_id)"
+                  (change)="choose(entry.ingredient_id)"
+                />
+                <span>{{ entry.name }}</span>
+                <!-- The ones worth reaching for first. Marked rather than reordered: a
+                     pantry a cook can learn the shape of beats one that rearranges. -->
+                @if (pressing(entry)) {
+                  <span class="invent__soon" i18n="@@inventSoon">needs using</span>
+                }
+              </label>
+            </li>
+          }
+        </ul>
+      </fieldset>
+    }
+
+    <label for="serves" i18n="@@inventFieldServes">How many people</label>
+    <input id="serves" type="number" min="1" max="50" formControlName="serves" />
+
+    @if (refused(); as verdict) {
+      <!-- Not an error string. "Mira — parmesan" is something a cook can act on, and it is
+           why the recipe was not kept (ADR-006). -->
+      <app-verdict [verdict]="verdict" />
+    }
+
+    @if (failure(); as why) {
+      <p class="error" role="alert">{{ why }}</p>
+    }
+
+    <button type="submit" [disabled]="!ready() || working()">
+      @if (working()) {
+        <span i18n="@@inventWorking">Writing…</span>
+      } @else {
+        <span i18n="@@inventSubmit">Write it</span>
+      }
+    </button>
+
+    @if (working()) {
+      <!-- Explained rather than spun at. A model takes the better part of a minute. -->
+      <p class="hint" i18n="@@inventPatience">
+        This takes a moment. A recipe is being written from scratch.
+      </p>
+    }
+
+    <a class="invent__back" routerLink="/recipes" i18n="@@inventBack">Back to your recipes</a>
+  </form>
+</main>

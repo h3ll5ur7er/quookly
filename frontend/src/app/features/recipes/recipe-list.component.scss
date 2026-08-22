@@ -156,3 +156,16 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* The second way in, and the less usual one. Outline rather than filled: two filled
+   buttons side by side ask a cook to choose before they know the difference. */
+.action--quiet {
+  margin-top: var(--space-3);
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--on-surface);
+}
+
+.action--quiet:hover {
+  background: var(--surface-sunken);
+}

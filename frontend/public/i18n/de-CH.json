@@ -325,6 +325,19 @@
     "recipesNoMatch": "Dazu passt hier nichts. Versuchen Sie weniger Wörter oder eine Zutat.",
     "recipesOrder": "Reihenfolge",
     "recipesSearchLabel": "Ihre Rezepte durchsuchen",
-    "recipesSearchPlaceholder": "Ein Gericht, oder etwas zum Aufbrauchen"
+    "recipesSearchPlaceholder": "Ein Gericht, oder etwas zum Aufbrauchen",
+    "inventHeading": "Schreib mir ein Rezept",
+    "inventLede": "Sagen Sie, worauf Sie Lust haben, oder wählen Sie aus, was weg muss. Was jemand bei Ihnen zu Tisch nicht essen kann, wird berücksichtigt.",
+    "inventFieldDescription": "Worauf haben Sie Lust",
+    "inventDescriptionPlaceholder": "Etwas Schnelles mit dem übrigen Poulet",
+    "inventUseUp": "Aufbrauchen",
+    "inventSoon": "muss weg",
+    "inventFieldServes": "Für wie viele Personen",
+    "inventSubmit": "Schreiben",
+    "inventWorking": "Wird geschrieben …",
+    "inventPatience": "Das dauert einen Moment. Ein Rezept wird von Grund auf geschrieben.",
+    "inventFailedUnknown": "Das hat nicht geklappt. Bitte versuchen Sie es erneut.",
+    "inventBack": "Zurück zu Ihren Rezepten",
+    "recipesInvent": "Schreib mir ein Rezept"
   }
 }
