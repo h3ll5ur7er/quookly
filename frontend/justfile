@@ -19,6 +19,12 @@ serve:
 build:
     just _nvm "npm run build"
 
+# What the suite reaches. `src/api` is excluded: it is the generated OpenAPI client,
+# regenerated on every API change and never hand-edited, and measuring it says nothing
+# about this codebase — it dragged the figure down by nine points while meaning nothing.
+coverage *args:
+    just _nvm "npx ng test --watch false --coverage {{args}}"
+
 test:
     just _nvm "npm run test"
 

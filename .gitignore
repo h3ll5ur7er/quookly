@@ -1,0 +1,6 @@
+
+# Coverage data, written by every `just coverage` run.
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
