@@ -16,6 +16,12 @@ export-openapi:
 test:
     uv run pytest
 
+# What the suite reaches. Not part of `check`: a coverage figure is something to read and
+# think about, not a gate to satisfy — and the ways to move it without testing anything
+# are easier than the ways to move it by testing something.
+coverage *args:
+    uv run pytest --cov --cov-report=term-missing {{args}}
+
 lint:
     uv run ruff check .
 

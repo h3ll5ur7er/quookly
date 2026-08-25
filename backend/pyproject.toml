@@ -80,7 +80,30 @@ markers = ["live: needs a real inference provider"]
 filterwarnings = [
     "ignore::DeprecationWarning:quookly.access.search",
 ]
+
 addopts = "-m 'not live'"
+
+[tool.coverage.run]
+source = ["src/quookly"]
+# **Both, and neither alone is enough.** SQLAlchemy's async layer runs its database work
+# inside a greenlet, and coverage cannot see into one it has not been told about: without
+# `greenlet` every line after the first `await` in an access function reads as unexecuted,
+# which reported `ShoppingAccess.tick` at 59% while the tests that prove it writes were
+# passing. Turning it on alone then loses the code that runs in threads — the request
+# dependencies dropped to 43%.
+#
+# The failure mode is what makes this worth a comment: coverage does not report that it
+# could not see, it reports that the line did not run. A number that quietly understates
+# is worse than no number, because it sends somebody to write a test for code that is
+# already tested.
+concurrency = ["greenlet", "thread"]
+
+[tool.coverage.report]
+exclude_also = [
+    # Bodies that exist for a type checker and never run.
+    "if TYPE_CHECKING:",
+    "\\.\\.\\.",
+]
 
 [tool.importlinter]
 root_package = "quookly"
