@@ -20,7 +20,7 @@ from quookly.access.database import dispose_engine, get_engine
 from quookly.api import app
 from quookly.managers.seed import stock_academy
 from quookly.utilities.configuration import get_settings
-from tests.support import sign_up
+from tests.support import sign_up, sign_up_admin
 
 ACADEMY = "/api/v1/academy"
 
@@ -398,3 +398,280 @@ class TestPictures:
     ) -> None:
         response = await self.illustrate(client, admin, slug="no-such-thing")
         assert response.status_code == 404
+
+
+class TestACookWritesAPage:
+    """Contributing a page, and what it may do before anybody has read it (ADR-060)."""
+
+    @pytest.fixture
+    async def admin(self, client: AsyncClient) -> dict[str, str]:
+        return await sign_up_admin(client)
+
+    def page(self, **changes: object) -> dict[str, object]:
+        return {
+            "slug": "spatchcock",
+            "kind": "technique",
+            "name": "spatchcock",
+            "spellings": ["spatchcocked", "butterflied"],
+            "summary": "Flatten a bird so it cooks evenly.",
+            "explanation": "Cut out the backbone and press down on the breastbone.",
+            "caution": None,
+            "name_matches": True,
+            **changes,
+        }
+
+    async def written(self, client: AsyncClient, headers: dict[str, str], **changes: object) -> Any:
+        return await client.post(ACADEMY, json=self.page(**changes), headers=headers)
+
+    async def test_a_cook_can_write_one(self, client: AsyncClient, cook: dict[str, str]) -> None:
+        made = await self.written(client, cook)
+        assert made.status_code == 201, made.text
+        assert made.json()["slug"] == "spatchcock"
+
+    async def test_signing_in_is_required(self, client: AsyncClient) -> None:
+        assert (await client.post(ACADEMY, json=self.page())).status_code == 401
+
+    async def test_it_arrives_unreviewed(self, client: AsyncClient, cook: dict[str, str]) -> None:
+        assert (await self.written(client, cook)).json()["approved"] is False
+
+    async def test_it_does_not_claim_to_be_a_model(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        """A cook wrote it, so `generated` says so — the two are separate facts
+        (ADR-056)."""
+        assert (await self.written(client, cook)).json()["generated"] is False
+
+    async def test_the_author_can_read_it_back(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        await self.written(client, cook)
+        found = await client.get(f"{ACADEMY}/spatchcock", headers=cook)
+        assert found.status_code == 200
+        assert found.json()["name"] == "spatchcock"
+
+    async def test_a_slug_that_is_taken_is_refused(
+        self, client: AsyncClient, cook: dict[str, str], stocked: int
+    ) -> None:
+        """Not silently skipped: a cook told nothing would think it saved."""
+        clash = await self.written(client, cook, slug="blanch")
+        assert clash.status_code == 409
+
+    async def test_the_words_of_a_step_do_not_find_it_yet(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        """The whole of ADR-060. Marking works when the reader has come to the page; it
+        does nothing when the page arrives underlined in a recipe they wrote."""
+        await self.written(client, cook)
+        found = await client.get(f"{ACADEMY}/terms/spatchcocked", headers=cook)
+        assert found.json() == []
+
+    async def test_approving_it_is_what_lets_a_step_find_it(
+        self, client: AsyncClient, cook: dict[str, str], admin: dict[str, str]
+    ) -> None:
+        await self.written(client, cook)
+        approved = await client.post(f"{ACADEMY}/spatchcock/approved", headers=admin)
+        assert approved.status_code == 200
+
+        found = await client.get(f"{ACADEMY}/terms/spatchcocked", headers=cook)
+        assert [one["slug"] for one in found.json()] == ["spatchcock"]
+
+    async def test_an_ordinary_cook_cannot_approve_their_own(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        await self.written(client, cook)
+        assert (
+            await client.post(f"{ACADEMY}/spatchcock/approved", headers=cook)
+        ).status_code == 403
+
+
+class TestWorkingOnAPageNobodyHasApproved:
+    """An author may keep working on their own draft; the Academy is otherwise shared."""
+
+    @pytest.fixture
+    async def admin(self, client: AsyncClient) -> dict[str, str]:
+        return await sign_up_admin(client)
+
+    def wording(self, **changes: object) -> dict[str, object]:
+        return {
+            "name": "spatchcock",
+            "spellings": ["spatchcocked"],
+            "summary": "Flatten a bird so it cooks evenly.",
+            "explanation": "Cut out the backbone and press down.",
+            "caution": None,
+            "name_matches": True,
+            **changes,
+        }
+
+    async def a_draft(self, client: AsyncClient, headers: dict[str, str]) -> None:
+        await client.post(
+            ACADEMY,
+            json={
+                "slug": "spatchcock",
+                "kind": "technique",
+                **self.wording(),
+            },
+            headers=headers,
+        )
+
+    async def test_the_author_can_fix_their_own_typo(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        """An author who cannot correct their own draft will not write a second page."""
+        await self.a_draft(client, cook)
+        fixed = await client.put(
+            f"{ACADEMY}/spatchcock/wordings/en-GB",
+            json=self.wording(summary="Flatten a bird so that it cooks evenly."),
+            headers=cook,
+        )
+        assert fixed.status_code == 200, fixed.text
+        assert fixed.json()["summary"] == "Flatten a bird so that it cooks evenly."
+
+    async def test_somebody_elses_draft_is_not_theirs_to_rewrite(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        await self.a_draft(client, cook)
+        stranger = await sign_up(client, "neighbour@example.com")
+        refused = await client.put(
+            f"{ACADEMY}/spatchcock/wordings/en-GB",
+            json=self.wording(summary="Something else entirely."),
+            headers=stranger,
+        )
+        assert refused.status_code == 403
+
+    async def test_once_approved_it_is_the_instances_page(
+        self, client: AsyncClient, cook: dict[str, str], admin: dict[str, str]
+    ) -> None:
+        """Approval is the moment a draft becomes what every cook here reads, so from then
+        on a correction is an administrator's."""
+        await self.a_draft(client, cook)
+        await client.post(f"{ACADEMY}/spatchcock/approved", headers=admin)
+
+        refused = await client.put(
+            f"{ACADEMY}/spatchcock/wordings/en-GB",
+            json=self.wording(summary="Something else entirely."),
+            headers=cook,
+        )
+        assert refused.status_code == 403
+
+    async def test_the_page_says_whether_the_reader_may_rewrite_it(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        """So a screen does not have to re-derive the rule and get it slightly different."""
+        await self.a_draft(client, cook)
+        mine = await client.get(f"{ACADEMY}/spatchcock", headers=cook)
+        assert mine.json()["may_rewrite"] is True
+
+    async def test_it_says_no_to_somebody_elses_draft(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        await self.a_draft(client, cook)
+        stranger = await sign_up(client, "neighbour@example.com")
+        theirs = await client.get(f"{ACADEMY}/spatchcock", headers=stranger)
+        assert theirs.json()["may_rewrite"] is False
+
+    async def test_an_admin_may_rewrite_anything(
+        self, client: AsyncClient, cook: dict[str, str], admin: dict[str, str]
+    ) -> None:
+        await self.a_draft(client, cook)
+        theirs = await client.get(f"{ACADEMY}/spatchcock", headers=admin)
+        assert theirs.json()["may_rewrite"] is True
+
+    async def test_the_author_stops_being_able_to_once_it_is_approved(
+        self, client: AsyncClient, cook: dict[str, str], admin: dict[str, str]
+    ) -> None:
+        await self.a_draft(client, cook)
+        await client.post(f"{ACADEMY}/spatchcock/approved", headers=admin)
+        mine = await client.get(f"{ACADEMY}/spatchcock", headers=cook)
+        assert mine.json()["may_rewrite"] is False
+
+    async def test_an_admin_may_rewrite_it_at_any_point(
+        self, client: AsyncClient, cook: dict[str, str], admin: dict[str, str]
+    ) -> None:
+        await self.a_draft(client, cook)
+        fixed = await client.put(
+            f"{ACADEMY}/spatchcock/wordings/en-GB",
+            json=self.wording(summary="Flattened, so it cooks evenly."),
+            headers=admin,
+        )
+        assert fixed.status_code == 200, fixed.text
+
+
+class TestDecliningAPage:
+    """Put away rather than destroyed."""
+
+    @pytest.fixture
+    async def admin(self, client: AsyncClient) -> dict[str, str]:
+        return await sign_up_admin(client)
+
+    async def a_draft(self, client: AsyncClient, headers: dict[str, str]) -> None:
+        await client.post(
+            ACADEMY,
+            json={
+                "slug": "spatchcock",
+                "kind": "technique",
+                "name": "spatchcock",
+                "spellings": ["spatchcocked"],
+                "summary": "Flatten a bird so it cooks evenly.",
+                "explanation": "Cut out the backbone and press down.",
+                "caution": None,
+                "name_matches": True,
+            },
+            headers=headers,
+        )
+
+    async def test_an_admin_can_decline_one(
+        self, client: AsyncClient, cook: dict[str, str], admin: dict[str, str]
+    ) -> None:
+        await self.a_draft(client, cook)
+        declined = await client.delete(f"{ACADEMY}/spatchcock", headers=admin)
+        assert declined.status_code == 204
+
+        assert (await client.get(f"{ACADEMY}/spatchcock", headers=cook)).status_code == 404
+
+    async def test_it_leaves_the_queue(
+        self, client: AsyncClient, cook: dict[str, str], admin: dict[str, str]
+    ) -> None:
+        await self.a_draft(client, cook)
+        await client.delete(f"{ACADEMY}/spatchcock", headers=admin)
+
+        queue = await client.get(f"{ACADEMY}?approved=false", headers=admin)
+        assert [one["slug"] for one in queue.json()] == []
+
+    async def test_an_ordinary_cook_cannot_decline_a_page(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        await self.a_draft(client, cook)
+        assert (await client.delete(f"{ACADEMY}/spatchcock", headers=cook)).status_code == 403
+
+    async def test_declining_a_page_that_is_not_there_says_so(
+        self, client: AsyncClient, admin: dict[str, str]
+    ) -> None:
+        assert (await client.delete(f"{ACADEMY}/nothing", headers=admin)).status_code == 404
+
+
+class TestTheReviewQueue:
+    async def test_it_is_what_nobody_has_read(
+        self, client: AsyncClient, cook: dict[str, str], stocked: int
+    ) -> None:
+        await client.post(
+            ACADEMY,
+            json={
+                "slug": "spatchcock",
+                "kind": "technique",
+                "name": "spatchcock",
+                "spellings": [],
+                "summary": "Flatten a bird so it cooks evenly.",
+                "explanation": "Cut out the backbone and press down.",
+                "caution": None,
+                "name_matches": True,
+            },
+            headers=cook,
+        )
+        queue = await client.get(f"{ACADEMY}?approved=false", headers=cook)
+        assert [one["slug"] for one in queue.json()] == ["spatchcock"]
+
+    async def test_the_shipped_pages_need_no_review(
+        self, client: AsyncClient, cook: dict[str, str], stocked: int
+    ) -> None:
+        queue = await client.get(f"{ACADEMY}?approved=false", headers=cook)
+        assert queue.json() == []

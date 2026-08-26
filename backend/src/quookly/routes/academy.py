@@ -5,12 +5,17 @@ from pydantic import BaseModel, Field
 
 from quookly.contracts.academy import (
     ClaimantView,
+    NewPage,
     PageKind,
     PageSummaryView,
     PageView,
     Wording,
 )
-from quookly.contracts.errors import PageNotWritten, UnreadableImage
+from quookly.contracts.errors import (
+    PageAlreadyWritten,
+    PageNotWritten,
+    UnreadableImage,
+)
 from quookly.managers import academy as academy_manager
 from quookly.routes.dependencies import CurrentAdmin, CurrentCook
 
@@ -40,13 +45,34 @@ class WordingInput(BaseModel):
     name_matches: bool = True
 
 
+class NewPageInput(WordingInput):
+    """A page somebody here is writing, in the one language they are writing it in.
+
+    A wording plus an identity. Written in one language rather than all of them: a cook who
+    knows how to spatchcock a chicken is not thereby a translator, and a page that arrives
+    in one language is a page the other two fall back from (ADR-057).
+    """
+
+    #: Lower case, digits and hyphens, like every other slug here. It is what an author's
+    #: `[[link]]` names, so it has to be typeable and stable (ADR-059).
+    slug: str = Field(min_length=1, max_length=80, pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")
+    kind: PageKind
+
+
 @router.get("/academy", response_model=list[PageSummaryView])
 async def browse_academy(
     cook: CurrentCook,
     kind: PageKind | None = Query(default=None, description="Show one section on its own."),
+    approved: bool | None = Query(
+        default=None, description="Narrow to what has been reviewed, or to what awaits it."
+    ),
 ) -> list[PageSummaryView]:
-    """Every page, in the cook's language, ordered by the name they will read."""
-    return await academy_manager.browse(cook.cook_id, kind)
+    """Every page, in the cook's language, ordered by the name they will read.
+
+    Pages nobody has reviewed are listed: approval gates what a page may attach itself to,
+    not whether it can be read (ADR-060). Pages put away are not listed at all.
+    """
+    return await academy_manager.browse(cook.cook_id, kind, approved)
 
 
 @router.get("/academy/terms/{term}", response_model=list[ClaimantView])
@@ -63,24 +89,83 @@ async def pages_for_term(term: str, cook: CurrentCook) -> list[ClaimantView]:
 @router.get("/academy/{slug}", response_model=PageView)
 async def read_page(slug: str, cook: CurrentCook) -> PageView:
     """One page, with the other pages its name belongs to named at the top."""
-    found = await academy_manager.read(slug, cook.cook_id)
+    found = await academy_manager.read(slug, cook.cook_id, cook.is_admin)
     if found is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such page.")
     return found
 
 
+@router.post("/academy", response_model=PageView, status_code=status.HTTP_201_CREATED)
+async def write_page(submitted: NewPageInput, cook: CurrentCook) -> PageView:
+    """Write a page for the Academy.
+
+    Any signed-in cook may: this instance's door is already the membership decision, so a
+    separate contributor role would be a second one (ADR-049, ADR-060).
+
+    It arrives unreviewed, and until an administrator has read it, it is a page in the
+    Academy and not a word in anybody's recipe — readable and listed, but not matched into
+    a step and not what `/academy/terms/{term}` answers with.
+    """
+    try:
+        written = await academy_manager.write(
+            NewPage(
+                slug=submitted.slug,
+                kind=submitted.kind,
+                wordings={},
+            ),
+            Wording(
+                name=submitted.name,
+                spellings=submitted.spellings,
+                summary=submitted.summary,
+                explanation=submitted.explanation,
+                caution=submitted.caution,
+                name_matches=submitted.name_matches,
+            ),
+            cook.cook_id,
+            cook.is_admin,
+        )
+    except PageAlreadyWritten as taken:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="There is already a page with that name.",
+        ) from taken
+    if written is None:
+        raise NOT_FOUND
+    return written
+
+
+@router.delete("/academy/{slug}", status_code=status.HTTP_204_NO_CONTENT)
+async def decline_page(slug: str, admin: CurrentAdmin) -> None:
+    """Put a page away.
+
+    How a page nobody wants is declined, and how one that has gone wrong is taken down.
+    Archived rather than deleted, the same choice a recipe makes: it leaves the Academy,
+    the review queue and every recipe's words, and nothing is destroyed on somebody's
+    behalf.
+    """
+    if not await academy_manager.decline(slug, admin.cook_id):
+        raise NOT_FOUND
+
+
 @router.put("/academy/{slug}/wordings/{locale}", response_model=PageView)
-async def amend_page(
-    slug: str, locale: str, wording: WordingInput, admin: CurrentAdmin
-) -> PageView:
+async def amend_page(slug: str, locale: str, wording: WordingInput, cook: CurrentCook) -> PageView:
     """Rewrite one language's wording of a page.
 
     An administrator's, because the Academy is shared: a correction changes what every cook
     on this instance reads. A locale the page does not speak yet is added, which is how a
     translation arrives.
 
+    The one exception is an author working on a page nobody has approved. That is not yet
+    what the instance reads, and an author who cannot fix their own typo will not write a
+    second page (ADR-060). Approval is the moment it stops being theirs.
+
     It does not approve the page — fixing a sentence is not saying somebody has read it.
     """
+    if not await academy_manager.may_rewrite(slug, cook.cook_id, cook.is_admin):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This page is not yours to rewrite.",
+        )
     try:
         amended = await academy_manager.amend(
             slug,
@@ -93,7 +178,8 @@ async def amend_page(
                 caution=wording.caution,
                 name_matches=wording.name_matches,
             ),
-            admin.cook_id,
+            cook.cook_id,
+            cook.is_admin,
         )
     except PageNotWritten as absent:
         raise NOT_FOUND from absent
@@ -110,7 +196,7 @@ async def approve_page(slug: str, admin: CurrentAdmin) -> PageView:
     about who wrote it: vouching for a paragraph and having written it are different facts.
     """
     try:
-        approved = await academy_manager.approve(slug, admin.cook_id)
+        approved = await academy_manager.approve(slug, admin.cook_id, admin.is_admin)
     except PageNotWritten as absent:
         raise NOT_FOUND from absent
     if approved is None:

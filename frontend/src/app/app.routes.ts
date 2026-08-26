@@ -163,6 +163,14 @@ export const routes: Routes = [
       import('./features/registry/ingredient.component').then((m) => m.IngredientComponent),
   },
   {
+    // Before `academy/:slug` for the same reason as the term route below: they share a
+    // shape and the first match wins.
+    path: 'academy/new',
+    canActivate: [requireSignedIn],
+    loadComponent: () =>
+      import('./features/academy/write-page.component').then((m) => m.WritePageComponent),
+  },
+  {
     // Where a step's word sends a reader: the *term*, not a page. One claimant opens it and
     // several offer a chooser, so nothing picks arbitrarily (ADR-058). Before `:slug`,
     // because they share a shape and the first match wins.

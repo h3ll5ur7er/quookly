@@ -5,6 +5,10 @@
     it, so looking one up costs a tap rather than a search.
   </p>
 
+  <a class="action action--quiet" routerLink="/academy/new" i18n="@@academyWriteOne">
+    Write a page
+  </a>
+
   @if (failed()) {
     <p class="notice notice--danger" role="alert" i18n="@@academyListFailed">
       Could not load the Academy. Please try again.
@@ -13,8 +17,26 @@
     @if (found.length === 0) {
       <p i18n="@@academyEmpty">Nothing here yet.</p>
     } @else {
+      @if (waiting().length > 0) {
+        <section class="academy__waiting">
+          <h2 i18n="@@academyWaitingHeading">Waiting to be read</h2>
+          <p class="academy__summary" i18n="@@academyWaitingWhat">
+            Written here and not yet reviewed. You can read them; they are not marked in recipes
+            until somebody here has read them.
+          </p>
+          <ul class="academy__list">
+            @for (one of waiting(); track one.slug) {
+              <li>
+                <a [routerLink]="['/academy', one.slug]">{{ one.name }}</a>
+                <span class="academy__summary">{{ one.summary }}</span>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
       <ul class="academy__list">
-        @for (one of found; track one.slug) {
+        @for (one of settled(); track one.slug) {
           <li>
             <a [routerLink]="['/academy', one.slug]">{{ one.name }}</a>
             <span class="academy__summary">{{ one.summary }}</span>

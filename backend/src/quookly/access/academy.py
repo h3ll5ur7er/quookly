@@ -10,6 +10,7 @@ nothing computes on a page and a person resolves it by clicking (ADR-058).
 """
 
 from collections.abc import Sequence
+from datetime import UTC, datetime
 
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -23,13 +24,15 @@ from quookly.access.models import (
 )
 from quookly.contracts.academy import (
     Claimant,
+    Listing,
     NewPage,
     Page,
     PageKind,
     Picture,
+    Standing,
     Wording,
 )
-from quookly.contracts.errors import PageNotWritten
+from quookly.contracts.errors import PageAlreadyWritten, PageNotWritten
 from quookly.contracts.ingredient import Origin
 from quookly.contracts.matching import Named
 from quookly.utilities.text import fold, normalise
@@ -84,6 +87,86 @@ async def store_many(pages: Sequence[NewPage], origin: Origin = Origin.USER) -> 
 
         await active.commit()
     return added
+
+
+async def write(page: NewPage, cook_id: int) -> None:
+    """One page, written here by somebody on this instance.
+
+    Unreviewed, and recorded against its author. Refuses a slug that is taken rather than
+    skipping it the way the bulk path does: a cook told nothing would think it saved.
+    """
+    async with session() as active:
+        taken = (
+            await active.exec(select(AcademyPageRow).where(col(AcademyPageRow.slug) == page.slug))
+        ).first()
+        if taken is not None:
+            raise PageAlreadyWritten(f"{page.slug} is already a page")
+
+        row = AcademyPageRow(
+            slug=page.slug, kind=page.kind, origin=Origin.USER, approved=False, written_by=cook_id
+        )
+        active.add(row)
+        await active.flush()
+        assert row.id is not None
+        _write_wordings(active, row.id, page.wordings)
+        await active.commit()
+
+
+async def standing_of(slug: str) -> Standing | None:
+    """Where a page stands: read, written by whom, and whether it has been put away.
+
+    Answers for a page that is archived, unlike `detail`. What a caller needs in order to
+    decide who may rewrite or restore it, which is a different question from what the page
+    says (ADR-060).
+    """
+    async with session() as active:
+        row = (
+            await active.exec(select(AcademyPageRow).where(col(AcademyPageRow.slug) == slug))
+        ).first()
+        if row is None:
+            return None
+        return Standing(
+            approved=row.approved,
+            written_by=row.written_by,
+            archived=row.archived_at is not None,
+        )
+
+
+async def archive(slug: str) -> bool:
+    """Put a page away. Returns whether there was one.
+
+    How an administrator declines a page, and how one that has gone bad is taken down.
+    Nothing is destroyed: the row stays, out of the Academy, out of the queue and out of
+    every recipe's words.
+    """
+    async with session() as active:
+        row = (
+            await active.exec(select(AcademyPageRow).where(col(AcademyPageRow.slug) == slug))
+        ).first()
+        if row is None:
+            return False
+        row.archived_at = datetime.now(UTC)
+        active.add(row)
+        await active.commit()
+        return True
+
+
+async def restore(slug: str) -> bool:
+    """Bring a page back. Returns whether there was one.
+
+    Approval is untouched: bringing a page back is not the same act as saying somebody has
+    read it, and a page declined after approval comes back approved (ADR-051).
+    """
+    async with session() as active:
+        row = (
+            await active.exec(select(AcademyPageRow).where(col(AcademyPageRow.slug) == slug))
+        ).first()
+        if row is None:
+            return False
+        row.archived_at = None
+        active.add(row)
+        await active.commit()
+        return True
 
 
 def _write_wordings(active: AsyncSession, page_id: int, wordings: dict[str, Wording]) -> None:
@@ -143,26 +226,36 @@ async def _texts_for(
     return chosen
 
 
-async def browse(locale: str, kind: PageKind | None = None) -> list[Claimant]:
+async def browse(
+    locale: str, kind: PageKind | None = None, approved: bool | None = None
+) -> list[Listing]:
     """Every page, named for the reader, in the order they would read them.
 
     Alphabetical by the name shown rather than by slug: a German cook looking for
     *unterheben* should not have to know it is filed under `fold`.
+
+    Unreviewed pages are **listed**. Approval gates what a page may attach itself to, not
+    whether it can be read (ADR-060) — and an author who cannot see their own page has no
+    way to tell it saved. `approved=False` narrows to the review queue.
+
+    Pages put away are not listed at all, whatever is asked for.
     """
     async with session() as active:
-        statement = select(AcademyPageRow)
+        statement = select(AcademyPageRow).where(col(AcademyPageRow.archived_at).is_(None))
         if kind is not None:
             statement = statement.where(col(AcademyPageRow.kind) == kind)
+        if approved is not None:
+            statement = statement.where(col(AcademyPageRow.approved).is_(approved))
         rows = (await active.exec(statement)).all()
         pages = {row.id: row for row in rows if row.id is not None}
         texts = await _texts_for(active, list(pages), locale)
 
-    found = [
-        Claimant(slug=row.slug, name=text.name, summary=text.summary)
+    listed = [
+        Listing(slug=row.slug, name=text.name, summary=text.summary, approved=row.approved)
         for page_id, row in pages.items()
         if (text := texts.get(page_id)) is not None
     ]
-    return sorted(found, key=lambda one: (fold(one.name), one.slug))
+    return sorted(listed, key=lambda one: (fold(one.name), one.slug))
 
 
 async def claimants_of(term: str, locale: str) -> list[Claimant]:
@@ -187,8 +280,16 @@ async def claimants_of(term: str, locale: str) -> list[Claimant]:
         if not page_ids:
             return []
 
+        # Approved only, and nothing put away. This is where a step's word leads, so a
+        # page nobody has read cannot be what a word leads to (ADR-060).
         rows = (
-            await active.exec(select(AcademyPageRow).where(col(AcademyPageRow.id).in_(page_ids)))
+            await active.exec(
+                select(AcademyPageRow).where(
+                    col(AcademyPageRow.id).in_(page_ids),
+                    col(AcademyPageRow.approved).is_(True),
+                    col(AcademyPageRow.archived_at).is_(None),
+                )
+            )
         ).all()
         texts = await _texts_for(active, page_ids, locale)
 
@@ -208,7 +309,12 @@ async def detail(slug: str, locale: str) -> Page | None:
     """
     async with session() as active:
         row = (
-            await active.exec(select(AcademyPageRow).where(col(AcademyPageRow.slug) == slug))
+            await active.exec(
+                select(AcademyPageRow).where(
+                    col(AcademyPageRow.slug) == slug,
+                    col(AcademyPageRow.archived_at).is_(None),
+                )
+            )
         ).first()
         if row is None or row.id is None:
             return None
@@ -283,6 +389,11 @@ async def vocabulary(locale: str) -> tuple[list[Named], dict[str, str]]:
                 .where(
                     col(AcademyTermRow.locale).in_([locale, SOURCE_LOCALE]),
                     col(AcademyTermRow.matchable).is_(True),
+                    # The whole of ADR-060, in two lines. A page nobody has read is a page
+                    # in the Academy and not a word in anybody's recipe, and one put away
+                    # is out of every recipe that already used the word.
+                    col(AcademyPageRow.approved).is_(True),
+                    col(AcademyPageRow.archived_at).is_(None),
                 )
             )
         ).all()

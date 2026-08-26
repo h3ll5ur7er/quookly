@@ -32,7 +32,7 @@
       @if (shown.also && shown.also.length > 0) {
         <p class="academy__hatnote">
           <span i18n="@@academyAlso">This name also belongs to</span>
-          @for (one of shown.also ?? []; track one.slug) {
+          @for (one of shown.also; track one.slug) {
             <a [routerLink]="['/academy', one.slug]">{{ one.summary }}</a>
           }
         </p>
@@ -79,6 +79,12 @@
         <p class="academy__provenance" i18n="@@academyUnchecked">
           Written by a model on this instance. Nobody here has checked it.
         </p>
+      } @else if (!shown.approved) {
+        <!-- Said on the page rather than only in the list. Somebody arriving from a link
+             needs to know as much as somebody who came past the queue (ADR-060). -->
+        <p class="academy__provenance" i18n="@@academyNotYetRead">
+          Written here, and nobody has read it yet. It is not marked in recipes until somebody has.
+        </p>
       }
 
       @if (saveFailed()) {
@@ -97,6 +103,40 @@
         >
           Approve
         </button>
+      }
+
+      <!-- Put away rather than deleted, and behind a confirmation for the same reason as a
+           recipe: it takes the page out of the Academy and out of every recipe's words. -->
+      @if (isAdmin() && !declining()) {
+        <button
+          type="button"
+          class="action action--quiet"
+          (click)="declining.set(true)"
+          i18n="@@academyDecline"
+        >
+          Put this page away
+        </button>
+      }
+
+      @if (declining()) {
+        <div class="academy__form">
+          <p i18n="@@academyDeclineWhat">
+            It leaves the Academy and stops being marked in recipes. Nothing is destroyed.
+          </p>
+          <div class="academy__actions">
+            <button type="button" class="action" (click)="decline()" i18n="@@academyDeclineYes">
+              Yes, put it away
+            </button>
+            <button
+              type="button"
+              class="action action--quiet"
+              (click)="declining.set(false)"
+              i18n="@@academyDeclineNo"
+            >
+              Keep it
+            </button>
+          </div>
+        </div>
       }
 
       @if (isAdmin() && !illustrating()) {
@@ -150,7 +190,7 @@
         </div>
       }
 
-      @if (isAdmin() && !correcting()) {
+      @if (shown.may_rewrite && !correcting()) {
         <button
           type="button"
           class="action action--quiet"

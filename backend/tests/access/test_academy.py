@@ -17,9 +17,10 @@ from pytest import MonkeyPatch
 from sqlmodel import SQLModel
 
 from quookly.access import academy
+from quookly.access import cook as cook_access
 from quookly.access.database import dispose_engine, get_engine
 from quookly.contracts.academy import NewPage, PageKind, Wording
-from quookly.contracts.errors import PageNotWritten
+from quookly.contracts.errors import PageAlreadyWritten, PageNotWritten
 from quookly.contracts.ingredient import Origin
 from quookly.contracts.matching import Named
 from quookly.utilities.configuration import get_settings
@@ -28,7 +29,7 @@ ENGLISH = "en-GB"
 
 
 async def spotting_only(locale: str) -> list[Named]:
-    """Just the vocabulary half of , for the tests that are about it."""
+    """Just the vocabulary half of `vocabulary`, for the tests that are about it."""
     entries, _ = await academy.vocabulary(locale)
     return entries
 
@@ -47,6 +48,13 @@ async def in_memory_database(monkeypatch: MonkeyPatch) -> AsyncIterator[None]:
     await dispose_engine()
     get_settings.cache_clear()
     get_engine.cache_clear()
+
+
+@pytest.fixture
+async def cook_id() -> int:
+    """A real account, because a page records who wrote it and the column is a key."""
+    cook = await cook_access.register("chef@example.com", "Emanuel", "hash")
+    return cook.id
 
 
 def folding() -> NewPage:
@@ -204,7 +212,8 @@ class TestSharedTerms:
                         )
                     },
                 ),
-            ]
+            ],
+            origin=Origin.SEED,
         )
 
     async def test_both_pages_are_stored(self) -> None:
@@ -218,19 +227,19 @@ class TestSharedTerms:
         assert {one.slug for one in claiming} == {"beurre-monte", "butter"}
 
     async def test_a_term_only_one_page_claims_reports_one(self) -> None:
-        await academy.store_many([folding()])
+        await academy.store_many([folding()], origin=Origin.SEED)
         assert [one.slug for one in await academy.claimants_of("fold", ENGLISH)] == ["fold"]
 
     async def test_a_spelling_finds_its_page_too(self) -> None:
-        await academy.store_many([folding()])
+        await academy.store_many([folding()], origin=Origin.SEED)
         assert [one.slug for one in await academy.claimants_of("folded in", ENGLISH)] == ["fold"]
 
     async def test_accents_and_case_do_not_matter(self) -> None:
-        await academy.store_many([folding()])
+        await academy.store_many([folding()], origin=Origin.SEED)
         assert [one.slug for one in await academy.claimants_of("FOLDED IN", ENGLISH)] == ["fold"]
 
     async def test_a_term_nobody_claims_reports_nobody(self) -> None:
-        await academy.store_many([folding()])
+        await academy.store_many([folding()], origin=Origin.SEED)
         assert await academy.claimants_of("saffron", ENGLISH) == []
 
     async def test_a_page_knows_who_else_claims_its_name(self) -> None:
@@ -241,7 +250,7 @@ class TestSharedTerms:
         assert [one.slug for one in found.also] == ["beurre-monte"]
 
     async def test_a_page_nobody_shares_with_has_no_hatnote(self) -> None:
-        await academy.store_many([folding()])
+        await academy.store_many([folding()], origin=Origin.SEED)
         found = await academy.detail("fold", ENGLISH)
         assert found is not None
         assert found.also == []
@@ -271,7 +280,8 @@ class TestWhatMayBeSpottedInAStep:
                         )
                     },
                 )
-            ]
+            ],
+            origin=Origin.SEED,
         )
 
     async def test_a_matchable_name_is_offered_for_spotting(self) -> None:
@@ -315,7 +325,7 @@ class TestCorrecting:
     """
 
     async def test_the_explanation_can_be_rewritten(self) -> None:
-        await academy.store_many([folding()])
+        await academy.store_many([folding()], origin=Origin.SEED)
         await academy.amend(
             "fold",
             ENGLISH,
@@ -331,7 +341,7 @@ class TestCorrecting:
         assert found.explanation.startswith("Cut down, sweep")
 
     async def test_the_spellings_are_replaced_not_added_to(self) -> None:
-        await academy.store_many([folding()])
+        await academy.store_many([folding()], origin=Origin.SEED)
         await academy.amend(
             "fold",
             ENGLISH,
@@ -348,7 +358,7 @@ class TestCorrecting:
 
     async def test_a_language_it_did_not_speak_can_be_added(self) -> None:
         """This is how a translation arrives: correcting a locale that has no wording yet."""
-        await academy.store_many([deep_frying()])
+        await academy.store_many([deep_frying()], origin=Origin.SEED)
         await academy.amend(
             "deep-fry",
             GERMAN,
@@ -364,7 +374,7 @@ class TestCorrecting:
         assert found.name == "frittieren"
 
     async def test_the_other_languages_are_left_alone(self) -> None:
-        await academy.store_many([folding()])
+        await academy.store_many([folding()], origin=Origin.SEED)
         await academy.amend(
             "fold",
             ENGLISH,
@@ -381,7 +391,7 @@ class TestCorrecting:
 
     async def test_a_caution_can_be_taken_away(self) -> None:
         """Absent is a real answer: a warning that does not apply is worse than none."""
-        await academy.store_many([deep_frying()])
+        await academy.store_many([deep_frying()], origin=Origin.SEED)
         await academy.amend(
             "deep-fry",
             ENGLISH,
@@ -398,7 +408,7 @@ class TestCorrecting:
         assert found.caution is None
 
     async def test_a_name_can_stop_being_matchable(self) -> None:
-        await academy.store_many([folding()])
+        await academy.store_many([folding()], origin=Origin.SEED)
         await academy.amend(
             "fold",
             ENGLISH,
@@ -458,3 +468,124 @@ class TestCorrecting:
     async def test_approving_something_that_is_not_there_is_refused(self) -> None:
         with pytest.raises(PageNotWritten):
             await academy.approve("no-such-thing")
+
+
+class TestAPageACookWrote:
+    """Writing one, and what it may do before anybody has read it (ADR-060).
+
+    The rule the whole unit turns on: an unreviewed page is readable, and its terms are
+    not matched into anybody's recipe. Marking works when the reader has come to the page;
+    it does nothing when the page arrives underlined inside a recipe three screens away.
+    """
+
+    async def test_what_a_cook_writes_can_be_read_back(self, cook_id: int) -> None:
+        await academy.write(folding(), cook_id=cook_id)
+        page = await academy.detail("fold", ENGLISH)
+        assert page is not None
+        assert page.name == "fold"
+
+    async def test_it_arrives_unreviewed(self, cook_id: int) -> None:
+        await academy.write(folding(), cook_id=cook_id)
+        page = await academy.detail("fold", ENGLISH)
+        assert page is not None
+        assert page.approved is False
+
+    async def test_it_says_who_wrote_it(self, cook_id: int) -> None:
+        await academy.write(folding(), cook_id=cook_id)
+        standing = await academy.standing_of("fold")
+        assert standing is not None and standing.written_by == cook_id
+
+    async def test_a_seeded_page_was_written_by_nobody_here(self, cook_id: int) -> None:
+        """Absent rather than nought: this instance shipped with it."""
+        await academy.store_many([folding()], origin=Origin.SEED)
+        standing = await academy.standing_of("fold")
+        assert standing is not None and standing.written_by is None
+
+    async def test_a_cook_cannot_take_a_slug_that_is_taken(self, cook_id: int) -> None:
+        await academy.store_many([folding()], origin=Origin.SEED)
+        with pytest.raises(PageAlreadyWritten):
+            await academy.write(folding(), cook_id=cook_id)
+
+    async def test_it_is_listed_so_its_author_can_see_it(self, cook_id: int) -> None:
+        await academy.write(folding(), cook_id=cook_id)
+        assert [one.slug for one in await academy.browse(ENGLISH)] == ["fold"]
+
+    async def test_but_it_is_not_matched_into_a_recipe(self, cook_id: int) -> None:
+        await academy.write(folding(), cook_id=cook_id)
+        assert await spotting_only(ENGLISH) == []
+
+    async def test_and_it_does_not_answer_for_a_term(self, cook_id: int) -> None:
+        """`/academy/terms/{term}` is where a step's word leads, so a page that has not
+        been read cannot be what a word leads to."""
+        await academy.write(folding(), cook_id=cook_id)
+        assert await academy.claimants_of("fold in", ENGLISH) == []
+
+    async def test_approving_turns_its_terms_on(self, cook_id: int) -> None:
+        await academy.write(folding(), cook_id=cook_id)
+        await academy.approve("fold")
+        assert [one.slug for one in await spotting_only(ENGLISH)] == ["fold"]
+        assert [one.slug for one in await academy.claimants_of("fold in", ENGLISH)] == ["fold"]
+
+    async def test_a_seeded_page_needs_no_approving_to_be_matched(self, cook_id: int) -> None:
+        """Unchanged, and the reason nothing about the fifty shipped pages moves."""
+        await academy.store_many([folding()], origin=Origin.SEED)
+        assert [one.slug for one in await spotting_only(ENGLISH)] == ["fold"]
+
+    async def test_the_list_says_which_pages_nobody_has_read(self, cook_id: int) -> None:
+        """So an author browsing sees their own page marked, rather than wondering why it
+        is not underlined in their recipes."""
+        await academy.store_many([deep_frying()], origin=Origin.SEED)
+        await academy.write(folding(), cook_id=cook_id)
+
+        listed = {one.slug: one.approved for one in await academy.browse(ENGLISH)}
+        assert listed == {"deep-fry": True, "fold": False}
+
+    async def test_the_queue_is_what_nobody_has_read(self, cook_id: int) -> None:
+        await academy.store_many([deep_frying()], origin=Origin.SEED)
+        await academy.write(folding(), cook_id=cook_id)
+        assert [one.slug for one in await academy.browse(ENGLISH, approved=False)] == ["fold"]
+        assert [one.slug for one in await academy.browse(ENGLISH, approved=True)] == ["deep-fry"]
+
+
+class TestDecliningAPage:
+    """Put away rather than destroyed, the same choice a recipe makes."""
+
+    async def test_a_declined_page_leaves_the_academy(self, cook_id: int) -> None:
+        await academy.write(folding(), cook_id=cook_id)
+        assert await academy.archive("fold") is True
+        assert await academy.browse(ENGLISH) == []
+
+    async def test_it_leaves_the_queue_too(self, cook_id: int) -> None:
+        """Otherwise declining it once means being asked about it forever."""
+        await academy.write(folding(), cook_id=cook_id)
+        await academy.archive("fold")
+        assert await academy.browse(ENGLISH, approved=False) == []
+
+    async def test_it_cannot_be_read(self, cook_id: int) -> None:
+        await academy.write(folding(), cook_id=cook_id)
+        await academy.archive("fold")
+        assert await academy.detail("fold", ENGLISH) is None
+
+    async def test_nothing_is_destroyed(self, cook_id: int) -> None:
+        """An administrator can still find it, which is what makes declining reversible."""
+        await academy.write(folding(), cook_id=cook_id)
+        await academy.archive("fold")
+        standing = await academy.standing_of("fold")
+        assert standing is not None and standing.written_by == cook_id
+
+    async def test_declining_an_approved_page_still_takes_it_out_of_recipes(
+        self, cook_id: int
+    ) -> None:
+        await academy.write(folding(), cook_id=cook_id)
+        await academy.approve("fold")
+        await academy.archive("fold")
+        assert await spotting_only(ENGLISH) == []
+
+    async def test_a_page_that_is_not_there_declines_to_nothing(self, cook_id: int) -> None:
+        assert await academy.archive("nothing-of-the-sort") is False
+
+    async def test_it_can_be_brought_back(self, cook_id: int) -> None:
+        await academy.write(folding(), cook_id=cook_id)
+        await academy.archive("fold")
+        assert await academy.restore("fold") is True
+        assert [one.slug for one in await academy.browse(ENGLISH)] == ["fold"]

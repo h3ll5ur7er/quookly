@@ -2624,3 +2624,60 @@ references a recipe, and a cooked meal referenced it at the time. The first cut 
 keeps no history, which is the honest simple answer and not obviously the right one. A session
 already in progress is insulated by accident rather than by design — cooking mode keeps the meal as
 the server last described it, so a mid-session edit does not move under the cook's hands.
+
+## ADR-060 An unreviewed page can be read, but cannot attach itself to somebody else's recipe
+
+**Status:** Accepted — the moderation half of
+[ADR-057](#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques), and a narrowing of
+[ADR-055](#adr-055-fuzziness-lives-in-the-vocabulary-not-in-the-match).
+
+**Context.** The Academy has to be writable by the people who use it, or it is a fixed set of fifty
+pages that nobody can extend. But a page is not like a registry entry: an entry is a row somebody
+points a recipe line at deliberately, whereas an Academy page **claims terms**, and a term is matched
+into every step on the instance that happens to use the word.
+
+So the obvious rule — *show it, mark it unreviewed, the way a generated explanation is marked
+([ADR-056](#adr-056-a-generated-explanation-is-marked-unreviewed-and-never-an-input-to-a-judgement))*
+— is not enough here. Marking works when the reader has gone to the thing and can see the mark. It
+does not work when the thing arrives underlined inside a recipe the reader wrote, three screens away
+from anything that says who wrote it or whether anybody has read it.
+
+The failure is not mainly abuse. It is an honest page claiming an ordinary word: one page for *fold*
+in the laundry sense, and every recipe on the instance grows a link that leads somewhere useless.
+[ADR-055](#adr-055-fuzziness-lives-in-the-vocabulary-not-in-the-match) already put the judgement
+about which spellings are worth matching **in the vocabulary**, and that is exactly the lever.
+
+**Decision.** Approval gates term-claiming, not readability.
+
+A page a cook writes is readable the moment they write it: it is listed, it opens, it says plainly
+that nobody has reviewed it yet, and its author can keep working on it. What it does not do is enter
+the matching vocabulary, or answer at `/academy/terms/{term}`. Until somebody has read it, **it is a
+page in the Academy and not a word in anybody's recipe.**
+
+Approving turns a page's terms on. That is the same act ADR-051 defines — *somebody here has read
+this* — and it now has a consequence beyond a label, which is what makes it worth doing.
+
+**Who may do what.**
+
+- Any signed-in cook may write a page. There is no separate contributor role, for the reason
+  [ADR-049](#adr-049-an-instance-has-a-door-and-somebody-holds-the-key) gives about roles in general:
+  this instance's door is already the membership decision.
+- The **author** may rewrite their own page while it is unreviewed. Amending is otherwise an
+  administrator's, because a correction changes what every cook on the instance reads — but a draft
+  nobody has approved is not yet that, and an author who cannot fix their own typo will not write a
+  second page.
+- Approving and declining are an administrator's.
+
+**Declining archives rather than deletes**, the same choice a recipe put away makes: the page leaves
+the Academy and the queue, and nothing is destroyed on somebody else's behalf. A declined page is
+*absent rather than refused* to everyone but an administrator.
+
+**What this costs.** A cook who writes a genuinely useful page does not see it underlined in their
+own recipes until somebody approves it, and on a one-person instance that person is themselves —
+two steps where they expected one. That is the honest price of the rule, and the alternative prices
+it the other way: every cook on the instance pays for one unreviewed page.
+
+It also means an explicit `[[slug]]` link
+([ADR-059](#adr-059-a-step-may-name-its-own-links-and-a-recipe-may-be-edited)) may name a page that
+is not yet approved. That link **works** — the author of the step said which page they meant, which
+is a person deciding, and this decision is about what attaches itself *without* anybody deciding.

@@ -1467,7 +1467,7 @@
           "academy"
         ],
         "summary": "Browse Academy",
-        "description": "Every page, in the cook's language, ordered by the name they will read.",
+        "description": "Every page, in the cook's language, ordered by the name they will read.\n\nPages nobody has reviewed are listed: approval gates what a page may attach itself to,\nnot whether it can be read (ADR-060). Pages put away are not listed at all.",
         "operationId": "browseAcademy",
         "parameters": [
           {
@@ -1487,6 +1487,24 @@
               "title": "Kind"
             },
             "description": "Show one section on its own."
+          },
+          {
+            "name": "approved",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Narrow to what has been reviewed, or to what awaits it.",
+              "title": "Approved"
+            },
+            "description": "Narrow to what has been reviewed, or to what awaits it."
           }
         ],
         "responses": {
@@ -1500,6 +1518,46 @@
                     "$ref": "#/components/schemas/PageSummaryView"
                   },
                   "title": "Response Browseacademy"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Write Page",
+        "description": "Write a page for the Academy.\n\nAny signed-in cook may: this instance's door is already the membership decision, so a\nseparate contributor role would be a second one (ADR-049, ADR-060).\n\nIt arrives unreviewed, and until an administrator has read it, it is a page in the\nAcademy and not a word in anybody's recipe \u2014 readable and listed, but not matched into\na step and not what `/academy/terms/{term}` answers with.",
+        "operationId": "writePage",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewPageInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageView"
                 }
               }
             }
@@ -1605,6 +1663,40 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Decline Page",
+        "description": "Put a page away.\n\nHow a page nobody wants is declined, and how one that has gone wrong is taken down.\nArchived rather than deleted, the same choice a recipe makes: it leaves the Academy,\nthe review queue and every recipe's words, and nothing is destroyed on somebody's\nbehalf.",
+        "operationId": "declinePage",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/academy/{slug}/wordings/{locale}": {
@@ -1613,7 +1705,7 @@
           "academy"
         ],
         "summary": "Amend Page",
-        "description": "Rewrite one language's wording of a page.\n\nAn administrator's, because the Academy is shared: a correction changes what every cook\non this instance reads. A locale the page does not speak yet is added, which is how a\ntranslation arrives.\n\nIt does not approve the page \u2014 fixing a sentence is not saying somebody has read it.",
+        "description": "Rewrite one language's wording of a page.\n\nAn administrator's, because the Academy is shared: a correction changes what every cook\non this instance reads. A locale the page does not speak yet is added, which is how a\ntranslation arrives.\n\nThe one exception is an author working on a page nobody has approved. That is not yet\nwhat the instance reads, and an author who cannot fix their own typo will not write a\nsecond page (ADR-060). Approval is the moment it stops being theirs.\n\nIt does not approve the page \u2014 fixing a sentence is not saying somebody has read it.",
         "operationId": "amendPage",
         "parameters": [
           {
@@ -4616,6 +4708,71 @@
         "title": "Naming",
         "description": "What an entry is called in one language, canonical spelling first."
       },
+      "NewPageInput": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "spellings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Spellings",
+            "default": []
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Summary"
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Explanation"
+          },
+          "caution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caution"
+          },
+          "name_matches": {
+            "type": "boolean",
+            "title": "Name Matches",
+            "default": true
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "title": "Slug"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PageKind"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "summary",
+          "explanation",
+          "slug",
+          "kind"
+        ],
+        "title": "NewPageInput",
+        "description": "A page somebody here is writing, in the one language they are writing it in.\n\nA wording plus an identity. Written in one language rather than all of them: a cook who\nknows how to spatchcock a chicken is not thereby a translator, and a page that arrives\nin one language is a page the other two fall back from (ADR-057)."
+      },
       "Nutrient": {
         "type": "string",
         "enum": [
@@ -4751,6 +4908,11 @@
           "summary": {
             "type": "string",
             "title": "Summary"
+          },
+          "approved": {
+            "type": "boolean",
+            "title": "Approved",
+            "default": true
           }
         },
         "type": "object",
@@ -4801,6 +4963,11 @@
           "approved": {
             "type": "boolean",
             "title": "Approved"
+          },
+          "may_rewrite": {
+            "type": "boolean",
+            "title": "May Rewrite",
+            "default": false
           },
           "caution": {
             "anyOf": [

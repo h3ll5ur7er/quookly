@@ -11,6 +11,7 @@ from httpx import AsyncClient
 
 from quookly.access import cook as cook_access
 from quookly.contracts.cook import Standing
+from quookly.utilities.security import hash_password
 
 APPLICATIONS = "/api/v1/accounts/applications"
 SIGN_IN = "/api/v1/accounts/sign-in"
@@ -39,4 +40,26 @@ async def sign_up(
     await cook_access.decide(applied["id"], Standing.APPROVED)
 
     token = (await client.post(SIGN_IN, json={"email": email, "password": password})).json()
+    return {"Authorization": f"Bearer {token['token']}"}
+
+
+async def sign_up_admin(
+    client: AsyncClient, email: str = "admin@example.com", *, display_name: str = "Admin"
+) -> dict[str, str]:
+    """An approved administrator with a token.
+
+    Not through `/accounts/bootstrap`, for the reason `sign_up` gives about the door: that
+    endpoint claims an unclaimed instance and refuses once anybody has registered, so a
+    test that wants both a cook and an administrator cannot use it for the second one —
+    and which of them ran first would decide whether the test passed.
+    """
+    made = await cook_access.register(
+        email,
+        display_name,
+        hash_password(PASSWORD),
+        is_admin=True,
+        standing=Standing.APPROVED,
+    )
+    assert made.id is not None
+    token = (await client.post(SIGN_IN, json={"email": email, "password": PASSWORD})).json()
     return {"Authorization": f"Bearer {token['token']}"}

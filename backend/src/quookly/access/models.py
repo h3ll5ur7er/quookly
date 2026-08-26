@@ -509,6 +509,14 @@ class AcademyPageRow(SQLModel, table=True):
     # has read, and an administrator can approve a paragraph a model composed.
     generated: bool = Field(default=False)
     approved: bool = Field(default=False, index=True)
+    # Who wrote it, where anybody here did. Null for the pages this instance shipped with,
+    # which is the truth rather than a gap: nobody on this instance wrote them. It is what
+    # lets an author keep working on their own page before anybody has approved it
+    # (ADR-060).
+    written_by: int | None = Field(default=None, foreign_key="cook.id", index=True)
+    # How an administrator declines one: put away rather than destroyed, the same choice a
+    # recipe makes. Out of the Academy and out of the queue, and still there.
+    archived_at: datetime | None = Field(default=None, index=True)
     created_at: datetime = Field(default_factory=_now)
 
 

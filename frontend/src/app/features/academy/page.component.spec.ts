@@ -17,6 +17,9 @@ const FOLD = {
   origin: 'seed',
   generated: false,
   approved: true,
+  // The server answers this, rather than a screen re-deriving the three-part rule and
+  // getting one part slightly wrong (ADR-060).
+  may_rewrite: true,
   caution: null,
   also: [],
 };
@@ -84,9 +87,31 @@ describe('AcademyPageComponent', () => {
 
     it('offers a cook nothing to change', async () => {
       await arrive();
-      backend.expectOne('/api/v1/academy/fold').flush(FOLD);
+      // What the server sends somebody who may not: the rule has three parts and is
+      // answered there rather than re-derived here (ADR-060).
+      backend.expectOne('/api/v1/academy/fold').flush({ ...FOLD, may_rewrite: false });
       await fixture.whenStable();
       expect(text()).not.toContain('Correct this page');
+    });
+
+    it('lets the author of a page nobody has read correct it', async () => {
+      /* Not an administrator, and still offered it: an author who cannot fix their own
+         typo will not write a second page. */
+      await arrive();
+      backend
+        .expectOne('/api/v1/academy/fold')
+        .flush({ ...FOLD, approved: false, may_rewrite: true });
+      await fixture.whenStable();
+      expect(text()).toContain('Correct this page');
+    });
+
+    it('says so when nobody has read the page yet', async () => {
+      await arrive();
+      backend
+        .expectOne('/api/v1/academy/fold')
+        .flush({ ...FOLD, approved: false, may_rewrite: true });
+      await fixture.whenStable();
+      expect(text()).toContain('not marked in recipes');
     });
   });
 

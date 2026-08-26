@@ -65,6 +65,37 @@ class NewPage:
 
 
 @dataclass(frozen=True, slots=True)
+class Listing:
+    """A page as it appears in a list of pages.
+
+    Not a `Claimant`, which means *a page that answers to some term* — every claimant is
+    approved by definition (ADR-060), so a claimant carrying a review state would be a
+    field that is always true. Browsing is the other question, and it is the one where an
+    author needs to see that nobody has read their page yet.
+    """
+
+    slug: str
+    name: str
+    summary: str
+    approved: bool
+
+
+@dataclass(frozen=True, slots=True)
+class Standing:
+    """Where a page stands, for deciding who may do what to it.
+
+    Separate from `Page`, which is a page as a *reader* reads it: this answers questions
+    about the page rather than reporting what it says, and it answers them for a page that
+    has been put away — which a reader cannot see at all (ADR-060).
+    """
+
+    approved: bool
+    #: Who wrote it, where anybody here did. Absent for a page this instance shipped with.
+    written_by: int | None
+    archived: bool
+
+
+@dataclass(frozen=True, slots=True)
 class Claimant:
     """A page that answers to some term, and what it is about."""
 
@@ -139,6 +170,9 @@ class PageSummaryView(BaseModel):
     kind: PageKind
     name: str
     summary: str
+    #: Whether anybody here has read it. An unreviewed page is listed and readable; what it
+    #: does not do is get matched into anybody's recipe (ADR-060).
+    approved: bool = True
 
 
 class PageView(BaseModel):
@@ -155,6 +189,12 @@ class PageView(BaseModel):
     origin: Origin
     generated: bool
     approved: bool
+    #: Whether the reader of this response may rewrite its wording.
+    #:
+    #: Answered by the server rather than derived by a screen: the rule has three parts
+    #: (administrator, author, not yet approved) and a client that re-derives it will get
+    #: one of them slightly wrong and offer a button that 403s (ADR-060).
+    may_rewrite: bool = False
     caution: str | None = None
     also: list[ClaimantView] = []
     pictures: list[PictureView] = []

@@ -83,3 +83,55 @@ test('an administrator can correct a page and illustrate it', async ({ page }) =
   // The alt text is the picture, for a reader who cannot see it.
   await expect(page.getByAltText('Carrot cut into fine matchsticks.')).toBeVisible();
 });
+
+test('a cook writes a page, and it is not in recipes until somebody reads it', async ({ page }) => {
+  /* The whole of ADR-060, end to end. The page is readable the moment it is written and
+     does not attach itself to anybody's recipe until an administrator has read it —
+     marking works when the reader has come to the page, and does nothing when the page
+     arrives underlined inside a recipe three screens away. */
+  await page.goto('/academy');
+  await page.getByRole('link', { name: 'Write a page' }).click();
+  await expect(page.getByRole('heading', { name: 'Write a page' })).toBeVisible();
+
+  await page.getByLabel('What it is called').fill('spatchcock');
+  // The short name fills itself in from the name, so nobody has to invent a URL fragment.
+  await expect(page.locator('#slug')).toHaveValue('spatchcock');
+  await page.getByLabel('In one line').fill('Flatten a bird so it cooks evenly.');
+  await page
+    .getByLabel('The explanation')
+    .fill('Cut out the backbone and press down on the breastbone.');
+  await page.getByLabel('The ways a step writes it').fill('spatchcocked\nbutterflied');
+  await page.getByRole('button', { name: 'Write the page' }).click();
+
+  // It lands on the page it just wrote, which says plainly where it stands.
+  await expect(page.getByRole('heading', { name: 'spatchcock' })).toBeVisible();
+  await expect(page.getByText('nobody has read it yet')).toBeVisible();
+
+  // Listed under what is waiting, so its author can see it is waiting rather than lost.
+  await page.goto('/academy');
+  await expect(page.getByRole('heading', { name: 'Waiting to be read' })).toBeVisible();
+
+  // And not yet a word in anybody's recipe.
+  await page.goto('/academy/terms/spatchcocked');
+  await expect(page.getByText('Nobody has explained that yet')).toBeVisible();
+
+  // --- read, and now it is ----------------------------------------------------------
+  await page.goto('/academy/spatchcock');
+  await page.getByRole('button', { name: 'Approve' }).click();
+  await expect(page.getByText('nobody has read it yet')).toHaveCount(0);
+
+  await page.goto('/academy/terms/spatchcocked');
+  await expect(page.getByRole('heading', { name: 'spatchcock' })).toBeVisible();
+});
+
+test('an administrator can put a page away', async ({ page }) => {
+  await page.goto('/academy/spatchcock');
+  await page.getByRole('button', { name: 'Put this page away' }).click();
+  await page.getByRole('button', { name: 'Yes, put it away' }).click();
+  await expect(page).toHaveURL(/\/academy$/);
+
+  // Gone from the Academy, and gone from the words a step is matched against.
+  await expect(page.getByRole('link', { name: 'spatchcock', exact: true })).toHaveCount(0);
+  await page.goto('/academy/terms/spatchcocked');
+  await expect(page.getByText('Nobody has explained that yet')).toBeVisible();
+});

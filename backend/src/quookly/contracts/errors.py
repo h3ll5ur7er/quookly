@@ -104,6 +104,15 @@ class PageNotWritten(QuooklyError):
     """No Academy page answers to that slug."""
 
 
+class PageAlreadyWritten(QuooklyError):
+    """That slug is somebody else's page.
+
+    Refused rather than skipped, unlike the bulk seeding path: a cook who writes a page
+    and is told nothing would think it saved, and the page they meant to write would be
+    the one already there.
+    """
+
+
 class UnsupportedDocument(QuooklyError):
     """The document is not one this version can read.
 

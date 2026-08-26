@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormBuilder, FormControl, ReactiveFormsModule } from '@angular/forms';
 import { AcademyService, ClaimantView, PageView } from '@api';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -23,6 +23,8 @@ export class AcademyPageComponent {
   protected readonly locales = LOCALES;
 
   protected readonly correcting = signal(false);
+  /** Whether the admin has asked to put this page away and not yet confirmed. */
+  protected readonly declining = signal(false);
   protected readonly illustrating = signal(false);
   /** Alt text is required, so the button stays disabled until there is some. */
   protected readonly describing = new FormControl('', { nonNullable: true });
@@ -45,6 +47,8 @@ export class AcademyPageComponent {
     caution: [''],
     name_matches: [true],
   });
+
+  private readonly router = inject(Router);
 
   protected readonly page = signal<PageView | null>(null);
   protected readonly missing = signal(false);
@@ -189,6 +193,25 @@ export class AcademyPageComponent {
     this.service.unillustratePage(shown.slug, pictureId).subscribe({
       next: (saved) => this.page.set(saved),
       error: () => this.saveFailed.set(true),
+    });
+  }
+
+  /** Put this page away, then go back to the list it has just left. */
+  protected decline(): void {
+    const shown = this.page();
+    if (shown === null) {
+      return;
+    }
+    this.saveFailed.set(false);
+    this.service.declinePage(shown.slug).subscribe({
+      next: () => {
+        this.declining.set(false);
+        void this.router.navigate(['/academy']);
+      },
+      error: () => {
+        this.declining.set(false);
+        this.saveFailed.set(true);
+      },
     });
   }
 }

@@ -344,9 +344,23 @@ languages, with the spellings a step is actually written with.
    syntax stripped at the single point where a read recipe becomes a stored one: generating, varying
    and importing all pass through it, and writing a link is deciding what a word means
    ([ADR-053](07-decisions.md#adr-053-the-matcher-ranks-a-person-decides)).
-6. **Cook-authored pages, and approving them (UC-7.4, moderation half).**
-   [ADR-051](07-decisions.md#adr-051-whether-an-entry-has-been-reviewed-is-a-different-column-from-whether-it-has-been-classified)'s
-   approval axis, unchanged. Recognition for contributing is V11 and waits for Phase 8.
+6. ~~**Cook-authored pages, and approving them (UC-7.4, moderation half).**~~ **Built** —
+   any signed-in cook writes a page, in their own language; a page written in one is one
+   the other two fall back from, so contributing does not require being a translator.
+
+   ADR-051's approval axis, and it gained a consequence. *Marking* an unreviewed page is
+   what [ADR-056](07-decisions.md#adr-056-a-generated-explanation-is-marked-unreviewed-and-never-an-input-to-a-judgement)
+   does for generated prose, and it is not enough here: a page **claims terms**, and a term
+   is matched into every step on the instance that uses the word. A mark works when the
+   reader has come to the page; it does nothing when the page arrives underlined inside a
+   recipe they wrote. So approval gates *term-claiming* rather than readability
+   ([ADR-060](07-decisions.md#adr-060-an-unreviewed-page-can-be-read-but-cannot-attach-itself-to-somebody-elses-recipe)):
+   until somebody has read it, it is a page in the Academy and not a word in anybody's
+   recipe. The author may keep working on it until then, because somebody who cannot fix
+   their own typo will not write a second page.
+
+   Declining archives, like a recipe put away. Recognition for contributing is V11 and
+   waits for Phase 8.
 7. **An ingredient section**, sitting over the registry rather than duplicating it: the facts stay
    where they are computed on, the prose and pictures live on the page.
 8. **Generating a page nobody has written.** Last on purpose: it is the only part that can state

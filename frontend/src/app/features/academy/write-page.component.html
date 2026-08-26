@@ -1,0 +1,77 @@
+<main class="page academy">
+  <h1 i18n="@@academyWriteHeading">Write a page</h1>
+
+  <!-- Said before the form rather than after it is sent. A cook who is not told this will
+       think the feature is broken when their own recipe does not underline the word they
+       have just explained (ADR-060). -->
+  <p class="academy__what" i18n="@@academyWriteWhat">
+    For a word a recipe uses and does not explain. Nobody has read it yet, so it will not be marked
+    in anybody's recipes until somebody here has — until then it is a page you and everyone else can
+    read, and you can keep working on it.
+  </p>
+
+  @if (failed(); as why) {
+    <p class="notice notice--danger" role="alert">{{ why }}</p>
+  }
+
+  <form [formGroup]="page" (ngSubmit)="write()" class="academy__form">
+    <div class="field">
+      <label for="name" i18n="@@academyName">What it is called</label>
+      <input id="name" type="text" formControlName="name" />
+    </div>
+
+    <div class="field">
+      <label for="slug" i18n="@@academyWriteSlug">Its short name</label>
+      <input id="slug" type="text" formControlName="slug" />
+      <p class="field__hint" i18n="@@academyWriteSlugHint">
+        How it is linked to. Filled in from the name; change it if you would rather.
+      </p>
+    </div>
+
+    <div class="field">
+      <label for="summary" i18n="@@academySummary">In one line</label>
+      <input id="summary" type="text" formControlName="summary" />
+    </div>
+
+    <div class="field">
+      <label for="explanation" i18n="@@academyExplanation">The explanation</label>
+      <textarea id="explanation" rows="6" formControlName="explanation"></textarea>
+    </div>
+
+    <div class="field">
+      <label for="spellings" i18n="@@academySpellings">The ways a step writes it</label>
+      <textarea id="spellings" rows="4" formControlName="spellings"></textarea>
+      <p class="field__hint" i18n="@@academySpellingsHint">
+        One per line. These are what a recipe step is matched against, so a word that means
+        something else in a recipe does not belong here.
+      </p>
+    </div>
+
+    <div class="field">
+      <label for="caution" i18n="@@academyCautionField">Where getting it wrong matters</label>
+      <textarea id="caution" rows="3" formControlName="caution"></textarea>
+      <p class="field__hint" i18n="@@academyCautionHint">
+        Leave empty unless it does. A warning on every page is a warning on none.
+      </p>
+    </div>
+
+    <label class="academy__matches">
+      <input type="checkbox" formControlName="name_matches" />
+      <ng-container i18n="@@academyNameMatches">
+        The name on its own reliably means this page
+      </ng-container>
+    </label>
+
+    <div class="academy__actions">
+      <button
+        type="submit"
+        class="action"
+        [disabled]="!ready() || saving()"
+        i18n="@@academyWriteIt"
+      >
+        Write the page
+      </button>
+      <a class="action action--quiet" routerLink="/academy" i18n="@@academyWriteCancel">Cancel</a>
+    </div>
+  </form>
+</main>
