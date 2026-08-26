@@ -466,22 +466,32 @@ async def search(term: str, locale: str, limit: int = 20) -> list[Ingredient]:
     Matches on the normalised name, so a cook typing into a field is not typing a database
     key. Results are the canonical name for their locale, deduplicated: matching two
     aliases of one ingredient should offer it once.
+
+    A term whose accents were stripped is folded in as well, but only when the exact
+    search came back short — the common term costs nothing extra, and `creme` still finds
+    `crème fraîche`. Unlike `resolve`, an ambiguous fold is **not** refused here: this
+    returns a list somebody chooses from, so offering both `pêche` and `pèche` is the right
+    answer and the cook decides.
     """
     wanted = normalise(term)
     if not wanted:
         return []
 
     async with session() as active:
-        matches = (
-            await active.exec(
-                select(IngredientNameRow)
-                .where(
-                    col(IngredientNameRow.normalised).contains(wanted),
-                    col(IngredientNameRow.locale).in_([locale, SOURCE_LOCALE]),
+        matches = list(
+            (
+                await active.exec(
+                    select(IngredientNameRow)
+                    .where(
+                        col(IngredientNameRow.normalised).contains(wanted),
+                        col(IngredientNameRow.locale).in_([locale, SOURCE_LOCALE]),
+                    )
+                    .limit(limit * 4)
                 )
-                .limit(limit * 4)
-            )
-        ).all()
+            ).all()
+        )
+        if len(matches) < limit:
+            matches.extend(await _folded_containing(active, wanted, locale, matches))
 
         found: dict[int, Ingredient] = {}
         for match in matches:
@@ -983,6 +993,28 @@ async def approve(slug: str) -> Ingredient:
         await active.refresh(row)
 
         return await _restated(active, row, slug)
+
+
+async def _folded_containing(
+    active: AsyncSession, wanted: str, locale: str, already: list[IngredientNameRow]
+) -> list[IngredientNameRow]:
+    """Names containing the term once accents are gone, minus what was already found.
+
+    Read in Python for the same reason `_folded_matches` is: SQLite cannot unaccent, and a
+    folded column would mean re-normalising every stored name behind a unique index. Only
+    reached when the exact search came back short, so a term that is doing fine never pays
+    for it.
+    """
+    spellings = (
+        await active.exec(
+            select(IngredientNameRow).where(
+                col(IngredientNameRow.locale).in_([locale, SOURCE_LOCALE])
+            )
+        )
+    ).all()
+    seen = {row.id for row in already}
+    folded = fold(wanted)
+    return [row for row in spellings if row.id not in seen and folded in fold(row.normalised)]
 
 
 async def classify(slug: str, allergens: frozenset[Allergen]) -> None:

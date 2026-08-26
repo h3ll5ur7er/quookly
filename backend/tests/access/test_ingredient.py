@@ -777,3 +777,73 @@ class TestResolvingWithoutAccents:
     async def test_a_name_nothing_resembles_is_still_absent(self) -> None:
         await register_butter()
         assert await registry.resolve("saffron", ENGLISH) is None
+
+
+class TestSearchingWithoutAccents:
+    """The picker a cook types into, which had the same gap `resolve` had.
+
+    Unlike `resolve`, this returns a list somebody chooses from, so an ambiguous fold is
+    not a hazard here — showing both `pêche` and `pèche` is the right answer, and the cook
+    decides. That is why this folds freely where resolution refuses to.
+    """
+
+    async def test_a_term_without_accents_finds_the_accented_entry(self) -> None:
+        await registry.register(
+            slug="creme-fraiche",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["crème fraîche"]},
+            origin=Origin.SEED,
+        )
+        found = await registry.search("creme", ENGLISH)
+        assert [entry.slug for entry in found] == ["creme-fraiche"]
+
+    async def test_the_accented_term_still_works(self) -> None:
+        await registry.register(
+            slug="creme-fraiche",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["crème fraîche"]},
+            origin=Origin.SEED,
+        )
+        found = await registry.search("crème", ENGLISH)
+        assert [entry.slug for entry in found] == ["creme-fraiche"]
+
+    async def test_an_ambiguous_term_shows_both_rather_than_refusing(self) -> None:
+        """The opposite of `resolve`, on purpose: a person is going to pick one."""
+        await registry.register(
+            slug="peche-fruit",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["pêche"]},
+            origin=Origin.SEED,
+        )
+        await registry.register(
+            slug="peche-fishing",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["pèche"]},
+            origin=Origin.SEED,
+        )
+        found = await registry.search("peche", ENGLISH)
+        assert {entry.slug for entry in found} == {"peche-fruit", "peche-fishing"}
+
+    async def test_an_exact_hit_still_comes_back_once(self) -> None:
+        await register_butter()
+        found = await registry.search("butter", ENGLISH)
+        assert [entry.slug for entry in found] == ["unsalted-butter"]
+
+    async def test_a_term_matching_nothing_still_finds_nothing(self) -> None:
+        await register_butter()
+        assert await registry.search("saffron", ENGLISH) == []
+
+    async def test_the_limit_still_holds(self) -> None:
+        for index in range(5):
+            await registry.register(
+                slug=f"creme-{index}",
+                kind=IngredientKind.SOLID,
+                density=None,
+                names={ENGLISH: [f"crème number {index}"]},
+                origin=Origin.SEED,
+            )
+        assert len(await registry.search("creme", ENGLISH, limit=2)) == 2
