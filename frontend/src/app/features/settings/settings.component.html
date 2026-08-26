@@ -78,6 +78,18 @@
       <p i18n="@@settingsLoading">Loading…</p>
     }
   </section>
+
+  <section aria-labelledby="registry-heading">
+    <h2 id="registry-heading" i18n="@@settingsRegistry">Ingredients</h2>
+    <p class="settings__why" i18n="@@settingsRegistryWhy">
+      Every ingredient this Quookly knows. Importing a recipe adds to it, and what gets added is a
+      guess until somebody looks.
+    </p>
+    <a class="settings__go" routerLink="/settings/registry" i18n="@@settingsSeeRegistry">
+      Browse the registry
+    </a>
+  </section>
+
   @if (isAdmin()) {
     <section aria-labelledby="applications-heading">
       <h2 id="applications-heading" i18n="@@settingsApplications">Who wants in</h2>

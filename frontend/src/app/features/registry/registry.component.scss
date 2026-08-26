@@ -1,0 +1,125 @@
+.registry__what {
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+  margin-block-end: var(--space-4);
+}
+
+/* --- finding something ------------------------------------------------------------------ */
+
+.registry__find {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-block-end: var(--space-4);
+}
+
+.registry__search {
+  width: 100%;
+}
+
+.registry__narrow {
+  display: flex;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+/* Same shape as the recipe list's ordering group: a thumb-sized target, and the chosen
+   one carried by fill as well as by `aria-pressed`. */
+.registry__choice {
+  flex: 1;
+  min-height: 48px;
+  padding-inline: var(--space-4);
+  border: none;
+  background: var(--surface-raised);
+  color: var(--on-surface-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.registry__choice--on {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.registry__choice:hover:not(.registry__choice--on) {
+  background: var(--surface-sunken);
+}
+
+/* --- the list --------------------------------------------------------------------------- */
+
+.registry__count {
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+  margin-block-end: var(--space-3);
+}
+
+.registry__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.registry__entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.registry__name {
+  font-weight: 600;
+}
+
+.registry__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
+/* What an import guessed at, said plainly rather than left blank. A missing density is
+   why a scraped cup cannot become a weight. */
+.registry__gap,
+.registry__origin {
+  font-style: italic;
+}
+
+.registry__allergens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* --- the phone is the design target; widen from there (ADR-015) -------------------------- */
+
+@media (min-width: 48rem) {
+  .registry__find {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .registry__search {
+    flex: 1;
+  }
+
+  .registry__narrow {
+    flex: 0 0 auto;
+  }
+
+  .registry__entry {
+    display: grid;
+    grid-template-columns: minmax(10rem, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
+    align-items: baseline;
+    gap: var(--space-4);
+  }
+}

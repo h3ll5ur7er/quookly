@@ -8,6 +8,7 @@ import {
   UnitPreferenceView,
 } from '@api';
 import { AuthStore } from '../../core/auth/auth.store';
+import { kindsLabel } from '../../core/measure/kinds';
 import { unitsFor } from '../../core/measure/units';
 import { LocalePickerComponent } from '../../core/locale/locale-picker.component';
 import { ThemePickerComponent } from '../../core/theme/theme-picker.component';
@@ -66,21 +67,11 @@ export class SettingsComponent {
     }
   }
 
+  /** The plural form: this list is about all the powders, not one of them. */
+  protected readonly kindLabel = kindsLabel;
+
   protected optionsFor(kind: IngredientKind): readonly string[] {
     return unitsFor(kind);
-  }
-
-  protected kindLabel(kind: IngredientKind): string {
-    switch (kind) {
-      case IngredientKind.powder:
-        return $localize`:@@kindPowder:Powders`;
-      case IngredientKind.liquid:
-        return $localize`:@@kindLiquid:Liquids`;
-      case IngredientKind.solid:
-        return $localize`:@@kindSolid:Solids`;
-      case IngredientKind.countable:
-        return $localize`:@@kindCountable:Countable things`;
-    }
   }
 
   protected choose(kind: IngredientKind, event: Event): void {

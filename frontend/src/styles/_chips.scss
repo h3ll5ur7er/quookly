@@ -37,3 +37,11 @@
 .chip--preference {
   border-inline-start-color: var(--border-strong);
 }
+
+/* Nobody has looked at this yet. Not a severity — a fact about knowledge rather than
+   about the eater — but it earns the same warning hue, because an unchecked ingredient
+   is the one an allergy verdict cannot speak for (ADR-006). */
+.chip--unknown {
+  border-inline-start-color: var(--warning);
+  color: var(--warning);
+}

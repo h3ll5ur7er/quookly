@@ -142,6 +142,14 @@ export const routes: Routes = [
     loadComponent: () => import('./features/setup/setup.component').then((m) => m.SetupComponent),
   },
   {
+    // Under settings for the same reason as the applications queue: reference material a
+    // cook looks something up in, or corrects, rather than a place they go daily.
+    path: 'settings/registry',
+    canActivate: [requireSignedIn],
+    loadComponent: () =>
+      import('./features/registry/registry.component').then((m) => m.RegistryComponent),
+  },
+  {
     // Under settings rather than in the navigation: an admin answers this when somebody
     // tells them they applied, not several times a day.
     path: 'settings/applications',

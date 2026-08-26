@@ -295,8 +295,14 @@ Nothing surfaces those guesses and nothing can correct them. A cook who imports 
 
 What this phase owes:
 
-- **A registry screen** — every ingredient, its kind, density, per-locale names, allergen
-  classification, and where it came from. Searchable, because it is the largest list in the app.
+- ~~**A registry screen** — every ingredient, its kind, density, per-locale names, allergen
+  classification, and where it came from. Searchable, because it is the largest list in the app.~~
+  **Built** — under Settings, paged and counted. It shows the three fields an import guesses at
+  (kind, density, origin) and narrows to the entries imports invented, which is the pile worth
+  reviewing. *Unclassified* allergens read as "not checked" rather than as an empty list, because
+  the empty list is where unknown becomes safe ([ADR-006](07-decisions.md#adr-006-allergen-determination-is-structural)).
+  Per-locale names are not on the row: nine hundred entries times three languages is not a list,
+  and they belong on the entry itself — which arrives with editing.
 - **Editing an ingredient**, and merging two that are the same thing under different names. Merging
   is the operation that matters: an import that created `plain flour` beside a registry that already
   had `wheat flour` has split one ingredient in two, and every allergen and nutrition fact now

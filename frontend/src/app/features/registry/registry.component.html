@@ -1,0 +1,141 @@
+<main class="page registry">
+  <h1 i18n="@@registryHeading">Ingredient registry</h1>
+
+  <p class="registry__what" i18n="@@registryWhat">
+    Every ingredient this instance knows, and what it knows about each. Importing a recipe adds
+    entries here — those are guesses until somebody looks at them.
+  </p>
+
+  <div class="registry__find">
+    <label class="visually-hidden" for="registry-search" i18n="@@registrySearchLabel">
+      Search the registry
+    </label>
+    <input
+      id="registry-search"
+      type="search"
+      class="registry__search"
+      [formControl]="search"
+      i18n-placeholder="@@registrySearchPlaceholder"
+      placeholder="An ingredient name"
+    />
+
+    <div
+      class="registry__narrow"
+      role="group"
+      i18n-aria-label="@@registryNarrowLabel"
+      aria-label="Show"
+    >
+      <button
+        type="button"
+        class="registry__choice"
+        [class.registry__choice--on]="origin() === null"
+        [attr.aria-pressed]="origin() === null"
+        (click)="narrowTo(null)"
+        i18n="@@registryAll"
+      >
+        All
+      </button>
+      <button
+        type="button"
+        class="registry__choice"
+        [class.registry__choice--on]="origin() === Origin.seed"
+        [attr.aria-pressed]="origin() === Origin.seed"
+        (click)="narrowTo(Origin.seed)"
+        i18n="@@registryShipped"
+      >
+        Shipped
+      </button>
+      <!-- The pile this screen exists for: entries an import invented, which nobody has
+           reviewed. -->
+      <button
+        type="button"
+        class="registry__choice"
+        [class.registry__choice--on]="origin() === Origin.user"
+        [attr.aria-pressed]="origin() === Origin.user"
+        (click)="narrowTo(Origin.user)"
+        i18n="@@registryFromImports"
+      >
+        From imports
+      </button>
+    </div>
+  </div>
+
+  @if (failed()) {
+    <p class="notice notice--danger" role="alert" i18n="@@registryFailed">
+      Could not load the registry. Please try again.
+    </p>
+  } @else if (entries(); as found) {
+    @if (found.length === 0) {
+      <p class="registry__empty" i18n="@@registryNoMatch">
+        Nothing here matches that. Try part of a name.
+      </p>
+    } @else {
+      <p class="registry__count" aria-live="polite">
+        <ng-container i18n="@@registryShowing">Showing</ng-container>
+        <span class="numeric">{{ found.length }}</span>
+        <ng-container i18n="@@registryOf">of</ng-container>
+        <span class="numeric">{{ total() }}</span>
+      </p>
+
+      <ul class="registry__list">
+        @for (entry of found; track entry.id) {
+          <li class="registry__entry">
+            <span class="registry__name">{{ entry.name }}</span>
+
+            <span class="registry__facts">
+              <span class="registry__kind">{{ kindLabel(entry.kind) }}</span>
+
+              @if (entry.density) {
+                <span class="registry__density">
+                  <span class="numeric">{{ entry.density }}</span>
+                  <ng-container i18n="@@registryGramsPerMl">g/ml</ng-container>
+                </span>
+              } @else {
+                <!-- Absent rather than assumed. Without it a scraped cup cannot become a
+                     weight, so it is worth showing as missing rather than as blank. -->
+                <span class="registry__gap" i18n="@@registryNoDensity">No density</span>
+              }
+
+              @if (entry.origin === Origin.user) {
+                <span class="registry__origin" i18n="@@registryInvented">Added by an import</span>
+              }
+            </span>
+
+            <!-- The safety rule, at the last place it can be broken. An empty list means
+                 two different things and only one of them is "safe" (ADR-006). -->
+            @if (!entry.classified) {
+              <span class="registry__allergens">
+                <span class="chip chip--unknown" i18n="@@registryUnclassified">
+                  Not checked for allergens
+                </span>
+              </span>
+            } @else if (entry.allergens.length === 0) {
+              <span class="registry__allergens">
+                <span class="chip" i18n="@@registryNoAllergens">No allergens</span>
+              </span>
+            } @else {
+              <span class="registry__allergens">
+                @for (allergen of entry.allergens; track allergen) {
+                  <span class="chip">{{ allergenLabel(allergen) }}</span>
+                }
+              </span>
+            }
+          </li>
+        }
+      </ul>
+
+      @if (more()) {
+        <button
+          type="button"
+          class="action action--quiet"
+          (click)="showMore()"
+          i18n="@@registryMore"
+        >
+          Show more
+        </button>
+      }
+    }
+  } @else {
+    <p class="registry__loading" i18n="@@registryLoading">Loading…</p>
+  }
+</main>
