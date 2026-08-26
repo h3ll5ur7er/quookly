@@ -142,6 +142,14 @@ export const routes: Routes = [
     loadComponent: () => import('./features/setup/setup.component').then((m) => m.SetupComponent),
   },
   {
+    // One entry, whole. Before `settings/registry` would be wrong — they do not share a
+    // shape — but it goes with it, so it lives here.
+    path: 'settings/registry/:slug',
+    canActivate: [requireSignedIn],
+    loadComponent: () =>
+      import('./features/registry/ingredient.component').then((m) => m.IngredientComponent),
+  },
+  {
     // Under settings for the same reason as the applications queue: reference material a
     // cook looks something up in, or corrects, rather than a place they go daily.
     path: 'settings/registry',

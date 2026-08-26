@@ -429,3 +429,128 @@ class TestApproval:
         found = await registry.resolve("crème de cassis", ENGLISH)
         assert found is not None
         assert found.approved is False
+
+
+class TestReadingOneEntry:
+    """One entry, whole — which is what a screen that corrects it needs.
+
+    `resolve` answers "which entry is this name", and `browse` answers "what is in the
+    registry". Neither carries what an entry is called in the *other* languages, and that
+    is most of what there is to correct about an imported one.
+    """
+
+    async def test_an_entry_can_be_read_by_slug(self) -> None:
+        await register_butter()
+        found = await registry.detail("unsalted-butter")
+        assert found is not None
+        assert found.entry.slug == "unsalted-butter"
+
+    async def test_it_carries_what_it_is_called_in_every_locale(self) -> None:
+        await register_butter()
+        found = await registry.detail("unsalted-butter")
+        assert found is not None
+        assert found.names[ENGLISH] == ["unsalted butter", "sweet butter"]
+        assert found.names[GERMAN] == ["ungesalzene Butter"]
+
+    async def test_the_canonical_name_comes_first_in_its_locale(self) -> None:
+        """The rest are spellings a recipe might use; the first is what to call it."""
+        await register_butter()
+        found = await registry.detail("unsalted-butter")
+        assert found is not None
+        assert found.names[ENGLISH][0] == "unsalted butter"
+
+    async def test_an_entry_named_in_one_language_says_so(self) -> None:
+        """What an import leaves behind, and the gap a correction fills."""
+        await registry.register(
+            slug="creme-fraiche",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["crème fraîche"]},
+            origin=Origin.USER,
+        )
+        found = await registry.detail("creme-fraiche")
+        assert found is not None
+        assert list(found.names) == [ENGLISH]
+
+    async def test_an_unknown_slug_is_absent_not_an_error(self) -> None:
+        assert await registry.detail("no-such-thing") is None
+
+
+class TestCorrecting:
+    """Fixing the three facts an import guesses at: kind, density, piece weight."""
+
+    async def an_invented_entry(self) -> None:
+        await registry.register(
+            slug="creme-fraiche",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["crème fraîche"]},
+            origin=Origin.USER,
+        )
+
+    async def test_the_kind_can_be_corrected(self) -> None:
+        await self.an_invented_entry()
+        await registry.amend("creme-fraiche", kind=IngredientKind.LIQUID)
+        found = await registry.resolve("crème fraîche", ENGLISH)
+        assert found is not None
+        assert found.kind is IngredientKind.LIQUID
+
+    async def test_a_density_can_be_supplied(self) -> None:
+        """Without one, a scraped cup of this can never become a weight."""
+        await self.an_invented_entry()
+        await registry.amend("creme-fraiche", density=Decimal("0.978"))
+        found = await registry.resolve("crème fraîche", ENGLISH)
+        assert found is not None
+        assert found.density == Decimal("0.9780")
+
+    async def test_a_density_can_be_taken_away_again(self) -> None:
+        """Absent is a real answer, and a wrong density is worse than none."""
+        await register_butter()
+        await registry.amend("unsalted-butter", density=None)
+        found = await registry.resolve("unsalted butter", ENGLISH)
+        assert found is not None
+        assert found.density is None
+
+    async def test_what_is_not_mentioned_is_left_alone(self) -> None:
+        """Correcting the kind must not silently drop the density beside it."""
+        await register_butter()
+        await registry.amend("unsalted-butter", kind=IngredientKind.LIQUID)
+        found = await registry.resolve("unsalted butter", ENGLISH)
+        assert found is not None
+        assert found.density == Decimal("0.9110")
+
+    async def test_a_piece_weight_can_be_given(self) -> None:
+        await self.an_invented_entry()
+        await registry.amend("creme-fraiche", piece_grams=Decimal("60"))
+        found = await registry.resolve("crème fraîche", ENGLISH)
+        assert found is not None
+        assert found.piece_grams == Decimal("60.00")
+
+    async def test_correcting_says_nothing_about_allergens(self) -> None:
+        """The safety rule. Fixing a density is not looking inside the food (ADR-006)."""
+        await self.an_invented_entry()
+        await registry.amend("creme-fraiche", density=Decimal("0.978"))
+        found = await registry.resolve("crème fraîche", ENGLISH)
+        assert found is not None
+        assert found.classified is False
+        assert found.allergens == frozenset()
+
+    async def test_correcting_is_not_the_same_act_as_approving(self) -> None:
+        """Two statements: "this row is right" and "I have reviewed this row". An admin
+        who fixes a density has not necessarily finished looking (ADR-051)."""
+        await self.an_invented_entry()
+        await registry.amend("creme-fraiche", kind=IngredientKind.LIQUID)
+        found = await registry.resolve("crème fraîche", ENGLISH)
+        assert found is not None
+        assert found.approved is False
+
+    async def test_correcting_does_not_change_where_it_came_from(self) -> None:
+        await self.an_invented_entry()
+        await registry.amend("creme-fraiche", kind=IngredientKind.LIQUID)
+        found = await registry.resolve("crème fraîche", ENGLISH)
+        assert found is not None
+        assert found.origin is Origin.USER
+
+    async def test_correcting_something_unregistered_is_refused(self) -> None:
+        with pytest.raises(IngredientNotRegistered):
+            await registry.amend("no-such-thing", kind=IngredientKind.LIQUID)

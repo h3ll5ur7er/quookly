@@ -8,6 +8,7 @@ what makes quantities convertible and stock matchable.
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
+from typing import Final
 
 from pydantic import BaseModel, ConfigDict
 
@@ -86,6 +87,35 @@ class Ingredient:
     piece_grams: Decimal | None = None
 
 
+class Unset(Enum):
+    """A field a correction did not mention.
+
+    Needed because `None` is a real answer for a density and a piece weight: *absent* is
+    the honest state for an ingredient nobody has weighed, and a correction must be able
+    to say that as well as to leave the field alone. A plain `None` default would make
+    those two indistinguishable and silently wipe a figure every time somebody fixed the
+    kind beside it.
+    """
+
+    TOKEN = "unset"
+
+
+#: The sentinel itself, so callers write `UNSET` rather than `Unset.TOKEN`.
+UNSET: Final = Unset.TOKEN
+
+
+@dataclass(frozen=True, slots=True)
+class RegistryEntryDetail:
+    """One entry, whole, with what it is called in every locale that knows it.
+
+    Names are ordered canonical-first within each locale: the first is what that language
+    calls the thing, the rest are spellings a recipe might use.
+    """
+
+    entry: "Ingredient"
+    names: dict[str, list[str]]
+
+
 @dataclass(frozen=True, slots=True)
 class RegistryPage:
     """One screen of the registry, and how much of it there is.
@@ -144,3 +174,14 @@ class RegistryPageView(BaseModel):
 
     entries: list[RegistryEntryView]
     total: int
+
+
+class RegistryEntryDetailView(BaseModel):
+    """One entry and every name it answers to, as the correction screen reads it."""
+
+    model_config = ConfigDict(frozen=True)
+
+    entry: RegistryEntryView
+    #: Locale to spellings, canonical first. An entry an import created carries one
+    #: locale — the language of the page it came from — and that is the gap to fill.
+    names: dict[str, list[str]]

@@ -77,6 +77,21 @@ class IngredientNotRegistered(QuooklyError):
     """A recipe line points at an ingredient that is not in the registry (FR-9)."""
 
 
+class NameAlreadyMeans(QuooklyError):
+    """The spelling is already this locale's name for a different registry entry.
+
+    A name means one thing per language — the unique index on `(locale, normalised)` says
+    so — or a recipe naming it could not be resolved to one ingredient. Reported rather
+    than swallowed, because two entries wanting the same name in the same language are
+    very often one ingredient that an import split in two.
+    """
+
+    def __init__(self, spelling: str, slug: str) -> None:
+        super().__init__(f"{spelling!r} already means {slug!r} here")
+        self.spelling = spelling
+        self.slug = slug
+
+
 class UnsupportedDocument(QuooklyError):
     """The document is not one this version can read.
 

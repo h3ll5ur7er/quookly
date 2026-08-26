@@ -899,6 +899,206 @@
         }
       }
     },
+    "/api/v1/registry/{slug}": {
+      "get": {
+        "tags": [
+          "ingredients"
+        ],
+        "summary": "Get Ingredient",
+        "description": "One entry with every name it answers to.\n\nReadable by any signed-in cook: the registry is reference material, and what an\ningredient is called elsewhere is the sort of thing somebody looks up. Changing it is\nanother matter \u2014 the endpoints below are an administrator's.",
+        "operationId": "getIngredient",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryEntryDetailView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ingredients"
+        ],
+        "summary": "Amend Ingredient",
+        "description": "Correct the facts an import guessed at: kind, density, piece weight.\n\nAn administrator's, because the registry is shared \u2014 a density corrected here changes\nwhat every cook on this instance is shown, and an allergen would change what they are\nwarned about.",
+        "operationId": "amendIngredient",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Correction"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryEntryView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/registry/{slug}/allergens": {
+      "put": {
+        "tags": [
+          "ingredients"
+        ],
+        "summary": "Classify Ingredient",
+        "description": "Record what this ingredient contains.\n\nDeliberately not part of `amend_ingredient`. A single request carrying the whole entry\nwould make \"I forgot to include the allergens\" indistinguishable from \"this ingredient\nis unexamined\", turning a known-milk entry into an unknown one \u2014 which is the failure\nADR-006 exists to prevent.",
+        "operationId": "classifyIngredient",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Classification"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryEntryView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/registry/{slug}/names": {
+      "post": {
+        "tags": [
+          "ingredients"
+        ],
+        "summary": "Name Ingredient",
+        "description": "Teach the registry what this entry is called in another language.\n\nAdditive. An entry an import created is named only in the language of the page it came\nfrom, and adding the German for it must not cost the English.",
+        "operationId": "nameIngredient",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Naming"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryEntryDetailView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/eaters": {
       "get": {
         "tags": [
@@ -2535,6 +2735,23 @@
         "title": "BoughtInput",
         "description": "Whether one line of the shopping list is in the basket (UC-4.4)."
       },
+      "Classification": {
+        "properties": {
+          "allergens": {
+            "items": {
+              "$ref": "#/components/schemas/Allergen"
+            },
+            "type": "array",
+            "title": "Allergens"
+          }
+        },
+        "type": "object",
+        "required": [
+          "allergens"
+        ],
+        "title": "Classification",
+        "description": "What an ingredient contains, as somebody who looked would say it.\n\nAn empty list is an answer, not an omission \u2014 which is exactly why this is its own\nrequest and not a field on `Correction` (ADR-006)."
+      },
       "ConstraintView": {
         "properties": {
           "allergen": {
@@ -2634,6 +2851,55 @@
         ],
         "title": "CookNowInput",
         "description": "Which recipe is being cooked outright, with nothing planned (UC-9.1b)."
+      },
+      "Correction": {
+        "properties": {
+          "kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IngredientKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "density": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Density"
+          },
+          "piece_grams": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Piece Grams"
+          }
+        },
+        "type": "object",
+        "title": "Correction",
+        "description": "What to change about an entry. A field left out is left alone.\n\n`density` and `piece_grams` are `None`-able *and* omittable, and the two mean\ndifferent things: `null` clears the figure, which is a real correction because a wrong\ndensity is worse than none, while leaving the field out keeps it. `model_fields_set`\nis what tells them apart \u2014 a plain `None` default could not."
       },
       "Credentials": {
         "properties": {
@@ -3427,6 +3693,31 @@
         "title": "Meal",
         "description": "Which meal of the day a slot is.\n\nFour coarse ones rather than free text or a clock time. A plan is read as a grid, and\na grid needs a fixed number of rows; \"18:30\" would sort correctly and group not at all."
       },
+      "Naming": {
+        "properties": {
+          "locale": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 2,
+            "title": "Locale"
+          },
+          "spellings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Spellings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "locale",
+          "spellings"
+        ],
+        "title": "Naming",
+        "description": "What an entry is called in one language, canonical spelling first."
+      },
       "Nutrient": {
         "type": "string",
         "enum": [
@@ -4196,6 +4487,30 @@
         ],
         "title": "Registration",
         "description": "A request to create an account.\n\nThe password rule lives here rather than in the manager: it constrains the shape of\nthe input, so it is the contract's business, and stating it here means the API\nrejects a short password before any work is done."
+      },
+      "RegistryEntryDetailView": {
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/RegistryEntryView"
+          },
+          "names": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Names"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entry",
+          "names"
+        ],
+        "title": "RegistryEntryDetailView",
+        "description": "One entry and every name it answers to, as the correction screen reads it."
       },
       "RegistryEntryView": {
         "properties": {

@@ -26,6 +26,7 @@ from quookly.utilities.configuration import get_settings
 from tests.support import PASSWORD, sign_up
 
 REGISTRY = "/api/v1/registry"
+ONE = f"{REGISTRY}/creme-fraiche"
 ENGLISH = "en-GB"
 GERMAN = "de-CH"
 
@@ -266,6 +267,20 @@ class TestReviewing:
         assert approved["classified"] is False
         assert approved["allergens"] == []
 
+    async def test_approving_a_classified_entry_keeps_its_allergens(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        """Regression. `approve` built its answer from the row alone, so an entry that
+        had been classified came back with `classified: true` and an empty allergen list
+        — which does not read as unknown, it reads as *examined and clear*. A false clean
+        bill is worse than the silence ADR-006 is about, and the earlier test missed it
+        because its fixture was unclassified either way.
+        """
+        await client.put(f"{ONE}/allergens", json={"allergens": ["milk"]}, headers=admin)
+        approved = (await client.post(f"{ONE}/approved", headers=admin)).json()
+        assert approved["allergens"] == ["milk"]
+        assert approved["classified"] is True
+
     async def test_approving_twice_is_the_same_as_once(
         self, client: AsyncClient, admin: dict[str, str], invented: None
     ) -> None:
@@ -286,3 +301,214 @@ class TestReviewing:
     ) -> None:
         response = await client.post(f"{REGISTRY}/no-such-thing/approved", headers=admin)
         assert response.status_code == 404
+
+
+class TestReadingOneEntry:
+    async def test_an_entry_can_be_opened(
+        self, client: AsyncClient, cook: dict[str, str], stocked: None
+    ) -> None:
+        response = await client.get(f"{REGISTRY}/unsalted-butter", headers=cook)
+        assert response.status_code == 200
+        assert response.json()["entry"]["slug"] == "unsalted-butter"
+
+    async def test_it_says_what_the_thing_is_called_everywhere(
+        self, client: AsyncClient, cook: dict[str, str], stocked: None
+    ) -> None:
+        """The gap in the list view, and most of what an imported entry needs."""
+        body = (await client.get(f"{REGISTRY}/unsalted-butter", headers=cook)).json()
+        assert body["names"] == {
+            "en-GB": ["unsalted butter"],
+            "de-CH": ["ungesalzene Butter"],
+        }
+
+    async def test_an_entry_that_is_not_there_is_a_404(
+        self, client: AsyncClient, cook: dict[str, str], stocked: None
+    ) -> None:
+        assert (await client.get(f"{REGISTRY}/no-such-thing", headers=cook)).status_code == 404
+
+
+class TestCorrecting:
+    async def test_an_admin_can_fix_the_kind(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        response = await client.put(ONE, json={"kind": "liquid"}, headers=admin)
+        assert response.status_code == 200
+        assert response.json()["kind"] == "liquid"
+
+    async def test_an_admin_can_supply_a_density(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        response = await client.put(ONE, json={"density": "0.978"}, headers=admin)
+        assert response.json()["density"] == "0.9780"
+
+    async def test_a_density_can_be_taken_away(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        """`null` is a correction, not an omission: a wrong density is worse than none."""
+        await client.put(ONE, json={"density": "0.978"}, headers=admin)
+        response = await client.put(ONE, json={"density": None}, headers=admin)
+        assert response.json()["density"] is None
+
+    async def test_a_field_not_mentioned_is_left_alone(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        """The whole reason `density` needs a sentinel rather than a `None` default."""
+        await client.put(ONE, json={"density": "0.978"}, headers=admin)
+        response = await client.put(ONE, json={"kind": "liquid"}, headers=admin)
+        assert response.json()["density"] == "0.9780"
+
+    async def test_correcting_says_nothing_about_allergens(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        body = (await client.put(ONE, json={"density": "0.978"}, headers=admin)).json()
+        assert body["classified"] is False
+
+    async def test_correcting_does_not_approve_it(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        body = (await client.put(ONE, json={"kind": "liquid"}, headers=admin)).json()
+        assert body["approved"] is False
+
+    async def test_an_ordinary_cook_may_not_correct(
+        self, client: AsyncClient, cook: dict[str, str], stocked: None
+    ) -> None:
+        """The registry is shared: a correction here changes everybody's verdicts."""
+        response = await client.put(ONE, json={"kind": "liquid"}, headers=cook)
+        assert response.status_code == 403
+
+    async def test_correcting_something_absent_is_a_404(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        response = await client.put(
+            f"{REGISTRY}/no-such-thing", json={"kind": "liquid"}, headers=admin
+        )
+        assert response.status_code == 404
+
+
+class TestClassifying:
+    async def test_an_admin_can_record_what_is_in_it(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        response = await client.put(f"{ONE}/allergens", json={"allergens": ["milk"]}, headers=admin)
+        assert response.status_code == 200
+        assert response.json()["allergens"] == ["milk"]
+        assert response.json()["classified"] is True
+
+    async def test_recording_none_is_a_real_answer(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        """ "I looked, there is nothing" — which is what makes it different from silence."""
+        response = await client.put(f"{ONE}/allergens", json={"allergens": []}, headers=admin)
+        assert response.json()["allergens"] == []
+        assert response.json()["classified"] is True
+
+    async def test_classifying_is_a_separate_act_from_correcting(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        """Its own endpoint so a correction that omits allergens cannot unclassify one.
+
+        A single PUT of the whole entry would turn "forgot to include the allergens" into
+        "this ingredient is now unexamined", which is a known-milk entry silently becoming
+        unknown (ADR-006).
+        """
+        await client.put(f"{ONE}/allergens", json={"allergens": ["milk"]}, headers=admin)
+        corrected = (await client.put(ONE, json={"kind": "liquid"}, headers=admin)).json()
+        assert corrected["allergens"] == ["milk"]
+        assert corrected["classified"] is True
+
+    async def test_an_ordinary_cook_may_not_classify(
+        self, client: AsyncClient, cook: dict[str, str], stocked: None
+    ) -> None:
+        response = await client.put(f"{ONE}/allergens", json={"allergens": ["milk"]}, headers=cook)
+        assert response.status_code == 403
+
+
+class TestNaming:
+    async def test_an_admin_can_teach_it_another_language(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        response = await client.post(
+            f"{ONE}/names", json={"locale": "de-CH", "spellings": ["Crème fraîche"]}, headers=admin
+        )
+        assert response.status_code == 200
+        assert response.json()["names"]["de-CH"] == ["Crème fraîche"]
+
+    async def test_the_original_name_survives(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        body = (
+            await client.post(
+                f"{ONE}/names",
+                json={"locale": "de-CH", "spellings": ["Crème fraîche"]},
+                headers=admin,
+            )
+        ).json()
+        assert body["names"]["en-GB"] == ["crème fraîche"]
+
+    async def test_a_name_already_known_is_not_duplicated(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        payload = {"locale": "de-CH", "spellings": ["Crème fraîche"]}
+        await client.post(f"{ONE}/names", json=payload, headers=admin)
+        body = (await client.post(f"{ONE}/names", json=payload, headers=admin)).json()
+        assert body["names"]["de-CH"] == ["Crème fraîche"]
+
+    async def test_an_ordinary_cook_may_not_rename(
+        self, client: AsyncClient, cook: dict[str, str], stocked: None
+    ) -> None:
+        response = await client.post(
+            f"{ONE}/names", json={"locale": "de-CH", "spellings": ["X"]}, headers=cook
+        )
+        assert response.status_code == 403
+
+    async def test_a_name_another_entry_already_means_is_refused(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        """Found by running it: on a seeded instance `Sauerrahm` in de-CH already means
+        `sour-cream-35-fat`, so the insert hit the unique index, rolled back, and the
+        endpoint answered 200 with nothing changed. An admin pressed the button and was
+        told it worked.
+
+        A name means one thing per language, so refusing is right — but it has to *say*
+        so, and say which entry holds it. That is also the most useful thing this screen
+        can report: two entries wanting the same name in the same language are very often
+        one ingredient that an import split in two.
+        """
+        await registry.register(
+            slug="sour-cream",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={"de-CH": ["Sauerrahm"]},
+            origin=Origin.SEED,
+        )
+        response = await client.post(
+            f"{ONE}/names", json={"locale": "de-CH", "spellings": ["Sauerrahm"]}, headers=admin
+        )
+        assert response.status_code == 409
+        assert "sour-cream" in response.json()["detail"]
+
+    async def test_a_refused_name_changes_nothing(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        await registry.register(
+            slug="sour-cream",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={"de-CH": ["Sauerrahm"]},
+            origin=Origin.SEED,
+        )
+        await client.post(
+            f"{ONE}/names",
+            json={"locale": "de-CH", "spellings": ["Rahmquark", "Sauerrahm"]},
+            headers=admin,
+        )
+        body = (await client.get(ONE, headers=admin)).json()
+        assert "de-CH" not in body["names"]
+
+    async def test_a_name_this_entry_already_has_is_not_a_conflict(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        """Re-adding its own spelling is a no-op, not somebody else's claim."""
+        payload = {"locale": "de-CH", "spellings": ["Sauerrahm"]}
+        assert (await client.post(f"{ONE}/names", json=payload, headers=admin)).status_code == 200
+        assert (await client.post(f"{ONE}/names", json=payload, headers=admin)).status_code == 200

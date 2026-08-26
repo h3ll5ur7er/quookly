@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { IngredientsService, Origin, RegistryEntryView } from '@api';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -15,7 +16,7 @@ const SETTLE = 200;
 
 @Component({
   selector: 'app-registry',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './registry.component.html',
   styleUrl: './registry.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -20,11 +20,14 @@ from quookly.access.models import (
 )
 from quookly.contracts.errors import IngredientAlreadyRegistered, IngredientNotRegistered
 from quookly.contracts.ingredient import (
+    UNSET,
     Allergen,
     Ingredient,
     IngredientKind,
     Origin,
+    RegistryEntryDetail,
     RegistryPage,
+    Unset,
 )
 from quookly.contracts.nutrition import NutrientProfile, NutritionSource
 
@@ -539,6 +542,104 @@ async def browse(
     )
 
 
+async def _restated(active: AsyncSession, row: IngredientRow, slug: str) -> Ingredient:
+    """A row as it now stands, after a write, with its allergens.
+
+    Shared by every write that hands the entry back. Building the contract from the row
+    alone omits them, and an entry that has been classified then comes back as
+    `classified=True` with an empty set — which does not read as "unknown", it reads as
+    "somebody looked and there is nothing in it". That is a false clean bill, and it is
+    the exact failure ADR-006 exists to prevent, so no write path is allowed its own
+    version of this.
+
+    The refresh before it matters too: the database quantises a density to four decimal
+    places, and returning the unrounded value in memory means a caller is told something
+    different from what a subsequent read gives them.
+    """
+    assert row.id is not None, "a persisted ingredient always has an id"
+    carried = await allergens_within(active, [row.id])
+    allergens, _ = carried.get(row.id, (frozenset(), False))
+    return _to_contract(row, await name_for(active, row.id, SOURCE_LOCALE, slug), allergens)
+
+
+async def detail(slug: str) -> RegistryEntryDetail | None:
+    """One entry with every name it answers to, for a screen that corrects it.
+
+    `resolve` answers "which entry is this name" and `browse` answers "what is in the
+    registry"; neither carries what an entry is called in the *other* languages. For an
+    entry an import created that is most of what there is to correct — it arrives named
+    only in the language of the page it came from.
+    """
+    async with session() as active:
+        row = (
+            await active.exec(select(IngredientRow).where(col(IngredientRow.slug) == slug))
+        ).first()
+        if row is None or row.id is None:
+            return None
+
+        spellings = (
+            await active.exec(
+                select(IngredientNameRow)
+                .where(col(IngredientNameRow.ingredient_id) == row.id)
+                .order_by(col(IngredientNameRow.is_canonical).desc(), col(IngredientNameRow.id))
+            )
+        ).all()
+
+        carried = await allergens_within(active, [row.id])
+        allergens, _ = carried.get(row.id, (frozenset(), False))
+
+        names: dict[str, list[str]] = {}
+        for spelling in spellings:
+            names.setdefault(spelling.locale, []).append(spelling.name)
+
+        display = await name_for(active, row.id, SOURCE_LOCALE, slug)
+
+    return RegistryEntryDetail(entry=_to_contract(row, display, allergens), names=names)
+
+
+async def amend(
+    slug: str,
+    *,
+    kind: IngredientKind | None = None,
+    density: Decimal | None | Unset = UNSET,
+    piece_grams: Decimal | None | Unset = UNSET,
+) -> Ingredient:
+    """Correct the three facts an import guesses at.
+
+    Only those. It does **not** classify allergens — fixing a density is not looking
+    inside the food (ADR-006) — and it does not approve the entry, because "this row is
+    right" and "I have reviewed this row" are two statements and an admin correcting one
+    field has not necessarily finished with the rest (ADR-051).
+
+    A field that was not mentioned is left alone. `density` and `piece_grams` take the
+    `UNSET` sentinel rather than defaulting to `None` because absent is a real answer for
+    both: an ingredient nobody has weighed *has* no piece weight, and a wrong density is
+    worse than none. Without the sentinel, correcting the kind would wipe the density
+    beside it.
+
+    `kind` needs no sentinel: an entry always has one, so `None` can only mean "leave it".
+    """
+    async with session() as active:
+        row = (
+            await active.exec(select(IngredientRow).where(col(IngredientRow.slug) == slug))
+        ).first()
+        if row is None or row.id is None:
+            raise IngredientNotRegistered(slug)
+
+        if kind is not None:
+            row.kind = kind
+        if not isinstance(density, Unset):
+            row.density = density
+        if not isinstance(piece_grams, Unset):
+            row.piece_grams = piece_grams
+
+        active.add(row)
+        await active.commit()
+        await active.refresh(row)
+
+        return await _restated(active, row, slug)
+
+
 async def approve(slug: str) -> Ingredient:
     """Record that somebody has reviewed this entry.
 
@@ -560,8 +661,9 @@ async def approve(slug: str) -> Ingredient:
         row.approved = True
         active.add(row)
         await active.commit()
+        await active.refresh(row)
 
-        return _to_contract(row, await name_for(active, row.id, SOURCE_LOCALE, slug))
+        return await _restated(active, row, slug)
 
 
 async def classify(slug: str, allergens: frozenset[Allergen]) -> None:

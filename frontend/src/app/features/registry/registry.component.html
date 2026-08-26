@@ -87,7 +87,9 @@
       <ul class="registry__list">
         @for (entry of found; track entry.id) {
           <li class="registry__entry">
-            <span class="registry__name">{{ entry.name }}</span>
+            <a class="registry__name" [routerLink]="['/settings/registry', entry.slug]">
+              {{ entry.name }}
+            </a>
 
             <span class="registry__facts">
               <span class="registry__kind">{{ kindLabel(entry.kind) }}</span>

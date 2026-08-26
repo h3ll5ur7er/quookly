@@ -1,0 +1,200 @@
+<main class="page entry">
+  <a class="entry__back" routerLink="/settings/registry" i18n="@@entryBack">Back to the registry</a>
+
+  @if (missing()) {
+    <p class="notice notice--danger" role="alert" i18n="@@entryMissing">
+      No such ingredient in this registry.
+    </p>
+  } @else if (failed()) {
+    <p class="notice notice--danger" role="alert" i18n="@@entryFailed">
+      Could not load that ingredient. Please try again.
+    </p>
+  } @else if (entry(); as it) {
+    <h1>{{ it.name }}</h1>
+    <p class="entry__slug">
+      <code>{{ it.slug }}</code>
+    </p>
+
+    @if (!it.approved) {
+      <p class="entry__review">
+        <span class="chip chip--unknown" i18n="@@entryNeedsLook">Needs a look</span>
+        @if (isAdmin()) {
+          <button type="button" class="entry__approve" (click)="approve()" i18n="@@entryApprove">
+            Approve
+          </button>
+        }
+      </p>
+    }
+
+    @if (saveFailed()) {
+      <p class="notice notice--danger" role="alert" i18n="@@entrySaveFailed">
+        Could not save that. Nothing was changed — please try again.
+      </p>
+    }
+
+    <!-- --- what is in it ------------------------------------------------------------- -->
+    <section aria-labelledby="allergens-heading">
+      <h2 id="allergens-heading" i18n="@@entryAllergensHeading">What is in it</h2>
+
+      @if (!it.classified) {
+        <p class="entry__unknown" i18n="@@entryNobodyLooked">
+          Nobody has looked. Until somebody does, every recipe using this reads as
+          <em>unknown</em> rather than as safe.
+        </p>
+      } @else if (it.allergens.length === 0) {
+        <p class="entry__examined" i18n="@@entryContainsNone">
+          Contains none of the fourteen declarable classes. Somebody checked.
+        </p>
+      } @else {
+        <p class="entry__examined">
+          @for (allergen of it.allergens; track allergen) {
+            <span class="chip">{{ allergenLabel(allergen) }}</span>
+          }
+        </p>
+      }
+
+      @if (isAdmin()) {
+        <fieldset class="entry__allergens">
+          <legend i18n="@@entryTickWhatIsIn">Tick what this contains</legend>
+          @for (allergen of allergens; track allergen) {
+            <label class="entry__allergen">
+              <input
+                type="checkbox"
+                [value]="allergen"
+                [checked]="isTicked(allergen)"
+                (change)="toggle(allergen)"
+              />
+              {{ allergenLabel(allergen) }}
+            </label>
+          }
+        </fieldset>
+        <!-- Ticking nothing and pressing this is a real answer — "I looked, there is
+             nothing in it" — and the only control here that can give it (ADR-006). -->
+        <p class="entry__note" i18n="@@entryNoneIsAnAnswer">
+          Recording none ticked says you looked and found nothing, which is different from nobody
+          having looked.
+        </p>
+        <button type="button" class="action" (click)="classify()" i18n="@@entryRecordContents">
+          Record what is in it
+        </button>
+      }
+    </section>
+
+    <!-- --- the measurable facts ------------------------------------------------------ -->
+    <section aria-labelledby="facts-heading">
+      <h2 id="facts-heading" i18n="@@entryFactsHeading">How it measures</h2>
+
+      @if (isAdmin()) {
+        <form [formGroup]="correction" (ngSubmit)="save()" class="entry__form">
+          <div class="field">
+            <label for="kind" i18n="@@entryKind">Kind</label>
+            <select id="kind" formControlName="kind">
+              @for (kind of kinds; track kind) {
+                <option [value]="kind">{{ kindLabel(kind) }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="density" i18n="@@entryDensity">Density, in grams per millilitre</label>
+            <input
+              id="density"
+              type="text"
+              inputmode="decimal"
+              formControlName="density"
+              i18n-placeholder="@@entryUnknownPlaceholder"
+              placeholder="Leave empty if unknown"
+            />
+            <p class="field__hint" i18n="@@entryDensityHint">
+              Without one, a recipe measuring this in cups cannot be turned into a weight.
+            </p>
+          </div>
+
+          <div class="field">
+            <label for="piece_grams" i18n="@@entryPieceGrams">What one weighs, in grams</label>
+            <input
+              id="piece_grams"
+              type="text"
+              inputmode="decimal"
+              formControlName="piece_grams"
+              i18n-placeholder="@@entryUnknownPlaceholder2"
+              placeholder="Leave empty if unknown"
+            />
+            <p class="field__hint" i18n="@@entryPieceHint">
+              For countable things. Nutrition tables publish per 100 g, so without this an egg
+              counts for nothing.
+            </p>
+          </div>
+
+          @if (nothingChanged()) {
+            <p class="entry__note" role="status" i18n="@@entryNothingChanged">
+              Nothing changed, so nothing was sent.
+            </p>
+          }
+
+          <button type="submit" class="action" i18n="@@entrySaveCorrections">
+            Save corrections
+          </button>
+        </form>
+      } @else {
+        <dl class="entry__facts">
+          <dt i18n="@@entryKind2">Kind</dt>
+          <dd>{{ kindLabel(it.kind) }}</dd>
+          <dt i18n="@@entryDensity2">Density</dt>
+          <dd>
+            @if (it.density) {
+              <span class="numeric">{{ it.density }}</span>
+              <ng-container i18n="@@entryGramsPerMl">g/ml</ng-container>
+            } @else {
+              <span i18n="@@entryNoDensity">Not recorded</span>
+            }
+          </dd>
+        </dl>
+      }
+    </section>
+
+    <!-- --- what it is called --------------------------------------------------------- -->
+    <section aria-labelledby="names-heading">
+      <h2 id="names-heading" i18n="@@entryNamesHeading">What it is called</h2>
+
+      @if (oneLanguageOnly()) {
+        <p class="entry__note" i18n="@@entryOneLanguage">
+          Only known in one language. A cook reading in another will see this name untranslated.
+        </p>
+      }
+
+      <dl class="entry__names">
+        @for (language of languages(); track language[0]) {
+          <dt>{{ language[0] }}</dt>
+          <dd>{{ language[1].join(', ') }}</dd>
+        }
+      </dl>
+
+      @if (isAdmin()) {
+        <form [formGroup]="naming" (ngSubmit)="addName()" class="entry__form">
+          <div class="field">
+            <label for="locale" i18n="@@entryLocale">Language</label>
+            <input id="locale" type="text" formControlName="locale" placeholder="de-CH" />
+          </div>
+          <div class="field">
+            <label for="spelling" i18n="@@entrySpelling">What it is called there</label>
+            <input id="spelling" type="text" formControlName="spelling" />
+          </div>
+          @if (nameRefused(); as refusal) {
+            <!-- The server's own words: only it knows which entry holds the spelling, and
+                 that is the part worth reading. -->
+            <p class="notice notice--danger" role="alert">
+              <span i18n="@@entryNameTaken">That name is taken in this language.</span>
+              {{ refusal }}
+            </p>
+          }
+          <button type="submit" class="action action--quiet" i18n="@@entryAddName">
+            Add the name
+          </button>
+        </form>
+      }
+    </section>
+  } @else {
+    <p class="entry__loading" i18n="@@entryLoading">Loading…</p>
+  }
+</main>

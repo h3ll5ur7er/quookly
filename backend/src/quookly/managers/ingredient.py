@@ -6,14 +6,22 @@ results, restricting them to what a cook has used, resolving against a locale ot
 the request's — would have nowhere to go but into the route.
 """
 
+from decimal import Decimal
+
 from quookly.access import cook as cook_access
 from quookly.access import ingredient as registry
+from quookly.contracts.errors import NameAlreadyMeans
 from quookly.contracts.ingredient import (
+    UNSET,
+    Allergen,
     Ingredient,
+    IngredientKind,
     IngredientView,
     Origin,
+    RegistryEntryDetailView,
     RegistryEntryView,
     RegistryPageView,
+    Unset,
 )
 
 
@@ -90,3 +98,61 @@ def _viewed(entry: Ingredient) -> RegistryEntryView:
         classified=entry.classified,
         approved=entry.approved,
     )
+
+
+async def detail(slug: str) -> RegistryEntryDetailView | None:
+    """One entry, whole, for a screen that corrects it."""
+    found = await registry.detail(slug)
+    if found is None:
+        return None
+    return RegistryEntryDetailView(entry=_viewed(found.entry), names=found.names)
+
+
+async def amend(
+    slug: str,
+    *,
+    kind: IngredientKind | None = None,
+    density: Decimal | None | Unset = UNSET,
+    piece_grams: Decimal | None | Unset = UNSET,
+) -> RegistryEntryView:
+    """Correct the facts an import guessed at, and nothing else.
+
+    Not the allergens and not the approval: three separate statements, kept separate so
+    that making one cannot be mistaken for making another (ADR-006, ADR-051).
+    """
+    return _viewed(await registry.amend(slug, kind=kind, density=density, piece_grams=piece_grams))
+
+
+async def classify(slug: str, allergens: list[Allergen]) -> RegistryEntryView | None:
+    """Record what is in this ingredient, replacing any earlier answer.
+
+    An empty list is a real answer — "somebody looked, and it contains none" — and is what
+    separates a classified entry from an unexamined one (ADR-006). Its own use case rather
+    than part of correcting, because a correction that happened to omit allergens would
+    otherwise turn a known-milk entry into an unknown one.
+    """
+    await registry.classify(slug, frozenset(allergens))
+    found = await registry.detail(slug)
+    return None if found is None else _viewed(found.entry)
+
+
+async def name(slug: str, locale: str, spellings: list[str]) -> RegistryEntryDetailView | None:
+    """Teach the registry what this entry is called in another language.
+
+    Additive: a spelling already recorded is left alone, and the names already there are
+    not touched. An entry an import created is named in the language of the page it came
+    from, and a Swiss cook adding the German for it should not have to destroy the English.
+
+    Checked before writing rather than after failing. `name_in` swallows the unique-index
+    violation and answers zero, which is right for start-up seeding — it runs every boot
+    and must not care — but wrong for somebody pressing a button, who was told it worked.
+    All the spellings are checked first, so a request carrying a good name and a taken one
+    changes nothing rather than half-applying.
+    """
+    for spelling in spellings:
+        held = await registry.resolve(spelling, locale)
+        if held is not None and held.slug != slug:
+            raise NameAlreadyMeans(spelling, held.slug)
+
+    await registry.name_in(slug, locale, spellings)
+    return await detail(slug)

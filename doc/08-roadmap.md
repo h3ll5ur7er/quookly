@@ -303,10 +303,16 @@ What this phase owes:
   the empty list is where unknown becomes safe ([ADR-006](07-decisions.md#adr-006-allergen-determination-is-structural)).
   Per-locale names are not on the row: nine hundred entries times three languages is not a list,
   and they belong on the entry itself — which arrives with editing.
-- **Editing an ingredient**, and merging two that are the same thing under different names. Merging
-  is the operation that matters: an import that created `plain flour` beside a registry that already
-  had `wheat flour` has split one ingredient in two, and every allergen and nutrition fact now
-  answers for half a kitchen.
+- ~~**Editing an ingredient**~~ **Built** — an entry screen with the three guessed facts (kind,
+  density, piece weight), the fourteen allergen classes, and what it is called per locale. Three
+  separate acts on three separate endpoints, which is the point: *correcting* a density, *recording*
+  what is inside, and *approving* the entry are different statements, and a single PUT of the whole
+  entry would let a correction that omitted allergens silently unclassify a known-milk ingredient
+  ([ADR-006](07-decisions.md#adr-006-allergen-determination-is-structural)). Renaming an entry's
+  canonical spelling is still owed; adding a name in another language is not.
+- **Merging two entries that are the same thing under different names.** The operation that matters:
+  an import that created `plain flour` beside a registry that already had `wheat flour` has split one
+  ingredient in two, and every allergen and nutrition fact now answers for half a kitchen.
 - ~~**A "needs approval" state.** Distinct from *unclassified allergens*, which is a fact about
   knowledge; this is a fact about **review**. An entry an import invented is usable immediately —
   refusing to import until an admin wakes up would be absurd — but it is flagged, and an admin can

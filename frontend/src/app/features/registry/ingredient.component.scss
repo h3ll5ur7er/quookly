@@ -1,0 +1,96 @@
+.entry__back {
+  display: inline-block;
+  margin-block-end: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.entry__slug {
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+  margin-block-end: var(--space-4);
+}
+
+.entry__review {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-block-end: var(--space-4);
+}
+
+.entry__approve {
+  min-height: 44px;
+  padding-inline: var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Unknown is not a neutral state: it is why a recipe using this reads as unknown. */
+.entry__unknown {
+  color: var(--warning);
+}
+
+.entry__examined {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.entry__note {
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
+.entry__allergens {
+  display: grid;
+  gap: var(--space-2);
+  margin-block: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.entry__allergen {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+}
+
+.entry__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-block-start: var(--space-3);
+}
+
+.entry__facts,
+.entry__names {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2) var(--space-4);
+}
+
+.entry__facts dt,
+.entry__names dt {
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
+.entry__facts dd,
+.entry__names dd {
+  margin: 0;
+}
+
+/* The phone is the design target; widen from there (ADR-015). */
+@media (min-width: 48rem) {
+  .entry__allergens {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
