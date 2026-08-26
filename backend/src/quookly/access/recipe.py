@@ -5,8 +5,10 @@ lines resolved against the registry for the caller's locale. Callers deal in rec
 rows and joins stay here.
 """
 
+from datetime import UTC, datetime
+
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import col, select
+from sqlmodel import col, delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from quookly.access import search
@@ -24,6 +26,10 @@ from quookly.contracts.recipe import (
     Step,
 )
 from quookly.contracts.suitability import JudgedLine
+
+
+def _now() -> datetime:
+    return datetime.now(UTC)
 
 
 async def store(draft: RecipeDraft, cook_id: int) -> Recipe:
@@ -44,29 +50,7 @@ async def store(draft: RecipeDraft, cook_id: int) -> Recipe:
         await active.flush()
         assert row.id is not None
 
-        for position, line in enumerate(draft.lines):
-            active.add(
-                IngredientLineRow(
-                    recipe_id=row.id,
-                    position=position,
-                    ingredient_id=line.ingredient_id,
-                    magnitude=None if line.quantity is None else line.quantity.magnitude,
-                    unit=None if line.quantity is None else line.quantity.unit,
-                    preparation=line.preparation,
-                    optional=line.optional,
-                )
-            )
-        for position, step in enumerate(draft.steps):
-            active.add(
-                StepRow(
-                    recipe_id=row.id,
-                    position=position,
-                    instruction=step.instruction,
-                    duration_seconds=step.duration_seconds,
-                    temperature_celsius=step.temperature_celsius,
-                    attention=step.attention,
-                )
-            )
+        _write_contents(active, row.id, draft)
         try:
             await active.commit()
         except IntegrityError as exc:
@@ -83,6 +67,119 @@ async def store(draft: RecipeDraft, cook_id: int) -> Recipe:
     stored = await fetch(recipe_id, "en-GB")
     assert stored is not None, "a recipe just written must be readable"
     return stored
+
+
+def _write_contents(active: AsyncSession, recipe_id: int, draft: RecipeDraft) -> None:
+    """The lines and steps of a draft, in the order they were written.
+
+    Shared by storing and restating so the two cannot come to disagree about what a
+    recipe's contents are — `position` is what the whole reading order depends on, and
+    two copies of the enumerate would be two chances to get it wrong.
+    """
+    for position, line in enumerate(draft.lines):
+        active.add(
+            IngredientLineRow(
+                recipe_id=recipe_id,
+                position=position,
+                ingredient_id=line.ingredient_id,
+                magnitude=None if line.quantity is None else line.quantity.magnitude,
+                unit=None if line.quantity is None else line.quantity.unit,
+                preparation=line.preparation,
+                optional=line.optional,
+            )
+        )
+    for position, step in enumerate(draft.steps):
+        active.add(
+            StepRow(
+                recipe_id=recipe_id,
+                position=position,
+                instruction=step.instruction,
+                duration_seconds=step.duration_seconds,
+                temperature_celsius=step.temperature_celsius,
+                attention=step.attention,
+            )
+        )
+
+
+async def restate(recipe_id: int, draft: RecipeDraft, cook_id: int) -> Recipe | None:
+    """Replace a recipe's contents with how it should now read (ADR-059).
+
+    Replacement rather than patching, because lines and steps are *ordered* collections:
+    patching one would need an instruction for reordering, which is a language nobody
+    asked for. Sending the recipe as it should read says the same thing with nothing left
+    to interpret.
+
+    **Provenance and origin are not rewritten.** Where a recipe came from is a fact about
+    its arrival, not about who last touched it — an imported recipe that somebody corrects
+    is still an imported recipe, and an upgrade must still know not to replace a cook's own
+    (ADR-016).
+
+    Another cook's recipe is absent rather than forbidden, the same rule reading one
+    already follows: saying "forbidden" confirms it exists.
+    """
+    async with session() as active:
+        row = await active.get(RecipeRow, recipe_id)
+        if row is None or row.id is None or row.cook_id != cook_id:
+            return None
+
+        row.title = draft.title
+        row.summary = draft.summary
+        row.yield_magnitude = draft.yield_quantity.magnitude
+        row.yield_unit = draft.yield_quantity.unit
+        row.serves = draft.serves
+        active.add(row)
+
+        await active.exec(
+            delete(IngredientLineRow).where(col(IngredientLineRow.recipe_id) == row.id)
+        )
+        await active.exec(delete(StepRow).where(col(StepRow.recipe_id) == row.id))
+        await active.flush()
+        _write_contents(active, row.id, draft)
+
+        try:
+            await active.commit()
+        except IntegrityError as exc:
+            raise IngredientNotRegistered(str(exc.orig)) from exc
+
+    # What a recipe is findable by has just changed — its title, its summary and the
+    # ingredients it names. The index is derived, so it follows rather than being told.
+    await search.index_recipe(recipe_id)
+    return await fetch(recipe_id, "en-GB")
+
+
+async def archive(recipe_id: int, cook_id: int) -> bool:
+    """Put a recipe away. Returns whether it was this cook's to put away.
+
+    Not a delete. Plans, cooked meals and shopping ticks point at a recipe, and a cooked
+    meal that lost its recipe is a hole in a history nobody can fill back in. An archived
+    recipe leaves the cook's list and the search index and stays reachable by id.
+
+    Idempotent: the useful question is whether it is put away, not how many times.
+    """
+    return await _set_archived(recipe_id, cook_id, _now())
+
+
+async def restore(recipe_id: int, cook_id: int) -> bool:
+    """Bring an archived recipe back into the list and the index."""
+    return await _set_archived(recipe_id, cook_id, None)
+
+
+async def _set_archived(recipe_id: int, cook_id: int, at: datetime | None) -> bool:
+    async with session() as active:
+        row = await active.get(RecipeRow, recipe_id)
+        if row is None or row.id is None or row.cook_id != cook_id:
+            return False
+        row.archived_at = at
+        active.add(row)
+        await active.commit()
+
+    if at is None:
+        await search.index_recipe(recipe_id)
+    else:
+        # Out of the index rather than filtered at read time: a hit on a recipe somebody
+        # has put away is the same nuisance as a hit on one that is gone.
+        await search.remove(recipe_id)
+    return True
 
 
 async def fetch(recipe_id: int, locale: str) -> Recipe | None:
@@ -112,6 +209,7 @@ async def fetch(recipe_id: int, locale: str) -> Recipe | None:
         visibility=row.visibility,
         origin=row.origin,
         created_at=row.created_at,
+        archived_at=row.archived_at,
         derived_from=row.derived_from,
         lines=lines,
         steps=[
@@ -178,12 +276,19 @@ async def _lines_for(active: AsyncSession, recipe_id: int, locale: str) -> list[
 
 
 async def list_for_cook(cook_id: int) -> list[RecipeSummary]:
-    """A cook's own recipes. Private by default means private from other accounts."""
+    """A cook's own recipes. Private by default means private from other accounts.
+
+    Archived ones are left out — that is what archiving is for. They are still reachable
+    by id, because a plan or a cooked meal pointing at one has to resolve (ADR-059).
+    """
     async with session() as active:
         rows = (
             await active.exec(
                 select(RecipeRow)
-                .where(col(RecipeRow.cook_id) == cook_id)
+                .where(
+                    col(RecipeRow.cook_id) == cook_id,
+                    col(RecipeRow.archived_at).is_(None),
+                )
                 .order_by(col(RecipeRow.title))
             )
         ).all()

@@ -146,6 +146,11 @@ class RecipeRow(SQLModel, table=True):
     visibility: Visibility = Field(default=Visibility.PRIVATE)
     origin: Origin = Field(default=Origin.USER)
     created_at: datetime = Field(default_factory=_now)
+    # When this recipe was put away, if it was. Archived rather than deleted because plans,
+    # cooked meals and shopping ticks point at it, and a cooked meal that lost its recipe
+    # is a hole in a history nobody can fill back in (ADR-059). A timestamp rather than a
+    # boolean: it records *when* for the same cost.
+    archived_at: datetime | None = Field(default=None, index=True)
 
 
 class IngredientLineRow(SQLModel, table=True):

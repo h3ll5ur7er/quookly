@@ -7,6 +7,7 @@ reproducing it is the failure this product exists to correct.
 """
 
 from collections.abc import AsyncIterator
+from dataclasses import replace
 from decimal import Decimal
 
 import pytest
@@ -398,3 +399,159 @@ class TestLinesToJudge:
         await recipes.store(shortbread(pantry), cook_id)
         other = await cook_access.register("other@example.com", "Someone", "hash")
         assert await recipes.lines_to_judge(other.id, ENGLISH) == []
+
+
+class TestRestating:
+    """Editing a recipe (ADR-059).
+
+    A recipe could be created and never changed: no update, no delete. A typo in an
+    imported recipe was permanent, a misread quantity was permanent, and a bad import
+    could only be lived with.
+
+    Replacement rather than patching, because lines and steps are *ordered* collections.
+    Patching one would mean an instruction for reordering, which is a language nobody
+    asked for; sending the recipe as it should now read says the same thing with nothing
+    to interpret.
+    """
+
+    async def test_the_title_can_be_corrected(self, cook_id: int, pantry: dict[str, int]) -> None:
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        amended = replace(shortbread(pantry), title="Scottish Shortbread")
+        restated = await recipes.restate(stored.id, amended, cook_id)
+        assert restated is not None
+        assert restated.title == "Scottish Shortbread"
+
+    async def test_it_keeps_its_identity(self, cook_id: int, pantry: dict[str, int]) -> None:
+        """The plans, cooked meals and shopping ticks pointing at it must still point."""
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        amended = replace(shortbread(pantry), title="Scottish Shortbread")
+        restated = await recipes.restate(stored.id, amended, cook_id)
+        assert restated is not None
+        assert restated.id == stored.id
+
+    async def test_a_step_can_be_rewritten(self, cook_id: int, pantry: dict[str, int]) -> None:
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        amended = replace(
+            shortbread(pantry), steps=[StepDraft(instruction="Rub the butter into the flour.")]
+        )
+        restated = await recipes.restate(stored.id, amended, cook_id)
+        assert restated is not None
+        assert [step.instruction for step in restated.steps] == ["Rub the butter into the flour."]
+
+    async def test_a_line_can_be_removed(self, cook_id: int, pantry: dict[str, int]) -> None:
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        assert len(stored.lines) == 3
+        written = shortbread(pantry)
+        amended = replace(written, lines=written.lines[:2])
+        restated = await recipes.restate(stored.id, amended, cook_id)
+        assert restated is not None
+        assert len(restated.lines) == 2
+
+    async def test_the_old_lines_do_not_linger(self, cook_id: int, pantry: dict[str, int]) -> None:
+        """Replacement has to replace. Lines left behind would double the shopping list."""
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        written = shortbread(pantry)
+        amended = replace(written, lines=[written.lines[0]], steps=[written.steps[0]])
+        restated = await recipes.restate(stored.id, amended, cook_id)
+        assert restated is not None
+        assert len(restated.lines) == 1
+        assert len(restated.steps) == 1
+
+    async def test_the_order_it_was_sent_in_is_the_order_it_keeps(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        written = shortbread(pantry)
+        amended = replace(written, lines=list(reversed(written.lines)))
+        restated = await recipes.restate(stored.id, amended, cook_id)
+        assert restated is not None
+        assert [line.ingredient.id for line in restated.lines] == [
+            line.ingredient_id for line in amended.lines
+        ]
+
+    async def test_where_it_came_from_is_not_rewritten(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        """Provenance is where a recipe came from, not who last touched it. Editing an
+        imported recipe does not make it authored — that is how it came in, for ever."""
+        stored = await recipes.store(
+            replace(shortbread(pantry), provenance=Provenance.IMPORTED_URL), cook_id
+        )
+        amended = replace(shortbread(pantry), provenance=Provenance.AUTHORED)
+        restated = await recipes.restate(stored.id, amended, cook_id)
+        assert restated is not None
+        assert restated.provenance is Provenance.IMPORTED_URL
+
+    async def test_another_cooks_recipe_is_absent_not_forbidden(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        """The same rule reading one already follows: saying "forbidden" confirms it
+        exists."""
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        other = await cook_access.register("other@example.com", "Other", "hash")
+        assert await recipes.restate(stored.id, shortbread(pantry), other.id) is None
+
+    async def test_a_recipe_that_is_not_there_is_absent(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        assert await recipes.restate(9999, shortbread(pantry), cook_id) is None
+
+
+class TestArchiving:
+    """Putting a recipe away rather than deleting it.
+
+    A recipe is referenced by plans, by cooked meals and by shopping ticks. Deleting one
+    would be the merge problem again with the same shape and less to repoint — and a
+    cooked meal that lost its recipe is a hole in a history nobody can fill back in.
+    Archived is reachable; deleted is not.
+    """
+
+    async def test_an_archived_recipe_leaves_the_cooks_list(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        await recipes.archive(stored.id, cook_id)
+        assert [one.id for one in await recipes.list_for_cook(cook_id)] == []
+
+    async def test_it_is_still_there_when_asked_for_by_name(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        """A plan that points at it must still resolve, which is the whole reason this is
+        an archive and not a delete."""
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        await recipes.archive(stored.id, cook_id)
+        found = await recipes.fetch(stored.id, ENGLISH)
+        assert found is not None
+        assert found.title == "Shortbread"
+
+    async def test_it_says_it_is_archived(self, cook_id: int, pantry: dict[str, int]) -> None:
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        assert stored.archived_at is None
+        await recipes.archive(stored.id, cook_id)
+        found = await recipes.fetch(stored.id, ENGLISH)
+        assert found is not None
+        assert found.archived_at is not None
+
+    async def test_it_can_be_brought_back(self, cook_id: int, pantry: dict[str, int]) -> None:
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        await recipes.archive(stored.id, cook_id)
+        await recipes.restore(stored.id, cook_id)
+        assert [one.id for one in await recipes.list_for_cook(cook_id)] == [stored.id]
+
+    async def test_archiving_twice_is_the_same_as_once(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        assert await recipes.archive(stored.id, cook_id) is True
+        assert await recipes.archive(stored.id, cook_id) is True
+        found = await recipes.fetch(stored.id, ENGLISH)
+        assert found is not None and found.archived_at is not None
+
+    async def test_another_cooks_recipe_cannot_be_archived(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        stored = await recipes.store(shortbread(pantry), cook_id)
+        other = await cook_access.register("other@example.com", "Other", "hash")
+        assert await recipes.archive(stored.id, other.id) is False
+        found = await recipes.fetch(stored.id, ENGLISH)
+        assert found is not None and found.archived_at is None

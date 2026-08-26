@@ -76,17 +76,19 @@ from quookly.utilities.configuration import preferred_sources
 _unit = measure.unit_for
 
 
-async def author(
-    submitted: RecipeInput, cook_id: int, locale: str | None = None
-) -> PresentedRecipe:
-    """Store a recipe and hand it back as the cook will read it."""
-    locale = locale or await cook_access.locale_for(cook_id)
-    draft = RecipeDraft(
+def _drafted(submitted: RecipeInput, provenance: Provenance) -> RecipeDraft:
+    """A submitted recipe as a draft.
+
+    Shared by authoring and by editing so the two cannot come to disagree about what a
+    submission means — they take the same body and differ only in what happens to the
+    result.
+    """
+    return RecipeDraft(
         title=submitted.title,
         summary=submitted.summary,
         yield_quantity=Quantity(submitted.yield_magnitude, _unit(submitted.yield_unit)),
         serves=submitted.serves,
-        provenance=Provenance.AUTHORED,
+        provenance=provenance,
         lines=[
             IngredientLineDraft(
                 ingredient_id=line.ingredient_id,
@@ -111,8 +113,46 @@ async def author(
             for step in submitted.steps
         ],
     )
-    stored = await recipe_access.store(draft, cook_id)
+
+
+async def author(
+    submitted: RecipeInput, cook_id: int, locale: str | None = None
+) -> PresentedRecipe:
+    """Store a recipe and hand it back as the cook will read it."""
+    locale = locale or await cook_access.locale_for(cook_id)
+    stored = await recipe_access.store(_drafted(submitted, Provenance.AUTHORED), cook_id)
     return await _present(stored, await preference_access.for_cook(cook_id), None, cook_id)
+
+
+async def restate(
+    recipe_id: int, submitted: RecipeInput, cook_id: int, locale: str | None = None
+) -> PresentedRecipe | None:
+    """Replace a recipe with how it should now read (ADR-059).
+
+    Everyone edits their own. There is no administrator override, because there is no
+    account model yet that would make one mean anything — and a cook whose recipe somebody
+    else could rewrite would have to be told about it.
+
+    The submitted provenance is ignored: where a recipe came from is a fact about its
+    arrival, and `RecipeAccess.restate` will not rewrite it.
+    """
+    locale = locale or await cook_access.locale_for(cook_id)
+    restated = await recipe_access.restate(
+        recipe_id, _drafted(submitted, Provenance.AUTHORED), cook_id
+    )
+    if restated is None:
+        return None
+    return await _present(restated, await preference_access.for_cook(cook_id), None, cook_id)
+
+
+async def put_away(recipe_id: int, cook_id: int) -> bool:
+    """Archive a recipe: out of the list and the index, still there for what points at it."""
+    return await recipe_access.archive(recipe_id, cook_id)
+
+
+async def bring_back(recipe_id: int, cook_id: int) -> bool:
+    """Restore an archived recipe."""
+    return await recipe_access.restore(recipe_id, cook_id)
 
 
 #: How near a date has to be before a recipe using it is worth suggesting. The same

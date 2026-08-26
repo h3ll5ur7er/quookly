@@ -648,6 +648,129 @@
             }
           }
         }
+      },
+      "put": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Amend Recipe",
+        "description": "Replace a recipe with how it should now read (ADR-059).\n\nThe whole recipe, not a patch: lines and steps are ordered collections, and patching\none would need an instruction for reordering that nobody asked for.\n\nEveryone edits their own, and another cook's recipe is **absent rather than\nforbidden** \u2014 the same rule reading one already follows, because a 403 would confirm\nit exists.",
+        "operationId": "amendRecipe",
+        "parameters": [
+          {
+            "name": "recipe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Recipe Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecipeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentedRecipe"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recipes/{recipe_id}/archived": {
+      "post": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Archive Recipe",
+        "description": "Put a recipe away.\n\nNot a delete. Plans, cooked meals and shopping ticks point at a recipe, and a cooked\nmeal that lost its recipe is a hole in a history nobody can fill back in. An archived\nrecipe leaves the list and the search index and stays reachable by id.",
+        "operationId": "archiveRecipe",
+        "parameters": [
+          {
+            "name": "recipe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Recipe Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recipes/{recipe_id}/restored": {
+      "post": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Restore Recipe",
+        "description": "Bring an archived recipe back into the list and the index.",
+        "operationId": "restoreRecipe",
+        "parameters": [
+          {
+            "name": "recipe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Recipe Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/recipes/import-url": {

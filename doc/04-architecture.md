@@ -362,7 +362,7 @@ Each service exposes atomic business verbs. Illustrative, not exhaustive:
 
 | Service | Resource | Verbs |
 | --- | --- | --- |
-| `RecipeAccess` | Database | `store`, `fetch`, `list_for_cook`, `publish`, `derive_variant` |
+| `RecipeAccess` | Database | `store`, `fetch`, `list_for_cook`, `publish`, `derive_variant`, `restate`, `archive`, `restore` — the last three are Phase 7's ([ADR-059](07-decisions.md#adr-059-a-step-may-name-its-own-links-and-a-recipe-may-be-edited)): replacement rather than patching, because lines and steps are ordered, and archived rather than deleted, because plans and cooked meals point at a recipe |
 | `IngredientAccess` | Database | `resolve_by_name`, `nutrients_for`, `density_for`, `localised_name`, `browse`, `detail`, `amend`, `classify`, `rename`, `approve`, `merge` — the last two are Phase 7's: a *page* of the registry, ordered and counted, which is a different verb from resolving one name in it, and recording that somebody has reviewed an entry ([ADR-051](07-decisions.md#adr-051-whether-an-entry-has-been-reviewed-is-a-different-column-from-whether-it-has-been-classified)) |
 | `EaterAccess` | Database | `add`, `fetch`, `list_for_cook`, `for_ids`, `amend`, `restate_constraints`, `remove` |
 | `PantryAccess` | Database | `receive`, `adjust`, `record_waste`, `expiring_before`, `for_ingredients` — **Built**; `reserve`, `release`, `consume` arrive with planning ([ADR-034](07-decisions.md#adr-034-stock-is-held-as-lots-not-as-a-total-per-ingredient), [ADR-035](07-decisions.md#adr-035-adjusting-stock-and-recording-waste-are-different-acts)) |

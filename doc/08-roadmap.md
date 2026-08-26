@@ -290,12 +290,12 @@ The unit is a **page with a kind**, not a technique: sections for techniques, fo
 whatever follows. ~~Fifty seeded technique pages~~ **written** — `seed/techniques.json`, in three
 languages, with the spellings a step is actually written with.
 
-0. **A recipe can be edited.** Not an Academy feature at all, and listed here because the Academy
-   found it: a recipe today can be created and never changed. No `PUT`, no `PATCH`, no `DELETE` — a
-   typo in an imported recipe is permanent. Editing has to exist before a step can be annotated, and
-   it should have existed anyway. It makes
-   [recipe versioning](06-domain-model.md#open-questions) a question that has to be answered rather
-   than recorded.
+0. ~~**A recipe can be edited.**~~ **Built** on the backend — `PUT /recipes/{id}` replaces a recipe
+   with how it should now read, and `archived`/`restored` put one away and bring it back. Not an
+   Academy feature at all, and listed here because the Academy found it: a recipe could be created
+   and never changed, so a typo in an imported recipe was permanent. Everyone edits their own and
+   another cook's is *absent rather than forbidden*; archived rather than deleted, because plans,
+   cooked meals and shopping ticks point at a recipe. The screens for both follow.
 1. **`AcademyAccess`, and the seeded pages loaded.** Browsing a section, reading a page, and nothing
    else. *An Academy nobody can add to is still an Academy.*
 2. **Spotting terms in a step** — `MatchingEngine.mentioned`, pure, tested as a table of steps and

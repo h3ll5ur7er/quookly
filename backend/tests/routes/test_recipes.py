@@ -381,3 +381,184 @@ class TestHowLongItTakes:
         timing = created.json()["timing"]
         assert timing["total"] == {"seconds": 2700, "at_least": False}
         assert timing["ahead"] == {"seconds": 28800, "at_least": False}
+
+
+class TestEditing:
+    """A recipe could be created and never changed (ADR-059).
+
+    No `PUT`, no `PATCH`, no `DELETE` — a typo in an imported recipe was permanent, a
+    misread quantity was permanent, and a bad import could only be lived with.
+    """
+
+    async def mine(self, client: AsyncClient, pantry: dict[str, int]) -> tuple[dict[str, str], int]:
+        headers = await sign_up(client, "chef@example.com")
+        created = await client.post("/api/v1/recipes", json=pancakes(pantry), headers=headers)
+        return headers, int(created.json()["id"])
+
+    async def test_a_recipe_can_be_corrected(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers, recipe_id = await self.mine(client, pantry)
+        amended = {**pancakes(pantry), "title": "Buttermilk Pancakes"}
+        response = await client.put(f"/api/v1/recipes/{recipe_id}", json=amended, headers=headers)
+        assert response.status_code == 200
+        assert response.json()["title"] == "Buttermilk Pancakes"
+
+    async def test_it_is_the_same_recipe_afterwards(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """Plans, cooked meals and shopping ticks point at it by id."""
+        headers, recipe_id = await self.mine(client, pantry)
+        amended = {**pancakes(pantry), "title": "Buttermilk Pancakes"}
+        body = (
+            await client.put(f"/api/v1/recipes/{recipe_id}", json=amended, headers=headers)
+        ).json()
+        assert body["id"] == recipe_id
+
+    async def test_a_step_can_be_rewritten(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers, recipe_id = await self.mine(client, pantry)
+        amended = {
+            **pancakes(pantry),
+            "steps": [{"instruction": "Whisk, rest, fry."}],
+        }
+        body = (
+            await client.put(f"/api/v1/recipes/{recipe_id}", json=amended, headers=headers)
+        ).json()
+        assert [step["instruction"] for step in body["steps"]] == ["Whisk, rest, fry."]
+
+    async def test_the_correction_is_what_is_read_back(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers, recipe_id = await self.mine(client, pantry)
+        await client.put(
+            f"/api/v1/recipes/{recipe_id}",
+            json={**pancakes(pantry), "title": "Buttermilk Pancakes"},
+            headers=headers,
+        )
+        read = await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        assert read.json()["title"] == "Buttermilk Pancakes"
+
+    async def test_it_is_findable_by_its_new_title(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """The search index holds a recipe's title and ingredients. Editing changes what
+        it should be findable by, and an index nobody updated is worse than none."""
+        headers, recipe_id = await self.mine(client, pantry)
+        await client.put(
+            f"/api/v1/recipes/{recipe_id}",
+            json={**pancakes(pantry), "title": "Blini"},
+            headers=headers,
+        )
+        found = await client.get(
+            "/api/v1/recipes/suggestions", params={"q": "Blini"}, headers=headers
+        )
+        assert recipe_id in [one["recipe"]["id"] for one in found.json()]
+
+        # And no longer by the old one. This is the half that proves the index was
+        # rewritten rather than added to: without it the test passes on a stale index.
+        stale = await client.get(
+            "/api/v1/recipes/suggestions", params={"q": "Pancakes"}, headers=headers
+        )
+        assert recipe_id not in [one["recipe"]["id"] for one in stale.json()]
+
+    async def test_another_cooks_recipe_is_absent_not_forbidden(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """Everyone edits their own. A 403 would confirm the recipe exists."""
+        _, recipe_id = await self.mine(client, pantry)
+        theirs = await sign_up(client, "other@example.com")
+        response = await client.put(
+            f"/api/v1/recipes/{recipe_id}", json=pancakes(pantry), headers=theirs
+        )
+        assert response.status_code == 404
+
+    async def test_editing_something_that_is_not_there_is_a_404(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        response = await client.put("/api/v1/recipes/9999", json=pancakes(pantry), headers=headers)
+        assert response.status_code == 404
+
+    async def test_a_line_pointing_at_nothing_is_refused(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers, recipe_id = await self.mine(client, pantry)
+        amended = {
+            **pancakes(pantry),
+            "lines": [{"ingredient_id": 9999, "magnitude": "1", "unit": "cup (US)"}],
+        }
+        response = await client.put(f"/api/v1/recipes/{recipe_id}", json=amended, headers=headers)
+        assert response.status_code == 422
+
+
+class TestArchiving:
+    """Put away rather than deleted, because things point at a recipe."""
+
+    async def mine(self, client: AsyncClient, pantry: dict[str, int]) -> tuple[dict[str, str], int]:
+        headers = await sign_up(client, "chef@example.com")
+        created = await client.post("/api/v1/recipes", json=pancakes(pantry), headers=headers)
+        return headers, int(created.json()["id"])
+
+    async def test_an_archived_recipe_leaves_the_list(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers, recipe_id = await self.mine(client, pantry)
+        assert (
+            await client.post(f"/api/v1/recipes/{recipe_id}/archived", headers=headers)
+        ).status_code == 204
+        listed = (await client.get("/api/v1/recipes", headers=headers)).json()
+        assert recipe_id not in [one["id"] for one in listed]
+
+    async def test_it_is_still_there_when_something_points_at_it(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """The whole reason this is an archive: a plan holding it must still resolve."""
+        headers, recipe_id = await self.mine(client, pantry)
+        await client.post(f"/api/v1/recipes/{recipe_id}/archived", headers=headers)
+        read = await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        assert read.status_code == 200
+        assert read.json()["title"] == "Pancakes"
+
+    async def test_it_stops_being_findable(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """A hit on a recipe somebody put away is the same nuisance as one on a recipe
+        that is gone."""
+        headers, recipe_id = await self.mine(client, pantry)
+        await client.post(f"/api/v1/recipes/{recipe_id}/archived", headers=headers)
+        found = await client.get(
+            "/api/v1/recipes/suggestions", params={"q": "Pancakes"}, headers=headers
+        )
+        assert recipe_id not in [one["recipe"]["id"] for one in found.json()]
+
+    async def test_it_can_be_brought_back(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers, recipe_id = await self.mine(client, pantry)
+        await client.post(f"/api/v1/recipes/{recipe_id}/archived", headers=headers)
+        assert (
+            await client.post(f"/api/v1/recipes/{recipe_id}/restored", headers=headers)
+        ).status_code == 204
+        listed = (await client.get("/api/v1/recipes", headers=headers)).json()
+        assert recipe_id in [one["id"] for one in listed]
+
+    async def test_bringing_it_back_makes_it_findable_again(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers, recipe_id = await self.mine(client, pantry)
+        await client.post(f"/api/v1/recipes/{recipe_id}/archived", headers=headers)
+        await client.post(f"/api/v1/recipes/{recipe_id}/restored", headers=headers)
+        found = await client.get(
+            "/api/v1/recipes/suggestions", params={"q": "Pancakes"}, headers=headers
+        )
+        assert recipe_id in [one["recipe"]["id"] for one in found.json()]
+
+    async def test_another_cooks_recipe_cannot_be_archived(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        _, recipe_id = await self.mine(client, pantry)
+        theirs = await sign_up(client, "other@example.com")
+        response = await client.post(f"/api/v1/recipes/{recipe_id}/archived", headers=theirs)
+        assert response.status_code == 404

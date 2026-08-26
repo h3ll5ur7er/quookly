@@ -245,6 +245,55 @@ async def get_recipe(
     return presented
 
 
+@router.put("/recipes/{recipe_id}", response_model=PresentedRecipe)
+async def amend_recipe(
+    recipe_id: int, submitted: RecipeInput, cook: CurrentCook
+) -> PresentedRecipe:
+    """Replace a recipe with how it should now read (ADR-059).
+
+    The whole recipe, not a patch: lines and steps are ordered collections, and patching
+    one would need an instruction for reordering that nobody asked for.
+
+    Everyone edits their own, and another cook's recipe is **absent rather than
+    forbidden** — the same rule reading one already follows, because a 403 would confirm
+    it exists.
+    """
+    try:
+        amended = await recipe_manager.restate(recipe_id, submitted, cook.cook_id)
+    except UnknownUnit as unknown:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Unknown unit: {unknown}.",
+        ) from None
+    except IngredientNotRegistered:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="A line refers to an ingredient that is not in the registry.",
+        ) from None
+    if amended is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such recipe.")
+    return amended
+
+
+@router.post("/recipes/{recipe_id}/archived", status_code=status.HTTP_204_NO_CONTENT)
+async def archive_recipe(recipe_id: int, cook: CurrentCook) -> None:
+    """Put a recipe away.
+
+    Not a delete. Plans, cooked meals and shopping ticks point at a recipe, and a cooked
+    meal that lost its recipe is a hole in a history nobody can fill back in. An archived
+    recipe leaves the list and the search index and stays reachable by id.
+    """
+    if not await recipe_manager.put_away(recipe_id, cook.cook_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such recipe.")
+
+
+@router.post("/recipes/{recipe_id}/restored", status_code=status.HTTP_204_NO_CONTENT)
+async def restore_recipe(recipe_id: int, cook: CurrentCook) -> None:
+    """Bring an archived recipe back into the list and the index."""
+    if not await recipe_manager.bring_back(recipe_id, cook.cook_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such recipe.")
+
+
 @router.post(
     "/recipes/import-url", response_model=ImportedRecipe, status_code=status.HTTP_201_CREATED
 )

@@ -185,6 +185,10 @@ class Recipe:
     steps: list[Step] = field(default_factory=list)
     #: Absent where the yield already says. See `_servings_of`.
     serves: Decimal | None = None
+    #: When this recipe was put away, if it was. An archived recipe is out of the cook's
+    #: list and out of the search index, and still reachable by the plans and cooked meals
+    #: that point at it (ADR-059).
+    archived_at: datetime | None = None
 
     def __post_init__(self) -> None:
         _check_serves(self.yield_quantity, self.serves)
