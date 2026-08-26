@@ -10,6 +10,7 @@ from decimal import Decimal
 from sqlalchemy import DDL, UniqueConstraint, event
 from sqlmodel import Field, SQLModel
 
+from quookly.contracts.academy import PageKind
 from quookly.contracts.cook import Standing
 from quookly.contracts.cooking import SessionOutcome
 from quookly.contracts.eater import AgeBand, Severity
@@ -492,3 +493,58 @@ SEARCH_TABLES = "recipe_search"
 def hand_managed(name: str | None) -> bool:
     """Whether a table is one nothing derives from the models."""
     return name is not None and name.startswith(SEARCH_TABLES)
+
+
+class AcademyPageRow(SQLModel, table=True):
+    """One thing a cook might not know, and what it is. Identity is the slug."""
+
+    __tablename__ = "academy_page"
+
+    id: int | None = Field(default=None, primary_key=True)
+    slug: str = Field(unique=True, index=True)
+    kind: PageKind = Field(index=True)
+    origin: Origin = Field(default=Origin.USER)
+    # Whether a model wrote it, and separately whether anybody has checked it. Two columns
+    # because they are two questions (ADR-051, ADR-056): a cook can write something nobody
+    # has read, and an administrator can approve a paragraph a model composed.
+    generated: bool = Field(default=False)
+    approved: bool = Field(default=False, index=True)
+    created_at: datetime = Field(default_factory=_now)
+
+
+class AcademyTextRow(SQLModel, table=True):
+    """A page as one language writes it."""
+
+    __tablename__ = "academy_text"
+    __table_args__ = (UniqueConstraint("page_id", "locale", name="uq_academy_text"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    page_id: int = Field(foreign_key="academy_page.id", index=True)
+    locale: str = Field(index=True)
+    name: str
+    summary: str
+    explanation: str
+    # Only where getting it wrong matters. Restraint is what keeps a warning worth reading.
+    caution: str | None = Field(default=None)
+
+
+class AcademyTermRow(SQLModel, table=True):
+    """A word a page answers to, in one language.
+
+    **Deliberately not unique on `(locale, normalised)`**, which is where this parts
+    company with `ingredient_name`. The registry refuses a term a second entry claims,
+    because a recipe line resolving to the wrong ingredient gets the wrong food's
+    allergens. Nothing computes on a page, so several may claim a term and the page names
+    the others at the top (ADR-058). Unique per page instead, so one page cannot list a
+    spelling twice.
+    """
+
+    __tablename__ = "academy_term"
+    __table_args__ = (UniqueConstraint("page_id", "locale", "normalised", name="uq_academy_term"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    page_id: int = Field(foreign_key="academy_page.id", index=True)
+    locale: str = Field(index=True)
+    spelling: str
+    normalised: str = Field(index=True)
+    is_canonical: bool = Field(default=False)

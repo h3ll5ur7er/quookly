@@ -14,8 +14,14 @@ from .access import search
 from .access.database import dispose_engine
 from .contracts.events import MealCooked
 from .managers import pantry
-from .managers.seed import stock_generic_foods, stock_nutrition, stock_registry
+from .managers.seed import (
+    stock_academy,
+    stock_generic_foods,
+    stock_nutrition,
+    stock_registry,
+)
 from .routes import (
+    academy_router,
     accounts_router,
     cooking_router,
     eaters_router,
@@ -80,6 +86,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # is the instance's reference data, and it is nobody's dependency.
     await stock_generic_foods()
     await stock_nutrition()
+    # Reference material rather than anybody's dependency, like the generic foods:
+    # every screen works without it, and a cook meeting an unfamiliar word does not.
+    await stock_academy()
     # Derived, so it is rebuilt rather than migrated: a change to what is indexed then
     # costs nothing to roll out and cannot be half-applied.
     await search.reindex()
@@ -131,6 +140,7 @@ app.include_router(status_router, prefix=API_PREFIX, tags=["status"])
 app.include_router(accounts_router, prefix=API_PREFIX, tags=["accounts"])
 app.include_router(recipes_router, prefix=API_PREFIX, tags=["recipes"])
 app.include_router(ingredients_router, prefix=API_PREFIX, tags=["ingredients"])
+app.include_router(academy_router, prefix=API_PREFIX, tags=["academy"])
 app.include_router(eaters_router, prefix=API_PREFIX, tags=["eaters"])
 app.include_router(setup_router, prefix=API_PREFIX, tags=["setup"])
 app.include_router(pantry_router, prefix=API_PREFIX, tags=["pantry"])

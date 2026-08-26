@@ -303,8 +303,12 @@ languages, with the spellings a step is actually written with.
    in whether it arrives filled in — and the detail page carries *Correct this recipe* and *Put it
    away*, the second behind a confirmation because it takes a recipe out of the list and out of
    search.
-1. **`AcademyAccess`, and the seeded pages loaded.** Browsing a section, reading a page, and nothing
-   else. *An Academy nobody can add to is still an Academy.*
+1. ~~**`AcademyAccess`, and the seeded pages loaded.**~~ **Built** on the backend — `GET /academy`
+   lists a section, `GET /academy/{slug}` reads a page in the cook's language, and
+   `GET /academy/terms/{term}` answers with everyone who claims a term. Fifty pages install at
+   start-up, and a second boot adds no second copy. The kind is stamped from the seed file's
+   `section` rather than repeated on every page. *An Academy nobody can add to is still an Academy* —
+   there is no writing, no matching and no model here. The screens follow.
 2. **Spotting terms in a step** — `MatchingEngine.mentioned`, pure, tested as a table of steps and
    expected offsets. Nothing rendered yet.
 3. **Terms marked on the recipe page (UC-2.5)**, then **in cooking mode (UC-9.5)**, where the

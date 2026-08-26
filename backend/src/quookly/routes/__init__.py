@@ -1,3 +1,4 @@
+from .academy import router as academy_router
 from .accounts import router as accounts_router
 from .cooking import router as cooking_router
 from .eaters import router as eaters_router
@@ -11,6 +12,7 @@ from .setup import router as setup_router
 from .status import router as status_router
 
 __all__ = [
+    "academy_router",
     "accounts_router",
     "cooking_router",
     "eaters_router",

@@ -1461,6 +1461,152 @@
         }
       }
     },
+    "/api/v1/academy": {
+      "get": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Browse Academy",
+        "description": "Every page, in the cook's language, ordered by the name they will read.",
+        "operationId": "browseAcademy",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PageKind"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Show one section on its own.",
+              "title": "Kind"
+            },
+            "description": "Show one section on its own."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PageSummaryView"
+                  },
+                  "title": "Response Browseacademy"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/terms/{term}": {
+      "get": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Pages For Term",
+        "description": "Every page that answers to a term.\n\nDeclared **before** `/academy/{slug}`, or that route would swallow it. A step's word\nlinks here rather than to a page: one claimant opens it, several offer a chooser, and\nnothing picks arbitrarily (ADR-058).",
+        "operationId": "pagesForTerm",
+        "parameters": [
+          {
+            "name": "term",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Term"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClaimantView"
+                  },
+                  "title": "Response Pagesforterm"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/{slug}": {
+      "get": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Read Page",
+        "description": "One page, with the other pages its name belongs to named at the top.",
+        "operationId": "readPage",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/eaters": {
       "get": {
         "tags": [
@@ -3097,6 +3243,29 @@
         "title": "BoughtInput",
         "description": "Whether one line of the shopping list is in the basket (UC-4.4)."
       },
+      "ClaimantView": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "summary"
+        ],
+        "title": "ClaimantView"
+      },
       "Classification": {
         "properties": {
           "allergens": {
@@ -4245,6 +4414,116 @@
         ],
         "title": "Outcome",
         "description": "The answer, worst-first when several apply."
+      },
+      "PageKind": {
+        "type": "string",
+        "enum": [
+          "technique"
+        ],
+        "title": "PageKind",
+        "description": "Which section of the Academy a page belongs to.\n\nOne value today and the reason the field exists: naming the entity after the first\nsection anybody wrote would have made the second one a migration (ADR-057)."
+      },
+      "PageSummaryView": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PageKind"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "kind",
+          "name",
+          "summary"
+        ],
+        "title": "PageSummaryView",
+        "description": "Enough to list a page without its explanation."
+      },
+      "PageView": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PageKind"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          },
+          "spellings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Spellings"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/Origin"
+          },
+          "generated": {
+            "type": "boolean",
+            "title": "Generated"
+          },
+          "approved": {
+            "type": "boolean",
+            "title": "Approved"
+          },
+          "caution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caution"
+          },
+          "also": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimantView"
+            },
+            "type": "array",
+            "title": "Also",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "kind",
+          "name",
+          "summary",
+          "explanation",
+          "spellings",
+          "origin",
+          "generated",
+          "approved"
+        ],
+        "title": "PageView",
+        "description": "A page as a client reads it."
       },
       "PantryEntry": {
         "properties": {

@@ -13,8 +13,10 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+from quookly.access import academy
 from quookly.access import ingredient as registry
 from quookly.access import recipe as recipe_access
+from quookly.contracts.academy import NewPage, PageKind, Wording
 from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.contracts.nutrition import Nutrient, NutrientProfile, NutritionSource
 from quookly.contracts.recipe import Provenance
@@ -245,3 +247,55 @@ async def install_starter_recipes(cook_id: int, locale: str = DEFAULT_SEED_LOCAL
             cook_id,
         )
     return len(document.recipes)
+
+
+TECHNIQUES = SEED_DIRECTORY / "techniques.json"
+
+
+def read_academy_pages() -> tuple[str, list[dict[str, Any]]]:
+    """The Academy pages this build ships, and which section they belong to.
+
+    The kind is stamped from the file rather than repeated on every page: a seed file is
+    one section (ADR-057), and saying so nine hundred times would be nine hundred chances
+    to say it differently.
+    """
+    if not TECHNIQUES.exists():
+        return "technique", []
+    document: dict[str, Any] = json.loads(TECHNIQUES.read_text(encoding="utf-8"))
+    return str(document.get("section", "technique")), list(document.get("pages", []))
+
+
+async def stock_academy() -> int:
+    """Add the Academy pages this instance does not have. Returns how many.
+
+    Safe to run repeatedly — every start-up does — and it never touches a page a cook has
+    written (ADR-016).
+    """
+    section, pages = read_academy_pages()
+    if not pages:
+        return 0
+
+    added = await academy.store_many(
+        [
+            NewPage(
+                slug=page["slug"],
+                kind=PageKind(section),
+                wordings={
+                    locale: Wording(
+                        name=written["name"],
+                        spellings=list(written["spellings"]),
+                        summary=written["summary"],
+                        explanation=written["explanation"],
+                        caution=written["caution"],
+                    )
+                    for locale, written in page["locales"].items()
+                },
+            )
+            for page in pages
+        ],
+        origin=Origin.SEED,
+    )
+
+    if added:
+        log.info("stocked %s academy pages", added, extra={"added": added})
+    return added

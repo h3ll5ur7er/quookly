@@ -214,6 +214,7 @@ forbidden_modules = ["quookly.access"]
 name = "Managers do not call one another"
 type = "independence"
 modules = [
+    "quookly.managers.academy",
     "quookly.managers.account",
     "quookly.managers.cooking",
     "quookly.managers.eater",

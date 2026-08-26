@@ -18,10 +18,10 @@ import pytest
 from pytest import MonkeyPatch
 from sqlmodel import SQLModel
 
+from quookly.access import academy, search
 from quookly.access import cook as cook_access
 from quookly.access import ingredient as registry
 from quookly.access import recipe as recipe_access
-from quookly.access import search
 from quookly.access.database import dispose_engine, get_engine
 from quookly.api import app, lifespan
 from quookly.contracts.events import MealCooked
@@ -71,6 +71,21 @@ class TestStartingUp:
         async with lifespan(app):
             assert await registry.resolve("carrot", ENGLISH) is not None
             assert await registry.resolve("Zwiebel", "de-CH") is not None
+
+    async def test_the_academy_is_stocked(self) -> None:
+        """One line in the lifespan, and fifty pages a cook can look a word up in."""
+        async with lifespan(app):
+            folding = await academy.detail("fold", ENGLISH)
+            assert folding is not None
+            assert folding.spellings
+
+    async def test_the_academy_speaks_the_other_shipped_languages(self) -> None:
+        """Loaded from one file per section, so a language missing here is a language
+        missing from every page at once — worth one assertion rather than fifty."""
+        async with lifespan(app):
+            folding = await academy.detail("fold", "de-CH")
+            assert folding is not None
+            assert folding.name == "unterheben"
 
     async def test_the_published_figures_are_attached(self) -> None:
         async with lifespan(app):
@@ -156,7 +171,12 @@ class TestStartingAgain:
     async def test_a_second_start_adds_no_second_copy(self) -> None:
         async with lifespan(app):
             first = len(await registry.search("carrot", ENGLISH, limit=50))
+            pages = len(await academy.browse(ENGLISH))
         get_engine.cache_clear()
         async with lifespan(app):
             again = len(await registry.search("carrot", ENGLISH, limit=50))
+            pages_again = len(await academy.browse(ENGLISH))
         assert first == again
+        # Every boot re-reads the seed files. A loader that added rather than skipped would
+        # double the Academy on the second start and nothing would say so.
+        assert pages == pages_again
