@@ -1,3 +1,4 @@
+import { claim, signIn } from './support';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
@@ -30,19 +31,16 @@ async function importing(page: import('@playwright/test').Page, path: string): P
   await page.getByRole('button', { name: 'Import' }).click();
 }
 
-const COOK = {
-  email: 'chef@example.com',
-  password: 'a-sufficiently-long-password',
-};
-
 test.describe.configure({ mode: 'serial' });
 
+// Claimed here rather than inherited from whichever file ran first, so this one can
+// be run on its own.
+test.beforeAll(async ({ request }) => {
+  await claim(request);
+});
+
 test.beforeEach(async ({ page }) => {
-  await page.goto('/sign-in');
-  await page.getByLabel('Email').fill(COOK.email);
-  await page.getByLabel('Password').fill(COOK.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await signIn(page);
   // Signing in lands on Home; this file is about the recipes.
   await page.goto('/recipes');
 });

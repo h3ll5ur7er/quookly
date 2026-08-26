@@ -1,7 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Subject, switchMap } from 'rxjs';
 import {
   CookingService,
   PlansService,
@@ -63,7 +65,30 @@ export class RecipeDetailComponent {
     return shown ? Number(shown.yield_quantity.magnitude) : 0;
   });
 
+  /**
+   * The yield being asked for, as a stream so that only the last answer counts.
+   *
+   * Each change re-asks the server. Without `switchMap` a dozen quick taps on *More* are
+   * a dozen requests racing each other, and a slow early one lands last and overwrites the
+   * yield the cook actually asked for. Cancelling is what makes tapping quickly safe.
+   */
+  private readonly wanted = new Subject<number | null>();
+
   constructor() {
+    this.wanted
+      .pipe(
+        switchMap((servings) =>
+          this.recipes.getRecipe(this.recipeId, servings === null ? undefined : String(servings)),
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe({
+        next: (recipe) => {
+          this.recipe.set(recipe);
+          this.missing.set(false);
+        },
+        error: () => this.missing.set(true),
+      });
     this.load(null);
   }
 
@@ -148,15 +173,7 @@ export class RecipeDetailComponent {
   private load(servings: number | null): void {
     // Sent as text, not as a JSON number: the backend holds yields as exact decimals,
     // and a value that has been through a binary float is no longer the one asked for.
-    this.recipes
-      .getRecipe(this.recipeId, servings === null ? undefined : String(servings))
-      .subscribe({
-        next: (recipe) => {
-          this.recipe.set(recipe);
-          this.missing.set(false);
-        },
-        error: () => this.missing.set(true),
-      });
+    this.wanted.next(servings);
   }
 
   /**

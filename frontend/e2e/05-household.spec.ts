@@ -1,3 +1,4 @@
+import { claim, signIn, typeIngredient } from './support';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
@@ -9,20 +10,14 @@ import { expect, test } from '@playwright/test';
  * one that matters — actually removed when it is removed.
  */
 
-const COOK = {
-  email: 'chef@example.com',
-  display_name: 'Emanuel',
-  password: 'a-sufficiently-long-password',
-};
-
 test.describe.configure({ mode: 'serial' });
 
+test.beforeAll(async ({ request }) => {
+  await claim(request);
+});
+
 test.beforeEach(async ({ page }) => {
-  await page.goto('/sign-in');
-  await page.getByLabel('Email').fill(COOK.email);
-  await page.getByLabel('Password').fill(COOK.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await signIn(page);
 });
 
 test.describe('finding the household', () => {
@@ -155,7 +150,7 @@ test.describe('the form itself', () => {
     await page.goto('/household/new');
     await page.getByLabel('Name', { exact: true }).fill('Ana');
     await page.getByLabel('What', { exact: true }).selectOption('ingredient');
-    await page.getByLabel('Ingredient', { exact: true }).fill('caster sugar');
+    await typeIngredient(page, 'Ingredient', 'caster sugar');
     await page.getByLabel('How serious', { exact: true }).selectOption('preference');
     await page.getByRole('button', { name: 'Add' }).click();
     await expect(page.locator('.chip').filter({ hasText: 'caster sugar' })).toBeVisible();

@@ -1,3 +1,4 @@
+import { claim, signIn } from './support';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
@@ -8,11 +9,6 @@ import { expect, test } from '@playwright/test';
  * a shopping list. So the tests are mostly about that list being right — net of stock,
  * added up across the week, and back to nothing when the plan goes away.
  */
-
-const COOK = {
-  email: 'chef@example.com',
-  password: 'a-sufficiently-long-password',
-};
 
 /** A week far enough out that no other spec's dates collide with it. */
 const MONDAY = '2027-03-01';
@@ -29,8 +25,7 @@ test.describe.configure({ mode: 'serial' });
  * planning.
  */
 test.beforeAll(async ({ request }) => {
-  const signIn = await request.post('/api/v1/accounts/sign-in', { data: COOK });
-  const token = (await signIn.json()).token;
+  const token = await claim(request);
   await request.post('/api/v1/eaters', {
     data: { name: 'Robin', age_band: 'adult', appetite: '1.2', constraints: [] },
     headers: { Authorization: `Bearer ${token}` },
@@ -48,11 +43,7 @@ function guest(page: import('@playwright/test').Page, name: string) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/sign-in');
-  await page.getByLabel('Email').fill(COOK.email);
-  await page.getByLabel('Password').fill(COOK.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await signIn(page);
 });
 
 /** The one plan these tests build up, opened from the list each time. */

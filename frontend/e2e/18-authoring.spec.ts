@@ -1,3 +1,4 @@
+import { claim, signIn } from './support';
 import { expect, test } from '@playwright/test';
 
 /**
@@ -9,15 +10,6 @@ import { expect, test } from '@playwright/test';
  * body is right and say nothing about whether the fields can be reached.
  */
 
-// The account the rest of the suite shares. Not one of its own: accounts are applied for
-// and approved (ADR-049), so a spec that invents a cook needs an administrator to let them
-// in — and which spec claimed the instance depends on what else is running.
-const COOK = {
-  email: 'chef@example.com',
-  display_name: 'Emanuel',
-  password: 'a-sufficiently-long-password',
-};
-
 test.describe.configure({ mode: 'serial' });
 
 // No `beforeAll`. Files run in parallel, so claiming the instance from here races the spec
@@ -25,12 +17,14 @@ test.describe.configure({ mode: 'serial' });
 // has already made. The cost is that this file cannot run on its own, which is true of
 // most of them.
 
+// Claimed here rather than inherited from whichever file ran first, so this one can
+// be run on its own.
+test.beforeAll(async ({ request }) => {
+  await claim(request);
+});
+
 test.beforeEach(async ({ page }) => {
-  await page.goto('/sign-in');
-  await page.getByLabel('Email').fill(COOK.email);
-  await page.getByLabel('Password').fill(COOK.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await signIn(page);
   await page.goto('/recipes');
 });
 

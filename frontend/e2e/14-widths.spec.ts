@@ -1,3 +1,4 @@
+import { claim, signIn } from './support';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
@@ -13,11 +14,6 @@ import { expect, test } from '@playwright/test';
  * sideways, and the navigation is where it belongs at each width.
  */
 
-const COOK = {
-  email: 'chef@example.com',
-  password: 'a-sufficiently-long-password',
-};
-
 const WIDTHS = [
   { name: 'phone', width: 390, height: 844 },
   { name: 'tablet', width: 834, height: 1112 },
@@ -26,12 +22,14 @@ const WIDTHS = [
 
 test.describe.configure({ mode: 'serial' });
 
+// Claimed here rather than inherited from whichever file ran first, so this one can
+// be run on its own.
+test.beforeAll(async ({ request }) => {
+  await claim(request);
+});
+
 test.beforeEach(async ({ page }) => {
-  await page.goto('/sign-in');
-  await page.getByLabel('Email').fill(COOK.email);
-  await page.getByLabel('Password').fill(COOK.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await signIn(page);
 });
 
 for (const { name, width, height } of WIDTHS) {

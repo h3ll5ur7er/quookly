@@ -1,3 +1,4 @@
+import { claim, emptyKitchen, signIn } from './support';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
@@ -10,35 +11,19 @@ import { expect, test } from '@playwright/test';
  * that something has been undone.
  */
 
-const COOK = {
-  email: 'chef@example.com',
-  display_name: 'Emanuel',
-  password: 'a-sufficiently-long-password',
-};
-
 let token: string;
 
 test.describe.configure({ mode: 'serial' });
 
 test.beforeAll(async ({ request }) => {
-  const signIn = await request.post('/api/v1/accounts/sign-in', {
-    data: { email: COOK.email, password: COOK.password },
-  });
-  token = (await signIn.json()).token;
+  token = await claim(request);
 
-  // Earlier files leave a household behind; setup is about a profile that has none.
-  const auth = { Authorization: `Bearer ${token}` };
-  for (const person of await (await request.get('/api/v1/eaters', { headers: auth })).json()) {
-    await request.delete(`/api/v1/eaters/${person.id}`, { headers: auth });
-  }
+  // Earlier files leave a kitchen behind; setup is about a profile that has none.
+  await emptyKitchen(request, { Authorization: `Bearer ${token}` });
 });
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/sign-in');
-  await page.getByLabel('Email').fill(COOK.email);
-  await page.getByLabel('Password').fill(COOK.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await signIn(page);
 });
 
 function stepFor(page: import('@playwright/test').Page, title: string) {

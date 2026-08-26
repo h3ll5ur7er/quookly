@@ -1,3 +1,4 @@
+import { claim, signIn } from './support';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
@@ -7,12 +8,6 @@ import { expect, test } from '@playwright/test';
  * The four outcomes are exercised against a real instance, because the one that matters
  * is *unknown* and the only way it goes wrong is by looking like one of the others.
  */
-
-const COOK = {
-  email: 'chef@example.com',
-  display_name: 'Emanuel',
-  password: 'a-sufficiently-long-password',
-};
 
 /** An ingredient nobody has ever classified, which is not the same as one that is clear. */
 const MYSTERY = {
@@ -57,10 +52,7 @@ let token: string;
 test.describe.configure({ mode: 'serial' });
 
 test.beforeAll(async ({ request }) => {
-  const signIn = await request.post('/api/v1/accounts/sign-in', {
-    data: { email: COOK.email, password: COOK.password },
-  });
-  token = (await signIn.json()).token;
+  token = await claim(request);
   const auth = { Authorization: `Bearer ${token}` };
 
   // Checked, because an import that quietly fails shows up later as "element not found"
@@ -87,11 +79,7 @@ test.beforeAll(async ({ request }) => {
 });
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/sign-in');
-  await page.getByLabel('Email').fill(COOK.email);
-  await page.getByLabel('Password').fill(COOK.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await signIn(page);
 });
 
 async function open(page: import('@playwright/test').Page, title: string): Promise<void> {

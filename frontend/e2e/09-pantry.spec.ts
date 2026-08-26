@@ -1,3 +1,4 @@
+import { claim, signIn } from './support';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
@@ -8,11 +9,6 @@ import { expect, test } from '@playwright/test';
  * truth: that a packet keeps its own date, that correcting a number is not recorded as
  * waste, and that a warning names the bag going off rather than the ingredient.
  */
-
-const COOK = {
-  email: 'chef@example.com',
-  password: 'a-sufficiently-long-password',
-};
 
 /** Far enough out that it never falls inside the "use soon" window as the suite ages. */
 const DISTANT = '2099-12-01';
@@ -71,12 +67,20 @@ function inDays(days: number): string {
   return when.toISOString().slice(0, 10);
 }
 
+// Claimed here rather than inherited from whichever file ran first, so this one can
+// be run on its own.
+test.beforeAll(async ({ request }) => {
+  const headers = { Authorization: `Bearer ${await claim(request)}` };
+  // This file asserts that the shelf offers the unit this cook reads liquids in, so it
+  // states the preference rather than inheriting whatever the settings file last chose.
+  await request.put('/api/v1/preferences/units/liquid', {
+    data: { unit: 'dl' },
+    headers,
+  });
+});
+
 test.beforeEach(async ({ page }) => {
-  await page.goto('/sign-in');
-  await page.getByLabel('Email').fill(COOK.email);
-  await page.getByLabel('Password').fill(COOK.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await signIn(page);
 });
 
 test.describe('an empty pantry', () => {

@@ -1,3 +1,4 @@
+import { claim, signIn } from './support';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
@@ -10,11 +11,6 @@ import { expect, test } from '@playwright/test';
  * its own kitchen together and disturbs nobody after it.
  */
 
-const COOK = {
-  email: 'chef@example.com',
-  password: 'a-sufficiently-long-password',
-};
-
 /** Everything the seeded Shortbread needs, so the pantry can cover it whole. */
 const SHORTBREAD = ['unsalted-butter', 'caster-sugar', 'plain-flour'];
 
@@ -26,9 +22,11 @@ function inDays(days: number): string {
 
 test.describe.configure({ mode: 'serial' });
 
+/** Held from `beforeAll` so the tests below do not each fetch a token of their own. */
+let headers: Record<string, string>;
+
 test.beforeAll(async ({ request }) => {
-  const signIn = await request.post('/api/v1/accounts/sign-in', { data: COOK });
-  const headers = { Authorization: `Bearer ${(await signIn.json()).token}` };
+  headers = { Authorization: `Bearer ${await claim(request)}` };
 
   for (const slug of SHORTBREAD) {
     const found = await request.get(`/api/v1/ingredients?search=${slug.replace(/-/g, '%20')}`, {
@@ -53,11 +51,7 @@ test.beforeAll(async ({ request }) => {
 });
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/sign-in');
-  await page.getByLabel('Email').fill(COOK.email);
-  await page.getByLabel('Password').fill(COOK.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await signIn(page);
   // Signing in lands on Home; this file is about the recipes.
   await page.goto('/recipes');
   await page.getByRole('button', { name: 'Worth cooking' }).click();

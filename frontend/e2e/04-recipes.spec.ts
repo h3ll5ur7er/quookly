@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { changeYield, claim, emptyKitchen, signIn } from './support';
 
 /**
  * The recipe screens, on a phone, against a real instance.
@@ -8,12 +9,6 @@ import { expect, test } from '@playwright/test';
  * more through the import endpoint, written in US cups, so the conversion the product
  * exists for is visible on screen rather than only in a unit test.
  */
-
-const COOK = {
-  email: 'chef@example.com',
-  display_name: 'Emanuel',
-  password: 'a-sufficiently-long-password',
-};
 
 // Deliberately a **format 1** document. Format 2 added `serves`; keeping this one at 1
 // means every run checks that a file a self-hoster exported before the change still
@@ -59,17 +54,10 @@ const DOCUMENT = {
 test.describe.configure({ mode: 'serial' });
 
 test.beforeAll(async ({ request }) => {
-  const signUp = await request.post('/api/v1/accounts', { data: COOK });
-  const token = signUp.ok()
-    ? (await signUp.json()).token
-    : (
-        await (
-          await request.post('/api/v1/accounts/sign-in', {
-            data: { email: COOK.email, password: COOK.password },
-          })
-        ).json()
-      ).token;
-
+  const token = await claim(request);
+  // A kitchen an earlier file stocked changes what this one is shown — a suggestion is
+  // ranked by what the cupboard covers, and a plan puts a meal on the home screen.
+  await emptyKitchen(request, { Authorization: `Bearer ${token}` });
   const imported = await request.post('/api/v1/recipes/import', {
     data: DOCUMENT,
     headers: { Authorization: `Bearer ${token}` },
@@ -78,11 +66,7 @@ test.beforeAll(async ({ request }) => {
 });
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/sign-in');
-  await page.getByLabel('Email').fill(COOK.email);
-  await page.getByLabel('Password').fill(COOK.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await signIn(page);
   // Signing in lands on Home; this file is about the recipes.
   await page.goto('/recipes');
 });
@@ -223,9 +207,9 @@ test.describe('how many it feeds', () => {
 
   test('and scales with the batch, so the two numbers never disagree', async ({ page }) => {
     await open(page, /Buttermilk Pancakes/);
-    for (let i = 0; i < 12; i++) {
-      await page.getByRole('button', { name: 'More' }).click();
-    }
+    // Waiting for each answer rather than tapping twelve times and hoping. Every tap
+    // re-asks the server, and a test that does not wait is racing its own clicks.
+    await changeYield(page, 12);
     // Twenty-four pancakes, so eight portions.
     await expect(madeAndServed(page)).toContainText('8');
   });

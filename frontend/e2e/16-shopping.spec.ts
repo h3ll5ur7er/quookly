@@ -1,3 +1,4 @@
+import { claim, signIn } from './support';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
@@ -9,11 +10,6 @@ import { expect, test } from '@playwright/test';
  * itself without choosing a week first, and that a tick survives the phone going away and
  * coming back — which is the whole reason the tick is on the server and not in a browser.
  */
-
-const COOK = {
-  email: 'chef@example.com',
-  password: 'a-sufficiently-long-password',
-};
 
 test.describe.configure({ mode: 'serial' });
 
@@ -31,8 +27,7 @@ let planId: number;
 let headers: Record<string, string>;
 
 test.beforeAll(async ({ request }) => {
-  const signIn = await request.post('/api/v1/accounts/sign-in', { data: COOK });
-  headers = { Authorization: `Bearer ${(await signIn.json()).token}` };
+  headers = { Authorization: `Bearer ${await claim(request)}` };
 
   const plans = await request.get('/api/v1/plans/current', { headers });
   const running = (await plans.json()) as { id: number; starts_on: string } | null;
@@ -84,11 +79,7 @@ test.beforeEach(async ({ page, request }) => {
     });
   }
 
-  await page.goto('/sign-in');
-  await page.getByLabel('Email').fill(COOK.email);
-  await page.getByLabel('Password').fill(COOK.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await signIn(page);
 });
 
 test('opens on the list, without choosing a week first', async ({ page }) => {

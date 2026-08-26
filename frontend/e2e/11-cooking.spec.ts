@@ -1,3 +1,4 @@
+import { claim, emptyKitchen, signIn } from './support';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
@@ -10,11 +11,6 @@ import { expect, test } from '@playwright/test';
  * hands full, and that leaving is not the same as stopping.
  */
 
-const COOK = {
-  email: 'chef@example.com',
-  password: 'a-sufficiently-long-password',
-};
-
 /** A week of its own, so nothing here collides with the planning spec's dates. */
 const MONDAY = '2027-06-07';
 const SUNDAY = '2027-06-13';
@@ -26,8 +22,10 @@ let headers: Record<string, string>;
 
 /** Enough butter and flour that the meal has something to take. */
 test.beforeAll(async ({ request }) => {
-  const signIn = await request.post('/api/v1/accounts/sign-in', { data: COOK });
-  headers = { Authorization: `Bearer ${(await signIn.json()).token}` };
+  headers = { Authorization: `Bearer ${await claim(request)}` };
+  // Before stocking: this file finds its meal on the plan, and a plan an earlier file left
+  // behind is a different meal with the same buttons.
+  await emptyKitchen(request, headers);
 
   const registry = await request.get('/api/v1/ingredients?search=unsalted%20butter', { headers });
   const entries = (await registry.json()) as { id: number; slug: string }[];
@@ -48,6 +46,7 @@ test.beforeAll(async ({ request }) => {
  * and a test that sets itself up by exercising the feature cannot fail cleanly.
  */
 test.beforeEach(async ({ request }) => {
+  // Every test in this file starts from no session, whatever the one before it left.
   const open = await request.get('/api/v1/cooking/sessions', { headers });
   for (const session of (await open.json()) as { id: number }[]) {
     await request.post(`/api/v1/cooking/sessions/${session.id}/abandoned`, { headers });
@@ -55,11 +54,7 @@ test.beforeEach(async ({ request }) => {
 });
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/sign-in');
-  await page.getByLabel('Email').fill(COOK.email);
-  await page.getByLabel('Password').fill(COOK.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await signIn(page);
 });
 
 /**
@@ -366,6 +361,9 @@ test.describe('leaving and coming back', () => {
 
     await meal(page);
     await page.getByRole('button', { name: 'Cook this now' }).click();
+    // Waited for, because the assertion below reads the step the session resumed at, and
+    // reading it while the previous page is still on screen asserts nothing.
+    await expect(page).toHaveURL(/\/cook\/\d+$/);
     await expect(page.locator('.cook__instruction')).toContainText('Work in the flour');
   });
 });

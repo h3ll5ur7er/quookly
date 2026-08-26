@@ -1,3 +1,4 @@
+import { claim, signIn } from './support';
 import { expect, test } from '@playwright/test';
 
 /**
@@ -8,11 +9,6 @@ import { expect, test } from '@playwright/test';
  * would not show you. These are the joins, and a join is exactly the thing a unit test
  * cannot see — each half passes on its own while the seam between them is missing.
  */
-
-const COOK = {
-  email: 'chef@example.com',
-  password: 'a-sufficiently-long-password',
-};
 
 test.describe.configure({ mode: 'serial' });
 
@@ -33,9 +29,17 @@ function today(): string {
  */
 let planId: number;
 
+// Claimed here rather than inherited from whichever file ran first, so this one can
+// be run on its own.
+/** Held from `beforeAll` so the tests below do not each fetch a token of their own. */
+let headers: Record<string, string>;
+
+test.beforeAll(async ({ request }) => {
+  await claim(request);
+});
+
 test.beforeEach(async ({ page, request }) => {
-  const signIn = await request.post('/api/v1/accounts/sign-in', { data: COOK });
-  const headers = { Authorization: `Bearer ${(await signIn.json()).token}` };
+  headers = { Authorization: `Bearer ${await claim(request)}` };
 
   // Anything left cooking would be resumed instead of started, and this spec is about
   // starting.
@@ -52,11 +56,7 @@ test.beforeEach(async ({ page, request }) => {
     planId = (await made.json()).id;
   }
 
-  await page.goto('/sign-in');
-  await page.getByLabel('Email').fill(COOK.email);
-  await page.getByLabel('Password').fill(COOK.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await signIn(page);
 });
 
 /**
