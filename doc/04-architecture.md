@@ -1,6 +1,9 @@
 # Architecture
 
-**Status: Planned. The repository currently contains the template scaffold and one status endpoint.**
+**Status: Built through [Phase 6b](08-roadmap.md#phase-6b--one-product-not-five-screens). Every
+service in the catalogue below exists and the call rules are enforced by `import-linter` in
+`just backend check`. Still Planned: `AcademyAccess` and `CommunityAccess`, `ScoringEngine`, the
+`EngagementManager`, and `MediaAccess` — Phases 7 and 8.**
 
 This document defines the services, the layers they occupy, the rules governing calls between them,
 and how that maps onto the code. It follows directly from the

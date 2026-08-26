@@ -21,23 +21,27 @@ not the life story that precedes it.
 
 ## Status legend
 
-These documents describe a target architecture. Almost none of it is built yet. Every document
-marks status explicitly:
+These documents describe the architecture. Most of it is now built. Every document marks status
+explicitly:
 
 - **Built** — exists in the repository today and passes `just check`
 - **Partial** — scaffolded but incomplete
 - **Planned** — designed here, not yet written
 
-**[Phase 0](08-roadmap.md#phase-0--foundations) and [Phase 1](08-roadmap.md#phase-1--the-canonical-recipe)
-are complete.** A fresh instance stocks its ingredient registry, gives its first admin a couple of
-starter recipes, and shows any recipe scaled to a chosen yield in that cook's preferred units — a
-cup of flour reads as 125 g. Recipes export and re-import losslessly.
+**[Phases 0 through 6b](08-roadmap.md) are complete**, and Phase 6b was the cut line for a first
+release. A fresh instance walks an operator through creating the first admin; anybody else applies
+for an account and an admin answers. A cook can author a recipe, import one from a URL with the
+filler stripped, generate one from what is in the cupboard, read it at any yield in their own units
+with nutrition and allergen verdicts attached, plan a week around who is coming, shop from a list net
+of stock, and cook from the hob with timers and offline tolerance — after which the pantry knows what
+was eaten.
 
-**[Phase 0](08-roadmap.md#phase-0--foundations) delivered:** The repository contains the enforced
-layer architecture, the Configuration, Security and Diagnostics utilities, SQLite persistence with
-migrations, cook accounts, the bootstrap and sign-in endpoints with generated clients, and an Angular
-shell with authentication, four themes, and three locales. Everything from Phase 1 onward is
-**Planned**.
+**What is not built:** the [Academy and the correctable ingredient
+registry](08-roadmap.md#phase-7--academy-and-the-registry) (Phase 7),
+[community and gamification](08-roadmap.md#phase-8--community-and-engagement) (Phase 8),
+[content translation](08-roadmap.md#phase-8b--reading-a-recipe-in-your-own-language) (Phase 8b), and
+[self-hosting polish](08-roadmap.md#phase-9--self-hosting-polish) (Phase 9). Generating a recipe from
+a photograph waits on a vision model, and looking a technique up from a step waits on the Academy.
 
 ## A note on these documents
 

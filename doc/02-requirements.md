@@ -1,6 +1,10 @@
 # Requirements
 
-**Status: all Planned unless marked otherwise.**
+**Status: Built through [Phase 6b](08-roadmap.md#phase-6b--one-product-not-five-screens) — every
+use case below is satisfied today except UC-1.6 (a recipe from a photograph, waiting on a vision
+model), UC-2.5 and UC-9.5 (looking a technique up, waiting on the Academy), UC-3.2 (filters, partly
+— time and dietary suitability work; tag, cuisine and difficulty are not yet fields on a recipe),
+UC-7.1–7.5 (community, Phase 8), and UC-8.1 and UC-8.3 (self-hosting operations, Phase 9).**
 
 Requirements are recorded here as *what the system must do*. They are deliberately not a
 decomposition of the system — see [Volatility analysis](03-volatility-analysis.md) for why the

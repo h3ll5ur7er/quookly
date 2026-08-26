@@ -1,6 +1,8 @@
 # Use case flows
 
-**Status: Planned.**
+**Status: Built through [Phase 6b](08-roadmap.md#phase-6b--one-product-not-five-screens). The flows
+below describe code that runs, except those for the Academy and for community features, which are
+Planned.**
 
 > Requirements are not represented by subsystems, but by the interaction of services.
 

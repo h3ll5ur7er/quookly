@@ -1,6 +1,7 @@
 # Roadmap
 
-**Status: Planned.**
+**Status: Phases 0 through 6b are complete and released. Phase 7 is next; Phases 8, 8b and 9
+follow.**
 
 Ordered by architectural risk rather than by visible surface. Each phase ends with something that
 works end to end and is covered by `just check`.
@@ -221,7 +222,7 @@ which lands after the Academy without blocking anything here.
   their data
 
 **Done when:** "what should I cook this week" returns ranked, suitable suggestions that use up what
-is about to expire.
+is about to expire. **Met.**
 
 ## Phase 6b — One product, not five screens
 
@@ -257,8 +258,8 @@ Placed after Phase 6 because there was nothing to tie together before there was 
 screen, and before Phase 7 because an Academy inside a product that reads as a prototype is
 studying for an exam nobody has sat.
 
-**This phase is the cut line for a first release.** Everything above is built, so the working branch
-merges to `main`; Phases 7 and 8 are add-ons that ship afterwards.
+**This phase was the cut line for a first release.** Everything above is built and merged to
+`master`; Phases 7 and 8 are add-ons that ship afterwards. **Met.**
 
 ## Phase 7 — Academy and the registry
 
