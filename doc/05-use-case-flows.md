@@ -498,6 +498,84 @@ deletes all their eaters is correctly told their household is unset again.
 A completed checklist ends by pointing at the recipes, which is UC-10.4 doing its job: the new cook
 lands on seeded content rather than an empty list.
 
+## UC-2.5 and UC-9.5 Look up a term from a recipe, or from the step being cooked
+
+**Designed, not built.** Phase 7.
+
+```mermaid
+sequenceDiagram
+  actor Cook
+  participant API as "API route"
+  participant RM as "RecipeManager"
+  participant RA as "RecipeAccess"
+  participant ACA as "AcademyAccess"
+  participant MTE as "MatchingEngine"
+
+  Cook->>API: show me this recipe
+  API->>RM: read(recipe, cook)
+  RM->>RA: fetch(recipe)
+  RA-->>RM: steps
+  RM->>ACA: terms_for_spotting(locale)
+  ACA-->>RM: every term and its spellings
+  RM->>MTE: mentioned(step instructions, terms)
+  MTE-->>RM: which term, at which offsets
+  RM-->>API: recipe, with terms marked in place
+  API-->>Cook: recipe, jargon underlined
+```
+
+Two things this diagram is making a point of.
+
+**`MatchingEngine` is handed the vocabulary**, rather than reaching for it. It is a rule engine, so
+its reference data arrives as an argument and it reads no database — which is also what makes
+spotting testable as a table of steps and expected offsets.
+
+**It answers with offsets, not with explanations.** The engine says *the word at 4–8 is `fold`*; it
+does not say what folding is and it does not decide how the link is drawn. That is
+[ADR-040](07-decisions.md#adr-040-a-steps-ingredients-are-read-out-of-its-words-not-tagged)'s rule
+about `ExecutionEngine` applied to the same problem, and it is why one implementation serves both the
+recipe page and cooking mode. UC-9.5 is this flow with `CookingManager` in place of `RecipeManager`
+and the constraint that the cook does not leave the step they are on.
+
+## UC-7.4 Ask what a word means when nobody has explained it
+
+**Designed, not built.** Phase 7, and only where an inference provider is configured
+([ADR-033](07-decisions.md#adr-033-the-inference-provider-is-configured-by-environment-and-reported-by-the-app)).
+
+```mermaid
+sequenceDiagram
+  actor Cook
+  participant API as "API route"
+  participant AM as "AcademyManager"
+  participant ACA as "AcademyAccess"
+  participant GE as "GenerationEngine"
+  participant MA as "ModelAccess"
+
+  Cook->>API: what does "deglaze" mean
+  API->>AM: explain(term, locale, cook)
+  AM->>ACA: resolve_term(term, locale)
+  ACA-->>AM: nothing
+  AM->>GE: compose an explanation of this term
+  GE->>MA: complete_structured(prompt)
+  MA-->>GE: summary, explanation, spellings
+  GE-->>AM: a proposed entry
+  AM->>ACA: store(entry, generated, unapproved)
+  ACA-->>AM: stored
+  AM-->>API: the entry, marked unreviewed
+  API-->>Cook: an explanation, and that nobody here has checked it
+```
+
+The sequence is the reason `AcademyManager` had to come back: four steps across an engine and two
+resource access services is a use case, and a route may not hold one
+([ADR-054](07-decisions.md#adr-054-academymanager-is-reinstated)).
+
+Where `resolve_term` finds something, the first two steps are the whole flow and no model is
+involved. Where no provider is configured, the answer is *nobody here has explained that yet* — which
+is a working screen, not an error, and is what every instance without inference sees.
+
+The entry is stored rather than returned and forgotten: the next cook to meet the word gets it
+without a second model call, and an administrator has something to approve or correct
+([ADR-056](07-decisions.md#adr-056-a-generated-explanation-is-marked-unreviewed-and-never-an-input-to-a-judgement)).
+
 ## Reading these diagrams
 
 Every arrow crosses a layer boundary downward or stays within the permitted set. No Manager appears

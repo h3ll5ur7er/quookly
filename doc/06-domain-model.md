@@ -191,6 +191,46 @@ all; and an approved entry stays the cook's own for ever, so provenance cannot s
 has looked. Approving records the review and nothing else — in particular it never classifies, since
 "this entry is a fair description" is not "I know what is inside this food".
 
+### A technique
+
+**Designed, not built.** Phase 7, and shaped deliberately like a registry entry, because the same
+things go wrong with it.
+
+A technique is a word a cook might not know, and what it means. It carries:
+
+- a **slug**, which is its identity, exactly as with an ingredient — the name is not
+- a **canonical name and its spellings, per locale**. The spellings are load-bearing rather than
+  decorative: they are what lets *"folding"*, *"folded in"* and *"carefully fold"* all reach the
+  entry for *fold*, and putting the variation here rather than in a similarity score is the whole of
+  [ADR-055](07-decisions.md#adr-055-a-step-finds-its-techniques-by-the-words-it-already-uses)
+- a short **summary** and a longer **explanation**
+- optional **cautions** — the part where getting it wrong matters
+- an **origin**: shipped, or a cook's own. The same meaning as
+  [ADR-016](07-decisions.md#adr-016-ship-seed-content-marked-and-upgradable) gives it, and the same
+  promise: an upgrade may replace what it shipped and must never touch what a cook wrote
+- whether it was **generated**, and separately whether it has been **approved**
+
+Those last two are two fields because they are two questions, the same argument
+[ADR-051](07-decisions.md#adr-051-whether-an-entry-has-been-reviewed-is-a-different-column-from-whether-it-has-been-classified)
+made for the registry. *Who wrote this* and *has anybody checked it* come apart in every direction: a
+cook can write something nobody has read, and an administrator can approve a paragraph a model
+composed.
+
+**A term means one technique per language**, enforced the way a registry name is — a unique index on
+the locale and the normalised spelling. Without it a step naming that term has no single entry to
+link to, which is the same failure an ambiguous ingredient name causes and wants the same refusal.
+
+**An explanation is never read by anything that computes.** `SuitabilityEngine` and
+`NutritionEngine` do not see it, and a layer contract enforces that
+([ADR-056](07-decisions.md#adr-056-a-generated-explanation-is-marked-unreviewed-and-never-an-input-to-a-judgement)).
+It is shown to a person and nothing else. That containment is what keeps a wrong paragraph a bad
+paragraph rather than a wrong verdict.
+
+**A step holds no reference to a technique.** Nothing is tagged and nothing is stored linking the
+two — the terms are read out of the step's own words at the moment it is displayed, exactly as its
+ingredient lines are ([ADR-040](07-decisions.md#adr-040-a-steps-ingredients-are-read-out-of-its-words-not-tagged)).
+A recipe imported before an entry existed gains the link the day somebody writes it.
+
 ### How a verdict is reported
 
 One row per reason, most serious first, each naming the eater and the ingredient. A refusal

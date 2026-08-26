@@ -297,6 +297,33 @@ Deliberately not V2 either. Interpretation turns *unstructured* content into str
 takes structure and renders it in another language. A recipe that has already been read correctly
 still needs this, and a recipe nobody translates is still perfectly usable.
 
+### V18 Explanation
+
+**Status: designed, not built.** Phase 7.
+
+**Question:** what does a cook do when they meet a word they do not know?
+**Varies:** which terms are explained, how they are written and at what length, which languages they
+are written in, who may write one, whether an explanation is checked before it is shown, where an
+explanation comes from — shipped, written by a cook, or composed by a model — and how a term in a
+recipe step is recognised as one of them.
+**Stable:** a recipe's steps are written in words, and some of those words are jargon.
+**Encapsulated by:** `AcademyManager` over `AcademyAccess`, with the spotting of terms in a step
+belonging to `MatchingEngine` ([ADR-055](07-decisions.md#adr-055-a-step-finds-its-techniques-by-the-words-it-already-uses)).
+
+Deliberately not V2. Interpretation reads a page and produces a recipe. This reads a recipe that
+already exists and offers a footnote on it — a recipe with no explanations attached is still a
+complete recipe, which is not true of one that was never interpreted.
+
+Deliberately not V15 either, although cooking mode is where it is most wanted. Execution guidance
+asks *how does a standing, distracted human get through this recipe*; explanation asks *what does
+this word mean*, and the answer is the same whether the reader is at the hob or on the sofa. V15
+consumes it; it does not own it.
+
+The corpus grows for its own reasons and at its own rate — when a cook meets a word, which has
+nothing to do with when recipes change or when the pantry is restocked. That is the test for a
+volatility, and it is why `AcademyManager` was reinstated
+([ADR-054](07-decisions.md#adr-054-academymanager-is-reinstated)).
+
 ## Volatility to service map
 
 ```mermaid
@@ -319,6 +346,8 @@ flowchart LR
   V15 --> CM["CookingManager"]
   V16["V16 Guided setup"] --> OE["OnboardingEngine"]
   V17["V17 Content translation"] --> TE["TranslationEngine"]
+  V18["V18 Explanation"] --> AM["AcademyManager"]
+  V18 --> MTE["MatchingEngine"]
 ```
 
 ## What is deliberately not a service
@@ -332,7 +361,7 @@ independently of something that already has a home:
 | `TagManager` | Tags do not vary independently of recipes. |
 | `ImageManager` | Storing bytes is `MediaAccess`. Interpreting a photograph into a recipe is V2. Nothing remains in between. |
 | `ShoppingListManager` | A shopping list is an output of V8, not a thing with its own lifecycle. Making it a manager forces Manager→Manager calls with planning. |
-| `AcademyManager` | Academy content is authored and read. The interesting part — contribution earning recognition — is V11, and lives in `EngagementManager`. |
+| ~~`AcademyManager`~~ | **Rejected, then reinstated.** Recognition for a contribution really is V11 and really does live in `EngagementManager`. The rest did not survive contact: a Client may not call Resource Access, so "authored and read" had no legal shape, and answering a term nobody has explained is a four-step sequence across an engine and two resource access services. See [ADR-054](07-decisions.md#adr-054-academymanager-is-reinstated). |
 | `NotificationManager` | Delivery is a utility concern over the event bus. |
 | `SeedManager` | Seed content is data, not behaviour. It is loaded by a CLI command through the ordinary resource access services, and varies with locale (V14) and storage (V13) — both of which already have homes. See [ADR-016](07-decisions.md#adr-016-ship-seed-content-marked-and-upgradable). |
 | `TimerManager` | A timer is a field on a step and a start time on a session. The volatility is *where timers belong in a recipe*, which is V15. Ticking is the client's job. |

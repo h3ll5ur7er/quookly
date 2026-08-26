@@ -1305,7 +1305,7 @@ reservation has no history worth keeping — the butter is still in the fridge, 
 
 Against a lot rather than an ingredient because that is the reservation worth making: "the carton
 that goes off on Thursday", not "some milk"
-([ADR-034](#adr-034-stock-is-held-as-lots-not-a-total-per-ingredient)). Two plans cannot claim the
+([ADR-034](#adr-034-stock-is-held-as-lots-not-as-a-total-per-ingredient)). Two plans cannot claim the
 same carton, and the shopping list falls out of what could not be claimed.
 
 A stored `reserved` column beside the quantity would be a second source of truth about the same
@@ -1945,7 +1945,7 @@ and an index that somehow fell behind heals itself rather than needing a repair 
 **Recipes are indexed where they are stored,** in `RecipeAccess.store`, not by each caller. Four paths
 store a recipe — authored, imported from a document, imported from a page, seeded — and "remember to
 index it too" is precisely the shape of mistake that already cost the starter recipes their `serves`
-once ([ADR-012](#adr-012-one-interchange-format-for-import-and-export)). A recipe imported at ten
+once ([ADR-012](#adr-012-export-format-is-the-import-format)). A recipe imported at ten
 o'clock should be findable at one minute past.
 
 **Cost.** The ranking weights are a judgement with numbers in it, and numbers in a judgement invite
@@ -2352,3 +2352,128 @@ where a person already is.
 **Cost.** The sweep is O(pairs) and takes a few seconds against nine hundred entries even with
 blocking, so it is on demand rather than on page load. If it ever wants running regularly it belongs
 in a CLI command and a cron job rather than inside the request that serves the page.
+
+
+## ADR-054 `AcademyManager` is reinstated
+
+**Status:** Accepted
+
+**Context.** [The volatility analysis](03-volatility-analysis.md#what-is-deliberately-not-a-service)
+rejected `AcademyManager` on the grounds that Academy content is merely authored and read, and that
+the interesting part — a contribution earning recognition — is V11 and belongs to
+`EngagementManager`.
+
+That reasoning holds for the *interesting* part and fails for the rest, in exactly the way
+[ADR-021](#adr-021-account-management-does-need-a-manager) failed for accounts. A Client may not call
+Resource Access, so "authored and read" has no legal shape without a manager. And the sequence is not
+empty: a cook asking what a term means may find nothing, in which case the answer is composed by a
+model, stored, marked as unreviewed and returned — four steps across an engine and two resource
+access services, which is a use case by any definition.
+
+**Decision.** `AcademyManager` exists. It owns looking a term up, authoring and correcting an entry,
+approving one, and asking for an explanation of a term nobody has explained.
+
+**Rationale.** The test for promoting a rejected service is unchanged: *does it vary for its own
+reasons, at its own rate?* The corpus of explanations grows when cooks meet words they do not know,
+which has nothing to do with when recipes change or when the pantry is restocked.
+
+Recognition still lives in `EngagementManager` and still waits for Phase 8. Moderation does not:
+approving an entry is [ADR-051](#adr-051-whether-an-entry-has-been-reviewed-is-a-different-column-from-whether-it-has-been-classified)'s
+shape exactly, and needs no scoring rules to work.
+
+**Cost.** One more manager, and one more line in the independence contract that keeps managers from
+calling each other. Both are the point: adding it is a line in a review rather than a silence.
+
+
+## ADR-055 A step finds its techniques by the words it already uses
+
+**Status:** Accepted
+
+**Context.** UC-2.5 and UC-9.5 want an unfamiliar term in a recipe step to be something a cook can
+look up — on the recipe page, and without losing their place while cooking. Something has to decide
+which words in *"fold the whites into the batter"* are techniques.
+
+[ADR-040](#adr-040-a-steps-ingredients-are-read-out-of-its-words-not-tagged) already settled the
+same question for ingredients: read them out of the instruction's own words rather than asking
+anybody to tag them. The same argument applies — nobody writing a recipe will tag its verbs, and an
+imported one certainly has not.
+
+The open question is how much variation the match should absorb. Written naively it goes wrong in
+both directions: an exact match on "fold" misses *"folding"*, *"folded in"* and *"carefully fold"*,
+while a fuzzy match on edit distance turns *"boil"* into *"broil"* and *"sear"* into *"shear"*.
+
+**Decision.** **The fuzziness lives in the vocabulary, not in the match.** A technique stores the
+ways people write it — a canonical term and its spellings and inflections, per locale, in the same
+shape a registry entry stores its names. Spotting a technique in a step is then exact matching over
+normalised, accent-folded tokens, longest term first.
+
+**Rationale.** This puts the judgement somewhere a person can see and correct it. A wrong alias is a
+row somebody can delete; a wrong similarity threshold is a number nobody can argue with. It is the
+same reason the ingredient registry stores `cornstarch` beside `cornflour` rather than trying to
+compute that they are the same word.
+
+It is also the only version that is cheap enough to run everywhere it is wanted. Recipe pages and
+cooking mode both need it, per step, on every read. A model call per step is out of the question and
+a fuzzy comparison against every technique is O(steps x corpus) for an answer that would still be
+wrong sometimes.
+
+**Where the variants come from.** Seeded entries ship theirs. A cook adding an entry writes them.
+And where a model is configured it proposes them **once, when the entry is created** — which is the
+right place for a guess: a proposed alias is reviewed before it can ever match a step, rather than
+being re-guessed on every page view.
+
+**It returns positions, not content**, exactly as `ExecutionEngine` does for ingredient lines: an
+engine handing back offsets cannot decide how a term is rendered, which keeps the decision in one
+place.
+
+**Where it lives.** `MatchingEngine` — it already owns "which written names mean the same thing",
+this is the same job with the query and the corpus swapped, and it is already the pure engine that
+neither reads a database nor decides anything.
+
+**Cost, stated plainly.** A genuinely novel phrasing is missed until somebody adds it. That is a
+miss, not a mistake: the step reads exactly as it does today, and nothing false is asserted. Given
+the alternative is a spurious link from *"sear"* to *"shear"*, missing is the failure to prefer.
+
+
+## ADR-056 A generated explanation is marked, unreviewed, and never an input to a judgement
+
+**Status:** Accepted
+
+**Context.** There is no openly available database of cooking techniques to derive an Academy from
+the way [ADR-050](#adr-050-the-shipped-registry-is-derived-from-a-published-table-and-says-when-it-does-not-know)
+derived the ingredient registry from a published table. The corpus has to come from three places: a
+small hand-written seed, what cooks write, and what a model composes when somebody asks about a word
+nobody here has explained.
+
+The third is the one that needs rules. Cooking advice can be wrong in ways that matter — a
+temperature for chicken, a time for preserving, a claim about what is safe to eat raw — and a
+generated paragraph reads exactly as confidently as a checked one.
+
+**Decision.** Three rules, and the third is the load-bearing one.
+
+**Generated entries are marked as generated, and separately as unreviewed.** Two facts, two fields,
+for the reason [ADR-051](#adr-051-whether-an-entry-has-been-reviewed-is-a-different-column-from-whether-it-has-been-classified)
+gives: *who wrote this* and *has anybody checked it* are different questions, and a cook-written entry
+nobody has read is not the same thing as a model-written one an administrator has approved.
+
+**A seeded or cook-written entry is never replaced by a generated one.** Generation fills gaps only.
+Where a technique carries a safety consequence, that is exactly where the hand-written seed should
+be the thing that answers.
+
+**Academy content is never an input to a judgement.** `SuitabilityEngine` and `NutritionEngine` must
+not read it, and an import-linter contract says so — the same containment trick that keeps the ORM
+inside the access layer. This is the rule that makes the other two survive contact: as long as an
+explanation is only ever *shown to a person*, a wrong one is a bad paragraph. The moment anything
+computes from it, a wrong one is a wrong verdict, and
+[ADR-006](#adr-006-allergen-determination-is-structural) says where that ends.
+
+**Rationale.** The instance may have no model at all — the inference provider is configured by
+environment and reported by the app
+([ADR-033](#adr-033-the-inference-provider-is-configured-by-environment-and-reported-by-the-app)) —
+so generation is an enhancement to a working Academy, never its foundation. An instance with no
+provider has the seed and whatever its cooks have written, and every screen works.
+
+**Cost.** An instance that leans on generation accumulates unreviewed paragraphs, and the queue of
+things to approve grows in a way the registry's never did, because nobody has to look up an
+ingredient for it to exist. Accepted: the alternative is refusing to answer a cook who asked what
+*deglaze* means, and the marking is what keeps an unchecked answer honest about being one.

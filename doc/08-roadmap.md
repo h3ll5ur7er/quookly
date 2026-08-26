@@ -271,11 +271,38 @@ system a cook currently cannot see or correct without editing code.
 
 ### The Academy
 
-- `AcademyAccess`, techniques, definitions, tips
-- Technique references from recipe steps (UC-2.5)
-- In-step technique lookup while cooking (UC-9.5)
-- Contribution and moderation (UC-7.4)
-- Public Academy page
+**Designed** — [ADR-054](07-decisions.md#adr-054-academymanager-is-reinstated),
+[ADR-055](07-decisions.md#adr-055-a-step-finds-its-techniques-by-the-words-it-already-uses),
+[ADR-056](07-decisions.md#adr-056-a-generated-explanation-is-marked-unreviewed-and-never-an-input-to-a-judgement),
+[V18](03-volatility-analysis.md#v18-explanation), [the technique](06-domain-model.md#a-technique) and
+[the flows](05-use-case-flows.md#uc-25-and-uc-95-look-up-a-term-from-a-recipe-or-from-the-step-being-cooked).
+Not built.
+
+There is no published table to derive this from, the way the ingredient registry was derived from the
+Swiss database. The corpus comes from three places instead — a small hand-written seed, what cooks
+write, and what a model composes on request — and the order below is chosen so that the part which
+can be *wrong* arrives last, on top of something that already works without it.
+
+1. **`AcademyAccess` and the seeded techniques.** Around fifty core terms, hand-written, in the
+   three shipped locales, each with the spellings and inflections that let a step reach it. Shipped
+   and marked, on [ADR-016](07-decisions.md#adr-016-ship-seed-content-marked-and-upgradable)'s terms.
+   Browsing and reading, and nothing else. *An Academy nobody can add to is still an Academy.*
+2. **Spotting terms in a step** — `MatchingEngine.mentioned`, pure, tested as a table of steps and
+   expected offsets. Nothing rendered yet.
+3. **Terms marked on the recipe page (UC-2.5)**, then **in cooking mode (UC-9.5)**, where the
+   constraint is that looking a word up must not cost the cook their place in the recipe.
+4. **Cook-authored entries, and approving them (UC-7.4, moderation half).**
+   [ADR-051](07-decisions.md#adr-051-whether-an-entry-has-been-reviewed-is-a-different-column-from-whether-it-has-been-classified)'s
+   approval axis, unchanged. Recognition for contributing is V11 and waits for Phase 8.
+5. **Generating an explanation nobody has written.** Last on purpose: it is the only part that can
+   state something untrue, and by this point every screen already works without it. Optional by
+   construction — an instance with no inference provider simply says nobody has explained that yet.
+6. **A public Academy page.** Readable without an account; generation is not.
+
+The registry half of this phase is where the shape came from. A technique has a slug, canonical names
+and spellings per locale, a provenance and a review state, and the same things go wrong with it —
+which means the correcting, renaming and approving already built have obvious analogues, and merging
+two entries for one term is the same operation with far less to repoint.
 
 ### The ingredient registry, visible and correctable
 

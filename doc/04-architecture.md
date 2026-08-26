@@ -1,9 +1,11 @@
 # Architecture
 
-**Status: Built through [Phase 6b](08-roadmap.md#phase-6b--one-product-not-five-screens). Every
-service in the catalogue below exists and the call rules are enforced by `import-linter` in
-`just backend check`. Still Planned: `AcademyAccess` and `CommunityAccess`, `ScoringEngine`, the
-`EngagementManager`, and `MediaAccess` — Phases 7 and 8.**
+**Status: Built through [Phase 6b](08-roadmap.md#phase-6b--one-product-not-five-screens), plus
+Phase 7's `MatchingEngine`. Every service in the catalogue below exists and the call rules are
+enforced by `import-linter` in `just backend check`. Still Planned: `AcademyManager` and
+`AcademyAccess` — designed in Phase 7, see
+[ADR-054](07-decisions.md#adr-054-academymanager-is-reinstated) — and `CommunityAccess`,
+`ScoringEngine`, `EngagementManager` and `MediaAccess`, which are Phase 8.**
 
 This document defines the services, the layers they occupy, the rules governing calls between them,
 and how that maps onto the code. It follows directly from the
@@ -49,6 +51,7 @@ flowchart TB
     CKM["CookingManager"]
     EGM["EngagementManager"]
     ACM["AccountManager"]
+    ACAM["AcademyManager"]
   end
 
   subgraph EN["Engines"]
@@ -327,7 +330,7 @@ what allows scoring rules to change without touching a single line in recipe or 
 | `PlanningEngine` | V7 | Sizes each planned meal to the people at it, and says how sure it is. **Built.** Proposing assignments arrives with generation (Phase 6). |
 | `ReplenishmentEngine` | V8 | Nets requirement against availability; aggregates and rounds a shopping list. **Built** — netting, aggregation, and rounding a countable up to something a shop will sell. Rounding to pack sizes waits for pack-size data. |
 | `RankingEngine` | V10 | Orders candidate recipes by relevance, pantry coverage, and expiry urgency. **Built** — and it says *why*, because a list that only reordered itself would be asking to be trusted rather than earning it ([ADR-046](07-decisions.md#adr-046-a-suggestion-earns-its-place-by-saving-something)). |
-| `MatchingEngine` | V10 | Which written names might mean the same ingredient. **Built** — ranked candidates with a reason, never a decision ([ADR-053](07-decisions.md#adr-053-the-matcher-ranks-a-person-decides)). Pure: the registry arrives as an argument. |
+| `MatchingEngine` | V10, V18 | Which written names might mean the same ingredient, and which known terms a step names ([ADR-055](07-decisions.md#adr-055-a-step-finds-its-techniques-by-the-words-it-already-uses)). **Built** for the first — ranked candidates with a reason, never a decision ([ADR-053](07-decisions.md#adr-053-the-matcher-ranks-a-person-decides)). Pure: the registry arrives as an argument. |
 | `ScoringEngine` | V11 | Applies point and badge rules to activity. |
 | `ExecutionEngine` | V15 | Turns a recipe into an execution plan: mise-en-place groups, the lines each step names, work to be done the day before, and how long the whole thing takes. **Built** ([ADR-037](07-decisions.md#adr-037-how-long-a-recipe-takes-is-two-numbers-both-derived), [ADR-040](07-decisions.md#adr-040-a-steps-ingredients-are-read-out-of-its-words-not-tagged), [ADR-041](07-decisions.md#adr-041-work-done-the-day-before-is-lifted-out-only-from-the-front)). Timer specifications and technique links arrive with cooking mode. It returns **positions, not content** — an engine handing back indices cannot scale anything, so V4 stays in one place by construction. |
 | `OnboardingEngine` | V16 | Given a profile's current state, reports what is missing and what comes next. |
@@ -364,7 +367,7 @@ Each service exposes atomic business verbs. Illustrative, not exhaustive:
 | `PantryAccess` | Database | `receive`, `adjust`, `record_waste`, `expiring_before`, `for_ingredients` — **Built**; `reserve`, `release`, `consume` arrive with planning ([ADR-034](07-decisions.md#adr-034-stock-is-held-as-lots-not-as-a-total-per-ingredient), [ADR-035](07-decisions.md#adr-035-adjusting-stock-and-recording-waste-are-different-acts)) |
 | `PlanAccess` | Database | `create`, `fetch`, `list_for_cook`, `open_slot`, `assign`, `attend`, `close_slot` — **Built** |
 | `CommunityAccess` | Database | `follow`, `rate`, `comment`, `award`, `leaderboard` |
-| `AcademyAccess` | Database | `fetch_term`, `store_contribution`, `list_modules` |
+| `AcademyAccess` | Database | `browse`, `detail`, `resolve_term`, `terms_for_spotting`, `store`, `amend`, `approve` — Phase 7, and deliberately the same verbs the ingredient registry ended up with: a technique has a slug, a canonical name and its spellings per locale, a provenance and a review state, and the same things go wrong with it ([ADR-054](07-decisions.md#adr-054-academymanager-is-reinstated)) |
 | `ModelAccess` | Inference backend | `complete`, `complete_structured`, `describe`, `reachable` ([ADR-026](07-decisions.md#adr-026-one-openai-shaped-wire-format-not-a-provider-plugin-system)) |
 | `WebContentAccess` | External websites | `fetch_readable` — prose and embedded metadata, neither preferred ([ADR-027](07-decisions.md#adr-027-an-instance-will-not-fetch-its-own-network), [ADR-028](07-decisions.md#adr-028-structured-metadata-is-fetched-not-preferred)) |
 | `MediaAccess` | Media store | `store_image`, `fetch_image`, `delete_image` |
