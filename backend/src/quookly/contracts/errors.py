@@ -96,6 +96,10 @@ class NothingToMerge(QuooklyError):
     """An entry was asked to be merged into itself."""
 
 
+class PageNotWritten(QuooklyError):
+    """No Academy page answers to that slug."""
+
+
 class UnsupportedDocument(QuooklyError):
     """The document is not one this version can read.
 

@@ -1607,6 +1607,111 @@
         }
       }
     },
+    "/api/v1/academy/{slug}/wordings/{locale}": {
+      "put": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Amend Page",
+        "description": "Rewrite one language's wording of a page.\n\nAn administrator's, because the Academy is shared: a correction changes what every cook\non this instance reads. A locale the page does not speak yet is added, which is how a\ntranslation arrives.\n\nIt does not approve the page \u2014 fixing a sentence is not saying somebody has read it.",
+        "operationId": "amendPage",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "locale",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Locale"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WordingInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/{slug}/approved": {
+      "post": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Approve Page",
+        "description": "Record that somebody here has read this page.\n\nWhat stops a page a model wrote from reading as unchecked (ADR-056). It says nothing\nabout who wrote it: vouching for a paragraph and having written it are different facts.",
+        "operationId": "approvePage",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/eaters": {
       "get": {
         "tags": [
@@ -6291,6 +6396,59 @@
         ],
         "title": "WasteReason",
         "description": "Why food left the kitchen without being eaten.\n\n`SPOILED` and `EXPIRED` are kept apart deliberately, and they are the whole point of\nasking. Food that actually went off was bought or stored badly; food binned on its\ndate was very often still fine, and that is the waste a cook can most easily stop.\nCollapsing the two into \"off\" throws away the only distinction worth acting on."
+      },
+      "WordingInput": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "spellings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Spellings",
+            "default": []
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Summary"
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Explanation"
+          },
+          "caution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caution"
+          },
+          "name_matches": {
+            "type": "boolean",
+            "title": "Name Matches",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "summary",
+          "explanation"
+        ],
+        "title": "WordingInput",
+        "description": "A page as one language should now read.\n\nThe whole wording, not a patch: it is a small whole, and patching its spellings would\nneed an instruction for reordering that nobody asked for (the reasoning ADR-059 gives\nfor recipes)."
       }
     }
   }

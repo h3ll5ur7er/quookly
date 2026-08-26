@@ -1,12 +1,43 @@
 """Academy endpoints."""
 
 from fastapi import APIRouter, HTTPException, Query, status
+from pydantic import BaseModel, Field
 
-from quookly.contracts.academy import ClaimantView, PageKind, PageSummaryView, PageView
+from quookly.contracts.academy import (
+    ClaimantView,
+    PageKind,
+    PageSummaryView,
+    PageView,
+    Wording,
+)
+from quookly.contracts.errors import PageNotWritten
 from quookly.managers import academy as academy_manager
-from quookly.routes.dependencies import CurrentCook
+from quookly.routes.dependencies import CurrentAdmin, CurrentCook
 
 router = APIRouter()
+
+NOT_FOUND = HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such page.")
+
+
+class WordingInput(BaseModel):
+    """A page as one language should now read.
+
+    The whole wording, not a patch: it is a small whole, and patching its spellings would
+    need an instruction for reordering that nobody asked for (the reasoning ADR-059 gives
+    for recipes).
+    """
+
+    name: str = Field(min_length=1, max_length=200)
+    #: What a recipe step is matched against (ADR-055). Editing these edits what the recipe
+    #: screens underline, which is why they are here rather than derived from the name.
+    spellings: list[str] = []
+    summary: str = Field(min_length=1, max_length=400)
+    explanation: str = Field(min_length=1)
+    #: Only where getting it wrong matters. A warning on everything is a warning on nothing.
+    caution: str | None = None
+    #: Whether the name on its own reliably means this page. German `sieben` is *to sift*
+    #: and *the number seven*, and "sieben Minuten" is not about a sieve.
+    name_matches: bool = True
 
 
 @router.get("/academy", response_model=list[PageSummaryView])
@@ -36,3 +67,52 @@ async def read_page(slug: str, cook: CurrentCook) -> PageView:
     if found is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such page.")
     return found
+
+
+@router.put("/academy/{slug}/wordings/{locale}", response_model=PageView)
+async def amend_page(
+    slug: str, locale: str, wording: WordingInput, admin: CurrentAdmin
+) -> PageView:
+    """Rewrite one language's wording of a page.
+
+    An administrator's, because the Academy is shared: a correction changes what every cook
+    on this instance reads. A locale the page does not speak yet is added, which is how a
+    translation arrives.
+
+    It does not approve the page — fixing a sentence is not saying somebody has read it.
+    """
+    try:
+        amended = await academy_manager.amend(
+            slug,
+            locale,
+            Wording(
+                name=wording.name,
+                spellings=wording.spellings,
+                summary=wording.summary,
+                explanation=wording.explanation,
+                caution=wording.caution,
+                name_matches=wording.name_matches,
+            ),
+            admin.cook_id,
+        )
+    except PageNotWritten as absent:
+        raise NOT_FOUND from absent
+    if amended is None:
+        raise NOT_FOUND
+    return amended
+
+
+@router.post("/academy/{slug}/approved", response_model=PageView)
+async def approve_page(slug: str, admin: CurrentAdmin) -> PageView:
+    """Record that somebody here has read this page.
+
+    What stops a page a model wrote from reading as unchecked (ADR-056). It says nothing
+    about who wrote it: vouching for a paragraph and having written it are different facts.
+    """
+    try:
+        approved = await academy_manager.approve(slug, admin.cook_id)
+    except PageNotWritten as absent:
+        raise NOT_FOUND from absent
+    if approved is None:
+        raise NOT_FOUND
+    return approved

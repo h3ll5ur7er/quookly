@@ -322,8 +322,14 @@ languages, with the spellings a step is actually written with.
    are cut into the parts that link and the parts that do not, so what is shown is the cook's own
    text. A term with several claimants offers a chooser at `/academy/terms/{term}`; a page whose
    name is shared carries a hatnote naming the others.
-4. **An administrator edits a page** — text, translations, and **pictures**, which pulls
-   `MediaAccess` forward out of Phase 8.
+4. **An administrator edits a page.** ~~Text and translations~~ **Built** — one language's
+   wording at a time, replaced whole rather than patched, and a language the page does not speak
+   yet is how a translation arrives. Approving is separate: fixing a sentence is not saying
+   somebody has read the page
+   ([ADR-051](07-decisions.md#adr-051-whether-an-entry-has-been-reviewed-is-a-different-column-from-whether-it-has-been-classified)),
+   and correcting one does not claim a person wrote it
+   ([ADR-056](07-decisions.md#adr-056-a-generated-explanation-is-marked-unreviewed-and-never-an-input-to-a-judgement)).
+   **Pictures** are still owed, and pull `MediaAccess` forward out of Phase 8.
 5. **Explicit links in a step**, `[[slug|the words as written]]`, for what automatic reading cannot
    know. Needs 0 and 3.
 6. **Cook-authored pages, and approving them (UC-7.4, moderation half).**

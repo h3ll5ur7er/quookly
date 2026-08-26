@@ -10,7 +10,13 @@ follow, in that order, so that the part which can be *wrong* arrives last.
 
 from quookly.access import academy
 from quookly.access import cook as cook_access
-from quookly.contracts.academy import ClaimantView, PageKind, PageSummaryView, PageView
+from quookly.contracts.academy import (
+    ClaimantView,
+    PageKind,
+    PageSummaryView,
+    PageView,
+    Wording,
+)
 
 
 async def browse(cook_id: int, kind: PageKind | None = None) -> list[PageSummaryView]:
@@ -57,3 +63,15 @@ async def claimants(term: str, cook_id: int) -> list[ClaimantView]:
         ClaimantView(slug=one.slug, name=one.name, summary=one.summary)
         for one in await academy.claimants_of(term, locale)
     ]
+
+
+async def amend(slug: str, locale: str, wording: Wording, cook_id: int) -> PageView | None:
+    """Rewrite one language's wording, and hand the page back as the editor will read it."""
+    await academy.amend(slug, locale, wording)
+    return await read(slug, cook_id)
+
+
+async def approve(slug: str, cook_id: int) -> PageView | None:
+    """Record that somebody has read this page."""
+    await academy.approve(slug)
+    return await read(slug, cook_id)

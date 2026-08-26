@@ -17,6 +17,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from quookly.access.database import session
 from quookly.access.models import AcademyPageRow, AcademyTermRow, AcademyTextRow
 from quookly.contracts.academy import Claimant, NewPage, Page, PageKind, Wording
+from quookly.contracts.errors import PageNotWritten
 from quookly.contracts.ingredient import Origin
 from quookly.contracts.matching import Named
 from quookly.utilities.text import fold, normalise
@@ -267,3 +268,69 @@ async def vocabulary(locale: str) -> tuple[list[Named], dict[str, str]]:
 
     named = {slug: texts[page_id].name for page_id, slug in pages.items() if page_id in texts}
     return [Named(slug=slug, names=tuple(terms)) for slug, terms in sorted(gathered.items())], named
+
+
+async def amend(slug: str, locale: str, wording: Wording) -> None:
+    """Rewrite one language's wording of a page.
+
+    Replacement rather than patching, the reason ADR-059 gives for recipes: a wording is a
+    small whole, and patching its spellings would need an instruction for reordering that
+    nobody asked for.
+
+    A locale the page does not speak yet is added, which is how a translation arrives. The
+    other languages are untouched — a page corrected in English has not changed what it
+    says in German.
+
+    It does **not** approve the page and does not clear `generated`. Fixing a sentence is
+    not saying somebody has read the page (ADR-051), and `generated` records who wrote it
+    first — approving is what stops it reading as unchecked (ADR-056).
+    """
+    async with session() as active:
+        page = (
+            await active.exec(select(AcademyPageRow).where(col(AcademyPageRow.slug) == slug))
+        ).first()
+        if page is None or page.id is None:
+            raise PageNotWritten(slug)
+
+        for held in (
+            await active.exec(
+                select(AcademyTextRow).where(
+                    col(AcademyTextRow.page_id) == page.id,
+                    col(AcademyTextRow.locale) == locale,
+                )
+            )
+        ).all():
+            await active.delete(held)
+        for term in (
+            await active.exec(
+                select(AcademyTermRow).where(
+                    col(AcademyTermRow.page_id) == page.id,
+                    col(AcademyTermRow.locale) == locale,
+                )
+            )
+        ).all():
+            await active.delete(term)
+        await active.flush()
+
+        _write_wordings(active, page.id, {locale: wording})
+        await active.commit()
+
+
+async def approve(slug: str) -> None:
+    """Record that somebody has read this page.
+
+    Only that. It does not change what the page says and does not claim a person wrote it:
+    an administrator approving a paragraph a model composed has vouched for it, which is a
+    different fact from having written it (ADR-051, ADR-056).
+
+    Idempotent — the useful question is whether anybody has looked.
+    """
+    async with session() as active:
+        page = (
+            await active.exec(select(AcademyPageRow).where(col(AcademyPageRow.slug) == slug))
+        ).first()
+        if page is None:
+            raise PageNotWritten(slug)
+        page.approved = True
+        active.add(page)
+        await active.commit()

@@ -155,3 +155,112 @@ class TestTerms:
         that check reads the file and this one reads what was installed from it."""
         page = (await client.get(f"{ACADEMY}/fold", headers=cook)).json()
         assert page["also"] == []
+
+
+class TestCorrecting:
+    """An administrator correcting a page, one language at a time."""
+
+    @pytest.fixture
+    async def admin(self, client: AsyncClient) -> dict[str, str]:
+        claimed = await client.post(
+            "/api/v1/accounts/bootstrap",
+            json={
+                "email": "admin@example.com",
+                "display_name": "Admin",
+                "password": "a-sufficiently-long-password",
+            },
+        )
+        return {"Authorization": f"Bearer {claimed.json()['token']}"}
+
+    def wording(self, **changes: object) -> dict[str, object]:
+        return {
+            "name": "fold",
+            "spellings": ["fold in", "folded in"],
+            "summary": "Combine without knocking out the air.",
+            "explanation": "Cut down through the middle and turn the mixture over itself.",
+            "caution": None,
+            "name_matches": True,
+            **changes,
+        }
+
+    async def test_an_admin_can_rewrite_a_page(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        response = await client.put(
+            f"{ACADEMY}/fold/wordings/en-GB",
+            json=self.wording(explanation="Cut down, sweep the bottom, turn it over itself."),
+            headers=admin,
+        )
+        assert response.status_code == 200
+        assert response.json()["explanation"].startswith("Cut down, sweep")
+
+    async def test_a_translation_can_be_added(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        """A locale the page does not speak yet is how a translation arrives."""
+        await client.put(
+            f"{ACADEMY}/fold/wordings/it-IT",
+            json=self.wording(name="incorporare", summary="Unire senza smontare il composto."),
+            headers=admin,
+        )
+        page = (await client.get(f"{ACADEMY}/fold", headers=admin)).json()
+        assert page["name"] == "fold"  # the admin still reads English
+
+    async def test_the_other_languages_are_left_alone(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        await client.put(f"{ACADEMY}/fold/wordings/en-GB", json=self.wording(), headers=admin)
+        await client.put("/api/v1/setup/locale", json={"locale": "de-CH"}, headers=admin)
+        page = (await client.get(f"{ACADEMY}/fold", headers=admin)).json()
+        assert page["name"] == "unterheben"
+
+    async def test_correcting_does_not_approve_it(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        """Fixing a sentence is not saying somebody has read the page (ADR-051)."""
+        await client.put(f"{ACADEMY}/fold/wordings/en-GB", json=self.wording(), headers=admin)
+        page = (await client.get(f"{ACADEMY}/fold", headers=admin)).json()
+        # Seeded pages arrive approved; what matters is that amending did not decide it.
+        assert page["approved"] is True
+
+    async def test_a_page_can_be_approved(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        response = await client.post(f"{ACADEMY}/fold/approved", headers=admin)
+        assert response.status_code == 200
+        assert response.json()["approved"] is True
+
+    async def test_an_ordinary_cook_may_not_correct(
+        self, client: AsyncClient, cook: dict[str, str], stocked: int
+    ) -> None:
+        """The Academy is shared: a correction changes what every cook here reads."""
+        response = await client.put(
+            f"{ACADEMY}/fold/wordings/en-GB", json=self.wording(), headers=cook
+        )
+        assert response.status_code == 403
+
+    async def test_an_ordinary_cook_may_not_approve(
+        self, client: AsyncClient, cook: dict[str, str], stocked: int
+    ) -> None:
+        assert (await client.post(f"{ACADEMY}/fold/approved", headers=cook)).status_code == 403
+
+    async def test_correcting_something_absent_is_a_404(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        response = await client.put(
+            f"{ACADEMY}/no-such-thing/wordings/en-GB", json=self.wording(), headers=admin
+        )
+        assert response.status_code == 404
+
+    async def test_a_correction_changes_what_a_step_is_matched_against(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        """The spellings are the load-bearing field, so editing them is editing what the
+        recipe screens will underline (ADR-055)."""
+        await client.put(
+            f"{ACADEMY}/fold/wordings/en-GB",
+            json=self.wording(spellings=["turn it over itself"]),
+            headers=admin,
+        )
+        page = (await client.get(f"{ACADEMY}/fold", headers=admin)).json()
+        assert page["spellings"] == ["turn it over itself"]

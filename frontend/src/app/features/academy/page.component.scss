@@ -57,3 +57,33 @@
   border-radius: var(--radius-md);
   background: var(--surface);
 }
+
+.academy__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-block: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.academy__form textarea,
+.academy__form input[type='text'] {
+  width: 100%;
+  font-family: var(--font-body);
+}
+
+.academy__matches {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+}
+
+.academy__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

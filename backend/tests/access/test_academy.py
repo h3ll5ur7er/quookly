@@ -19,6 +19,7 @@ from sqlmodel import SQLModel
 from quookly.access import academy
 from quookly.access.database import dispose_engine, get_engine
 from quookly.contracts.academy import NewPage, PageKind, Wording
+from quookly.contracts.errors import PageNotWritten
 from quookly.contracts.ingredient import Origin
 from quookly.contracts.matching import Named
 from quookly.utilities.configuration import get_settings
@@ -303,3 +304,157 @@ class TestWhatMayBeSpottedInAStep:
 
     async def test_nothing_offers_a_page_that_has_none(self) -> None:
         assert await spotting_only(ENGLISH) == []
+
+
+class TestCorrecting:
+    """An administrator correcting a page, one language at a time (ADR-057).
+
+    Replacement rather than patching, for the reason ADR-059 gives for recipes: a wording
+    is a small whole, and patching its spellings would need an instruction for reordering
+    that nobody asked for.
+    """
+
+    async def test_the_explanation_can_be_rewritten(self) -> None:
+        await academy.store_many([folding()])
+        await academy.amend(
+            "fold",
+            ENGLISH,
+            Wording(
+                name="fold",
+                spellings=["fold in"],
+                summary="Combine without knocking out the air.",
+                explanation="Cut down, sweep along the bottom, turn it over itself.",
+            ),
+        )
+        found = await academy.detail("fold", ENGLISH)
+        assert found is not None
+        assert found.explanation.startswith("Cut down, sweep")
+
+    async def test_the_spellings_are_replaced_not_added_to(self) -> None:
+        await academy.store_many([folding()])
+        await academy.amend(
+            "fold",
+            ENGLISH,
+            Wording(
+                name="fold",
+                spellings=["folded in"],
+                summary="Combine without knocking out the air.",
+                explanation="Cut down through the middle and turn the mixture over itself.",
+            ),
+        )
+        found = await academy.detail("fold", ENGLISH)
+        assert found is not None
+        assert found.spellings == ["folded in"]
+
+    async def test_a_language_it_did_not_speak_can_be_added(self) -> None:
+        """This is how a translation arrives: correcting a locale that has no wording yet."""
+        await academy.store_many([deep_frying()])
+        await academy.amend(
+            "deep-fry",
+            GERMAN,
+            Wording(
+                name="frittieren",
+                spellings=["frittiert"],
+                summary="In heissem Fett schwimmend garen.",
+                explanation="Das Fett muss heiss genug sein, dass die Oberfläche schliesst.",
+            ),
+        )
+        found = await academy.detail("deep-fry", GERMAN)
+        assert found is not None
+        assert found.name == "frittieren"
+
+    async def test_the_other_languages_are_left_alone(self) -> None:
+        await academy.store_many([folding()])
+        await academy.amend(
+            "fold",
+            ENGLISH,
+            Wording(
+                name="fold",
+                spellings=[],
+                summary="Changed.",
+                explanation="Changed as well, at some length so the check passes.",
+            ),
+        )
+        german = await academy.detail("fold", GERMAN)
+        assert german is not None
+        assert german.name == "unterheben"
+
+    async def test_a_caution_can_be_taken_away(self) -> None:
+        """Absent is a real answer: a warning that does not apply is worse than none."""
+        await academy.store_many([deep_frying()])
+        await academy.amend(
+            "deep-fry",
+            ENGLISH,
+            Wording(
+                name="deep-fry",
+                spellings=["deep fried"],
+                summary="Cook submerged in hot fat.",
+                explanation="The fat has to be hot enough that the surface seals at once.",
+                caution=None,
+            ),
+        )
+        found = await academy.detail("deep-fry", ENGLISH)
+        assert found is not None
+        assert found.caution is None
+
+    async def test_a_name_can_stop_being_matchable(self) -> None:
+        await academy.store_many([folding()])
+        await academy.amend(
+            "fold",
+            ENGLISH,
+            Wording(
+                name="fold",
+                spellings=["fold in"],
+                summary="Combine without knocking out the air.",
+                explanation="Cut down through the middle and turn the mixture over itself.",
+                name_matches=False,
+            ),
+        )
+        entries, _ = await academy.vocabulary(ENGLISH)
+        assert "fold" not in entries[0].names
+        assert "fold in" in entries[0].names
+
+    async def test_correcting_does_not_approve_it(self) -> None:
+        """Two statements, the same argument ADR-051 made for the registry: fixing a
+        sentence is not saying somebody has read the page."""
+        await academy.store_many([folding()], origin=Origin.USER)
+        await academy.amend(
+            "fold",
+            ENGLISH,
+            Wording(
+                name="fold",
+                spellings=[],
+                summary="Changed.",
+                explanation="Changed as well, at some length so the check passes.",
+            ),
+        )
+        found = await academy.detail("fold", ENGLISH)
+        assert found is not None
+        assert found.approved is False
+
+    async def test_correcting_does_not_claim_a_person_wrote_it(self) -> None:
+        """`generated` records who wrote it first, and correcting a sentence does not undo
+        that. Approving is what stops the page reading as unchecked."""
+        await academy.store_many([folding()], origin=Origin.USER)
+        await academy.approve("fold")
+        found = await academy.detail("fold", ENGLISH)
+        assert found is not None
+        assert found.approved is True
+        assert found.generated is False
+
+    async def test_correcting_something_that_is_not_there_is_refused(self) -> None:
+        with pytest.raises(PageNotWritten):
+            await academy.amend(
+                "no-such-thing",
+                ENGLISH,
+                Wording(
+                    name="x",
+                    spellings=[],
+                    summary="A summary long enough.",
+                    explanation="An explanation long enough to pass.",
+                ),
+            )
+
+    async def test_approving_something_that_is_not_there_is_refused(self) -> None:
+        with pytest.raises(PageNotWritten):
+            await academy.approve("no-such-thing")

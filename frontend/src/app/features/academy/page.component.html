@@ -56,6 +56,102 @@
         </p>
       }
 
+      @if (saveFailed()) {
+        <p class="notice notice--danger" role="alert" i18n="@@academySaveFailed">
+          Could not save that. Nothing was changed — what you typed is still here.
+        </p>
+      }
+
+      <!-- Approving says somebody here has read it, not that they wrote it (ADR-056). -->
+      @if (isAdmin() && !shown.approved) {
+        <button
+          type="button"
+          class="action action--quiet"
+          (click)="approve()"
+          i18n="@@academyApprove"
+        >
+          Approve
+        </button>
+      }
+
+      @if (isAdmin() && !correcting()) {
+        <button
+          type="button"
+          class="action action--quiet"
+          (click)="correct()"
+          i18n="@@academyCorrect"
+        >
+          Correct this page
+        </button>
+      }
+
+      @if (correcting()) {
+        <form [formGroup]="wording" (ngSubmit)="save()" class="academy__form">
+          <div class="field">
+            <label for="locale" i18n="@@academyLanguage">Language</label>
+            <select id="locale" formControlName="locale">
+              @for (one of locales; track one.id) {
+                <option [value]="one.id">{{ one.label }}</option>
+              }
+            </select>
+            <p class="field__hint" i18n="@@academyLanguageHint">
+              A language this page does not speak yet is added. The others are left alone.
+            </p>
+          </div>
+
+          <div class="field">
+            <label for="name" i18n="@@academyName">What it is called</label>
+            <input id="name" type="text" formControlName="name" />
+          </div>
+
+          <div class="field">
+            <label for="spellings" i18n="@@academySpellings">The ways a step writes it</label>
+            <textarea id="spellings" rows="4" formControlName="spellings"></textarea>
+            <p class="field__hint" i18n="@@academySpellingsHint">
+              One per line. These are what a recipe step is matched against, so a word that means
+              something else in a recipe does not belong here.
+            </p>
+          </div>
+
+          <div class="field">
+            <label for="summary" i18n="@@academySummary">In one line</label>
+            <input id="summary" type="text" formControlName="summary" />
+          </div>
+
+          <div class="field">
+            <label for="explanation" i18n="@@academyExplanation">The explanation</label>
+            <textarea id="explanation" rows="5" formControlName="explanation"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="caution" i18n="@@academyCautionField">Where getting it wrong matters</label>
+            <textarea id="caution" rows="3" formControlName="caution"></textarea>
+            <p class="field__hint" i18n="@@academyCautionHint">
+              Leave empty unless it does. A warning on every page is a warning on none.
+            </p>
+          </div>
+
+          <label class="academy__matches">
+            <input type="checkbox" formControlName="name_matches" />
+            <ng-container i18n="@@academyNameMatches">
+              The name on its own reliably means this page
+            </ng-container>
+          </label>
+
+          <div class="academy__actions">
+            <button type="submit" class="action" i18n="@@academySave">Save the page</button>
+            <button
+              type="button"
+              class="action action--quiet"
+              (click)="correcting.set(false)"
+              i18n="@@academyCancel"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      }
+
       @if (shown.spellings.length > 0) {
         <p class="academy__spellings">
           <span i18n="@@academyAlsoWritten">Also written</span>
