@@ -2184,3 +2184,57 @@ document.
 cook will still create entries, and Phase 7 owes them a screen to see and correct what they and the
 importer have made.
 
+## ADR-051 Whether an entry has been reviewed is a different column from whether it has been classified
+
+**Status:** Accepted
+
+**Context.** Importing a recipe creates registry entries. It has to: a line that resolves to nothing
+cannot be shopped for, scaled or judged, so `RecipeManager` invents one
+([ADR-029](#adr-029-an-ingredient-the-registry-does-not-know-is-recorded-and-reported)). What it
+invents is a guess — `kind` assumed `SOLID`, no density, and allergens deliberately left
+*unclassified* because nobody has looked
+([ADR-006](#adr-006-allergen-determination-is-structural)).
+
+Phase 7 made the registry browsable, and the obvious next question was how an administrator finds the
+entries that need a second look. Two candidates already existed on the row, and neither answers it.
+
+**Rejected: read it off `allergens_classified`.** It looks like the same question and is not. Against
+the registry this instance actually ships, **486 of 893 seeded entries are unclassified** — the Swiss
+table ([ADR-050](#adr-050-the-shipped-registry-is-derived-from-a-published-table-and-says-when-it-does-not-know))
+simply could not answer for them. Those rows are exactly as a published source left them and need no
+review at all. Filtering on that flag buries the handful an import invented under four hundred that
+are fine, which is the same as having no filter.
+
+**Rejected: read it off `origin`.** Closer — everything an import invents is `Origin.USER` — but it
+stops working the moment it is used. An approved entry stays the cook's own for ever, because an
+upgrade must never replace it ([ADR-016](#adr-016-ship-seed-content-marked-and-upgradable)). So
+provenance cannot distinguish *reviewed* from *not yet*, and an admin who cleared the queue would
+find it still full.
+
+**Decision.** A separate `approved` boolean on the registry entry. A seeded row arrives approved;
+anything else arrives unapproved and is **usable immediately**. Approving records the review and
+nothing else: it does not classify allergens, and it does not change the origin.
+
+**Rationale.** The two flags answer different questions about different subjects.
+`allergens_classified` is a fact about **the ingredient**: has anybody established what is inside it.
+`approved` is a fact about **the entry**: has anybody looked at what this row claims to be. An
+administrator can perfectly well approve "crème fraîche is a solid with no density recorded" as a
+faithful description of what is known, without having said one word about whether it contains milk.
+Folding those into one flag would let a review be read as a classification, and a classification is
+the thing ADR-006 says must never be inferred.
+
+**Unapproved does not mean unusable.** Refusing to complete an import until an administrator wakes up
+would make the feature useless, and the guesses are already conservative in the direction that
+matters: an unclassified allergen never claims a recipe is safe. The flag exists to get somebody's
+attention, not to withhold anything.
+
+**The migration backfills from provenance**, which is the only evidence it has: `SEED` becomes
+approved, everything else does not. The column default is `false` for the same reason ADR-049's is
+`APPLIED` — if a code path forgets to state approval, the failure is a queue with too much in it,
+which is visible and tedious. The opposite default marks an entry as looked at when nobody looked.
+
+**What this does not settle.** Correcting an entry, and merging two that are the same food under
+different names, are the operations that make review worth doing; they follow. Merging is the one
+that matters, because an import that created `plain flour` beside a registry that already had
+`wheat flour` has split one ingredient in two, and every allergen and nutrition fact now answers for
+half a kitchen.

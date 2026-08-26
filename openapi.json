@@ -791,6 +791,24 @@
             "description": "Narrow to seeded entries, or to what imports invented."
           },
           {
+            "name": "approved",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Narrow to what has been reviewed, or to what awaits it.",
+              "title": "Approved"
+            },
+            "description": "Narrow to what has been reviewed, or to what awaits it."
+          },
+          {
             "name": "offset",
             "in": "query",
             "required": false,
@@ -821,6 +839,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RegistryPageView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/registry/{slug}/approved": {
+      "post": {
+        "tags": [
+          "ingredients"
+        ],
+        "summary": "Approve Ingredient",
+        "description": "Record that this entry has been reviewed.\n\nAn administrator's job, not a cook's: reading the registry is reference material, but\nsigning an entry off is a statement about the instance. Idempotent \u2014 the question is\nwhether anybody has looked, not how many times.",
+        "operationId": "approveIngredient",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryEntryView"
                 }
               }
             }
@@ -4190,6 +4251,10 @@
           "classified": {
             "type": "boolean",
             "title": "Classified"
+          },
+          "approved": {
+            "type": "boolean",
+            "title": "Approved"
           }
         },
         "type": "object",
@@ -4202,7 +4267,8 @@
           "piece_grams",
           "origin",
           "allergens",
-          "classified"
+          "classified",
+          "approved"
         ],
         "title": "RegistryEntryView",
         "description": "A registry entry as the registry screen reads it.\n\nWider than `IngredientView`, which exists to point a recipe line at something and so\ncarries only enough to recognise one. This carries what is needed to *judge* an\nentry: the three fields an import guesses at \u2014 kind, density, origin \u2014 and whether\nanybody has classified its allergens."

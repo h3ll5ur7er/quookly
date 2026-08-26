@@ -123,3 +123,29 @@
     gap: var(--space-4);
   }
 }
+
+/* --- review ----------------------------------------------------------------------------- */
+
+.registry__review {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.registry__approve {
+  min-height: 44px;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.registry__approve:hover {
+  background: var(--surface-sunken);
+}

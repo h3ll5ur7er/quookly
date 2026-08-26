@@ -9,6 +9,7 @@ the request's — would have nowhere to go but into the route.
 from quookly.access import cook as cook_access
 from quookly.access import ingredient as registry
 from quookly.contracts.ingredient import (
+    Ingredient,
     IngredientView,
     Origin,
     RegistryEntryView,
@@ -35,6 +36,7 @@ async def browse(
     *,
     term: str | None = None,
     origin: Origin | None = None,
+    approved: bool | None = None,
     offset: int = 0,
     limit: int = 50,
 ) -> RegistryPageView:
@@ -52,23 +54,39 @@ async def browse(
         await cook_access.locale_for(cook_id),
         term=term,
         origin=origin,
+        approved=approved,
         offset=offset,
         limit=limit,
     )
-    return RegistryPageView(
-        entries=[
-            RegistryEntryView(
-                id=entry.id,
-                slug=entry.slug,
-                name=entry.name,
-                kind=entry.kind,
-                density=entry.density,
-                piece_grams=entry.piece_grams,
-                origin=entry.origin,
-                allergens=sorted(entry.allergens, key=lambda allergen: allergen.value),
-                classified=entry.classified,
-            )
-            for entry in page.entries
-        ],
-        total=page.total,
+    return RegistryPageView(entries=[_viewed(entry) for entry in page.entries], total=page.total)
+
+
+async def approve(slug: str) -> RegistryEntryView:
+    """Record that an administrator has looked at this entry.
+
+    Only that. It does not classify allergens and does not change the origin — an entry an
+    import invented stays the cook's own after being approved, which is precisely why
+    review needed a column of its own rather than being read off provenance (ADR-051).
+    """
+    return _viewed(await registry.approve(slug))
+
+
+def _viewed(entry: Ingredient) -> RegistryEntryView:
+    """One registry entry, as a client reads it.
+
+    Shared so that browsing and approving cannot come to disagree about what an entry
+    looks like — in particular about `classified`, where the two booleans are easy to
+    confuse and the confusion is the one ADR-006 exists to prevent.
+    """
+    return RegistryEntryView(
+        id=entry.id,
+        slug=entry.slug,
+        name=entry.name,
+        kind=entry.kind,
+        density=entry.density,
+        piece_grams=entry.piece_grams,
+        origin=entry.origin,
+        allergens=sorted(entry.allergens, key=lambda allergen: allergen.value),
+        classified=entry.classified,
+        approved=entry.approved,
     )

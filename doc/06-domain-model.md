@@ -173,6 +173,24 @@ means unexamined and an empty list means examined and clear, so a recipe crossin
 does not quietly become safer than it was. The field is additive and optional, so documents written
 before it existed still read — and read as unexamined, which is exactly what they know.
 
+### Reviewed, which is a third thing
+
+A registry entry also records whether anybody has looked at **the entry**. That is not the same
+question as whether anybody has classified **the ingredient**, and the two are separate fields
+([ADR-051](07-decisions.md#adr-051-whether-an-entry-has-been-reviewed-is-a-different-column-from-whether-it-has-been-classified)).
+
+An import creates entries for names the registry does not know, because a line resolving to nothing
+cannot be shopped for, scaled or judged. What it creates is a guess: `SOLID` assumed, no density,
+allergens left unexamined. Such an entry is **usable immediately** — refusing an import until an
+administrator wakes up would make the feature useless — but it is flagged for review, and an
+administrator approves it, corrects it, or merges it away.
+
+Review cannot be read off either of the fields already there. Most of the shipped registry is
+unexamined, because the published table could not answer for those rows, and they need no review at
+all; and an approved entry stays the cook's own for ever, so provenance cannot say whether anybody
+has looked. Approving records the review and nothing else — in particular it never classifies, since
+"this entry is a fair description" is not "I know what is inside this food".
+
 ### How a verdict is reported
 
 One row per reason, most serious first, each naming the eater and the ingredient. A refusal

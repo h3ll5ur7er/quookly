@@ -23,7 +23,7 @@ from quookly.access.database import dispose_engine, get_engine
 from quookly.api import app
 from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.utilities.configuration import get_settings
-from tests.support import sign_up
+from tests.support import PASSWORD, sign_up
 
 REGISTRY = "/api/v1/registry"
 ENGLISH = "en-GB"
@@ -55,6 +55,32 @@ async def client() -> AsyncIterator[AsyncClient]:
 @pytest.fixture
 async def cook(client: AsyncClient) -> dict[str, str]:
     return await sign_up(client, "chef@example.com")
+
+
+@pytest.fixture
+async def admin(client: AsyncClient) -> dict[str, str]:
+    """The first account on a fresh instance, which is the one that administers it."""
+    claimed = await client.post(
+        "/api/v1/accounts/bootstrap",
+        json={"email": "admin@example.com", "display_name": "Admin", "password": PASSWORD},
+    )
+    return {"Authorization": f"Bearer {claimed.json()['token']}"}
+
+
+@pytest.fixture
+async def invented() -> None:
+    """One entry of the kind an import leaves behind, and nothing else.
+
+    Separate from `stocked` because claiming an instance seeds the registry: an admin
+    fixture and a fixture that registers butter cannot both run.
+    """
+    await registry.register(
+        slug="creme-fraiche",
+        kind=IngredientKind.SOLID,
+        density=None,
+        names={ENGLISH: ["crème fraîche"]},
+        origin=Origin.USER,
+    )
 
 
 @pytest.fixture
@@ -190,3 +216,73 @@ class TestLanguage:
         await client.put("/api/v1/setup/locale", json={"locale": GERMAN}, headers=swiss)
         entries = by_slug((await client.get(REGISTRY, headers=swiss)).json())
         assert entries["creme-fraiche"]["name"] == "crème fraîche"
+
+
+class TestReviewing:
+    """Approving an entry — a fact about review, not about what is inside it (ADR-051)."""
+
+    async def test_a_seeded_entry_needs_no_review(
+        self, client: AsyncClient, cook: dict[str, str], stocked: None
+    ) -> None:
+        entries = by_slug((await client.get(REGISTRY, headers=cook)).json())
+        assert entries["unsalted-butter"]["approved"] is True
+
+    async def test_what_an_import_invented_is_flagged(
+        self, client: AsyncClient, cook: dict[str, str], stocked: None
+    ) -> None:
+        entries = by_slug((await client.get(REGISTRY, headers=cook)).json())
+        assert entries["creme-fraiche"]["approved"] is False
+
+    async def test_the_queue_can_be_listed_on_its_own(
+        self, client: AsyncClient, cook: dict[str, str], stocked: None
+    ) -> None:
+        """The useful filter. Narrowing by origin cannot do this job once an entry has
+        been approved: it stays the cook's own for ever (ADR-016)."""
+        body = (await client.get(REGISTRY, params={"approved": False}, headers=cook)).json()
+        assert set(by_slug(body)) == {"creme-fraiche"}
+        assert body["total"] == 1
+
+    async def test_an_admin_can_approve_one(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        response = await client.post(f"{REGISTRY}/creme-fraiche/approved", headers=admin)
+        assert response.status_code == 200
+        assert response.json()["approved"] is True
+
+    async def test_an_approved_entry_leaves_the_queue(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        await client.post(f"{REGISTRY}/creme-fraiche/approved", headers=admin)
+        body = (await client.get(REGISTRY, params={"approved": False}, headers=admin)).json()
+        assert body["entries"] == []
+        assert body["total"] == 0
+
+    async def test_approving_says_nothing_about_allergens(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        """The safety rule. "This entry is fine" is not "I have looked inside it", and
+        crème fraîche is milk (ADR-006)."""
+        approved = (await client.post(f"{REGISTRY}/creme-fraiche/approved", headers=admin)).json()
+        assert approved["classified"] is False
+        assert approved["allergens"] == []
+
+    async def test_approving_twice_is_the_same_as_once(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        await client.post(f"{REGISTRY}/creme-fraiche/approved", headers=admin)
+        again = await client.post(f"{REGISTRY}/creme-fraiche/approved", headers=admin)
+        assert again.status_code == 200
+        assert again.json()["approved"] is True
+
+    async def test_an_ordinary_cook_may_not_approve(
+        self, client: AsyncClient, cook: dict[str, str], stocked: None
+    ) -> None:
+        """Reading the registry is reference material; signing an entry off is not."""
+        response = await client.post(f"{REGISTRY}/creme-fraiche/approved", headers=cook)
+        assert response.status_code == 403
+
+    async def test_approving_something_that_is_not_there_is_a_404(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        response = await client.post(f"{REGISTRY}/no-such-thing/approved", headers=admin)
+        assert response.status_code == 404

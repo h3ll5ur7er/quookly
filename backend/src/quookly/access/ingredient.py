@@ -18,7 +18,7 @@ from quookly.access.models import (
     IngredientRow,
     NutrientProfileRow,
 )
-from quookly.contracts.errors import IngredientAlreadyRegistered
+from quookly.contracts.errors import IngredientAlreadyRegistered, IngredientNotRegistered
 from quookly.contracts.ingredient import (
     Allergen,
     Ingredient,
@@ -54,6 +54,7 @@ def _to_contract(
         origin=row.origin,
         allergens=allergens,
         classified=row.allergens_classified,
+        approved=row.approved,
         piece_grams=row.piece_grams,
     )
 
@@ -78,6 +79,10 @@ async def register(
         density=density,
         origin=origin,
         allergens_classified=allergens is not None,
+        # A seeded row is a published table this instance chose to ship; nobody signs off
+        # nine hundred of those. Anything else was invented on somebody's behalf by an
+        # import, and is usable straight away but unreviewed (ADR-051).
+        approved=origin is Origin.SEED,
     )
     async with session() as active:
         active.add(row)
@@ -223,6 +228,11 @@ async def register_many(entries: Sequence[NewEntry], origin: Origin = Origin.SEE
                 density=entry.density,
                 origin=origin,
                 allergens_classified=entry.allergens is not None,
+                # The same rule as `register`, and it has to be stated in both: the two
+                # paths construct the row separately, and when only one of them knew, a
+                # fresh instance opened with 864 of its 893 seeded entries queued for a
+                # review nobody owed them (ADR-051).
+                approved=origin is Origin.SEED,
             )
             active.add(row)
             rows.append((row, entry))
@@ -443,6 +453,7 @@ async def browse(
     *,
     term: str | None = None,
     origin: Origin | None = None,
+    approved: bool | None = None,
     offset: int = 0,
     limit: int = 50,
 ) -> RegistryPage:
@@ -461,7 +472,9 @@ async def browse(
     `term` matches any spelling, canonical or alias, in the reader's locale or the one the
     registry was seeded in — the same reach as `search`, so a name that resolves an import
     also finds its entry here. `origin` narrows to what was seeded or to what a cook's
-    imports invented, which is the pile worth reviewing (ADR-016, ADR-029).
+    imports invented, which is the pile worth reviewing (ADR-016, ADR-029). `approved`
+    narrows on review rather than on provenance — the more useful of the two, because an
+    entry stays a cook's own after an admin has looked at it (ADR-051).
     """
     local_name = aliased(IngredientNameRow)
     seeded_name = aliased(IngredientNameRow)
@@ -470,6 +483,8 @@ async def browse(
     narrowing: list[ColumnElement[bool]] = []
     if origin is not None:
         narrowing.append(col(IngredientRow.origin) == origin)
+    if approved is not None:
+        narrowing.append(col(IngredientRow.approved).is_(approved))
     wanted = normalise(term) if term else ""
     if wanted:
         # An `exists` rather than a join: an entry with two matching aliases is one entry,
@@ -522,6 +537,31 @@ async def browse(
         ],
         total=total,
     )
+
+
+async def approve(slug: str) -> Ingredient:
+    """Record that somebody has reviewed this entry.
+
+    Only the review. Approving does **not** classify allergens and does not change the
+    origin: an admin saying "this entry is fine" has not said what is inside the
+    ingredient (ADR-006), and the row stays the cook's own so an upgrade will not replace
+    it (ADR-016).
+
+    Idempotent, because the useful question is whether the entry has been looked at, not
+    how many times.
+    """
+    async with session() as active:
+        row = (
+            await active.exec(select(IngredientRow).where(col(IngredientRow.slug) == slug))
+        ).first()
+        if row is None or row.id is None:
+            raise IngredientNotRegistered(slug)
+
+        row.approved = True
+        active.add(row)
+        await active.commit()
+
+        return _to_contract(row, await name_for(active, row.id, SOURCE_LOCALE, slug))
 
 
 async def classify(slug: str, allergens: frozenset[Allergen]) -> None:

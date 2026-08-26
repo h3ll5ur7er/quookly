@@ -28,22 +28,24 @@
       <button
         type="button"
         class="registry__choice"
-        [class.registry__choice--on]="origin() === null"
-        [attr.aria-pressed]="origin() === null"
+        [class.registry__choice--on]="origin() === null && approved() === null"
+        [attr.aria-pressed]="origin() === null && approved() === null"
         (click)="narrowTo(null)"
         i18n="@@registryAll"
       >
         All
       </button>
+      <!-- The queue, and the reason this screen exists. Not the same as narrowing by
+           origin: an approved entry stays the cook's own for ever (ADR-051). -->
       <button
         type="button"
         class="registry__choice"
-        [class.registry__choice--on]="origin() === Origin.seed"
-        [attr.aria-pressed]="origin() === Origin.seed"
-        (click)="narrowTo(Origin.seed)"
-        i18n="@@registryShipped"
+        [class.registry__choice--on]="approved() === false"
+        [attr.aria-pressed]="approved() === false"
+        (click)="showQueue()"
+        i18n="@@registryNeedsReview"
       >
-        Shipped
+        Needs review
       </button>
       <!-- The pile this screen exists for: entries an import invented, which nobody has
            reviewed. -->
@@ -65,6 +67,11 @@
       Could not load the registry. Please try again.
     </p>
   } @else if (entries(); as found) {
+    @if (approvalFailed()) {
+      <p class="notice notice--danger" role="alert" i18n="@@registryApprovalFailed">
+        Could not record that. The entry is unchanged — please try again.
+      </p>
+    }
     @if (found.length === 0) {
       <p class="registry__empty" i18n="@@registryNoMatch">
         Nothing here matches that. Try part of a name.
@@ -100,6 +107,26 @@
                 <span class="registry__origin" i18n="@@registryInvented">Added by an import</span>
               }
             </span>
+
+            <!-- Whether anybody has looked at the *entry*. Deliberately not the same
+                 statement as the allergen chip below, which is about what is inside the
+                 ingredient — more than half the shipped registry is unchecked and needs
+                 no review at all (ADR-051). -->
+            @if (!entry.approved) {
+              <span class="registry__review">
+                <span class="chip chip--unknown" i18n="@@registryNeedsLook">Needs a look</span>
+                @if (isAdmin()) {
+                  <button
+                    type="button"
+                    class="registry__approve"
+                    (click)="approve(entry)"
+                    i18n="@@registryApprove"
+                  >
+                    Approve
+                  </button>
+                }
+              </span>
+            }
 
             <!-- The safety rule, at the last place it can be broken. An empty list means
                  two different things and only one of them is "safe" (ADR-006). -->

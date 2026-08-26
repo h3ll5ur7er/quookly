@@ -75,6 +75,10 @@ class Ingredient:
     # `classified=False` means "nobody has looked", which is a different fact from
     # "contains none" — and treating them alike is how unknown becomes safe (ADR-006).
     classified: bool = False
+    #: Whether anybody has reviewed this entry. Distinct from `classified`, which is about
+    #: what is *in* the ingredient: an entry an import invented is usable straight away but
+    #: nobody has looked at what it claims to be (ADR-051).
+    approved: bool = False
     #: What one of them weighs, for the countable ones. An egg has no grams until somebody
     #: says so, and composition tables publish per 100 g — so without this a recipe's eggs
     #: cannot be counted towards its nutrition. Absent rather than assumed: eggs come in
@@ -129,6 +133,8 @@ class RegistryEntryView(BaseModel):
     #: not "contains none" — a client that reads the list alone reads unknown as safe,
     #: which is the failure ADR-006 exists to prevent.
     classified: bool
+    #: Whether anybody has reviewed the entry itself (ADR-051).
+    approved: bool
 
 
 class RegistryPageView(BaseModel):

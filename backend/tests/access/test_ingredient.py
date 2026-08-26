@@ -14,7 +14,7 @@ from sqlmodel import SQLModel
 
 from quookly.access import ingredient as registry
 from quookly.access.database import dispose_engine, get_engine
-from quookly.contracts.errors import IngredientAlreadyRegistered
+from quookly.contracts.errors import IngredientAlreadyRegistered, IngredientNotRegistered
 from quookly.contracts.ingredient import IngredientKind, Origin
 from quookly.utilities.configuration import get_settings
 
@@ -280,3 +280,152 @@ class TestBrowsing:
         page = await registry.browse(ENGLISH)
         assert page.entries == []
         assert page.total == 0
+
+
+class TestApproval:
+    """Whether anybody has *reviewed* an entry, which is not whether anybody classified it.
+
+    Unclassified allergens are a fact about knowledge: nobody has looked inside this
+    ingredient. Approval is a fact about review: nobody has looked at this *entry*. More
+    than half the shipped registry is unclassified, so the two cannot share a flag —
+    reusing one would bury the handful an import invented under four hundred seeded rows
+    that are exactly as the published table left them.
+    """
+
+    async def a_seeded_and_an_invented_entry(self) -> None:
+        await register_butter()
+        await registry.register(
+            slug="creme-fraiche",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["crème fraîche"]},
+            origin=Origin.USER,
+        )
+
+    async def test_a_seeded_entry_arrives_approved(self) -> None:
+        """Nobody has to sign off nine hundred rows of a published table (ADR-050)."""
+        await self.a_seeded_and_an_invented_entry()
+        found = await registry.resolve("unsalted butter", ENGLISH)
+        assert found is not None
+        assert found.approved is True
+
+    async def test_what_an_import_invented_arrives_unapproved(self) -> None:
+        await self.a_seeded_and_an_invented_entry()
+        found = await registry.resolve("crème fraîche", ENGLISH)
+        assert found is not None
+        assert found.approved is False
+
+    async def test_approving_records_it(self) -> None:
+        await self.a_seeded_and_an_invented_entry()
+        await registry.approve("creme-fraiche")
+        found = await registry.resolve("crème fraîche", ENGLISH)
+        assert found is not None
+        assert found.approved is True
+
+    async def test_approving_twice_is_the_same_as_approving_once(self) -> None:
+        await self.a_seeded_and_an_invented_entry()
+        await registry.approve("creme-fraiche")
+        await registry.approve("creme-fraiche")
+        found = await registry.resolve("crème fraîche", ENGLISH)
+        assert found is not None
+        assert found.approved is True
+
+    async def test_approving_does_not_make_it_a_seeded_row(self) -> None:
+        """It stays the cook's own, or an upgrade would feel free to replace it (ADR-016)."""
+        await self.a_seeded_and_an_invented_entry()
+        await registry.approve("creme-fraiche")
+        found = await registry.resolve("crème fraîche", ENGLISH)
+        assert found is not None
+        assert found.origin is Origin.USER
+
+    async def test_approving_an_entry_does_not_classify_its_allergens(self) -> None:
+        """The safety rule. An admin saying "this entry is fine" has not said what is in
+        it, and crème fraîche is milk (ADR-006)."""
+        await self.a_seeded_and_an_invented_entry()
+        await registry.approve("creme-fraiche")
+        found = await registry.resolve("crème fraîche", ENGLISH)
+        assert found is not None
+        assert found.classified is False
+
+    async def test_approving_something_unregistered_is_refused(self) -> None:
+        with pytest.raises(IngredientNotRegistered):
+            await registry.approve("no-such-ingredient")
+
+    async def test_browsing_can_show_only_what_awaits_review(self) -> None:
+        await self.a_seeded_and_an_invented_entry()
+        page = await registry.browse(ENGLISH, approved=False)
+        assert [entry.slug for entry in page.entries] == ["creme-fraiche"]
+        assert page.total == 1
+
+    async def test_browsing_can_show_only_what_has_been_settled(self) -> None:
+        await self.a_seeded_and_an_invented_entry()
+        page = await registry.browse(ENGLISH, approved=True)
+        assert [entry.slug for entry in page.entries] == ["unsalted-butter"]
+
+    async def test_an_approved_entry_leaves_the_queue(self) -> None:
+        await self.a_seeded_and_an_invented_entry()
+        await registry.approve("creme-fraiche")
+        page = await registry.browse(ENGLISH, approved=False)
+        assert page.entries == []
+        assert page.total == 0
+
+    async def test_review_and_classification_are_different_questions(self) -> None:
+        """A seeded entry the Swiss table could not answer for is approved and unchecked.
+
+        This is the majority case in the shipped registry, and the reason these are two
+        columns rather than one.
+        """
+        await registry.register(
+            slug="wine-white",
+            kind=IngredientKind.LIQUID,
+            density=Decimal("0.99"),
+            names={ENGLISH: ["white wine"]},
+            origin=Origin.SEED,
+            allergens=None,
+        )
+        found = await registry.resolve("white wine", ENGLISH)
+        assert found is not None
+        assert found.approved is True
+        assert found.classified is False
+
+    async def test_bulk_seeding_approves_what_it_seeds(self) -> None:
+        """The path the nine hundred generic foods actually take (ADR-050).
+
+        Regression: `register` set approval from origin and `register_many` did not, so a
+        fresh instance opened with 864 of its 893 seeded entries in the review queue —
+        exactly the "queue full of things that need no review" that ADR-051 exists to
+        avoid. Every path that creates a row has to answer this the same way.
+        """
+        added = await registry.register_many(
+            [
+                registry.NewEntry(
+                    slug="celeriac",
+                    kind=IngredientKind.SOLID,
+                    density=None,
+                    names={ENGLISH: ["celeriac"]},
+                    allergens=None,
+                )
+            ]
+        )
+        assert added == 1
+        found = await registry.resolve("celeriac", ENGLISH)
+        assert found is not None
+        assert found.approved is True
+
+    async def test_bulk_registering_a_cooks_own_entries_does_not_approve_them(self) -> None:
+        added = await registry.register_many(
+            [
+                registry.NewEntry(
+                    slug="creme-de-cassis",
+                    kind=IngredientKind.LIQUID,
+                    density=None,
+                    names={ENGLISH: ["crème de cassis"]},
+                    allergens=None,
+                )
+            ],
+            origin=Origin.USER,
+        )
+        assert added == 1
+        found = await registry.resolve("crème de cassis", ENGLISH)
+        assert found is not None
+        assert found.approved is False

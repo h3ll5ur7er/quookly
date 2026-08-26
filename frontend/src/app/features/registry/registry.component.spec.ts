@@ -1,9 +1,10 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideApi } from '@api';
+import { AuthStore } from '../../core/auth/auth.store';
 import { RegistryComponent } from './registry.component';
 
 /** Somebody chose to add this one, and somebody checked what is in it. */
@@ -17,6 +18,7 @@ const BUTTER = {
   origin: 'seed',
   allergens: ['milk'],
   classified: true,
+  approved: true,
 };
 
 /** Checked, and there is nothing in it. Different from BUTTERMILK below. */
@@ -30,6 +32,7 @@ const WATER = {
   origin: 'seed',
   allergens: [],
   classified: true,
+  approved: true,
 };
 
 /** What an import invented: a guessed kind, no density, and nobody has looked. */
@@ -43,6 +46,7 @@ const CREME = {
   origin: 'user',
   allergens: [],
   classified: false,
+  approved: false,
 };
 
 function page(entries: unknown[], total = entries.length) {
@@ -231,6 +235,131 @@ describe('RegistryComponent', () => {
 
       // The old page is gone, not appended to.
       expect(text()).not.toContain('unsalted butter');
+    });
+  });
+
+  describe('reviewing an entry', () => {
+    it('marks what nobody has looked at', async () => {
+      asked().flush(page([CREME]));
+      await fixture.whenStable();
+      expect(text()).toContain('Needs a look');
+    });
+
+    it('says nothing about entries that have been looked at', async () => {
+      asked().flush(page([BUTTER]));
+      await fixture.whenStable();
+      expect(text()).not.toContain('Needs a look');
+    });
+
+    it('does not confuse review with what is inside the ingredient', async () => {
+      // Wine is seeded, so approved, and the Swiss table could not answer for it, so
+      // unclassified. More than half the shipped registry looks like this — a screen that
+      // conflated the two would flag four hundred rows that need nothing (ADR-051).
+      asked().flush(page([{ ...WATER, classified: false, approved: true }]));
+      await fixture.whenStable();
+      expect(text()).toContain('Not checked');
+      expect(text()).not.toContain('Needs a look');
+    });
+
+    it('asks only for the queue when narrowed to it', async () => {
+      asked().flush(page([BUTTER, CREME]));
+      await fixture.whenStable();
+
+      click('Needs review');
+      await fixture.whenStable();
+
+      const request = asked();
+      expect(request.request.params.get('approved')).toBe('false');
+      request.flush(page([CREME]));
+    });
+
+    it('offers an admin the button, and nobody else', async () => {
+      asked().flush(page([CREME]));
+      await fixture.whenStable();
+      expect(text()).not.toContain('Approve');
+    });
+  });
+
+  describe('when an admin is looking', () => {
+    beforeEach(async () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [RegistryComponent],
+        providers: [
+          provideZonelessChangeDetection(),
+          provideRouter([]),
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideApi(''),
+          { provide: AuthStore, useValue: { isAdmin: signal(true) } },
+        ],
+      });
+      fixture = TestBed.createComponent(RegistryComponent);
+      backend = TestBed.inject(HttpTestingController);
+      await fixture.whenStable();
+    });
+
+    it('offers to approve what needs a look', async () => {
+      asked().flush(page([CREME]));
+      await fixture.whenStable();
+      expect(text()).toContain('Approve');
+    });
+
+    it('does not offer to approve what is already settled', async () => {
+      asked().flush(page([BUTTER]));
+      await fixture.whenStable();
+      expect(text()).not.toContain('Approve');
+    });
+
+    it('records the approval and stops asking', async () => {
+      asked().flush(page([CREME]));
+      await fixture.whenStable();
+
+      click('Approve');
+      await fixture.whenStable();
+
+      backend
+        .expectOne('/api/v1/registry/creme-fraiche/approved')
+        .flush({ ...CREME, approved: true });
+      await fixture.whenStable();
+
+      expect(text()).not.toContain('Needs a look');
+      expect(text()).toContain('crème fraîche');
+    });
+
+    it('keeps the entry when approving fails, rather than pretending', async () => {
+      asked().flush(page([CREME]));
+      await fixture.whenStable();
+
+      click('Approve');
+      await fixture.whenStable();
+
+      backend
+        .expectOne('/api/v1/registry/creme-fraiche/approved')
+        .flush({}, { status: 500, statusText: 'Server Error' });
+      await fixture.whenStable();
+
+      expect(text()).toContain('Needs a look');
+    });
+
+    it('does not clear an approved entry from a queue it is no longer in', async () => {
+      // Narrowed to the queue, approving removes the row: it stopped matching what is on
+      // screen. Leaving it there would show an entry the filter says is not there.
+      asked().flush(page([BUTTER, CREME]));
+      await fixture.whenStable();
+      click('Needs review');
+      await fixture.whenStable();
+      asked().flush(page([CREME], 1));
+      await fixture.whenStable();
+
+      click('Approve');
+      await fixture.whenStable();
+      backend
+        .expectOne('/api/v1/registry/creme-fraiche/approved')
+        .flush({ ...CREME, approved: true });
+      await fixture.whenStable();
+
+      expect(text()).not.toContain('crème fraîche');
     });
   });
 });

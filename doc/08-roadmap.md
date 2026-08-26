@@ -307,10 +307,14 @@ What this phase owes:
   is the operation that matters: an import that created `plain flour` beside a registry that already
   had `wheat flour` has split one ingredient in two, and every allergen and nutrition fact now
   answers for half a kitchen.
-- **A "needs approval" state.** Distinct from *unclassified allergens*, which is a fact about
+- ~~**A "needs approval" state.** Distinct from *unclassified allergens*, which is a fact about
   knowledge; this is a fact about **review**. An entry an import invented is usable immediately —
   refusing to import until an admin wakes up would be absurd — but it is flagged, and an admin can
-  approve it, correct it, or merge it away.
+  approve it, correct it, or merge it away.~~ **Built**
+  ([ADR-051](07-decisions.md#adr-051-whether-an-entry-has-been-reviewed-is-a-different-column-from-whether-it-has-been-classified)).
+  It needed a column of its own rather than being read off either candidate already on the row:
+  486 of the 893 seeded entries are unclassified, so that flag would bury the queue, and an approved
+  entry stays `Origin.USER` for ever, so provenance never empties it. Correcting and merging follow.
 - **Best-effort nutrition matching on creation.** Ask the configured source tree (Swiss, then
   European, then the rest, then American — [ADR-045](07-decisions.md#adr-045-composition-data-is-tried-in-a-configured-order-nearest-table-first)) for a row matching the
   new name, and attach it as a *proposal* rather than as a figure. A matched profile a human has not

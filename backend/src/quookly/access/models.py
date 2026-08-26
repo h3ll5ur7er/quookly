@@ -60,6 +60,10 @@ class IngredientRow(SQLModel, table=True):
     # Whether anybody has classified this ingredient's allergens. Absent rows in
     # `ingredient_allergen` mean "contains none" only when this is true.
     allergens_classified: bool = Field(default=False)
+    # Whether anybody has reviewed this *entry*. Not the same question as the one above:
+    # more than half the shipped registry is unclassified because the published table
+    # could not answer, and those rows need no review at all (ADR-051).
+    approved: bool = Field(default=False, index=True)
     # What one of them weighs, for the countable ones. Composition tables publish per
     # 100 g, so without this a recipe's eggs cannot be counted towards its nutrition.
     # Absent rather than assumed: eggs come in four sizes, and no table Quookly reads
