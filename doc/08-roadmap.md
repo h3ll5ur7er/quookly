@@ -467,8 +467,24 @@ reading, and because it depends on nothing in Phase 9.
 
 - Container image serving API and frontend from one artefact (NFR-2)
 - Compose files: standalone, with Postgres, with Ollama
-- Backup, restore, and upgrade paths (UC-8.1)
+- Backup, restore, and upgrade paths (UC-8.1). **Two things to copy, not one**: pictures live in a
+  directory beside the database rather than inside it
+  ([ADR-057](07-decisions.md#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques)),
+  so a backup that takes only the `.db` file restores an instance whose pages have holes in them
 - Bulk import and export via CLI (UC-8.3)
+
+### The CLI, deliberately later
+
+The `cli/` project has one real command and exists mostly to prove the generated client works.
+Everything recurring or bulk belongs there rather than in the FastAPI process — a scheduler inside
+the application is a scheduler somebody has to operate. What is owed, as it has come up:
+
+- **Collect orphaned pictures.** Nothing deletes media on its own: taking a picture off a page leaves
+  the file, because a reference changing is not evidence that nobody wants the bytes. A command that
+  lists what the database no longer refers to, and removes it when asked, is how that is reconciled.
+- **Run the ingredient duplicate sweep** on a schedule, rather than somebody remembering to press the
+  button ([ADR-053](07-decisions.md#adr-053-the-matcher-ranks-a-person-decides))
+- **Recipe import** and **user approval and management**, which today need either the API or a screen
 - Installation documentation validated on a clean machine
 - `de_CH` and `fr_CH` translations complete (FR-10)
 
