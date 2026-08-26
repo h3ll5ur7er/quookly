@@ -44,6 +44,15 @@ class Wording:
     summary: str
     explanation: str
     caution: str | None = None
+    #: Whether the name on its own reliably means this page.
+    #:
+    #: Usually it does — `blanch` in a recipe is blanching. Sometimes the word has another
+    #: life: German `sieben` is both *to sift* and *the number seven*, so "sieben Minuten"
+    #: would link to sifting; English `rest` is also *the rest of the flour*, and `reduce`
+    #: is also *reduce the heat*. Those pages keep their name and are found by their
+    #: spellings instead. A fact about the language, written down where somebody can see
+    #: and correct it — which is the whole of ADR-055.
+    name_matches: bool = True
 
 
 @dataclass(frozen=True, slots=True)

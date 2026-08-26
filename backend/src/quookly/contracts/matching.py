@@ -67,3 +67,18 @@ class Duplicate:
     other_name: str
     confidence: Decimal
     reason: Resemblance
+
+
+@dataclass(frozen=True, slots=True)
+class Mention:
+    """A known term a step names, and where it sits in the step as written.
+
+    Offsets into the **original** text, not a folded copy of it: folding can change a
+    string's length, and an offset into the folded form would underline the wrong words.
+    Positions rather than content, the same rule `ExecutionEngine` follows for ingredient
+    lines (ADR-040) — an engine handing back indices cannot decide how a link is drawn.
+    """
+
+    slug: str
+    start: int
+    end: int

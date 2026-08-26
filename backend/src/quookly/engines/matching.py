@@ -16,12 +16,19 @@ That is a different question — "is this the same word" — and it has a defini
 This module is for "is this the same thing", which does not.
 """
 
+import re
 from collections import defaultdict
 from collections.abc import Sequence
 from decimal import Decimal
 from difflib import SequenceMatcher
 
-from quookly.contracts.matching import Duplicate, Named, Resemblance, Resembling
+from quookly.contracts.matching import (
+    Duplicate,
+    Mention,
+    Named,
+    Resemblance,
+    Resembling,
+)
 from quookly.utilities.text import fold
 
 #: Below this, a pair is noise. Tuned against the shipped registry of ~900 generic foods
@@ -260,3 +267,78 @@ def _buckets(entries: Sequence[Named]) -> dict[str, set[str]]:
             if folded:
                 buckets[f"prefix:{folded[:_PREFIX]}"].add(entry.slug)
     return buckets
+
+
+#: What separates one word from another when reading a step. Hyphens count: a step writes
+#: `deep-fry` and a page lists `deep fry`, or the other way round, and they are the same
+#: words either way.
+_WORD = re.compile(r"[^\W_]+", re.UNICODE)
+
+#: What ends a thought. A term of several words may not reach across one of these, or
+#: "cook until brown. Butter the tin" names `brown butter`, which nobody wrote.
+_BREAK = re.compile(r"[.!?;:\n]")
+
+
+def _tokens(text: str) -> list[tuple[str, int, int]]:
+    """The words of a text, folded, each with where it sits in the original.
+
+    Tokenising the original rather than folding the whole string is what keeps the offsets
+    honest: folding can change a string's length, so a position in the folded form is not
+    a position in what the cook is reading.
+    """
+    return [(fold(found.group()), found.start(), found.end()) for found in _WORD.finditer(text)]
+
+
+def _joinable(text: str, words: list[tuple[str, int, int]], start: int, end: int) -> bool:
+    """Whether these consecutive words belong to one thought.
+
+    A term of several words may not reach across a full stop. `brown butter` is a real
+    technique and "cook until brown. Butter the tin" names two different things.
+    """
+    return not any(
+        _BREAK.search(text[words[index][2] : words[index + 1][1]])
+        for index in range(start, end - 1)
+    )
+
+
+def mentioned(text: str, entries: Sequence[Named]) -> list[Mention]:
+    """The known terms a step names, in reading order.
+
+    Whole words only, which comparing token by token gives for nothing: `scaffold` is not
+    folding. **Longest first** — a step naming a `bain-marie` is not naming a `bain` — and
+    matches never overlap, because two links over the same words is not something a reader
+    can act on.
+
+    The vocabulary arrives as an argument and no database is read, which is what keeps this
+    a rule engine and its tests a table of steps and expected offsets.
+    """
+    words = _tokens(text)
+    if not words:
+        return []
+
+    # Longest first so a shorter term never claims words a longer one wants. Sorted by slug
+    # within a length so the result is the same on every run.
+    vocabulary: list[tuple[tuple[str, ...], str]] = []
+    for held in entries:
+        for spelling in held.names:
+            spoken = tuple(word for word, _, _ in _tokens(spelling))
+            if spoken:
+                vocabulary.append((spoken, held.slug))
+    vocabulary.sort(key=lambda one: (-len(one[0]), one[1], one[0]))
+
+    found: list[Mention] = []
+    at = 0
+    while at < len(words):
+        for spoken, slug in vocabulary:
+            end = at + len(spoken)
+            if end > len(words):
+                continue
+            if tuple(word for word, _, _ in words[at:end]) == spoken and _joinable(
+                text, words, at, end
+            ):
+                found.append(Mention(slug=slug, start=words[at][1], end=words[end - 1][2]))
+                at = end
+                break
+        else:
+            at += 1
+    return found

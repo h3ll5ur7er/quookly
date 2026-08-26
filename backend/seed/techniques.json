@@ -1008,7 +1008,8 @@
           ],
           "summary": "Chop as finely as the knife will go.",
           "explanation": "For garlic, ginger, shallot and herbs, where the point is to disappear into the dish. Rock the knife through the pile repeatedly rather than trying to cut each piece.",
-          "caution": null
+          "caution": null,
+          "name_matches": false
         },
         "de-CH": {
           "name": "fein hacken",
@@ -1175,7 +1176,8 @@
           ],
           "summary": "Boil a liquid down to concentrate it.",
           "explanation": "Water leaves, everything else stays and gets stronger — including salt, so season at the end rather than the start. A wide pan reduces faster than a tall one.",
-          "caution": null
+          "caution": null,
+          "name_matches": false
         },
         "de-CH": {
           "name": "einkochen",
@@ -1199,7 +1201,8 @@
           ],
           "summary": "Faire bouillir un liquide pour le concentrer.",
           "explanation": "L'eau s'en va, le reste demeure et se renforce — le sel aussi. Assaisonnez donc à la fin, pas au début. Une casserole large réduit plus vite qu'une haute.",
-          "caution": null
+          "caution": null,
+          "name_matches": false
         }
       }
     },
@@ -1292,15 +1295,18 @@
         "en-GB": {
           "name": "rest",
           "spellings": [
-            "rest the meat",
+            "leave it to rest",
             "leave to rest",
             "left to rest",
-            "resting",
-            "rested for"
+            "let it rest",
+            "rest the meat",
+            "rested for",
+            "resting"
           ],
           "summary": "Leave something to settle after cooking or mixing.",
           "explanation": "Roast meat carved straight away loses its juice onto the board; a few minutes lets it redistribute. Pastry rested in the fridge relaxes and shrinks less in the oven.",
-          "caution": null
+          "caution": null,
+          "name_matches": false
         },
         "de-CH": {
           "name": "ruhen lassen",
@@ -1554,7 +1560,8 @@
           ],
           "summary": "Eine trockene Zutat durch ein Sieb geben.",
           "explanation": "Zerteilt Klumpen und lässt Mehl locker statt gepresst fallen. Am wichtigsten bei Kakao, Puderzucker und Backtriebmitteln, die verklumpen und sonst in Nestern liegen bleiben.",
-          "caution": null
+          "caution": null,
+          "name_matches": false
         },
         "fr-CH": {
           "name": "tamiser",

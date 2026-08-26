@@ -287,6 +287,7 @@ async def stock_academy() -> int:
                         summary=written["summary"],
                         explanation=written["explanation"],
                         caution=written["caution"],
+                        name_matches=written.get("name_matches", True),
                     )
                     for locale, written in page["locales"].items()
                 },

@@ -195,3 +195,104 @@ class TestFindingDuplicates:
 
     def test_an_empty_registry_has_no_duplicates(self) -> None:
         assert matching.duplicates([]) == []
+
+
+def spotted(text: str, *entries: Named) -> list[tuple[str, str]]:
+    """What was found, as (slug, the words as they appear) — offsets checked separately."""
+    return [(one.slug, text[one.start : one.end]) for one in matching.mentioned(text, entries)]
+
+
+class TestSpottingTermsInAStep:
+    """Which known terms a step names, and where (ADR-055).
+
+    Compared **token by token against the original text**, not by folding the whole string
+    and searching it. Folding can change a string's length — a decomposed `e` plus a
+    combining grave is two characters and folds to one — so an offset into the folded text
+    is not an offset into what the cook is reading, and the underline would drift.
+    """
+
+    def test_a_term_is_found(self) -> None:
+        assert spotted("Fold in the whites.", entry("fold", "fold in")) == [("fold", "Fold in")]
+
+    def test_case_does_not_matter(self) -> None:
+        assert spotted("FOLD IN the whites.", entry("fold", "fold in")) == [("fold", "FOLD IN")]
+
+    def test_accents_do_not_matter(self) -> None:
+        assert spotted("Sauté the onion.", entry("saute", "saute")) == [("saute", "Sauté")]
+
+    def test_the_offsets_point_into_the_text_as_written(self) -> None:
+        """The whole reason for tokenising the original rather than the folded form."""
+        text = "Then sauté the onion."
+        found = matching.mentioned(text, [entry("saute", "sauté")])
+        assert len(found) == 1
+        assert text[found[0].start : found[0].end] == "sauté"
+
+    def test_a_term_that_is_not_named_is_not_found(self) -> None:
+        assert spotted("Boil the water.", entry("fold", "fold in")) == []
+
+    def test_a_word_that_merely_contains_the_term_is_not_a_match(self) -> None:
+        """`scaffold` is not folding and `folder` is not either. Whole words only, which
+        comparing token by token gives for nothing."""
+        assert spotted("Build the scaffold.", entry("fold", "fold")) == []
+
+    def test_a_hyphen_reads_as_a_space(self) -> None:
+        """A step writes `deep-fry` and the page lists `deep fry`, or the other way round."""
+        assert spotted("Deep-fry the fish.", entry("deep-fry", "deep fry")) == [
+            ("deep-fry", "Deep-fry")
+        ]
+
+    def test_punctuation_between_sentences_does_not_join_words(self) -> None:
+        assert spotted("Let it rest. Fry the fish.", entry("x", "rest fry")) == []
+
+
+class TestChoosingBetweenMatches:
+    def test_the_longer_term_wins(self) -> None:
+        """`bain-marie` is not a `bain`, and a step naming one names the longer thing."""
+        found = spotted(
+            "Melt it in a bain-marie.",
+            entry("bain-marie", "bain marie"),
+            entry("bain", "bain"),
+        )
+        assert found == [("bain-marie", "bain-marie")]
+
+    def test_matches_do_not_overlap(self) -> None:
+        found = matching.mentioned(
+            "Fold in the whites.", [entry("fold", "fold in"), entry("in", "in")]
+        )
+        assert [one.slug for one in found] == ["fold"]
+
+    def test_two_separate_terms_are_both_found(self) -> None:
+        found = spotted(
+            "Blanch the beans, then sauté them.",
+            entry("blanch", "blanch"),
+            entry("saute", "sauté"),
+        )
+        assert found == [("blanch", "Blanch"), ("saute", "sauté")]
+
+    def test_they_come_back_in_reading_order(self) -> None:
+        """A client underlines them in place; out of order it would have to sort."""
+        found = matching.mentioned(
+            "Sauté, then blanch, then sauté again.",
+            [entry("blanch", "blanch"), entry("saute", "sauté")],
+        )
+        assert [one.start for one in found] == sorted(one.start for one in found)
+
+    def test_the_same_term_twice_is_found_twice(self) -> None:
+        found = spotted("Blanch the beans, then blanch the peas.", entry("blanch", "blanch"))
+        assert found == [("blanch", "Blanch"), ("blanch", "blanch")]
+
+    def test_one_page_answering_to_two_spellings_is_found_once(self) -> None:
+        assert spotted("Fold in the whites.", entry("fold", "fold", "fold in")) == [
+            ("fold", "Fold in")
+        ]
+
+
+class TestNothingToSpot:
+    def test_an_empty_step_finds_nothing(self) -> None:
+        assert matching.mentioned("", [entry("fold", "fold")]) == []
+
+    def test_an_empty_vocabulary_finds_nothing(self) -> None:
+        assert matching.mentioned("Fold in the whites.", []) == []
+
+    def test_a_page_with_no_spellings_at_all_is_skipped(self) -> None:
+        assert matching.mentioned("Fold in the whites.", [Named(slug="x", names=())]) == []

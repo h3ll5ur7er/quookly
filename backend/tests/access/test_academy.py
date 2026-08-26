@@ -235,3 +235,62 @@ class TestSharedTerms:
         found = await academy.detail("fold", ENGLISH)
         assert found is not None
         assert found.also == []
+
+
+class TestWhatMayBeSpottedInAStep:
+    """A name that is also an ordinary word stays the name and stops being a term.
+
+    Found by measuring rather than by reasoning: run over real steps, `sieben` matched
+    "sieben Minuten" — German for *seven minutes* — and English `rest` matched "the rest of
+    the flour". The page keeps its name; it is found by its spellings instead (ADR-055).
+    """
+
+    async def sifting(self, matches: bool) -> None:
+        await academy.store_many(
+            [
+                NewPage(
+                    slug="sift",
+                    kind=PageKind.TECHNIQUE,
+                    wordings={
+                        GERMAN: Wording(
+                            name="sieben",
+                            spellings=["gesiebt", "durchsieben"],
+                            summary="Eine trockene Zutat durch ein Sieb geben.",
+                            explanation="Zerteilt Klumpen und lässt Mehl locker fallen.",
+                            name_matches=matches,
+                        )
+                    },
+                )
+            ]
+        )
+
+    async def test_a_matchable_name_is_offered_for_spotting(self) -> None:
+        await self.sifting(matches=True)
+        offered = await academy.terms_for_spotting(GERMAN)
+        assert "sieben" in offered[0].names
+
+    async def test_a_name_with_another_life_is_not(self) -> None:
+        await self.sifting(matches=False)
+        offered = await academy.terms_for_spotting(GERMAN)
+        assert "sieben" not in offered[0].names
+
+    async def test_its_spellings_are_still_offered(self) -> None:
+        """The page is still findable — by the words that only mean it."""
+        await self.sifting(matches=False)
+        offered = await academy.terms_for_spotting(GERMAN)
+        assert set(offered[0].names) == {"gesiebt", "durchsieben"}
+
+    async def test_it_is_still_the_page_name(self) -> None:
+        await self.sifting(matches=False)
+        found = await academy.detail("sift", GERMAN)
+        assert found is not None
+        assert found.name == "sieben"
+
+    async def test_a_term_still_finds_the_page_when_asked_directly(self) -> None:
+        """Not matchable in a step is not the same as not a term: a cook who types it
+        should still arrive."""
+        await self.sifting(matches=False)
+        assert [one.slug for one in await academy.claimants_of("sieben", GERMAN)] == ["sift"]
+
+    async def test_nothing_offers_a_page_that_has_none(self) -> None:
+        assert await academy.terms_for_spotting(ENGLISH) == []

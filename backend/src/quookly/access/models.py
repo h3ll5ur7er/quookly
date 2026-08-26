@@ -548,3 +548,7 @@ class AcademyTermRow(SQLModel, table=True):
     spelling: str
     normalised: str = Field(index=True)
     is_canonical: bool = Field(default=False)
+    # Whether this term may be spotted in a recipe step. Almost always yes; a canonical
+    # name that is also an ordinary word is the exception — German `sieben` is *to sift*
+    # and *seven*, and "sieben Minuten" is not about a sieve.
+    matchable: bool = Field(default=True, index=True)

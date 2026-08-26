@@ -18,6 +18,7 @@ from quookly.access.database import session
 from quookly.access.models import AcademyPageRow, AcademyTermRow, AcademyTextRow
 from quookly.contracts.academy import Claimant, NewPage, Page, PageKind, Wording
 from quookly.contracts.ingredient import Origin
+from quookly.contracts.matching import Named
 from quookly.utilities.text import fold, normalise
 
 #: The language pages are seeded in, and the fallback for one written in no other. The
@@ -100,6 +101,9 @@ def _write_wordings(active: AsyncSession, page_id: int, wordings: dict[str, Word
                     # The first is what this language calls the thing; the rest are
                     # spellings a step might use.
                     is_canonical=position == 0,
+                    # A name that is also an ordinary word stays the name and stops being
+                    # something a step is matched against (ADR-055).
+                    matchable=position > 0 or wording.name_matches,
                 )
             )
 
@@ -224,3 +228,31 @@ async def detail(slug: str, locale: str) -> Page | None:
         approved=row.approved,
         also=[one for one in await claimants_of(text.name, locale) if one.slug != slug],
     )
+
+
+async def terms_for_spotting(locale: str) -> list[Named]:
+    """Every page and the terms it may be found by, for `MatchingEngine.mentioned`.
+
+    Reference data for a rule engine, so it comes out as a plain list: the engine reads no
+    database and the vocabulary arrives as an argument.
+
+    Terms marked unmatchable are left out. They are still the page's name and still what a
+    reader sees — they simply have another life as ordinary words, and "sieben Minuten" is
+    not about a sieve.
+    """
+    async with session() as active:
+        rows = (
+            await active.exec(
+                select(AcademyPageRow, AcademyTermRow)
+                .join(AcademyTermRow, onclause=col(AcademyTermRow.page_id) == AcademyPageRow.id)
+                .where(
+                    col(AcademyTermRow.locale).in_([locale, SOURCE_LOCALE]),
+                    col(AcademyTermRow.matchable).is_(True),
+                )
+            )
+        ).all()
+
+    gathered: dict[str, list[str]] = {}
+    for page, term in rows:
+        gathered.setdefault(page.slug, []).append(term.spelling)
+    return [Named(slug=slug, names=tuple(terms)) for slug, terms in sorted(gathered.items())]

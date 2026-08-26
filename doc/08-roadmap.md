@@ -309,8 +309,14 @@ languages, with the spellings a step is actually written with.
    start-up, and a second boot adds no second copy. The kind is stamped from the seed file's
    `section` rather than repeated on every page. *An Academy nobody can add to is still an Academy* —
    there is no writing, no matching and no model here. The screens follow.
-2. **Spotting terms in a step** — `MatchingEngine.mentioned`, pure, tested as a table of steps and
-   expected offsets. Nothing rendered yet.
+2. ~~**Spotting terms in a step**~~ **Built** — `MatchingEngine.mentioned`, pure, a table of steps
+   and expected offsets. Compared token by token against the *original* text, because folding can
+   change a string's length and an offset into the folded form underlines the wrong words. Longest
+   first, no overlaps, and no term reaching across a full stop. Nothing rendered yet.
+
+   Measuring it against the shipped corpus added a field: a canonical name that is also an ordinary
+   word keeps being the name and stops being something a step is matched against. German `sieben` is
+   *to sift* and *the number seven*.
 3. **Terms marked on the recipe page (UC-2.5)**, then **in cooking mode (UC-9.5)**, where the
    constraint is that looking a word up must not cost the cook their place. A term with several
    claimants offers a chooser; a page whose term is shared carries a hatnote naming the others.
