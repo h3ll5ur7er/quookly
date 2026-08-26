@@ -1,0 +1,2022 @@
+{
+  "quookly": 1,
+  "note": "Hand-written seed techniques for the Academy. Written, not derived: there is no openly available table of cooking techniques the way there is one of foods (ADR-056). Edit this file directly -- unlike generic-foods.json there is no builder to re-run. 'spellings' is the load-bearing field: it is what a recipe step's own words are matched against (ADR-055), so a bare word that means something else in a recipe does not belong there.",
+  "written": "2026-08-26",
+  "techniques": [
+    {
+      "slug": "al-dente",
+      "locales": {
+        "en-GB": {
+          "name": "al dente",
+          "spellings": [
+            "aldente"
+          ],
+          "summary": "Cooked through but still firm to the bite.",
+          "explanation": "Said of pasta and of vegetables. Break a strand: a thin pale line at the centre means it is nearly there. Pasta carries on cooking in a hot sauce, so pull it a shade early.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "al dente",
+          "spellings": [
+            "bissfest",
+            "bissfeste"
+          ],
+          "summary": "Durchgegart, aber noch bissfest.",
+          "explanation": "Gilt für Teigwaren und Gemüse. Eine Nudel durchbrechen: ein dünner heller Kern bedeutet, sie ist fast so weit. In heisser Sauce gart sie weiter, darum eine Spur früher abgiessen.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "al dente",
+          "spellings": [
+            "ferme sous la dent"
+          ],
+          "summary": "Cuit à cœur mais encore ferme sous la dent.",
+          "explanation": "Se dit des pâtes et des légumes. Cassez une pâte : un mince trait clair au centre indique qu'on y est presque. Les pâtes continuent de cuire dans une sauce chaude, retirez-les un rien plus tôt.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "bain-marie",
+      "locales": {
+        "en-GB": {
+          "name": "bain-marie",
+          "spellings": [
+            "bain marie",
+            "water bath",
+            "double boiler"
+          ],
+          "summary": "Heat a bowl over or in hot water, never over direct flame.",
+          "explanation": "Water cannot exceed its boiling point, so it holds the heat gentle and even. Used for melting chocolate, custards and hollandaise — anything that would split or scorch on a burner.",
+          "caution": "The bowl must not touch the water and the water must not boil hard, or the contents cook too fast. Steam escaping at the rim burns."
+        },
+        "de-CH": {
+          "name": "Wasserbad",
+          "spellings": [
+            "im Wasserbad",
+            "über dem Wasserbad",
+            "Bain-Marie"
+          ],
+          "summary": "Eine Schüssel über oder in heissem Wasser erwärmen, nie über direkter Flamme.",
+          "explanation": "Wasser kann seinen Siedepunkt nicht überschreiten und hält die Hitze darum mild und gleichmässig. Für geschmolzene Schokolade, Cremes und Sauce hollandaise – alles, was auf der Platte gerinnen oder anbrennen würde.",
+          "caution": "Die Schüssel darf das Wasser nicht berühren und das Wasser nicht stark kochen, sonst gart der Inhalt zu schnell. Der am Rand austretende Dampf verbrüht."
+        },
+        "fr-CH": {
+          "name": "bain-marie",
+          "spellings": [
+            "au bain-marie",
+            "bain marie"
+          ],
+          "summary": "Chauffer un récipient sur ou dans de l'eau chaude, jamais sur la flamme.",
+          "explanation": "L'eau ne dépasse pas son point d'ébullition : la chaleur reste douce et régulière. Pour le chocolat fondu, les crèmes et la hollandaise — tout ce qui trancherait ou brûlerait sur le feu.",
+          "caution": "Le récipient ne doit pas toucher l'eau, et l'eau ne doit pas bouillir fort, sinon le contenu cuit trop vite. La vapeur qui s'échappe sur les bords brûle."
+        }
+      }
+    },
+    {
+      "slug": "bake-blind",
+      "locales": {
+        "en-GB": {
+          "name": "bake blind",
+          "spellings": [
+            "baked blind",
+            "blind bake",
+            "blind-baked",
+            "baking blind"
+          ],
+          "summary": "Bake a pastry case before its filling goes in.",
+          "explanation": "Line the raw pastry with paper and fill it with beans or rice so it keeps its shape, bake until set, then remove them and bake on until dry. It is what stops a wet filling soaking the base.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "blindbacken",
+          "spellings": [
+            "blind backen",
+            "blindgebacken",
+            "vorbacken",
+            "vorgebacken"
+          ],
+          "summary": "Einen Teigboden vor der Füllung backen.",
+          "explanation": "Den rohen Teig mit Papier auslegen und mit Hülsenfrüchten oder Reis beschweren, damit er die Form hält, backen bis er fest ist, dann beides entfernen und trocken fertig backen. Das verhindert, dass eine feuchte Füllung den Boden durchweicht.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "cuire à blanc",
+          "spellings": [
+            "cuit à blanc",
+            "cuisson à blanc",
+            "précuire la pâte"
+          ],
+          "summary": "Cuire un fond de pâte avant d'y mettre la garniture.",
+          "explanation": "Chemisez la pâte crue de papier et lestez de légumes secs ou de riz pour qu'elle garde sa forme, cuisez jusqu'à ce qu'elle tienne, retirez le lest et poursuivez à sec. C'est ce qui empêche une garniture humide de détremper le fond.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "blanch",
+      "locales": {
+        "en-GB": {
+          "name": "blanch",
+          "spellings": [
+            "blanched",
+            "blanching",
+            "blanches"
+          ],
+          "summary": "Boil briefly, then stop the cooking in cold water.",
+          "explanation": "Seconds to a couple of minutes, then straight into iced water. It sets green vegetables' colour, loosens skins on tomatoes and almonds, and takes the raw edge off without cooking through.",
+          "caution": "Blanching is not cooking. It does not make raw meat, poultry or pulses safe to eat."
+        },
+        "de-CH": {
+          "name": "blanchieren",
+          "spellings": [
+            "blanchiert",
+            "blanchierte",
+            "kurz blanchieren"
+          ],
+          "summary": "Kurz aufkochen und danach in kaltem Wasser abschrecken.",
+          "explanation": "Sekunden bis wenige Minuten, dann sofort ins Eiswasser. Das fixiert die Farbe von grünem Gemüse, löst die Haut von Tomaten und Mandeln und nimmt den rohen Ton, ohne durchzugaren.",
+          "caution": "Blanchieren ist kein Garen. Rohes Fleisch, Geflügel oder Hülsenfrüchte werden dadurch nicht geniessbar."
+        },
+        "fr-CH": {
+          "name": "blanchir",
+          "spellings": [
+            "blanchi",
+            "blanchie",
+            "blanchissez"
+          ],
+          "summary": "Ébouillanter brièvement, puis arrêter la cuisson à l'eau froide.",
+          "explanation": "De quelques secondes à deux minutes, puis aussitôt dans l'eau glacée. Cela fixe la couleur des légumes verts, décolle la peau des tomates et des amandes, et ôte le goût cru sans cuire à cœur.",
+          "caution": "Blanchir n'est pas cuire. Cela ne rend pas propres à la consommation une viande, une volaille ou des légumineuses crues."
+        }
+      }
+    },
+    {
+      "slug": "braise",
+      "locales": {
+        "en-GB": {
+          "name": "braise",
+          "spellings": [
+            "braised",
+            "braising",
+            "braises"
+          ],
+          "summary": "Brown first, then cook slowly in a little liquid, covered.",
+          "explanation": "The liquid comes partway up, not over. Long and low turns tough, collagen-rich cuts tender — shoulder, shin, cheek — and the cooking liquid becomes the sauce.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "schmoren",
+          "spellings": [
+            "geschmort",
+            "schmorte",
+            "schmoren lassen"
+          ],
+          "summary": "Zuerst anbraten, dann zugedeckt langsam in wenig Flüssigkeit garen.",
+          "explanation": "Die Flüssigkeit reicht bis zur halben Höhe, nicht darüber. Lange und mild macht zähe, kollagenreiche Stücke zart – Schulter, Wade, Backe – und der Sud wird zur Sauce.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "braiser",
+          "spellings": [
+            "braisé",
+            "braisée",
+            "braisez"
+          ],
+          "summary": "Colorer d'abord, puis cuire lentement à couvert dans peu de liquide.",
+          "explanation": "Le liquide monte à mi-hauteur, pas davantage. Long et doux, cela attendrit les morceaux durs et riches en collagène — épaule, jarret, joue — et le jus devient la sauce.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "brown-butter",
+      "locales": {
+        "en-GB": {
+          "name": "brown butter",
+          "spellings": [
+            "browned butter",
+            "beurre noisette",
+            "browning the butter",
+            "nut-brown butter"
+          ],
+          "summary": "Cook butter until its milk solids toast and it smells of hazelnuts.",
+          "explanation": "It foams, quietens, then the specks at the bottom go golden and the smell turns nutty. Take it off then and pour it out — the pan alone will carry it to burnt.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "braune Butter",
+          "spellings": [
+            "Nussbutter",
+            "gebräunte Butter",
+            "Butter bräunen",
+            "beurre noisette"
+          ],
+          "summary": "Butter garen, bis die Milchbestandteile rösten und sie nach Haselnuss duftet.",
+          "explanation": "Sie schäumt, wird still, dann werden die Flöckchen am Boden goldbraun und der Duft nussig. Dann von der Hitze nehmen und ausgiessen – die Pfanne allein bringt sie bis verbrannt.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "beurre noisette",
+          "spellings": [
+            "faire noisette",
+            "beurre bruni"
+          ],
+          "summary": "Cuire le beurre jusqu'à ce que ses solides grillent et sentent la noisette.",
+          "explanation": "Il mousse, se calme, puis les points au fond blondissent et l'odeur devient de noisette. Retirez-le alors et versez-le : la poêle seule le mènerait au brûlé.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "brunoise",
+      "locales": {
+        "en-GB": {
+          "name": "brunoise",
+          "spellings": [
+            "brunoised",
+            "in brunoise"
+          ],
+          "summary": "Cut into very small dice, about 2 mm on a side.",
+          "explanation": "Julienne first, then cut across the sticks. Small enough to melt into a sauce or scatter raw without anybody meeting a chunk.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "Brunoise",
+          "spellings": [
+            "in Brunoise",
+            "in feine Würfelchen schneiden"
+          ],
+          "summary": "In sehr feine Würfel von rund 2 mm schneiden.",
+          "explanation": "Zuerst Julienne schneiden, dann die Stäbchen quer teilen. Klein genug, um in einer Sauce zu verschmelzen oder roh gestreut zu werden, ohne dass jemand auf ein Stück beisst.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "brunoise",
+          "spellings": [
+            "en brunoise",
+            "taillé en brunoise",
+            "tailler en brunoise"
+          ],
+          "summary": "Tailler en très petits dés d'environ 2 mm.",
+          "explanation": "Faites d'abord une julienne, puis recoupez les bâtonnets en travers. Assez fin pour fondre dans une sauce ou se parsemer cru sans que personne ne tombe sur un morceau.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "caramelise",
+      "locales": {
+        "en-GB": {
+          "name": "caramelise",
+          "spellings": [
+            "caramelised",
+            "caramelising",
+            "caramelize",
+            "caramelized",
+            "caramelizing"
+          ],
+          "summary": "Heat sugar until it browns and its flavour deepens.",
+          "explanation": "Sugar melts, then colours from straw to amber to brown, and turns bitter shortly after. It moves fast at the end, and carries on cooking off the heat.",
+          "caution": "Molten sugar is far hotter than boiling water and sticks to skin. Never add cold liquid to it without standing back — it spits violently."
+        },
+        "de-CH": {
+          "name": "karamellisieren",
+          "spellings": [
+            "karamellisiert",
+            "karamelisieren",
+            "karamellisierend"
+          ],
+          "summary": "Zucker erhitzen, bis er bräunt und im Geschmack tiefer wird.",
+          "explanation": "Der Zucker schmilzt, färbt sich von hell über bernstein bis braun und wird kurz danach bitter. Am Schluss geht es sehr schnell, und er gart neben der Hitze weiter.",
+          "caution": "Flüssiger Zucker ist deutlich heisser als kochendes Wasser und bleibt auf der Haut haften. Kalte Flüssigkeit nie ohne Abstand zugeben – es spritzt heftig."
+        },
+        "fr-CH": {
+          "name": "caraméliser",
+          "spellings": [
+            "caramélisé",
+            "caramélisée",
+            "caramélisez",
+            "caramélisation"
+          ],
+          "summary": "Chauffer le sucre jusqu'à ce qu'il brunisse et gagne en profondeur.",
+          "explanation": "Le sucre fond, passe du blond à l'ambre puis au brun, et devient amer peu après. Tout s'accélère à la fin, et la cuisson continue hors du feu.",
+          "caution": "Le sucre fondu est bien plus chaud que l'eau bouillante et colle à la peau. N'ajoutez jamais de liquide froid sans reculer : les projections sont violentes."
+        }
+      }
+    },
+    {
+      "slug": "chiffonade",
+      "locales": {
+        "en-GB": {
+          "name": "chiffonade",
+          "spellings": [
+            "chiffonaded",
+            "in chiffonade",
+            "shredded into ribbons"
+          ],
+          "summary": "Slice leaves into fine ribbons.",
+          "explanation": "Stack the leaves, roll them into a cigar and slice across. Used for basil, mint and sorrel; a sharp knife matters, because a blunt one bruises basil black.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "Chiffonade",
+          "spellings": [
+            "in Chiffonade",
+            "in feine Streifen schneiden Blätter"
+          ],
+          "summary": "Blätter in feine Streifen schneiden.",
+          "explanation": "Die Blätter stapeln, zu einer Rolle drehen und quer aufschneiden. Für Basilikum, Minze und Sauerampfer; ein scharfes Messer zählt, denn ein stumpfes drückt Basilikum schwarz.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "chiffonnade",
+          "spellings": [
+            "en chiffonnade",
+            "taillé en chiffonnade",
+            "tailler en chiffonnade"
+          ],
+          "summary": "Tailler des feuilles en fines lanières.",
+          "explanation": "Empilez les feuilles, roulez-les en cigare et tranchez en travers. Pour le basilic, la menthe et l'oseille ; un couteau bien aiguisé compte, car un couteau émoussé noircit le basilic.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "clarify",
+      "locales": {
+        "en-GB": {
+          "name": "clarify",
+          "spellings": [
+            "clarified",
+            "clarifying"
+          ],
+          "summary": "Melt butter and separate the pure fat from the milk solids and water.",
+          "explanation": "Melt gently, skim the foam, and pour off the clear gold leaving the white sediment behind. What is left takes far more heat before it burns, because the milk solids were what burned.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "klären",
+          "spellings": [
+            "geklärt",
+            "Butterschmalz",
+            "geklärte Butter",
+            "ausklären"
+          ],
+          "summary": "Butter schmelzen und das reine Fett von Molke und Wasser trennen.",
+          "explanation": "Sanft schmelzen, den Schaum abschöpfen und das klare Gold abgiessen, den weissen Satz zurücklassen. Was bleibt, verträgt deutlich mehr Hitze, bevor es verbrennt – denn verbrannt sind immer die Milchbestandteile.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "clarifier",
+          "spellings": [
+            "clarifié",
+            "clarifiée",
+            "beurre clarifié"
+          ],
+          "summary": "Fondre le beurre et séparer la graisse pure du petit-lait et de l'eau.",
+          "explanation": "Faites fondre doucement, écumez la mousse et versez l'or limpide en laissant le dépôt blanc. Ce qui reste supporte bien plus de chaleur avant de brûler : ce sont les solides du lait qui brûlaient.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "cream-butter-and-sugar",
+      "locales": {
+        "en-GB": {
+          "name": "cream the butter and sugar",
+          "spellings": [
+            "cream together",
+            "creamed together",
+            "creaming the butter",
+            "beat the butter and sugar"
+          ],
+          "summary": "Beat soft butter with sugar until pale and fluffy.",
+          "explanation": "The sugar crystals cut air pockets into the butter, and that air is most of the lift in a cake. The butter must be soft but not melted; melted butter holds no air at all.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "Butter und Zucker schaumig rühren",
+          "spellings": [
+            "schaumig rühren",
+            "schaumig gerührt",
+            "cremig rühren",
+            "cremig gerührt"
+          ],
+          "summary": "Weiche Butter mit Zucker hell und luftig aufschlagen.",
+          "explanation": "Die Zuckerkristalle schneiden Luftbläschen in die Butter, und diese Luft macht den grössten Teil des Aufgehens eines Kuchens aus. Die Butter muss weich sein, aber nicht geschmolzen – geschmolzene Butter hält gar keine Luft.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "crémer le beurre et le sucre",
+          "spellings": [
+            "crémer",
+            "crémé",
+            "travailler le beurre en pommade",
+            "blanchir le beurre"
+          ],
+          "summary": "Battre le beurre mou avec le sucre jusqu'à ce qu'il pâlisse et gonfle.",
+          "explanation": "Les cristaux de sucre creusent des bulles d'air dans le beurre, et cet air fournit l'essentiel de la levée d'un gâteau. Le beurre doit être mou mais non fondu : fondu, il ne retient plus rien.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "curdle",
+      "locales": {
+        "en-GB": {
+          "name": "curdle",
+          "spellings": [
+            "curdled",
+            "curdling",
+            "split the sauce",
+            "the sauce splits"
+          ],
+          "summary": "What happens when a sauce or custard separates into solids and liquid.",
+          "explanation": "Usually too much heat, too fast: the protein or the emulsion gives up. A custard caught early can sometimes be saved off the heat with hard whisking or a spoon of cold cream; past a point it cannot.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "gerinnen",
+          "spellings": [
+            "geronnen",
+            "ausflocken",
+            "ausgeflockt",
+            "die Sauce gerinnt"
+          ],
+          "summary": "Wenn eine Sauce oder Creme sich in feste und flüssige Teile trennt.",
+          "explanation": "Meist zu viel Hitze, zu schnell: das Eiweiss oder die Emulsion gibt auf. Eine früh bemerkte Creme lässt sich neben der Hitze manchmal mit kräftigem Schlagen oder einem Löffel kaltem Rahm retten; ab einem Punkt nicht mehr.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "cailler",
+          "spellings": [
+            "caillé",
+            "caillée",
+            "trancher",
+            "tranché",
+            "la sauce tranche"
+          ],
+          "summary": "Quand une sauce ou une crème se sépare en solide et liquide.",
+          "explanation": "Le plus souvent trop de chaleur, trop vite : la protéine ou l'émulsion lâche. Une crème rattrapée tôt se sauve parfois hors du feu, en fouettant fort ou avec une cuillère de crème froide ; passé un point, non.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "deep-fry",
+      "locales": {
+        "en-GB": {
+          "name": "deep-fry",
+          "spellings": [
+            "deep fry",
+            "deep-fried",
+            "deep fried",
+            "deep-frying",
+            "deep frying"
+          ],
+          "summary": "Cook submerged in hot fat.",
+          "explanation": "The fat has to be hot enough that the surface seals at once — too cool and the food drinks it. Fry in small batches: each addition drops the temperature.",
+          "caution": "Never put water or wet food into hot fat, and never move a burning pan. Cover it and turn off the heat; water on a fat fire makes a fireball."
+        },
+        "de-CH": {
+          "name": "frittieren",
+          "spellings": [
+            "frittiert",
+            "frittierte",
+            "ausbacken"
+          ],
+          "summary": "In heissem Fett schwimmend garen.",
+          "explanation": "Das Fett muss heiss genug sein, dass die Oberfläche sofort schliesst – zu kühl, und das Gargut saugt es auf. In kleinen Portionen frittieren: jede Zugabe senkt die Temperatur.",
+          "caution": "Nie Wasser oder nasses Gargut in heisses Fett geben und eine brennende Pfanne nie bewegen. Zudecken und Hitze abstellen; Wasser auf einem Fettbrand erzeugt eine Stichflamme."
+        },
+        "fr-CH": {
+          "name": "frire",
+          "spellings": [
+            "frit",
+            "frite",
+            "friture",
+            "faire frire",
+            "en pleine friture"
+          ],
+          "summary": "Cuire en immersion dans une matière grasse chaude.",
+          "explanation": "La graisse doit être assez chaude pour que la surface se ferme aussitôt : trop tiède, l'aliment l'absorbe. Procédez par petites quantités, chaque ajout fait chuter la température.",
+          "caution": "Ne mettez jamais d'eau ni d'aliment mouillé dans une friture, et ne déplacez jamais une poêle en feu. Couvrez et coupez le feu : l'eau sur une graisse enflammée provoque une gerbe de flammes."
+        }
+      }
+    },
+    {
+      "slug": "deglaze",
+      "locales": {
+        "en-GB": {
+          "name": "deglaze",
+          "spellings": [
+            "deglazed",
+            "deglazing",
+            "deglazes"
+          ],
+          "summary": "Lift the browned residue from a hot pan with liquid.",
+          "explanation": "Wine, stock or water loosens the stuck-on layer left by searing, which is most of the flavour of a pan sauce. Scrape while the liquid bubbles, then reduce.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "ablöschen",
+          "spellings": [
+            "abgelöscht",
+            "lösche ab",
+            "deglacieren"
+          ],
+          "summary": "Den Bratensatz mit Flüssigkeit vom heissen Pfannenboden lösen.",
+          "explanation": "Wein, Bouillon oder Wasser löst die angesetzte Schicht vom Anbraten – darin steckt der grösste Teil des Geschmacks einer Pfannensauce. Beim Sieden loskratzen, danach einkochen.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "déglacer",
+          "spellings": [
+            "déglacé",
+            "déglacez",
+            "déglaçage"
+          ],
+          "summary": "Décoller les sucs colorés d'une poêle chaude avec un liquide.",
+          "explanation": "Vin, bouillon ou eau dissout la couche attachée laissée par la saisie : c'est là que se trouve l'essentiel du goût d'une sauce. Grattez pendant que le liquide bout, puis faites réduire.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "devein",
+      "locales": {
+        "en-GB": {
+          "name": "devein",
+          "spellings": [
+            "deveined",
+            "deveining",
+            "remove the vein"
+          ],
+          "summary": "Take the dark digestive tract out of a prawn or shrimp.",
+          "explanation": "Cut a shallow line along the curved back and lift the dark thread out. It is edible but gritty, and more noticeable in a large prawn than a small one.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "entdarmen",
+          "spellings": [
+            "entdarmt",
+            "Darm entfernen",
+            "den schwarzen Faden entfernen"
+          ],
+          "summary": "Den dunklen Darm aus einer Garnele entfernen.",
+          "explanation": "Den gewölbten Rücken flach einschneiden und den dunklen Faden herausziehen. Er ist essbar, aber sandig, und bei grossen Garnelen deutlicher spürbar als bei kleinen.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "déveiner",
+          "spellings": [
+            "déveiné",
+            "déveinée",
+            "retirer le boyau",
+            "châtrer"
+          ],
+          "summary": "Retirer le boyau noir d'une crevette ou d'un gambas.",
+          "explanation": "Incisez légèrement le dos arrondi et retirez le fil sombre. Il est comestible mais sableux, et plus perceptible sur une grosse crevette que sur une petite.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "dice",
+      "locales": {
+        "en-GB": {
+          "name": "dice",
+          "spellings": [
+            "diced",
+            "dicing",
+            "cut into cubes",
+            "cut into dice"
+          ],
+          "summary": "Cut into even cubes, at the size the recipe asks for.",
+          "explanation": "Flat side down first so nothing rolls, then planks, then sticks, then cubes. A recipe usually says fine, medium or large; if it does not, match the size to how long it has to cook.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "würfeln",
+          "spellings": [
+            "gewürfelt",
+            "in Würfel schneiden",
+            "würfle",
+            "Würfeli"
+          ],
+          "summary": "In gleichmässige Würfel schneiden.",
+          "explanation": "Zuerst eine flache Seite nach unten, damit nichts rollt, dann Platten, dann Stäbchen, dann Würfel. Ein Rezept sagt meist fein, mittel oder grob; sonst richtet sich die Grösse nach der Garzeit.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "couper en dés",
+          "spellings": [
+            "en dés",
+            "coupé en dés",
+            "détailler en dés",
+            "en cubes"
+          ],
+          "summary": "Tailler en cubes réguliers.",
+          "explanation": "Posez d'abord une face plate pour que rien ne roule, puis des plaques, des bâtonnets, des cubes. Une recette précise en général fin, moyen ou gros ; sinon, adaptez la taille au temps de cuisson.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "dredge",
+      "locales": {
+        "en-GB": {
+          "name": "dredge",
+          "spellings": [
+            "dredged",
+            "dredging",
+            "coat in flour",
+            "coated in flour",
+            "dust with flour"
+          ],
+          "summary": "Coat food in a dry powder before cooking.",
+          "explanation": "Flour, breadcrumbs or cornflour, shaken off so only a thin film stays. Too thick a coat steams under itself and slides off; the surface should be dry before it goes on.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "panieren",
+          "spellings": [
+            "paniert",
+            "panierte",
+            "in Mehl wenden",
+            "mehlieren",
+            "mehliert"
+          ],
+          "summary": "Vor dem Garen in einem trockenen Pulver wenden.",
+          "explanation": "Mehl, Paniermehl oder Maisstärke, gut abgeklopft, sodass nur ein dünner Film bleibt. Eine zu dicke Schicht dämpft unter sich und rutscht ab; die Oberfläche sollte vorher trocken sein.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "paner",
+          "spellings": [
+            "pané",
+            "panée",
+            "fariner",
+            "fariné",
+            "passer dans la farine"
+          ],
+          "summary": "Enrober d'une poudre sèche avant cuisson.",
+          "explanation": "Farine, chapelure ou fécule, bien tapotée pour ne garder qu'un film mince. Une couche trop épaisse cuit à la vapeur sous elle-même et se détache ; la surface doit être sèche avant.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "emulsify",
+      "locales": {
+        "en-GB": {
+          "name": "emulsify",
+          "spellings": [
+            "emulsified",
+            "emulsifying",
+            "emulsion"
+          ],
+          "summary": "Hold fat and water together in one smooth mixture.",
+          "explanation": "Oil and water do not mix on their own; egg yolk or mustard lets them. Add the oil slowly at first — too fast and the emulsion breaks into a greasy split.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "emulgieren",
+          "spellings": [
+            "emulgiert",
+            "Emulsion"
+          ],
+          "summary": "Fett und Wasser zu einer glatten Masse verbinden.",
+          "explanation": "Öl und Wasser mischen sich nicht von selbst; Eigelb oder Senf ermöglicht es. Das Öl anfangs langsam zugeben – zu schnell, und die Emulsion bricht fettig auseinander.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "émulsionner",
+          "spellings": [
+            "émulsionné",
+            "émulsionnée",
+            "émulsion",
+            "monter la sauce"
+          ],
+          "summary": "Lier la matière grasse et l'eau en un mélange lisse.",
+          "explanation": "L'huile et l'eau ne se mêlent pas seules ; le jaune d'œuf ou la moutarde le permet. Versez l'huile lentement au début — trop vite, l'émulsion tranche.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "fold",
+      "locales": {
+        "en-GB": {
+          "name": "fold",
+          "spellings": [
+            "fold in",
+            "folded in",
+            "folding in",
+            "fold through",
+            "folded through",
+            "gently fold"
+          ],
+          "summary": "Combine without knocking out the air.",
+          "explanation": "Cut down through the middle with a spatula, sweep along the bottom and turn the mixture over itself, rotating the bowl. Stirring would collapse whipped whites or cream; this keeps most of the air.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "unterheben",
+          "spellings": [
+            "untergehoben",
+            "hebe unter",
+            "heben Sie unter",
+            "vorsichtig unterheben"
+          ],
+          "summary": "Vermengen, ohne die Luft herauszuschlagen.",
+          "explanation": "Mit dem Teigschaber senkrecht durch die Mitte stechen, am Boden entlangziehen und die Masse über sich selbst wenden, dabei die Schüssel drehen. Rühren würde geschlagenes Eiweiss oder Rahm zusammenfallen lassen; so bleibt die Luft grösstenteils erhalten.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "incorporer délicatement",
+          "spellings": [
+            "incorporez délicatement",
+            "incorporé délicatement",
+            "plier la préparation",
+            "en soulevant la masse"
+          ],
+          "summary": "Mélanger sans chasser l'air.",
+          "explanation": "Coupez verticalement au centre avec une maryse, longez le fond et rabattez la masse sur elle-même en tournant le bol. Remuer ferait retomber les blancs ou la crème montés ; ainsi l'air reste en place.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "glaze",
+      "locales": {
+        "en-GB": {
+          "name": "glaze",
+          "spellings": [
+            "glazed",
+            "glazing",
+            "glazes"
+          ],
+          "summary": "Coat with something that sets shiny.",
+          "explanation": "Egg wash on pastry, reduced stock on vegetables, warmed jam on a tart. On vegetables it usually means cooking them in butter, sugar and a little water until the liquid has gone and coats them.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "glasieren",
+          "spellings": [
+            "glasiert",
+            "glacieren",
+            "glaciert",
+            "mit Ei bestreichen"
+          ],
+          "summary": "Mit etwas überziehen, das glänzend fest wird.",
+          "explanation": "Eistreiche auf Gebäck, eingekochter Fond auf Gemüse, erwärmte Konfitüre auf einer Wähe. Bei Gemüse meint es meist das Garen in Butter, Zucker und wenig Wasser, bis die Flüssigkeit weg ist und es überzieht.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "glacer",
+          "spellings": [
+            "glacée",
+            "glaçage",
+            "dorer",
+            "dorure"
+          ],
+          "summary": "Napper d'un enrobage qui prend en brillant.",
+          "explanation": "Dorure à l'œuf sur une pâte, fond réduit sur des légumes, confiture tiédie sur une tarte. Pour les légumes, cela signifie le plus souvent les cuire au beurre, au sucre et un peu d'eau jusqu'à ce que le liquide les enrobe.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "grill",
+      "locales": {
+        "en-GB": {
+          "name": "grill",
+          "spellings": [
+            "grilled",
+            "grilling",
+            "grills",
+            "under the grill",
+            "broil",
+            "broiled"
+          ],
+          "summary": "Cook with fierce heat from one side only.",
+          "explanation": "Under an oven element or over coals. It browns much faster than it cooks through, so it suits thin or already-cooked things — and everything needs watching, because the margin is about a minute.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "grillieren",
+          "spellings": [
+            "grilliert",
+            "grillieren lassen",
+            "grillen",
+            "gegrillt",
+            "unter dem Grill",
+            "überbacken"
+          ],
+          "summary": "Mit starker Hitze von nur einer Seite garen.",
+          "explanation": "Unter dem Oberhitze-Element oder über Glut. Es bräunt viel schneller, als es durchgart, und eignet sich darum für Dünnes oder bereits Gegartes – und alles will beobachtet werden, denn der Spielraum beträgt etwa eine Minute.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "griller",
+          "spellings": [
+            "grillé",
+            "grillée",
+            "sous le gril",
+            "au gril",
+            "gratiner",
+            "gratiné"
+          ],
+          "summary": "Cuire à forte chaleur venue d'un seul côté.",
+          "explanation": "Sous la résistance du four ou sur la braise. Cela colore bien plus vite que cela ne cuit à cœur : à réserver au fin ou au déjà cuit — et tout demande surveillance, la marge est d'environ une minute.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "julienne",
+      "locales": {
+        "en-GB": {
+          "name": "julienne",
+          "spellings": [
+            "julienned",
+            "julienning",
+            "into julienne"
+          ],
+          "summary": "Cut into thin matchsticks, roughly 2 mm square.",
+          "explanation": "Square the vegetable off first, slice it into thin planks, stack them and cut across. Even sticks cook evenly, which is the whole point of naming the cut.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "Julienne",
+          "spellings": [
+            "in Julienne",
+            "in feine Streifen schneiden",
+            "Streifchen"
+          ],
+          "summary": "In feine Stäbchen von etwa 2 mm Kantenlänge schneiden.",
+          "explanation": "Das Gemüse zuerst rechtwinklig zuschneiden, in dünne Platten schneiden, stapeln und quer aufschneiden. Gleichmässige Stäbchen garen gleichmässig – deshalb hat der Schnitt überhaupt einen Namen.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "julienne",
+          "spellings": [
+            "en julienne",
+            "taillé en julienne",
+            "tailler en julienne"
+          ],
+          "summary": "Tailler en fins bâtonnets d'environ 2 mm de côté.",
+          "explanation": "Équarrissez d'abord le légume, taillez-le en fines plaques, empilez-les et recoupez en travers. Des bâtonnets réguliers cuisent régulièrement : c'est toute la raison d'être du nom.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "knead",
+      "locales": {
+        "en-GB": {
+          "name": "knead",
+          "spellings": [
+            "kneaded",
+            "kneading",
+            "kneads"
+          ],
+          "summary": "Work dough until the gluten becomes stretchy.",
+          "explanation": "Push, fold, turn. The dough goes from shaggy to smooth and springs back when pressed. Under-kneaded bread is dense; over-kneading by hand is nearly impossible, by machine it is not.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "kneten",
+          "spellings": [
+            "geknetet",
+            "durchkneten",
+            "durchgeknetet",
+            "knete"
+          ],
+          "summary": "Teig bearbeiten, bis das Gluten elastisch wird.",
+          "explanation": "Drücken, falten, drehen. Der Teig wird von zottig zu glatt und federt auf Druck zurück. Zu wenig gekneteter Teig gibt dichtes Brot; von Hand zu lange zu kneten ist kaum möglich, mit der Maschine schon.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "pétrir",
+          "spellings": [
+            "pétri",
+            "pétrie",
+            "pétrissez",
+            "pétrissage"
+          ],
+          "summary": "Travailler la pâte jusqu'à ce que le gluten devienne élastique.",
+          "explanation": "Pousser, replier, tourner. La pâte passe de grumeleuse à lisse et revient sous le doigt. Trop peu pétrie, le pain est dense ; trop pétrir à la main est presque impossible, à la machine non.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "macerate",
+      "locales": {
+        "en-GB": {
+          "name": "macerate",
+          "spellings": [
+            "macerated",
+            "macerating",
+            "macerates"
+          ],
+          "summary": "Steep fruit in sugar, spirit or juice to draw out its liquid.",
+          "explanation": "The sugar pulls water from the fruit and makes a syrup of it. Strawberries slumped in sugar for twenty minutes give a sauce nobody had to cook.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "mazerieren",
+          "spellings": [
+            "mazeriert",
+            "ziehen lassen in Zucker",
+            "in Zucker ziehen lassen"
+          ],
+          "summary": "Früchte in Zucker, Alkohol oder Saft ziehen lassen, um Saft zu ziehen.",
+          "explanation": "Der Zucker zieht Wasser aus der Frucht und macht daraus einen Sirup. Erdbeeren, die zwanzig Minuten in Zucker liegen, ergeben eine Sauce, die niemand kochen musste.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "macérer",
+          "spellings": [
+            "macéré",
+            "macérée",
+            "macération",
+            "faire macérer"
+          ],
+          "summary": "Faire tremper des fruits dans du sucre, de l'alcool ou du jus pour en tirer le jus.",
+          "explanation": "Le sucre extrait l'eau du fruit et la transforme en sirop. Des fraises laissées vingt minutes dans le sucre donnent une sauce que personne n'a eu à cuire.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "marinate",
+      "locales": {
+        "en-GB": {
+          "name": "marinate",
+          "spellings": [
+            "marinated",
+            "marinating",
+            "marinade",
+            "marinades"
+          ],
+          "summary": "Steep food in a seasoned liquid before cooking.",
+          "explanation": "Salt and flavour reach a few millimetres in; acid firms the surface and, given hours, turns it mealy. Longer is not better — most marinades have done their work within a few hours.",
+          "caution": "Marinate raw meat and fish in the fridge, never on the counter. A marinade that has held raw meat must be boiled before it is used as a sauce, or thrown away."
+        },
+        "de-CH": {
+          "name": "marinieren",
+          "spellings": [
+            "mariniert",
+            "marinierte",
+            "Marinade",
+            "einlegen",
+            "eingelegt"
+          ],
+          "summary": "Lebensmittel vor dem Garen in einer gewürzten Flüssigkeit ziehen lassen.",
+          "explanation": "Salz und Aroma dringen wenige Millimeter ein; Säure festigt die Oberfläche und macht sie nach Stunden mehlig. Länger ist nicht besser – die meisten Marinaden haben ihre Arbeit in wenigen Stunden getan.",
+          "caution": "Rohes Fleisch und Fisch im Kühlschrank marinieren, nie bei Raumtemperatur. Eine Marinade, in der rohes Fleisch lag, muss aufgekocht werden, bevor sie als Sauce dient – sonst wegwerfen."
+        },
+        "fr-CH": {
+          "name": "mariner",
+          "spellings": [
+            "mariné",
+            "marinée",
+            "marinade",
+            "faire mariner"
+          ],
+          "summary": "Faire tremper un aliment dans un liquide assaisonné avant cuisson.",
+          "explanation": "Le sel et les arômes pénètrent de quelques millimètres ; l'acide raffermit la surface et, après des heures, la rend farineuse. Plus long n'est pas meilleur : la plupart des marinades ont fait leur effet en quelques heures.",
+          "caution": "Faites mariner viande et poisson crus au réfrigérateur, jamais à température ambiante. Une marinade ayant contenu de la viande crue doit être portée à ébullition avant de servir de sauce, sinon jetez-la."
+        }
+      }
+    },
+    {
+      "slug": "mince",
+      "locales": {
+        "en-GB": {
+          "name": "mince",
+          "spellings": [
+            "minced",
+            "mincing",
+            "finely chopped",
+            "chop finely"
+          ],
+          "summary": "Chop as finely as the knife will go.",
+          "explanation": "For garlic, ginger, shallot and herbs, where the point is to disappear into the dish. Rock the knife through the pile repeatedly rather than trying to cut each piece.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "fein hacken",
+          "spellings": [
+            "fein gehackt",
+            "feingehackt",
+            "hacke fein",
+            "fein schneiden"
+          ],
+          "summary": "So fein hacken, wie das Messer es zulässt.",
+          "explanation": "Für Knoblauch, Ingwer, Schalotte und Kräuter, die im Gericht verschwinden sollen. Das Messer wiederholt durch den Haufen wiegen, statt jedes Stück einzeln zu schneiden.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "hacher finement",
+          "spellings": [
+            "haché finement",
+            "finement haché",
+            "ciseler",
+            "ciselé"
+          ],
+          "summary": "Hacher aussi finement que le couteau le permet.",
+          "explanation": "Pour l'ail, le gingembre, l'échalote et les herbes, dont le but est de disparaître dans le plat. Bercez le couteau à travers le tas plutôt que de couper morceau par morceau.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "monter-au-beurre",
+      "locales": {
+        "en-GB": {
+          "name": "mount with butter",
+          "spellings": [
+            "monter au beurre",
+            "mounted with butter",
+            "whisk in cold butter",
+            "finish with butter"
+          ],
+          "summary": "Whisk cold butter into a sauce off the heat to finish it.",
+          "explanation": "Cubes of cold butter, one at a time, swirled or whisked in away from the burner. It thickens the sauce slightly and gives it gloss. Too much heat and it separates back into fat.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "mit Butter montieren",
+          "spellings": [
+            "montieren",
+            "montiert",
+            "aufmontieren",
+            "mit kalter Butter aufmontieren"
+          ],
+          "summary": "Kalte Butter neben der Hitze in eine Sauce einschlagen.",
+          "explanation": "Kalte Butterwürfel, einzeln, neben der Platte eingeschwenkt oder eingerührt. Das bindet die Sauce leicht und gibt ihr Glanz. Zu viel Hitze, und sie trennt sich wieder in Fett.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "monter au beurre",
+          "spellings": [
+            "monté au beurre",
+            "monter la sauce au beurre",
+            "beurre monté"
+          ],
+          "summary": "Fouetter du beurre froid dans une sauce hors du feu pour la finir.",
+          "explanation": "Des cubes de beurre froid, un à un, incorporés hors de la plaque. Cela lie légèrement la sauce et lui donne du brillant. Trop de chaleur, et elle se retranche en graisse.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "poach",
+      "locales": {
+        "en-GB": {
+          "name": "poach",
+          "spellings": [
+            "poached",
+            "poaching",
+            "poaches"
+          ],
+          "summary": "Cook gently in liquid held below a simmer.",
+          "explanation": "The liquid barely moves. It suits things that fall apart or toughen easily — eggs, fish, chicken breast, pears. The liquid is worth seasoning: it is the only flavour going in.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "pochieren",
+          "spellings": [
+            "pochiert",
+            "pochierte",
+            "gar ziehen lassen",
+            "ziehen lassen"
+          ],
+          "summary": "Sanft in Flüssigkeit garen, die unter dem Köchelpunkt bleibt.",
+          "explanation": "Die Flüssigkeit bewegt sich kaum. Das eignet sich für alles, was leicht zerfällt oder zäh wird – Eier, Fisch, Pouletbrust, Birnen. Die Flüssigkeit lohnt sich zu würzen: sie ist der einzige Geschmack, der hineingeht.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "pocher",
+          "spellings": [
+            "poché",
+            "pochée",
+            "pochez",
+            "pochage"
+          ],
+          "summary": "Cuire doucement dans un liquide maintenu sous le frémissement.",
+          "explanation": "Le liquide bouge à peine. Cela convient à ce qui se défait ou durcit vite : œufs, poisson, blanc de poulet, poires. Il vaut la peine d'assaisonner le liquide, c'est le seul goût qui entre.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "prove",
+      "locales": {
+        "en-GB": {
+          "name": "prove",
+          "spellings": [
+            "proved",
+            "proving",
+            "proof",
+            "proofed",
+            "proofing",
+            "leave to rise",
+            "left to rise"
+          ],
+          "summary": "Let yeasted dough rise before baking.",
+          "explanation": "The yeast makes gas and the gluten holds it. Judge it by the dough, not the clock — warm rooms are faster, cold ones slower, and a cold overnight rise builds more flavour.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "gehen lassen",
+          "spellings": [
+            "gegangen",
+            "aufgehen lassen",
+            "aufgegangen",
+            "Gare",
+            "zugedeckt gehen lassen"
+          ],
+          "summary": "Hefeteig vor dem Backen aufgehen lassen.",
+          "explanation": "Die Hefe bildet Gas, das Gluten hält es. Nach dem Teig beurteilen, nicht nach der Uhr – warme Räume beschleunigen, kalte bremsen, und eine kalte Gare über Nacht baut mehr Aroma auf.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "laisser lever",
+          "spellings": [
+            "levé",
+            "levée",
+            "pousse",
+            "laisser pousser",
+            "faire lever"
+          ],
+          "summary": "Laisser la pâte levée gonfler avant la cuisson.",
+          "explanation": "La levure produit du gaz, le gluten le retient. Jugez la pâte, pas la montre : une pièce chaude accélère, une froide ralentit, et une pousse lente au froid développe plus de goût.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "reduce",
+      "locales": {
+        "en-GB": {
+          "name": "reduce",
+          "spellings": [
+            "reduced by",
+            "reducing by",
+            "reduce by half",
+            "reduce until"
+          ],
+          "summary": "Boil a liquid down to concentrate it.",
+          "explanation": "Water leaves, everything else stays and gets stronger — including salt, so season at the end rather than the start. A wide pan reduces faster than a tall one.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "einkochen",
+          "spellings": [
+            "eingekocht",
+            "einkochen lassen",
+            "reduzieren",
+            "reduziert"
+          ],
+          "summary": "Eine Flüssigkeit einkochen, um sie zu konzentrieren.",
+          "explanation": "Das Wasser geht weg, alles andere bleibt und wird kräftiger – auch das Salz. Darum erst am Schluss abschmecken. Eine weite Pfanne reduziert schneller als eine hohe.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "réduire",
+          "spellings": [
+            "réduit",
+            "réduite",
+            "faire réduire",
+            "réduire de moitié"
+          ],
+          "summary": "Faire bouillir un liquide pour le concentrer.",
+          "explanation": "L'eau s'en va, le reste demeure et se renforce — le sel aussi. Assaisonnez donc à la fin, pas au début. Une casserole large réduit plus vite qu'une haute.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "rehydrate",
+      "locales": {
+        "en-GB": {
+          "name": "rehydrate",
+          "spellings": [
+            "rehydrated",
+            "rehydrating",
+            "soak",
+            "soaked",
+            "soaking",
+            "leave to soak"
+          ],
+          "summary": "Return dried food to softness in liquid.",
+          "explanation": "Dried mushrooms, pulses, chillies and fruit take from minutes to overnight. The soaking liquid is often worth keeping — with mushrooms it is the best part — but pour it off the grit at the bottom.",
+          "caution": "Dried kidney beans must be boiled hard for at least ten minutes after soaking. Soaking alone does not remove the toxin, and a slow cooker never gets hot enough."
+        },
+        "de-CH": {
+          "name": "einweichen",
+          "spellings": [
+            "eingeweicht",
+            "weiche ein",
+            "quellen lassen",
+            "gequollen"
+          ],
+          "summary": "Getrocknetes in Flüssigkeit wieder weich werden lassen.",
+          "explanation": "Getrocknete Pilze, Hülsenfrüchte, Chili und Früchte brauchen Minuten bis über Nacht. Das Einweichwasser lohnt sich oft aufzubewahren – bei Pilzen ist es das Beste daran – aber ohne den Sand am Boden.",
+          "caution": "Getrocknete Kidneybohnen müssen nach dem Einweichen mindestens zehn Minuten sprudelnd kochen. Einweichen allein entfernt das Gift nicht, und ein Slow Cooker wird nie heiss genug."
+        },
+        "fr-CH": {
+          "name": "faire tremper",
+          "spellings": [
+            "trempé",
+            "trempée",
+            "réhydrater",
+            "réhydraté",
+            "mettre à tremper"
+          ],
+          "summary": "Rendre leur souplesse à des aliments séchés dans un liquide.",
+          "explanation": "Champignons secs, légumineuses, piments et fruits demandent de quelques minutes à une nuit. L'eau de trempage vaut souvent d'être gardée — avec les champignons, c'est le meilleur — mais sans le sable du fond.",
+          "caution": "Les haricots rouges secs doivent bouillir vivement au moins dix minutes après trempage. Le trempage seul n'élimine pas la toxine, et une mijoteuse n'atteint jamais une température suffisante."
+        }
+      }
+    },
+    {
+      "slug": "render",
+      "locales": {
+        "en-GB": {
+          "name": "render",
+          "spellings": [
+            "rendered",
+            "rendering",
+            "renders",
+            "render the fat"
+          ],
+          "summary": "Melt solid fat out of meat or skin over low heat.",
+          "explanation": "Start cold and go slowly: the fat has to run before the outside browns, or the skin burns over a soft layer beneath. What comes out is worth keeping and cooking in.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "auslassen",
+          "spellings": [
+            "ausgelassen",
+            "Fett auslassen",
+            "auslässt"
+          ],
+          "summary": "Festes Fett aus Fleisch oder Haut bei milder Hitze herausschmelzen.",
+          "explanation": "Kalt beginnen und langsam führen: das Fett muss ausfliessen, bevor die Aussenseite bräunt, sonst verbrennt die Haut über einer weichen Schicht. Was austritt, lohnt sich aufzubewahren und darin zu kochen.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "faire fondre la graisse",
+          "spellings": [
+            "graisse fondue",
+            "faire rendre",
+            "rendre la graisse"
+          ],
+          "summary": "Faire fondre la graisse solide d'une viande ou d'une peau à feu doux.",
+          "explanation": "Départ à froid et lentement : la graisse doit s'écouler avant que l'extérieur ne colore, sinon la peau brûle sur une couche molle. Ce qui en sort mérite d'être gardé et réutilisé.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "rest",
+      "locales": {
+        "en-GB": {
+          "name": "rest",
+          "spellings": [
+            "rest the meat",
+            "leave to rest",
+            "left to rest",
+            "resting",
+            "rested for"
+          ],
+          "summary": "Leave something to settle after cooking or mixing.",
+          "explanation": "Roast meat carved straight away loses its juice onto the board; a few minutes lets it redistribute. Pastry rested in the fridge relaxes and shrinks less in the oven.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "ruhen lassen",
+          "spellings": [
+            "ruhen gelassen",
+            "geruht",
+            "rasten lassen",
+            "nachziehen lassen"
+          ],
+          "summary": "Nach dem Garen oder Kneten ruhen lassen.",
+          "explanation": "Sofort aufgeschnittener Braten verliert seinen Saft auf dem Brett; ein paar Minuten lassen ihn sich verteilen. Im Kühlschrank geruhter Teig entspannt sich und zieht sich im Ofen weniger zusammen.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "laisser reposer",
+          "spellings": [
+            "repos",
+            "reposé",
+            "reposée",
+            "laissez reposer"
+          ],
+          "summary": "Laisser une préparation se détendre après cuisson ou pétrissage.",
+          "explanation": "Une viande tranchée aussitôt perd son jus sur la planche ; quelques minutes le laissent se répartir. Une pâte reposée au froid se détend et se rétracte moins au four.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "roast",
+      "locales": {
+        "en-GB": {
+          "name": "roast",
+          "spellings": [
+            "roasted",
+            "roasting",
+            "roasts"
+          ],
+          "summary": "Cook uncovered in an oven with dry heat.",
+          "explanation": "Dry air browns the outside while the inside cooks through. Space matters: crowded vegetables steam in their own moisture and never colour.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "braten",
+          "spellings": [
+            "gebraten",
+            "im Ofen braten",
+            "Ofen braten",
+            "briet"
+          ],
+          "summary": "Im Ofen offen bei trockener Hitze garen.",
+          "explanation": "Die trockene Luft bräunt aussen, während es innen durchgart. Der Platz zählt: zu eng liegendes Gemüse dämpft im eigenen Saft und nimmt nie Farbe an.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "rôtir",
+          "spellings": [
+            "rôti",
+            "rôtie",
+            "rôtissez",
+            "au four"
+          ],
+          "summary": "Cuire à découvert au four, à chaleur sèche.",
+          "explanation": "L'air sec colore l'extérieur pendant que l'intérieur cuit. L'espace compte : des légumes serrés cuisent dans leur propre humidité et ne colorent jamais.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "saute",
+      "locales": {
+        "en-GB": {
+          "name": "sauté",
+          "spellings": [
+            "sautéed",
+            "sautéing",
+            "sautés"
+          ],
+          "summary": "Cook quickly in a little fat over high heat, moving the pan.",
+          "explanation": "The food stays in one layer and keeps moving, so it colours without steaming. A crowded pan releases more water than it can boil off and the food stews instead.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "sautieren",
+          "spellings": [
+            "sautiert",
+            "sautierte",
+            "sautierend"
+          ],
+          "summary": "In wenig Fett bei hoher Hitze rasch garen, dabei die Pfanne bewegen.",
+          "explanation": "Das Gargut liegt in einer Schicht und bleibt in Bewegung, so nimmt es Farbe an, ohne zu dämpfen. Eine überfüllte Pfanne gibt mehr Wasser ab, als verdampfen kann – dann schmort es.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "faire sauter",
+          "spellings": [
+            "sauté",
+            "sautée",
+            "sautés",
+            "faites sauter"
+          ],
+          "summary": "Cuire rapidement à feu vif dans peu de matière grasse, en remuant la poêle.",
+          "explanation": "Les aliments restent en une seule couche et bougent sans cesse : ils colorent au lieu de cuire à la vapeur. Une poêle surchargée rend plus d'eau qu'elle n'en évapore, et l'ensemble mijote.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "score",
+      "locales": {
+        "en-GB": {
+          "name": "score",
+          "spellings": [
+            "scored",
+            "scoring",
+            "score the skin",
+            "slash the top"
+          ],
+          "summary": "Cut shallow lines into a surface without going through.",
+          "explanation": "On fat or skin it lets the fat run and stops the piece curling; on bread it decides where the loaf opens rather than tearing where it likes. Cut only as deep as the layer.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "einritzen",
+          "spellings": [
+            "eingeritzt",
+            "einschneiden",
+            "eingeschnitten",
+            "einkerben"
+          ],
+          "summary": "Flache Schnitte in eine Oberfläche setzen, ohne durchzuschneiden.",
+          "explanation": "Auf Fett oder Haut lässt es das Fett austreten und verhindert, dass sich das Stück wölbt; auf Brot bestimmt es, wo der Laib aufgeht, statt dass er reisst, wo er mag. Nur so tief wie die Schicht schneiden.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "inciser",
+          "spellings": [
+            "incisé",
+            "incisée",
+            "incisez",
+            "quadriller",
+            "grigner"
+          ],
+          "summary": "Pratiquer des entailles peu profondes sans traverser.",
+          "explanation": "Sur le gras ou la peau, cela laisse fondre la graisse et empêche le morceau de se recroqueviller ; sur le pain, cela décide où la miche s'ouvre au lieu de déchirer au hasard. N'entaillez que l'épaisseur de la couche.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "sear",
+      "locales": {
+        "en-GB": {
+          "name": "sear",
+          "spellings": [
+            "seared",
+            "searing",
+            "sears"
+          ],
+          "summary": "Colour the surface hard and fast over high heat.",
+          "explanation": "Browning builds flavour on the outside; it does not seal anything in, which is an old idea that measurement did not support. Dry the surface first — a wet one boils before it browns.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "anbraten",
+          "spellings": [
+            "angebraten",
+            "brate an",
+            "scharf anbraten"
+          ],
+          "summary": "Die Oberfläche bei starker Hitze kurz und kräftig bräunen.",
+          "explanation": "Die Bräunung baut aussen Aroma auf; sie schliesst nichts ein – das ist eine alte Vorstellung, die Messungen nicht bestätigt haben. Oberfläche vorher trocken tupfen, sonst kocht sie, statt zu bräunen.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "saisir",
+          "spellings": [
+            "saisi",
+            "saisie",
+            "saisissez"
+          ],
+          "summary": "Colorer la surface fortement et rapidement à feu vif.",
+          "explanation": "La coloration développe les arômes en surface ; elle ne « scelle » rien, idée ancienne que la mesure n'a jamais confirmée. Séchez la surface au préalable : mouillée, elle bout avant de colorer.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "season-to-taste",
+      "locales": {
+        "en-GB": {
+          "name": "season to taste",
+          "spellings": [
+            "seasoned to taste",
+            "adjust the seasoning",
+            "check the seasoning",
+            "taste and season"
+          ],
+          "summary": "Add salt, pepper or acid until the dish tastes right, tasting as you go.",
+          "explanation": "A quantity nobody can write down for you: it depends on the ingredients, the reduction and the eater. Add a little, taste, repeat — salt goes in easily and never comes out.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "abschmecken",
+          "spellings": [
+            "abgeschmeckt",
+            "nach Geschmack würzen",
+            "mit Salz und Pfeffer abschmecken",
+            "schmecke ab"
+          ],
+          "summary": "Mit Salz, Pfeffer oder Säure würzen, bis es stimmt – dabei laufend probieren.",
+          "explanation": "Eine Menge, die niemand für Sie aufschreiben kann: sie hängt von den Zutaten, der Reduktion und den Essenden ab. Wenig zugeben, probieren, wiederholen – Salz geht leicht hinein und nie mehr heraus.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "assaisonner",
+          "spellings": [
+            "assaisonné",
+            "assaisonnée",
+            "rectifier l'assaisonnement",
+            "goûter et rectifier",
+            "saler et poivrer"
+          ],
+          "summary": "Ajouter sel, poivre ou acidité jusqu'au bon goût, en goûtant à mesure.",
+          "explanation": "Une quantité que personne ne peut écrire à votre place : elle dépend des ingrédients, de la réduction et de qui mange. Ajoutez peu, goûtez, recommencez — le sel entre facilement et ne ressort jamais.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "sift",
+      "locales": {
+        "en-GB": {
+          "name": "sift",
+          "spellings": [
+            "sifted",
+            "sifting",
+            "sifts",
+            "sieve the flour"
+          ],
+          "summary": "Pass a dry ingredient through a sieve.",
+          "explanation": "Breaks up lumps and lets flour fall loose rather than packed. It matters most for cocoa, icing sugar and raising agents, which clump and would otherwise sit in pockets.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "sieben",
+          "spellings": [
+            "gesiebt",
+            "durchsieben",
+            "durchgesiebt",
+            "siebe"
+          ],
+          "summary": "Eine trockene Zutat durch ein Sieb geben.",
+          "explanation": "Zerteilt Klumpen und lässt Mehl locker statt gepresst fallen. Am wichtigsten bei Kakao, Puderzucker und Backtriebmitteln, die verklumpen und sonst in Nestern liegen bleiben.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "tamiser",
+          "spellings": [
+            "tamisé",
+            "tamisée",
+            "tamisez",
+            "passer au tamis"
+          ],
+          "summary": "Passer un ingrédient sec au tamis.",
+          "explanation": "Défait les grumeaux et fait tomber la farine aérée plutôt que tassée. Cela compte surtout pour le cacao, le sucre glace et la levure, qui s'agglomèrent et resteraient en poches.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "simmer",
+      "locales": {
+        "en-GB": {
+          "name": "simmer",
+          "spellings": [
+            "simmered",
+            "simmering",
+            "simmers",
+            "gentle simmer"
+          ],
+          "summary": "Hold just below boiling, with occasional small bubbles.",
+          "explanation": "A bare shiver at the surface, not a rolling boil. Stocks stay clear this way and meat stays tender; a hard boil breaks both up and turns stock cloudy.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "köcheln",
+          "spellings": [
+            "geköchelt",
+            "köcheln lassen",
+            "leise köcheln",
+            "simmern"
+          ],
+          "summary": "Knapp unter dem Siedepunkt halten, mit vereinzelten kleinen Blasen.",
+          "explanation": "Nur ein Zittern an der Oberfläche, kein sprudelndes Kochen. So bleiben Fonds klar und Fleisch zart; starkes Kochen zerfasert beides und trübt den Fond.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "mijoter",
+          "spellings": [
+            "mijoté",
+            "mijotée",
+            "laisser mijoter",
+            "frémir",
+            "frémissant"
+          ],
+          "summary": "Maintenir juste sous l'ébullition, avec de rares petites bulles.",
+          "explanation": "Un simple frémissement en surface, pas de gros bouillons. Les bouillons restent limpides et la viande tendre ; une ébullition franche défait l'un et trouble l'autre.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "skim",
+      "locales": {
+        "en-GB": {
+          "name": "skim",
+          "spellings": [
+            "skimmed",
+            "skimming",
+            "skim off",
+            "remove the scum"
+          ],
+          "summary": "Lift foam or fat off the surface of a simmering liquid.",
+          "explanation": "The grey scum on a stock is coagulated protein; taking it off keeps the stock clear and clean-tasting. Fat is easiest to remove once the liquid is cold and it has set on top.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "abschäumen",
+          "spellings": [
+            "abgeschäumt",
+            "abschöpfen",
+            "abgeschöpft",
+            "Schaum entfernen"
+          ],
+          "summary": "Schaum oder Fett von der Oberfläche einer köchelnden Flüssigkeit abnehmen.",
+          "explanation": "Der graue Schaum auf einem Fond ist geronnenes Eiweiss; ihn abzunehmen hält den Fond klar und rein im Geschmack. Fett lässt sich am leichtsten entfernen, wenn die Flüssigkeit kalt ist und es oben fest geworden ist.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "écumer",
+          "spellings": [
+            "écumé",
+            "écumée",
+            "écumez",
+            "retirer l'écume"
+          ],
+          "summary": "Retirer la mousse ou la graisse à la surface d'un liquide qui frémit.",
+          "explanation": "L'écume grise d'un bouillon est de la protéine coagulée ; l'ôter garde le bouillon limpide et net au goût. La graisse s'enlève le plus facilement une fois le liquide froid et la couche figée.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "steam",
+      "locales": {
+        "en-GB": {
+          "name": "steam",
+          "spellings": [
+            "steamed",
+            "steaming",
+            "steams"
+          ],
+          "summary": "Cook in vapour above boiling water, not in it.",
+          "explanation": "Nothing dissolves away into the water, so vegetables keep colour and taste. The food must sit clear of the liquid, and the lid must stay on — the heat is the steam, not the pan.",
+          "caution": "Escaping steam burns more readily than boiling water. Lift a lid away from you."
+        },
+        "de-CH": {
+          "name": "dämpfen",
+          "spellings": [
+            "gedämpft",
+            "dämpfte",
+            "dampfgaren",
+            "im Dampf garen"
+          ],
+          "summary": "Im Dampf über kochendem Wasser garen, nicht darin.",
+          "explanation": "Nichts löst sich ins Wasser, darum behalten Gemüse Farbe und Geschmack. Das Gargut muss über der Flüssigkeit stehen und der Deckel geschlossen bleiben – die Hitze ist der Dampf, nicht die Pfanne.",
+          "caution": "Austretender Dampf verbrüht schneller als kochendes Wasser. Deckel immer von sich weg anheben."
+        },
+        "fr-CH": {
+          "name": "cuire à la vapeur",
+          "spellings": [
+            "à la vapeur",
+            "vapeur",
+            "cuit à la vapeur",
+            "cuite à la vapeur"
+          ],
+          "summary": "Cuire dans la vapeur au-dessus de l'eau bouillante, non dedans.",
+          "explanation": "Rien ne se dissout dans l'eau : les légumes gardent couleur et goût. L'aliment doit rester au-dessus du liquide et le couvercle fermé — la chaleur, c'est la vapeur, pas la casserole.",
+          "caution": "La vapeur qui s'échappe brûle plus vite que l'eau bouillante. Soulevez le couvercle en l'écartant de vous."
+        }
+      }
+    },
+    {
+      "slug": "strain",
+      "locales": {
+        "en-GB": {
+          "name": "strain",
+          "spellings": [
+            "strained",
+            "straining",
+            "pass through a sieve",
+            "passed through a sieve"
+          ],
+          "summary": "Pour a liquid through a sieve or cloth to leave the solids behind.",
+          "explanation": "A fine sieve for stocks and custards, muslin for anything that must be crystal clear. Do not press the solids through if clarity matters — pressing is what makes a stock cloudy.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "passieren",
+          "spellings": [
+            "passiert",
+            "durch ein Sieb giessen",
+            "absieben",
+            "abgesiebt"
+          ],
+          "summary": "Eine Flüssigkeit durch Sieb oder Tuch giessen und die Feststoffe zurücklassen.",
+          "explanation": "Ein feines Sieb für Fonds und Cremes, ein Tuch für alles, was blitzklar sein muss. Die Feststoffe nicht durchdrücken, wenn Klarheit zählt – das Durchdrücken trübt den Fond.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "passer",
+          "spellings": [
+            "passé",
+            "passée",
+            "passer au chinois",
+            "filtrer",
+            "filtré"
+          ],
+          "summary": "Verser un liquide à travers un tamis ou un linge pour retenir les solides.",
+          "explanation": "Un tamis fin pour les bouillons et les crèmes, une étamine pour ce qui doit être parfaitement limpide. Ne pressez pas les solides si la limpidité compte : c'est ce qui trouble un bouillon.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "supreme-citrus",
+      "locales": {
+        "en-GB": {
+          "name": "supreme",
+          "spellings": [
+            "supremed",
+            "supreming",
+            "cut into supremes",
+            "segment the citrus"
+          ],
+          "summary": "Cut citrus into segments with no skin or membrane.",
+          "explanation": "Slice off top and bottom, cut the peel and pith away following the curve, then cut each segment free between its membranes. Squeeze what is left for the juice.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "filetieren",
+          "spellings": [
+            "filetiert",
+            "Filets schneiden",
+            "in Filets schneiden"
+          ],
+          "summary": "Zitrusfrüchte in Segmente ohne Haut und Trennwände schneiden.",
+          "explanation": "Oben und unten abschneiden, die Schale samt Weissem der Rundung nach wegschneiden, dann jedes Segment zwischen den Trennhäuten herauslösen. Den Rest auspressen.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "lever les suprêmes",
+          "spellings": [
+            "suprêmes",
+            "en suprêmes",
+            "peler à vif",
+            "pelé à vif"
+          ],
+          "summary": "Détailler un agrume en quartiers sans peau ni membrane.",
+          "explanation": "Coupez les deux extrémités, retirez l'écorce et le blanc en suivant la courbe, puis dégagez chaque quartier entre ses membranes. Pressez ce qui reste pour le jus.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "sweat",
+      "locales": {
+        "en-GB": {
+          "name": "sweat",
+          "spellings": [
+            "sweated",
+            "sweating",
+            "sweats"
+          ],
+          "summary": "Soften in fat over gentle heat without colouring.",
+          "explanation": "Onions, leeks and celery give up their water and turn translucent and sweet. A pinch of salt draws the water out faster. If anything browns, the heat is too high.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "andünsten",
+          "spellings": [
+            "angedünstet",
+            "dünste an",
+            "glasig dünsten"
+          ],
+          "summary": "Bei milder Hitze in Fett weich werden lassen, ohne Farbe zu nehmen.",
+          "explanation": "Zwiebeln, Lauch und Sellerie geben ihr Wasser ab und werden glasig und süss. Eine Prise Salz zieht das Wasser schneller heraus. Nimmt etwas Farbe an, ist die Hitze zu hoch.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "faire suer",
+          "spellings": [
+            "suer",
+            "faites suer",
+            "sué"
+          ],
+          "summary": "Attendrir dans un corps gras à feu doux, sans coloration.",
+          "explanation": "Oignons, poireaux et céleri rendent leur eau et deviennent translucides et doux. Une pincée de sel accélère la sortie de l'eau. Si cela colore, le feu est trop vif.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "temper",
+      "locales": {
+        "en-GB": {
+          "name": "temper",
+          "spellings": [
+            "tempered",
+            "tempering",
+            "tempers"
+          ],
+          "summary": "Raise something's temperature gradually so it does not seize.",
+          "explanation": "For eggs: ladle a little hot liquid into the yolks while whisking, then return the lot. Adding the eggs straight to the pan scrambles them. For chocolate it means a controlled melt-and-cool that keeps it glossy and snapping.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "temperieren",
+          "spellings": [
+            "temperiert",
+            "angleichen",
+            "angeglichen"
+          ],
+          "summary": "Die Temperatur langsam angleichen, damit nichts gerinnt.",
+          "explanation": "Bei Eiern: unter Rühren etwas heisse Flüssigkeit ins Eigelb geben, dann alles zurück in die Pfanne. Gibt man die Eier direkt hinein, stocken sie. Bei Schokolade meint es das kontrollierte Schmelzen und Abkühlen, das sie glänzend und knackig hält.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "tempérer",
+          "spellings": [
+            "tempéré",
+            "tempérée",
+            "tempérez",
+            "détendre"
+          ],
+          "summary": "Élever la température progressivement pour éviter que cela ne tranche.",
+          "explanation": "Pour les œufs : versez un peu de liquide chaud sur les jaunes en fouettant, puis remettez le tout. Versés directement dans la casserole, ils coagulent. Pour le chocolat, il s'agit d'une fonte et d'un refroidissement contrôlés qui le gardent brillant et cassant.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "toast-spices",
+      "locales": {
+        "en-GB": {
+          "name": "toast spices",
+          "spellings": [
+            "toasted spices",
+            "toasting the spices",
+            "dry-fry the spices",
+            "toast in a dry pan"
+          ],
+          "summary": "Heat whole spices in a dry pan until they smell of themselves.",
+          "explanation": "No fat, moderate heat, moving constantly. They are ready when the smell changes and fills the room — perhaps a minute. They burn moments later and turn bitter, so tip them out of the pan at once.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "Gewürze rösten",
+          "spellings": [
+            "geröstete Gewürze",
+            "trocken rösten",
+            "in der trockenen Pfanne rösten",
+            "anrösten"
+          ],
+          "summary": "Ganze Gewürze in der trockenen Pfanne erhitzen, bis sie duften.",
+          "explanation": "Ohne Fett, mittlere Hitze, ständig in Bewegung. Fertig sind sie, wenn der Duft umschlägt und den Raum füllt – etwa eine Minute. Kurz darauf verbrennen sie und werden bitter, darum sofort aus der Pfanne kippen.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "torréfier les épices",
+          "spellings": [
+            "épices torréfiées",
+            "torréfié",
+            "griller à sec",
+            "poêle à sec"
+          ],
+          "summary": "Chauffer des épices entières à sec jusqu'à ce qu'elles embaument.",
+          "explanation": "Sans matière grasse, à feu moyen, en remuant sans cesse. Elles sont prêtes quand l'odeur change et emplit la pièce — une minute environ. Elles brûlent peu après et deviennent amères : videz la poêle aussitôt.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "truss",
+      "locales": {
+        "en-GB": {
+          "name": "truss",
+          "spellings": [
+            "trussed",
+            "trussing",
+            "tie the bird"
+          ],
+          "summary": "Tie a bird into a compact shape before roasting.",
+          "explanation": "Legs together, wings against the body. It holds the shape and keeps the thin ends from drying out before the thick parts are cooked — though an untrussed bird cooks through slightly faster.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "dressieren",
+          "spellings": [
+            "dressiert",
+            "binden",
+            "gebunden",
+            "zusammenbinden"
+          ],
+          "summary": "Ein Geflügel vor dem Braten in Form binden.",
+          "explanation": "Die Schenkel zusammen, die Flügel an den Körper. Das hält die Form und bewahrt die dünnen Enden davor, auszutrocknen, bevor die dicken Teile gar sind – ungebunden gart der Vogel allerdings etwas schneller durch.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "brider",
+          "spellings": [
+            "bridé",
+            "bridée",
+            "bridez",
+            "ficeler la volaille"
+          ],
+          "summary": "Ficeler une volaille pour lui donner une forme compacte avant de rôtir.",
+          "explanation": "Cuisses serrées, ailes contre le corps. Cela tient la forme et évite que les extrémités fines ne sèchent avant que les parties épaisses ne soient cuites — une volaille non bridée cuit toutefois un peu plus vite.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "whip",
+      "locales": {
+        "en-GB": {
+          "name": "whip",
+          "spellings": [
+            "whipped",
+            "whipping",
+            "whips",
+            "whip until",
+            "beat until stiff"
+          ],
+          "summary": "Beat air into something until it holds its shape.",
+          "explanation": "Cream and egg whites trap air in a foam. Whites need a clean, grease-free bowl — a trace of yolk or fat stops them. Cream goes from soft peaks to stiff to grainy butter, and there is no way back.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "schlagen",
+          "spellings": [
+            "geschlagen",
+            "steif schlagen",
+            "steifgeschlagen",
+            "aufschlagen",
+            "schlage steif"
+          ],
+          "summary": "Luft einschlagen, bis die Masse ihre Form hält.",
+          "explanation": "Rahm und Eiweiss binden Luft zu einem Schaum. Eiweiss braucht eine saubere, fettfreie Schüssel – eine Spur Eigelb oder Fett verhindert es. Rahm geht von weichen Spitzen über steif zu körniger Butter, und zurück führt kein Weg.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "fouetter",
+          "spellings": [
+            "fouetté",
+            "fouettée",
+            "fouettez",
+            "monter en neige",
+            "monté en neige"
+          ],
+          "summary": "Incorporer de l'air en battant jusqu'à ce que la masse tienne.",
+          "explanation": "La crème et les blancs emprisonnent l'air en mousse. Les blancs exigent un bol propre et sans gras — une trace de jaune suffit à tout empêcher. La crème passe du bec souple au ferme puis au beurre granuleux, sans retour possible.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "zest",
+      "locales": {
+        "en-GB": {
+          "name": "zest",
+          "spellings": [
+            "zested",
+            "zesting",
+            "grate the zest",
+            "finely grated zest"
+          ],
+          "summary": "Take the coloured outer layer off a citrus fruit.",
+          "explanation": "The oil, and the flavour, is all in the colour. Stop at the white pith underneath, which is bitter. Zest before juicing — it is far harder afterwards.",
+          "caution": "Wash unwaxed fruit, or use unwaxed fruit: the coating on waxed citrus is not meant to be eaten."
+        },
+        "de-CH": {
+          "name": "Zeste abreiben",
+          "spellings": [
+            "Zeste",
+            "Zesten",
+            "abgeriebene Schale",
+            "Schale abreiben",
+            "abreiben"
+          ],
+          "summary": "Die farbige äussere Schicht einer Zitrusfrucht abnehmen.",
+          "explanation": "Das Öl und damit das Aroma sitzt ganz in der Farbe. Vor dem weissen Mark darunter aufhören, es ist bitter. Vor dem Auspressen abreiben – danach ist es viel mühsamer.",
+          "caution": "Ungewachste Früchte verwenden oder gut waschen: der Überzug gewachster Zitrusfrüchte ist nicht zum Essen gedacht."
+        },
+        "fr-CH": {
+          "name": "zester",
+          "spellings": [
+            "zeste",
+            "zestes",
+            "râper le zeste",
+            "zeste râpé"
+          ],
+          "summary": "Prélever la couche colorée extérieure d'un agrume.",
+          "explanation": "L'huile, donc l'arôme, se trouve entièrement dans la couleur. Arrêtez-vous avant le blanc en dessous, qui est amer. Zestez avant de presser : après, c'est bien plus difficile.",
+          "caution": "Utilisez des fruits non traités ou lavez-les soigneusement : l'enrobage des agrumes cirés n'est pas destiné à être mangé."
+        }
+      }
+    }
+  ]
+}
