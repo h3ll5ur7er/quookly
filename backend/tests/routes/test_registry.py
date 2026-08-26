@@ -571,3 +571,79 @@ class TestRenaming:
             headers=admin,
         )
         assert response.status_code == 404
+
+
+class TestMerging:
+    """Folding one entry into another (Phase 7's reason for existing)."""
+
+    @pytest.fixture
+    async def both(self) -> None:
+        """What a French page leaves beside the entry the instance already ships.
+
+        Only the invented one is registered here: claiming an instance seeds the registry,
+        so `plain-flour` is already there and registering it again would collide. That is
+        also the true shape of the problem — the duplicate arrives next to a seeded row.
+        """
+        await registry.register(
+            slug="farine-t55",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={"fr-CH": ["farine T55"]},
+            origin=Origin.USER,
+        )
+
+    async def test_an_admin_can_merge_one_into_another(
+        self, client: AsyncClient, admin: dict[str, str], both: None
+    ) -> None:
+        response = await client.post(
+            f"{REGISTRY}/farine-t55/merge", json={"into": "plain-flour"}, headers=admin
+        )
+        assert response.status_code == 200
+        assert response.json()["entry"]["slug"] == "plain-flour"
+
+    async def test_the_survivor_answers_to_both_names(
+        self, client: AsyncClient, admin: dict[str, str], both: None
+    ) -> None:
+        body = (
+            await client.post(
+                f"{REGISTRY}/farine-t55/merge", json={"into": "plain-flour"}, headers=admin
+            )
+        ).json()
+        # The seeded entry already answers to several French spellings; the merge adds
+        # to them rather than replacing them, and its own name stays canonical.
+        assert "farine T55" in body["names"]["fr-CH"]
+        assert body["names"]["fr-CH"][0] != "farine T55"
+        assert "plain flour" in body["names"][ENGLISH]
+
+    async def test_the_merged_entry_is_gone(
+        self, client: AsyncClient, admin: dict[str, str], both: None
+    ) -> None:
+        await client.post(
+            f"{REGISTRY}/farine-t55/merge", json={"into": "plain-flour"}, headers=admin
+        )
+        assert (await client.get(f"{REGISTRY}/farine-t55", headers=admin)).status_code == 404
+
+    async def test_merging_into_itself_is_refused(
+        self, client: AsyncClient, admin: dict[str, str], both: None
+    ) -> None:
+        response = await client.post(
+            f"{REGISTRY}/farine-t55/merge", json={"into": "farine-t55"}, headers=admin
+        )
+        assert response.status_code == 400
+
+    async def test_merging_into_something_absent_is_a_404(
+        self, client: AsyncClient, admin: dict[str, str], both: None
+    ) -> None:
+        response = await client.post(
+            f"{REGISTRY}/plain-flour/merge", json={"into": "no-such-thing"}, headers=admin
+        )
+        assert response.status_code == 404
+
+    async def test_an_ordinary_cook_may_not_merge(
+        self, client: AsyncClient, cook: dict[str, str], both: None
+    ) -> None:
+        """It repoints every eater's dietary constraints. Not a cook's button."""
+        response = await client.post(
+            f"{REGISTRY}/farine-t55/merge", json={"into": "plain-flour"}, headers=cook
+        )
+        assert response.status_code == 403

@@ -2238,3 +2238,58 @@ different names, are the operations that make review worth doing; they follow. M
 that matters, because an import that created `plain flour` beside a registry that already had
 `wheat flour` has split one ingredient in two, and every allergen and nutrition fact now answers for
 half a kitchen.
+
+
+## ADR-052 Merging repoints an eater's constraints, which nothing in the database protects
+
+**Status:** Accepted
+
+**Context.** Two registry entries can be the same food. An import that created `plain flour` beside a
+registry that already had `wheat flour` has split one ingredient in two, and every allergen and
+nutrition fact then answers for half a kitchen. Phase 7 owes an admin the ability to put them back
+together.
+
+A registry entry is pointed at from seven tables by foreign key — nutrient profiles, names,
+allergens, recipe lines, pantry lots, waste, shopping ticks — and from an eighth by **text**.
+`EaterConstraintRow.ingredient_slug` is deliberately not a foreign key
+([the domain model](06-domain-model.md) records why): somebody avoids coriander whether or not the
+registry has heard of it, and a constraint that waits on a registry entry is a constraint that is
+silently not applied.
+
+**Decision.** `IngredientAccess.merge` is one transaction that repoints all eight, including the
+constraints, and it is written as a single function rather than composed from smaller verbs.
+
+**Rationale.** Seven of those relationships fail loudly if forgotten — a foreign key violation, or a
+recipe line pointing at a row that is gone. The eighth fails **silently and in the dangerous
+direction**: an eater who avoids `plain-flour` for medical reasons simply stops being warned, and
+nothing anywhere reports it. There is no database constraint that can catch it and no test that
+would fail by accident. It is called out in the docstring, has a test of its own, and is the reason
+this is not five tidy little functions that a later refactor could reorder.
+
+**Allergens are the union, and an examination on either side counts for both.** Two entries that
+disagree are two examinations of one food; the merge takes the cautious reading, so it can add an
+allergen and can never remove one ([ADR-006](#adr-006-allergen-determination-is-structural)). An
+unexamined side adds no information — the food was examined, whichever row somebody wrote it on.
+
+**The loser's names survive as spellings of the keeper.** That is the whole difference between
+merging and deleting. A page that says "plain flour" has to keep resolving, or the next import
+invents the duplicate again and the admin's work is undone by the next URL somebody pastes.
+
+**The keeper's facts win, and its gaps are filled from the loser.** An admin merging *into* an entry
+has chosen it as the truthful one, but a density on either side still describes the same food.
+
+**Unique constraints decide what is dropped, not what fails.** Four of the repointed tables have
+unique constraints that a naive repoint would violate — `(locale, normalised)` on names,
+`(ingredient_id, allergen)`, `(ingredient_id, source, nutrient)`, `(plan_id, ingredient_id)` on
+shopping ticks. In each case the keeper's row stands and the loser's duplicate is deleted, because
+the keeper is the entry that was chosen.
+
+**Cost.** Merging cannot be undone. The interface therefore asks twice and says plainly what moves.
+An undo would mean recording the whole prior shape of eight tables, which is a bigger machine than
+the mistake warrants at household scale.
+
+**What this does not settle.** The survivor keeps the keeper's `origin`, so merging a cook's entry
+into a seeded one produces a seeded row carrying names a cook contributed. If a future upgrade path
+([ADR-016](#adr-016-ship-seed-content-marked-and-upgradable)) replaces seeded rows wholesale it must
+not discard those aliases. Recorded here rather than solved, because the upgrade path is Phase 9 and
+guessing at its shape now would be inventing a constraint for it.

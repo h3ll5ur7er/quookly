@@ -216,6 +216,72 @@
         </form>
       }
     </section>
+    <!-- --- the same thing under another name ----------------------------------------- -->
+    @if (isAdmin()) {
+      <section aria-labelledby="merge-heading">
+        <h2 id="merge-heading" i18n="@@entryMergeHeading">Is this the same as something else?</h2>
+        <p class="entry__note" i18n="@@entryMergeWhy">
+          An import that created this beside an entry the registry already had has split one
+          ingredient in two. Merging puts them back together; this entry's names come across, so
+          pages that use them still resolve.
+        </p>
+
+        @if (proposed(); as target) {
+          <div class="entry__confirm" role="alertdialog" aria-labelledby="confirm-heading">
+            <p id="confirm-heading">
+              <span i18n="@@entryConfirmMerge">Merge this into</span>
+              <strong>{{ target.name }}</strong>
+            </p>
+            <p class="entry__note" i18n="@@entryMergeIrreversible">
+              This entry disappears. Recipes, pantry lots, shopping lists and everybody's dietary
+              constraints move across. It cannot be undone.
+            </p>
+            <button type="button" class="action" (click)="confirmMerge()" i18n="@@entryMergeYes">
+              Yes, merge them
+            </button>
+            <button
+              type="button"
+              class="action action--quiet"
+              (click)="cancelMerge()"
+              i18n="@@entryMergeNo"
+            >
+              Cancel
+            </button>
+          </div>
+        } @else {
+          <div class="field">
+            <label for="merge-into" i18n="@@entryMergeSearch">Find the other entry</label>
+            <input
+              id="merge-into"
+              type="search"
+              [formControl]="mergeInto"
+              i18n-placeholder="@@entryMergePlaceholder"
+              placeholder="An ingredient name"
+            />
+          </div>
+
+          @if (candidates().length > 0) {
+            <ul class="entry__candidates">
+              @for (candidate of candidates(); track candidate.id) {
+                <li class="entry__candidate">
+                  <span>{{ candidate.name }}</span>
+                  <button
+                    type="button"
+                    class="entry__approve"
+                    (click)="propose(candidate)"
+                    i18n="@@entryMergeChoose"
+                  >
+                    Merge into this
+                  </button>
+                </li>
+              }
+            </ul>
+          } @else if (searched()) {
+            <p class="entry__note" i18n="@@entryMergeNoMatch">Nothing else matches that.</p>
+          }
+        }
+      </section>
+    }
   } @else {
     <p class="entry__loading" i18n="@@entryLoading">Loading…</p>
   }

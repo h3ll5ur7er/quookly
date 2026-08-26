@@ -92,6 +92,10 @@ class NameAlreadyMeans(QuooklyError):
         self.slug = slug
 
 
+class NothingToMerge(QuooklyError):
+    """An entry was asked to be merged into itself."""
+
+
 class UnsupportedDocument(QuooklyError):
     """The document is not one this version can read.
 

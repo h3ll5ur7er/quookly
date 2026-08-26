@@ -5,7 +5,11 @@ from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
-from quookly.contracts.errors import IngredientNotRegistered, NameAlreadyMeans
+from quookly.contracts.errors import (
+    IngredientNotRegistered,
+    NameAlreadyMeans,
+    NothingToMerge,
+)
 from quookly.contracts.ingredient import (
     UNSET,
     Allergen,
@@ -46,6 +50,16 @@ class Classification(BaseModel):
     """
 
     allergens: list[Allergen]
+
+
+class Merge(BaseModel):
+    """Which entry this one is really the same food as.
+
+    The entry in the path is the one that disappears, because that is the direction an
+    admin arrives from: they are looking at what an import invented and recognising it.
+    """
+
+    into: str = Field(min_length=1, max_length=200)
 
 
 class Renaming(BaseModel):
@@ -217,3 +231,29 @@ async def rename_ingredient(
     if renamed is None:
         raise NOT_FOUND
     return renamed
+
+
+@router.post("/registry/{slug}/merge", response_model=RegistryEntryDetailView)
+async def merge_ingredient(slug: str, merge: Merge, admin: CurrentAdmin) -> RegistryEntryDetailView:
+    """Fold this entry into another, because they are the same food.
+
+    The entry named in the path disappears; the one in the body survives and answers to
+    both entries' names. Returns the survivor, since the caller's page has just ceased to
+    exist.
+
+    An administrator's, and not a small act: it repoints recipe lines, pantry lots, waste,
+    shopping ticks, nutrition figures and — the one no foreign key protects — the dietary
+    constraints of everybody this instance cooks for.
+    """
+    try:
+        merged = await ingredient_manager.merge(keeper=merge.into, loser=slug)
+    except NothingToMerge as same:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="An ingredient cannot be merged into itself.",
+        ) from same
+    except IngredientNotRegistered as absent:
+        raise NOT_FOUND from absent
+    if merged is None:
+        raise NOT_FOUND
+    return merged

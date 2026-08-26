@@ -5,6 +5,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { provideApi } from '@api';
 import { AuthStore } from '../../core/auth/auth.store';
+import { vi } from 'vitest';
 import { IngredientComponent } from './ingredient.component';
 
 /** What an import leaves behind: a guessed kind, no density, nobody has looked. */
@@ -65,7 +66,8 @@ describe('IngredientComponent', () => {
       imports: [IngredientComponent],
       providers: [
         provideZonelessChangeDetection(),
-        provideRouter([]),
+        // The merge navigates to the survivor, so that route has to exist here.
+        provideRouter([{ path: 'settings/registry/:slug', children: [] }]),
         provideHttpClient(),
         provideHttpClientTesting(),
         provideApi(''),
@@ -373,6 +375,109 @@ describe('IngredientComponent', () => {
       asked().flush(detail());
       await fixture.whenStable();
       expect(text()).not.toContain('Rename');
+    });
+  });
+
+  describe('merging it away', () => {
+    beforeEach(() => arrive({ admin: true }));
+    afterEach(() => vi.useRealTimers());
+
+    /**
+     * Type into the target search and let the debounce elapse.
+     *
+     * Fake timers because the search is settled before it asks — a box that fires on every
+     * keystroke asks the server about "f", "fl" and "flo" to answer a question about flour.
+     * Nothing else in this suite exercises a debounced path, so there was no helper.
+     */
+    async function look(term: string): Promise<void> {
+      vi.useFakeTimers();
+      set('#merge-into', term);
+      await vi.advanceTimersByTimeAsync(300);
+      vi.useRealTimers();
+      await fixture.whenStable();
+    }
+
+    it('looks for the entry to merge into', async () => {
+      asked().flush(detail());
+      await fixture.whenStable();
+
+      await look('flour');
+
+      const search = backend.expectOne(
+        (request) => request.url === '/api/v1/registry' && request.params.get('search') === 'flour',
+      );
+      search.flush({ entries: [{ ...CREME, slug: 'wheat-flour', name: 'wheat flour' }], total: 1 });
+      await fixture.whenStable();
+
+      expect(text()).toContain('wheat flour');
+    });
+
+    it('never offers the entry itself as its own target', async () => {
+      asked().flush(detail());
+      await fixture.whenStable();
+
+      await look('creme');
+
+      backend
+        .expectOne((request) => request.url === '/api/v1/registry')
+        .flush({ entries: [CREME], total: 1 });
+      await fixture.whenStable();
+
+      expect(text()).toContain('Nothing else matches');
+    });
+
+    it('asks before doing it', async () => {
+      // It repoints recipe lines, pantry lots, shopping ticks and every eater's dietary
+      // constraints, and it cannot be undone. A single click is the wrong shape for that.
+      asked().flush(detail());
+      await fixture.whenStable();
+
+      await look('flour');
+      backend
+        .expectOne((request) => request.url === '/api/v1/registry')
+        .flush({ entries: [{ ...CREME, slug: 'wheat-flour', name: 'wheat flour' }], total: 1 });
+      await fixture.whenStable();
+
+      click('Merge into this');
+      await fixture.whenStable();
+
+      // Nothing sent yet: the confirmation is showing.
+      expect(text()).toContain('cannot be undone');
+      backend.expectNone('/api/v1/registry/creme-fraiche/merge');
+    });
+
+    it('merges once confirmed', async () => {
+      asked().flush(detail());
+      await fixture.whenStable();
+
+      await look('flour');
+      backend
+        .expectOne((request) => request.url === '/api/v1/registry')
+        .flush({ entries: [{ ...CREME, slug: 'wheat-flour', name: 'wheat flour' }], total: 1 });
+      await fixture.whenStable();
+
+      click('Merge into this');
+      await fixture.whenStable();
+      click('Yes, merge them');
+      await fixture.whenStable();
+
+      const request = backend.expectOne('/api/v1/registry/creme-fraiche/merge');
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual({ into: 'wheat-flour' });
+      request.flush(
+        detail(
+          { ...CREME, slug: 'wheat-flour', name: 'wheat flour' },
+          { 'en-GB': ['wheat flour'] },
+        ),
+      );
+    });
+
+    it('offers a cook no way to merge', async () => {
+      TestBed.resetTestingModule();
+      await arrive();
+      asked().flush(detail());
+      await fixture.whenStable();
+      expect(text()).not.toContain('Merge');
     });
   });
 

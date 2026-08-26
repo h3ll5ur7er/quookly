@@ -13,15 +13,21 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from quookly.access.database import session
 from quookly.access.models import (
+    EaterConstraintRow,
     IngredientAllergenRow,
+    IngredientLineRow,
     IngredientNameRow,
     IngredientRow,
     NutrientProfileRow,
+    ShoppingTickRow,
+    StockItemRow,
+    WasteRow,
 )
 from quookly.contracts.errors import (
     IngredientAlreadyRegistered,
     IngredientNotRegistered,
     NameAlreadyMeans,
+    NothingToMerge,
 )
 from quookly.contracts.ingredient import (
     UNSET,
@@ -708,6 +714,185 @@ async def amend(
         await active.refresh(row)
 
         return await _restated(active, row, slug)
+
+
+async def merge(*, keeper: str, loser: str) -> Ingredient:
+    """Fold one registry entry into another, because they are the same food.
+
+    The operation the registry screen exists for. An import that created `plain flour`
+    beside a registry that already had `wheat flour` split one ingredient in two, and every
+    allergen and nutrition fact then answers for half a kitchen.
+
+    Three things about it are load-bearing.
+
+    **The loser's names survive as spellings of the keeper.** That is the difference
+    between merging and deleting: a page that says "plain flour" has to keep resolving, or
+    the next import invents the duplicate all over again.
+
+    **Allergens are the union, and one examination counts for both.** Two entries that
+    disagree are two examinations of one food, and the merge takes the cautious reading —
+    it can add an allergen and can never remove one (ADR-006). An unexamined side adds no
+    information: the food was examined, whichever row somebody wrote it on.
+
+    **An eater's constraints are repointed by slug.** `eater_constraint.ingredient_slug` is
+    text with no foreign key, deliberately, so that avoiding coriander works whether or not
+    the registry has heard of it. The cost is that nothing in the database protects it here:
+    an eater avoiding the loser would silently stop being warned. That is an allergy that
+    stops firing and says nothing, and it is the reason this function is written as one
+    transaction rather than a sequence of tidy little verbs.
+
+    The keeper's own facts win where it has them and are filled from the loser where it does
+    not — an admin merging *into* an entry has chosen it as the truthful one, but a figure
+    on either side still describes the same food.
+    """
+    if normalise(keeper) == normalise(loser):
+        raise NothingToMerge(keeper)
+
+    async with session() as active:
+        rows = {
+            row.slug: row
+            for row in (
+                await active.exec(
+                    select(IngredientRow).where(col(IngredientRow.slug).in_([keeper, loser]))
+                )
+            ).all()
+        }
+        surviving = rows.get(keeper)
+        going = rows.get(loser)
+        if surviving is None or surviving.id is None:
+            raise IngredientNotRegistered(keeper)
+        if going is None or going.id is None:
+            raise IngredientNotRegistered(loser)
+
+        # --- what the entry knows about itself -------------------------------------------
+        if surviving.density is None:
+            surviving.density = going.density
+        if surviving.piece_grams is None:
+            surviving.piece_grams = going.piece_grams
+        surviving.allergens_classified = (
+            surviving.allergens_classified or going.allergens_classified
+        )
+
+        # --- the allergens, deduplicated: `(ingredient_id, allergen)` is unique -----------
+        held = {
+            entry.allergen
+            for entry in (
+                await active.exec(
+                    select(IngredientAllergenRow).where(
+                        col(IngredientAllergenRow.ingredient_id) == surviving.id
+                    )
+                )
+            ).all()
+        }
+        for entry in (
+            await active.exec(
+                select(IngredientAllergenRow).where(
+                    col(IngredientAllergenRow.ingredient_id) == going.id
+                )
+            )
+        ).all():
+            if entry.allergen in held:
+                await active.delete(entry)
+            else:
+                entry.ingredient_id = surviving.id
+                active.add(entry)
+                held.add(entry.allergen)
+
+        # --- the names: `(locale, normalised)` is unique ----------------------------------
+        spoken = {
+            (name.locale, name.normalised)
+            for name in (
+                await active.exec(
+                    select(IngredientNameRow).where(
+                        col(IngredientNameRow.ingredient_id) == surviving.id
+                    )
+                )
+            ).all()
+        }
+        for name in (
+            await active.exec(
+                select(IngredientNameRow).where(col(IngredientNameRow.ingredient_id) == going.id)
+            )
+        ).all():
+            if (name.locale, name.normalised) in spoken:
+                await active.delete(name)
+                continue
+            name.ingredient_id = surviving.id
+            # Demoted on the way across: the keeper already has a name in this language, and
+            # two canonical names for one locale is not a state `name_for` can read.
+            name.is_canonical = False
+            active.add(name)
+            spoken.add((name.locale, name.normalised))
+
+        # --- the figures: `(ingredient_id, source, nutrient)` is unique -------------------
+        published = {
+            (profile.source, profile.nutrient)
+            for profile in (
+                await active.exec(
+                    select(NutrientProfileRow).where(
+                        col(NutrientProfileRow.ingredient_id) == surviving.id
+                    )
+                )
+            ).all()
+        }
+        for profile in (
+            await active.exec(
+                select(NutrientProfileRow).where(col(NutrientProfileRow.ingredient_id) == going.id)
+            )
+        ).all():
+            if (profile.source, profile.nutrient) in published:
+                await active.delete(profile)
+                continue
+            profile.ingredient_id = surviving.id
+            active.add(profile)
+            published.add((profile.source, profile.nutrient))
+
+        # --- everything that merely points at it ------------------------------------------
+        for pointing in (IngredientLineRow, StockItemRow, WasteRow):
+            for row in (
+                await active.exec(select(pointing).where(col(pointing.ingredient_id) == going.id))
+            ).all():
+                row.ingredient_id = surviving.id
+                active.add(row)
+
+        # `(plan_id, ingredient_id)` is unique: a plan that ticked both lines has ticked one
+        # ingredient twice, and the merge leaves it ticked once.
+        ticked = {
+            tick.plan_id
+            for tick in (
+                await active.exec(
+                    select(ShoppingTickRow).where(
+                        col(ShoppingTickRow.ingredient_id) == surviving.id
+                    )
+                )
+            ).all()
+        }
+        for tick in (
+            await active.exec(
+                select(ShoppingTickRow).where(col(ShoppingTickRow.ingredient_id) == going.id)
+            )
+        ).all():
+            if tick.plan_id in ticked:
+                await active.delete(tick)
+                continue
+            tick.ingredient_id = surviving.id
+            active.add(tick)
+            ticked.add(tick.plan_id)
+
+        # --- and the one nothing protects --------------------------------------------------
+        for constraint in (
+            await active.exec(
+                select(EaterConstraintRow).where(col(EaterConstraintRow.ingredient_slug) == loser)
+            )
+        ).all():
+            constraint.ingredient_slug = keeper
+            active.add(constraint)
+
+        await active.delete(going)
+        await active.commit()
+        await active.refresh(surviving)
+
+        return await _restated(active, surviving, keeper)
 
 
 async def approve(slug: str) -> Ingredient:

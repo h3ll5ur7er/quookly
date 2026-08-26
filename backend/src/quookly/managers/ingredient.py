@@ -10,6 +10,7 @@ from decimal import Decimal
 
 from quookly.access import cook as cook_access
 from quookly.access import ingredient as registry
+from quookly.access import search as search_index
 from quookly.contracts.errors import NameAlreadyMeans
 from quookly.contracts.ingredient import (
     UNSET,
@@ -167,3 +168,18 @@ async def rename(slug: str, locale: str, name: str) -> RegistryEntryDetailView |
     """
     await registry.rename(slug, locale, name)
     return await detail(slug)
+
+
+async def merge(*, keeper: str, loser: str) -> RegistryEntryDetailView | None:
+    """Fold one entry into another, because they are the same food.
+
+    The search index is rebuilt afterwards. It stores each recipe's ingredient *names* as
+    text, so a merge changes what a recipe should be findable by — a recipe that said
+    "plain flour" is now wheat flour and should answer to both. Rebuilt whole rather than
+    per recipe: the index is derived, rebuilding is cheap at household scale, and merging
+    is a rare deliberate act. Catching every affected recipe by hand is the kind of
+    bookkeeping that is wrong once and then silently wrong for ever.
+    """
+    await registry.merge(keeper=keeper, loser=loser)
+    await search_index.reindex()
+    return await detail(keeper)

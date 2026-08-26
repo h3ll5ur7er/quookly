@@ -1152,6 +1152,59 @@
         }
       }
     },
+    "/api/v1/registry/{slug}/merge": {
+      "post": {
+        "tags": [
+          "ingredients"
+        ],
+        "summary": "Merge Ingredient",
+        "description": "Fold this entry into another, because they are the same food.\n\nThe entry named in the path disappears; the one in the body survives and answers to\nboth entries' names. Returns the survivor, since the caller's page has just ceased to\nexist.\n\nAn administrator's, and not a small act: it repoints recipe lines, pantry lots, waste,\nshopping ticks, nutrition figures and \u2014 the one no foreign key protects \u2014 the dietary\nconstraints of everybody this instance cooks for.",
+        "operationId": "mergeIngredient",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Merge"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryEntryDetailView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/eaters": {
       "get": {
         "tags": [
@@ -3745,6 +3798,22 @@
         ],
         "title": "Meal",
         "description": "Which meal of the day a slot is.\n\nFour coarse ones rather than free text or a clock time. A plan is read as a grid, and\na grid needs a fixed number of rows; \"18:30\" would sort correctly and group not at all."
+      },
+      "Merge": {
+        "properties": {
+          "into": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Into"
+          }
+        },
+        "type": "object",
+        "required": [
+          "into"
+        ],
+        "title": "Merge",
+        "description": "Which entry this one is really the same food as.\n\nThe entry in the path is the one that disappears, because that is the direction an\nadmin arrives from: they are looking at what an import invented and recognising it."
       },
       "Naming": {
         "properties": {

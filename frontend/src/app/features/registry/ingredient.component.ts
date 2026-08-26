@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   Allergen,
   IngredientKind,
@@ -8,11 +8,19 @@ import {
   RegistryEntryDetailView,
   RegistryEntryView,
 } from '@api';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { AuthStore } from '../../core/auth/auth.store';
 import { ALLERGENS, allergenLabel } from '../../core/dietary/labels';
 import { kindLabel } from '../../core/measure/kinds';
 
 /** The kinds, in the order the unit preferences list them. */
+/** Long enough that a phone keyboard is not searched at, short enough to feel immediate. */
+const SETTLE = 200;
+
+/** A shortlist. Merging is a decision, not a browse. */
+const CANDIDATES = 8;
+
 const KINDS: readonly IngredientKind[] = [
   IngredientKind.solid,
   IngredientKind.liquid,
@@ -30,6 +38,7 @@ const KINDS: readonly IngredientKind[] = [
 export class IngredientComponent {
   private readonly service = inject(IngredientsService);
   private readonly forms = inject(FormBuilder);
+  private readonly router = inject(Router);
 
   protected readonly isAdmin = inject(AuthStore).isAdmin;
   private readonly slug = inject(ActivatedRoute).snapshot.paramMap.get('slug') ?? '';
@@ -86,12 +95,47 @@ export class IngredientComponent {
     name: ['', Validators.required],
   });
 
+  /** What to search the registry for when looking for the entry this really is. */
+  protected readonly mergeInto = new FormControl('', { nonNullable: true });
+
+  /** Candidates for the merge, never including this entry itself. */
+  protected readonly candidates = signal<RegistryEntryView[]>([]);
+  protected readonly searched = signal(false);
+
+  /**
+   * The entry an admin has chosen but not yet confirmed.
+   *
+   * Two steps on purpose. Merging repoints recipe lines, pantry lots, waste, shopping
+   * ticks and every eater's dietary constraints, and it cannot be undone — a single click
+   * is the wrong shape for that.
+   */
+  protected readonly proposed = signal<RegistryEntryView | null>(null);
+
   protected readonly naming = this.forms.nonNullable.group({
     locale: ['', Validators.required],
     spelling: ['', Validators.required],
   });
 
   constructor() {
+    this.mergeInto.valueChanges
+      .pipe(
+        debounceTime(SETTLE),
+        distinctUntilChanged(),
+        switchMap((term) =>
+          this.service.listRegistry(term.trim() || undefined, undefined, undefined, 0, CANDIDATES),
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe({
+        next: (page) => {
+          // Never itself: an entry cannot be its own target, and offering it invites the
+          // one mistake the API refuses anyway.
+          this.candidates.set(page.entries.filter((entry) => entry.slug !== this.slug));
+          this.searched.set(true);
+        },
+        error: () => this.failed.set(true),
+      });
+
     this.service.getIngredient(this.slug).subscribe({
       next: (found) => this.arrived(found),
       error: (refusal: { status?: number }) =>
@@ -210,6 +254,36 @@ export class IngredientComponent {
             ? this.nameRefused.set(refusal.error?.detail ?? null)
             : this.saveFailed.set(true),
       });
+  }
+
+  /** Choose a target, which shows the confirmation rather than doing anything. */
+  protected propose(candidate: RegistryEntryView): void {
+    this.proposed.set(candidate);
+  }
+
+  protected cancelMerge(): void {
+    this.proposed.set(null);
+  }
+
+  /**
+   * Do it.
+   *
+   * The page is about to describe an entry that no longer exists, so it navigates to the
+   * survivor rather than re-rendering something that has been merged away.
+   */
+  protected confirmMerge(): void {
+    const target = this.proposed();
+    if (target === null) {
+      return;
+    }
+    this.saveFailed.set(false);
+    this.service.mergeIngredient(this.slug, { into: target.slug }).subscribe({
+      next: (merged) => {
+        this.proposed.set(null);
+        void this.router.navigate(['/settings/registry', merged.entry.slug]);
+      },
+      error: () => this.saveFailed.set(true),
+    });
   }
 
   protected approve(): void {

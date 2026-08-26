@@ -312,9 +312,12 @@ What this phase owes:
   act again: adding a spelling and deciding which spelling *is* the name are different, and the old
   name is demoted rather than deleted — pages out there still use it, and an import that stopped
   resolving it would invent the duplicate this screen exists to clean up.
-- **Merging two entries that are the same thing under different names.** The operation that matters:
-  an import that created `plain flour` beside a registry that already had `wheat flour` has split one
-  ingredient in two, and every allergen and nutrition fact now answers for half a kitchen.
+- ~~**Merging two entries that are the same thing under different names.**~~ **Built**
+  ([ADR-052](07-decisions.md#adr-052-merging-repoints-an-eaters-constraints-which-nothing-in-the-database-protects)).
+  Eight relationships move, and the eighth — an eater's dietary constraints — is joined by text
+  rather than by a foreign key, so it is the one that fails silently and in the dangerous direction.
+  Allergens merge as a union so a merge can never make a food look safer; the loser's names survive
+  as spellings, or the next import invents the duplicate again.
 - ~~**A "needs approval" state.** Distinct from *unclassified allergens*, which is a fact about
   knowledge; this is a fact about **review**. An entry an import invented is usable immediately —
   refusing to import until an admin wakes up would be absurd — but it is flagged, and an admin can
