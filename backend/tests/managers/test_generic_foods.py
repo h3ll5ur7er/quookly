@@ -299,3 +299,33 @@ class TestWhatACookCanActuallyType:
             for spelling in entry["names"].get(ENGLISH, [])
         }
         assert "yogurt" not in claimed
+
+    def test_a_head_the_table_spells_two_ways_is_still_ambiguous(self) -> None:
+        """The same rule, arriving through a spelling rather than a variant.
+
+        The table writes `Soy drink, chocolate` beside `Soya drink, plain`, `Pizza dough
+        ..., baked` beside `Pizza doug ..., raw`, and `Brussels sprouts, raw` beside
+        `Brussel sprouts, steamed`. Compared literally each spelling looked like the only
+        row for its head, so both rows claimed a bare name — and "soy drink" meant the
+        chocolate one, at 76 kcal against 40.
+
+        Neither row is wrong and neither is a duplicate: they are different foods with
+        different figures. What they cannot be is *the plain one*, so neither takes the
+        bare word and the cook picks, exactly as with yogurt above.
+        """
+        claimed = {
+            spelling
+            for entry in seed.read_generic_foods()
+            for spelling in entry["names"].get(ENGLISH, [])
+        }
+        for bare in ("soy drink", "soya drink", "pizza dough", "brussel sprouts"):
+            assert bare not in claimed, bare
+
+    def test_the_full_names_still_say_which_food_it_is(self) -> None:
+        """Taking the bare word away must not take the entry with it."""
+        named = {
+            entry["slug"]: entry["names"].get(ENGLISH, []) for entry in seed.read_generic_foods()
+        }
+        assert named["chocolate-soy-drink"][0] == "chocolate soy drink"
+        assert named["plain-soya-drink"][0] == "plain soya drink"
+        assert named["baked-pizza-dough"][0] == "baked pizza dough"

@@ -40,6 +40,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import allergens as allergen_rules  # noqa: E402
 
+from quookly.contracts.matching import Named  # noqa: E402
+from quookly.engines import matching  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE = ROOT / "reference"
 OUT = Path(__file__).parent / "generic-foods.json"
@@ -284,6 +287,19 @@ def _head(name: str) -> str:
     return _without_asides(_parts(name)[0]).lower()
 
 
+def _spelled_alike(heads: list[str]) -> list[tuple[str, str]]:
+    """Pairs of heads that are one head written two ways.
+
+    Uses the application's own `MatchingEngine`, which is the same judgement made in the
+    same place: it ranks names that look like one thing and refuses opposites, and here it
+    is asked only to say which heads to treat as one before deciding who may claim a bare
+    name. Nothing is merged — the two rows stay two ingredients, they simply both stop
+    being "the plain one".
+    """
+    named = [Named(slug=head, names=(head,)) for head in heads]
+    return [(pair.slug, pair.other) for pair in matching.duplicates(named, limit=10_000)]
+
+
 def _starter_claims() -> tuple[set[str], dict[str, set[str]]]:
     """The slugs and names the hand-written starter set already owns.
 
@@ -351,6 +367,16 @@ def main() -> None:
     plainest: dict[str, list[tuple[int, str]]] = {}
     for row_id, row in chosen.items():
         plainest.setdefault(_head(row[NAME]), []).append((_plainness(row[NAME]), row_id))
+
+    # Heads the table spells more than one way are one head here. It writes `Soy drink,
+    # chocolate` beside `Soya drink, plain`, `Pizza dough ..., baked` beside `Pizza doug
+    # ..., raw`, and `Brussels sprouts, raw` beside `Brussel sprouts, steamed`. Compared
+    # literally each spelling looks like the only row for its head, so *both* rows claim a
+    # bare name — and "soy drink" then means the chocolate one. That is the exact failure
+    # the check below exists to prevent, arriving through a spelling rather than a variant.
+    for head, other in _spelled_alike(sorted(plainest)):
+        plainest[head] = plainest[other] = sorted({*plainest[head], *plainest[other]})
+
     unambiguous = {
         head: rows[0][1]
         for head, variants in plainest.items()
