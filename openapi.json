@@ -743,6 +743,101 @@
         }
       }
     },
+    "/api/v1/registry": {
+      "get": {
+        "tags": [
+          "ingredients"
+        ],
+        "summary": "List Registry",
+        "description": "Browse the ingredient registry \u2014 the largest list in the app.\n\nSeparate from `search_ingredients`, which exists to point a recipe line at an entry\nand stops at a handful. This is for looking at the registry itself: complete, paged\nand counted, so the entries an import invented can be found and reviewed.",
+        "operationId": "listRegistry",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Part of an ingredient name.",
+              "title": "Search"
+            },
+            "description": "Part of an ingredient name."
+          },
+          {
+            "name": "origin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Origin"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Narrow to seeded entries, or to what imports invented.",
+              "title": "Origin"
+            },
+            "description": "Narrow to seeded entries, or to what imports invented."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryPageView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/eaters": {
       "get": {
         "tags": [
@@ -3362,6 +3457,15 @@
         "title": "NutritionView",
         "description": "What a recipe contains, as a client reads it."
       },
+      "Origin": {
+        "type": "string",
+        "enum": [
+          "seed",
+          "user"
+        ],
+        "title": "Origin",
+        "description": "Where a record came from.\n\nUpgrades may replace seeded records and must never touch a cook's own (ADR-016)."
+      },
       "Outcome": {
         "type": "string",
         "enum": [
@@ -4031,6 +4135,99 @@
         ],
         "title": "Registration",
         "description": "A request to create an account.\n\nThe password rule lives here rather than in the manager: it constrains the shape of\nthe input, so it is the contract's business, and stating it here means the API\nrejects a short password before any work is done."
+      },
+      "RegistryEntryView": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/IngredientKind"
+          },
+          "density": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Density"
+          },
+          "piece_grams": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Piece Grams"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/Origin"
+          },
+          "allergens": {
+            "items": {
+              "$ref": "#/components/schemas/Allergen"
+            },
+            "type": "array",
+            "title": "Allergens"
+          },
+          "classified": {
+            "type": "boolean",
+            "title": "Classified"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "kind",
+          "density",
+          "piece_grams",
+          "origin",
+          "allergens",
+          "classified"
+        ],
+        "title": "RegistryEntryView",
+        "description": "A registry entry as the registry screen reads it.\n\nWider than `IngredientView`, which exists to point a recipe line at something and so\ncarries only enough to recognise one. This carries what is needed to *judge* an\nentry: the three fields an import guesses at \u2014 kind, density, origin \u2014 and whether\nanybody has classified its allergens."
+      },
+      "RegistryPageView": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/RegistryEntryView"
+            },
+            "type": "array",
+            "title": "Entries"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entries",
+          "total"
+        ],
+        "title": "RegistryPageView",
+        "description": "A page of the registry, with the size of the whole."
       },
       "SessionOutcome": {
         "type": "string",

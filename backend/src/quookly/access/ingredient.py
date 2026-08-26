@@ -5,7 +5,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 
+from sqlalchemy import ColumnElement, func
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import aliased
 from sqlmodel import col, delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -17,7 +19,13 @@ from quookly.access.models import (
     NutrientProfileRow,
 )
 from quookly.contracts.errors import IngredientAlreadyRegistered
-from quookly.contracts.ingredient import Allergen, Ingredient, IngredientKind, Origin
+from quookly.contracts.ingredient import (
+    Allergen,
+    Ingredient,
+    IngredientKind,
+    Origin,
+    RegistryPage,
+)
 from quookly.contracts.nutrition import NutrientProfile, NutritionSource
 
 # The registry is seeded in English, so a Swiss instance must still resolve a seeded name
@@ -428,6 +436,92 @@ async def search(term: str, locale: str, limit: int = 20) -> list[Ingredient]:
             found[row.id] = _to_contract(row, display)
 
     return sorted(found.values(), key=lambda entry: entry.name)[:limit]
+
+
+async def browse(
+    locale: str,
+    *,
+    term: str | None = None,
+    origin: Origin | None = None,
+    offset: int = 0,
+    limit: int = 50,
+) -> RegistryPage:
+    """A page of the registry, ordered by the name the reader will see.
+
+    Different from `search` in what it is for. `search` answers "which entry did the cook
+    mean" and stops at the first handful; this answers "what is in here", which means it
+    has to be complete, ordered and countable. The registry is the largest list in the
+    app and the only one a cook currently cannot look at.
+
+    Ordering is by display name with the id as a tiebreak. The tiebreak is not
+    decoration: two entries sharing a name would otherwise be ordered differently on each
+    query, and a page boundary landing between them would show one of them twice and the
+    other never.
+
+    `term` matches any spelling, canonical or alias, in the reader's locale or the one the
+    registry was seeded in — the same reach as `search`, so a name that resolves an import
+    also finds its entry here. `origin` narrows to what was seeded or to what a cook's
+    imports invented, which is the pile worth reviewing (ADR-016, ADR-029).
+    """
+    local_name = aliased(IngredientNameRow)
+    seeded_name = aliased(IngredientNameRow)
+    display = func.coalesce(local_name.name, seeded_name.name, IngredientRow.slug)
+
+    narrowing: list[ColumnElement[bool]] = []
+    if origin is not None:
+        narrowing.append(col(IngredientRow.origin) == origin)
+    wanted = normalise(term) if term else ""
+    if wanted:
+        # An `exists` rather than a join: an entry with two matching aliases is one entry,
+        # and a join would page it as two.
+        narrowing.append(
+            select(IngredientNameRow.id)
+            .where(
+                col(IngredientNameRow.ingredient_id) == IngredientRow.id,
+                col(IngredientNameRow.normalised).contains(wanted),
+                col(IngredientNameRow.locale).in_([locale, SOURCE_LOCALE]),
+            )
+            .exists()
+        )
+
+    async with session() as active:
+        total = (
+            await active.exec(select(func.count()).select_from(IngredientRow).where(*narrowing))
+        ).one()
+
+        rows = (
+            await active.exec(
+                select(IngredientRow, display)
+                .outerjoin(
+                    local_name,
+                    (col(local_name.ingredient_id) == IngredientRow.id)
+                    & (col(local_name.locale) == locale)
+                    & col(local_name.is_canonical).is_(True),
+                )
+                .outerjoin(
+                    seeded_name,
+                    (col(seeded_name.ingredient_id) == IngredientRow.id)
+                    & (col(seeded_name.locale) == SOURCE_LOCALE)
+                    & col(seeded_name.is_canonical).is_(True),
+                )
+                .where(*narrowing)
+                .order_by(display, col(IngredientRow.id))
+                .offset(offset)
+                .limit(limit)
+            )
+        ).all()
+
+        found = [(row, str(name)) for row, name in rows if row.id is not None]
+        allergens = await allergens_within(active, [row.id for row, _ in found if row.id])
+
+    return RegistryPage(
+        entries=[
+            _to_contract(row, name, allergens.get(row.id, (frozenset(), False))[0])
+            for row, name in found
+            if row.id is not None
+        ],
+        total=total,
+    )
 
 
 async def classify(slug: str, allergens: frozenset[Allergen]) -> None:

@@ -82,6 +82,19 @@ class Ingredient:
     piece_grams: Decimal | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class RegistryPage:
+    """One screen of the registry, and how much of it there is.
+
+    The count is separate from the page because it answers a different question: the page
+    says what to draw, the total says whether there is more. Nine hundred entries do not
+    fit on a phone, and a list that cannot say how long it is cannot be paged through.
+    """
+
+    entries: list[Ingredient]
+    total: int
+
+
 class IngredientView(BaseModel):
     """A registry entry as a client reads it."""
 
@@ -91,3 +104,37 @@ class IngredientView(BaseModel):
     slug: str
     name: str
     kind: IngredientKind
+
+
+class RegistryEntryView(BaseModel):
+    """A registry entry as the registry screen reads it.
+
+    Wider than `IngredientView`, which exists to point a recipe line at something and so
+    carries only enough to recognise one. This carries what is needed to *judge* an
+    entry: the three fields an import guesses at — kind, density, origin — and whether
+    anybody has classified its allergens.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    id: int
+    slug: str
+    name: str
+    kind: IngredientKind
+    density: Decimal | None
+    piece_grams: Decimal | None
+    origin: Origin
+    allergens: list[Allergen]
+    #: Whether anybody has looked. An empty `allergens` with this false means "unknown",
+    #: not "contains none" — a client that reads the list alone reads unknown as safe,
+    #: which is the failure ADR-006 exists to prevent.
+    classified: bool
+
+
+class RegistryPageView(BaseModel):
+    """A page of the registry, with the size of the whole."""
+
+    model_config = ConfigDict(frozen=True)
+
+    entries: list[RegistryEntryView]
+    total: int

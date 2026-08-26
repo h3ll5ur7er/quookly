@@ -185,3 +185,98 @@ class TestKinds:
         found = await registry.resolve("unsalted butter", ENGLISH)
         assert found is not None
         assert found.kind is IngredientKind.SOLID
+
+
+class TestBrowsing:
+    """Reading the registry as a list rather than resolving one name in it.
+
+    `search` answers "which entry did the cook mean"; browsing answers "what is in here,
+    and which of it is a guess". The second is what Phase 7 owes: an import creates
+    entries nobody has looked at, and until they can be listed there is no way to find
+    them.
+    """
+
+    async def a_small_registry(self) -> None:
+        """Two seeded entries and one an import invented, which is the shape that matters."""
+        await register_butter()
+        await registry.register(
+            slug="water",
+            kind=IngredientKind.LIQUID,
+            density=Decimal("1.0"),
+            names={ENGLISH: ["water"], GERMAN: ["Wasser"]},
+            origin=Origin.SEED,
+        )
+        await registry.register(
+            slug="creme-fraiche",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["crème fraîche"]},
+            origin=Origin.USER,
+        )
+
+    async def test_the_whole_registry_comes_back_without_a_search_term(self) -> None:
+        await self.a_small_registry()
+        page = await registry.browse(ENGLISH)
+        assert [entry.slug for entry in page.entries] == [
+            "creme-fraiche",
+            "unsalted-butter",
+            "water",
+        ]
+
+    async def test_the_total_counts_the_registry_not_the_page(self) -> None:
+        """Nine hundred entries do not fit on a screen; the count is what says so."""
+        await self.a_small_registry()
+        page = await registry.browse(ENGLISH, limit=1)
+        assert len(page.entries) == 1
+        assert page.total == 3
+
+    async def test_paging_neither_repeats_nor_skips(self) -> None:
+        """Ordering has to be total, or the second page re-shows the first page's tail."""
+        await self.a_small_registry()
+        first = await registry.browse(ENGLISH, limit=2, offset=0)
+        second = await registry.browse(ENGLISH, limit=2, offset=2)
+        seen = [entry.slug for entry in first.entries + second.entries]
+        assert seen == ["creme-fraiche", "unsalted-butter", "water"]
+
+    async def test_a_term_narrows_both_the_page_and_the_total(self) -> None:
+        await self.a_small_registry()
+        page = await registry.browse(ENGLISH, term="butter")
+        assert [entry.slug for entry in page.entries] == ["unsalted-butter"]
+        assert page.total == 1
+
+    async def test_an_alias_finds_its_entry_once(self) -> None:
+        """`register_butter` gives butter two English names; matching both is still one row."""
+        await self.a_small_registry()
+        page = await registry.browse(ENGLISH, term="butter")
+        assert page.total == 1
+
+    async def test_origin_separates_what_an_import_invented_from_what_was_seeded(self) -> None:
+        """The entries worth reviewing are the ones nobody chose to add (ADR-016)."""
+        await self.a_small_registry()
+        page = await registry.browse(ENGLISH, origin=Origin.USER)
+        assert [entry.slug for entry in page.entries] == ["creme-fraiche"]
+        assert page.total == 1
+
+    async def test_entries_are_named_for_the_requested_locale(self) -> None:
+        await self.a_small_registry()
+        page = await registry.browse(GERMAN, term="Wasser")
+        assert [entry.name for entry in page.entries] == ["Wasser"]
+
+    async def test_an_entry_with_no_name_in_this_locale_falls_back_to_english(self) -> None:
+        """A German cook must still see the entry, or browsing hides half the registry."""
+        await self.a_small_registry()
+        page = await registry.browse(GERMAN)
+        assert "crème fraîche" in [entry.name for entry in page.entries]
+
+    async def test_a_guess_an_import_made_is_visible_as_a_guess(self) -> None:
+        """No density, and nobody has looked at its allergens — both have to show."""
+        await self.a_small_registry()
+        page = await registry.browse(ENGLISH, origin=Origin.USER)
+        invented = page.entries[0]
+        assert invented.density is None
+        assert invented.classified is False
+
+    async def test_an_empty_registry_is_an_empty_page_not_an_error(self) -> None:
+        page = await registry.browse(ENGLISH)
+        assert page.entries == []
+        assert page.total == 0
