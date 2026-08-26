@@ -191,20 +191,28 @@ all; and an approved entry stays the cook's own for ever, so provenance cannot s
 has looked. Approving records the review and nothing else — in particular it never classifies, since
 "this entry is a fair description" is not "I know what is inside this food".
 
-### A technique
+### An Academy page
 
 **Designed, not built.** Phase 7, and shaped deliberately like a registry entry, because the same
 things go wrong with it.
 
-A technique is a word a cook might not know, and what it means. It carries:
+A page explains one thing a cook might not know. It carries a **kind** — `technique`, `ingredient`,
+and whatever sections follow — because the volatility was never "techniques"
+([ADR-057](07-decisions.md#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques)).
+Writing the first fifty found that out immediately: `curdle` is not something you do, it is something
+that happens to you, and `al dente` is a doneness.
+
+Every page carries:
 
 - a **slug**, which is its identity, exactly as with an ingredient — the name is not
 - a **canonical name and its spellings, per locale**. The spellings are load-bearing rather than
   decorative: they are what lets *"folding"*, *"folded in"* and *"carefully fold"* all reach the
-  entry for *fold*, and putting the variation here rather than in a similarity score is the whole of
+  page for *fold*, and putting the variation here rather than in a similarity score is the whole of
   [ADR-055](07-decisions.md#adr-055-a-step-finds-its-techniques-by-the-words-it-already-uses)
-- a short **summary** and a longer **explanation**
+- a short **summary** and a longer **explanation**, per locale
 - optional **cautions** — the part where getting it wrong matters
+- **pictures**, because a page about julienne without a photograph of julienne is a knife cut
+  explained in words
 - an **origin**: shipped, or a cook's own. The same meaning as
   [ADR-016](07-decisions.md#adr-016-ship-seed-content-marked-and-upgradable) gives it, and the same
   promise: an upgrade may replace what it shipped and must never touch what a cook wrote
@@ -216,9 +224,16 @@ made for the registry. *Who wrote this* and *has anybody checked it* come apart 
 cook can write something nobody has read, and an administrator can approve a paragraph a model
 composed.
 
-**A term means one technique per language**, enforced the way a registry name is — a unique index on
-the locale and the normalised spelling. Without it a step naming that term has no single entry to
-link to, which is the same failure an ambiguous ingredient name causes and wants the same refusal.
+**An ingredient page names a registry entry rather than restating it.** The registry keeps the facts
+— kind, density, allergens, published figures — because those are what gets computed on. The page
+keeps the prose and the pictures. Nothing is stored twice, and what an engine reads still comes from
+the registry.
+
+**Several pages may claim one term in one language**, and that is allowed here where it is refused
+in the registry. Nothing computes on a page, so a cook who lands on the wrong one reads a paragraph
+about the wrong thing and clicks again — where a recipe line resolving to the wrong ingredient gets
+the wrong food's allergens. A page whose term is shared says so at the top and names the others
+([ADR-058](07-decisions.md#adr-058-ambiguity-is-shown-where-a-person-resolves-it-and-refused-where-something-computes-on-it)).
 
 **An explanation is never read by anything that computes.** `SuitabilityEngine` and
 `NutritionEngine` do not see it, and a layer contract enforces that
@@ -226,10 +241,13 @@ link to, which is the same failure an ambiguous ingredient name causes and wants
 It is shown to a person and nothing else. That containment is what keeps a wrong paragraph a bad
 paragraph rather than a wrong verdict.
 
-**A step holds no reference to a technique.** Nothing is tagged and nothing is stored linking the
-two — the terms are read out of the step's own words at the moment it is displayed, exactly as its
-ingredient lines are ([ADR-040](07-decisions.md#adr-040-a-steps-ingredients-are-read-out-of-its-words-not-tagged)).
-A recipe imported before an entry existed gains the link the day somebody writes it.
+**A step usually holds no reference to a page.** The terms are read out of the step's own words when
+it is displayed, exactly as its ingredient lines are
+([ADR-040](07-decisions.md#adr-040-a-steps-ingredients-are-read-out-of-its-words-not-tagged)), so a
+recipe imported before a page existed gains the link the day somebody writes it. Where automatic
+reading cannot know the answer — which flour *"the flour"* means, which of several pages a term
+belongs to — an author may write the link into the instruction as `[[slug|the words as written]]`,
+and that wins ([ADR-059](07-decisions.md#adr-059-a-step-may-name-its-own-links-and-a-recipe-may-be-edited)).
 
 ### How a verdict is reported
 
@@ -600,7 +618,10 @@ Recorded rather than guessed at; each affects the schema and should be settled b
    FoodData Central (CC0) as the base, with the Swiss Food Composition Database overlaying `de_CH`
    and `fr_CH`, and CoFID overlaying `en_GB`. All three verified; both overlays require attribution.
 2. **Recipe versioning.** Is edit history retained, and do plans reference a version or the current
-   state? Affects whether a cooked meal can be reproduced exactly.
+   state? Affects whether a cooked meal can be reproduced exactly. **Now pressing rather than
+   theoretical**: [ADR-059](07-decisions.md#adr-059-a-step-may-name-its-own-links-and-a-recipe-may-be-edited)
+   makes recipes editable, and the first cut edits in place and keeps no history — the honest simple
+   answer, and not obviously the right one.
 3. **Ingredient registry ownership.** *Partly settled* by
    [ADR-016](07-decisions.md#adr-016-ship-seed-content-marked-and-upgradable): a seeded base plus
    local additions. Still open is whether instances can *share* curated additions with each other,

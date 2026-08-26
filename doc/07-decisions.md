@@ -2477,3 +2477,142 @@ provider has the seed and whatever its cooks have written, and every screen work
 things to approve grows in a way the registry's never did, because nobody has to look up an
 ingredient for it to exist. Accepted: the alternative is refusing to answer a cook who asked what
 *deglaze* means, and the marking is what keeps an unchecked answer honest about being one.
+
+
+## ADR-057 The Academy is sections of pages, not a table of techniques
+
+**Status:** Accepted — revises the shape assumed by
+[ADR-054](#adr-054-academymanager-is-reinstated) and
+[ADR-055](#adr-055-a-step-finds-its-techniques-by-the-words-it-already-uses), which both stand
+otherwise.
+
+**Context.** The Academy was designed around a `Technique`: a word a cook might not know, and what it
+means. Fifty were written. Two things about that shape were wrong before any of it was built.
+
+The first surfaced while writing the seed. `curdle` is not something you do, it is something that
+happens to you, and `al dente` is a doneness. Both are words a cook meets and wants explained, and
+neither is a technique. A table named for one kind of thing collects a second kind by accident and
+then has nowhere to put the third.
+
+The second is that the ingredient registry already owes an Academy page — *what an ingredient is,
+what it is called elsewhere, what it weighs, what it contains, what it can be swapped for*. That was
+written down as a Phase 7 obligation long before this, and it is plainly not a technique.
+
+**Decision.** An Academy **page** is the unit, and it carries a **kind** — `technique`, `ingredient`,
+and whatever follows. The sections are how it is browsed; the page is what is stored, edited and
+linked to.
+
+**An administrator edits a page**: its text and its translations, and the pictures on it. Which pulls
+`MediaAccess` forward out of Phase 8, because a page about julienne without a photograph of julienne
+is a page explaining a knife cut in words.
+
+**An ingredient page sits over the registry rather than duplicating it.** The registry holds the
+facts — kind, density, allergens, published figures — because those are computed on. The page holds
+the prose and the pictures, and names the registry entry it is about. Nothing is stored twice, and
+the containment in [ADR-056](#adr-056-a-generated-explanation-is-marked-unreviewed-and-never-an-input-to-a-judgement)
+survives intact: what an engine reads still comes from the registry, and what a person reads comes
+from the page.
+
+**Rationale.** The volatility was never "techniques". [V18](03-volatility-analysis.md#v18-explanation)
+asks *what does a cook do when they meet a word they do not know*, and the answer has never been
+restricted to verbs. Naming the entity after the first section we happened to write would have made
+the second one a migration.
+
+**Cost.** A page with a kind is less specific than a technique, so what a page *has* varies by kind —
+an ingredient page names a registry entry and a technique page does not. That is a nullable column
+and a branch in one renderer, which is cheaper than a second table that shares nine tenths of its
+columns.
+
+
+## ADR-058 Ambiguity is shown where a person resolves it, and refused where something computes on it
+
+**Status:** Accepted — supersedes the "a term means one technique per language" rule in
+[ADR-055](#adr-055-a-step-finds-its-techniques-by-the-words-it-already-uses).
+
+**Context.** ADR-055 gave Academy terms the same unique index a registry name has: one term, one
+entry, per language, refusing the second claim. That was copied from the registry without asking
+whether the reason carried over.
+
+It does not. The registry refuses ambiguity because a recipe line resolving to the wrong ingredient
+gets the wrong food's allergens
+([ADR-006](#adr-006-allergen-determination-is-structural),
+[ADR-029](#adr-029-an-ingredient-the-registry-does-not-know-is-recorded-and-reported)) — and the
+accent-folding fallback refuses for the same reason. Nothing computes on an Academy page. A cook who
+lands on the wrong explanation reads a paragraph about the wrong thing and clicks again.
+
+And the collisions are not hypothetical. `grill` in British English is heat from above and in Swiss
+usage is a fire outdoors; `glacé` is iced as readily as glazed; an ingredient section will want
+`butter` for a food while a technique section wants it for mounting a sauce.
+
+**Decision.** Two rules, and which applies is decided by what happens next.
+
+**Where something computes on the answer, ambiguity is refused.** Unchanged: `IngredientAccess`
+resolves one name to one entry or to nothing.
+
+**Where a person resolves it, ambiguity is shown.** Several Academy pages may claim a term in a
+language. A page whose term is shared carries a **hatnote** at the top listing the others, the way an
+encyclopedia does. And a step's word links to the **term**, not to a page: one claimant opens the
+page, several offer a chooser. Nothing picks arbitrarily and nothing is stored to go stale, because
+the set of claimants is a query.
+
+**Rationale.** The unique index was solving a problem the Academy does not have, at the cost of
+refusing entries a cook legitimately wants. Under it, adding an ingredient page for butter would have
+been rejected because a technique page already said *beurre monté*.
+
+Stated as one principle rather than two exceptions, because it is the same judgement made throughout
+this codebase: an unconfirmed match must not read as a confirmed one *when something acts on it*.
+When a person acts on it, showing them the choice is the confirmation.
+
+**Cost.** A term with many claimants makes a chooser nobody enjoys. That is a signal to write a
+better term or merge two pages, and it is visible — which a silently-refused second entry never was.
+
+
+## ADR-059 A step may name its own links, and a recipe may be edited
+
+**Status:** Accepted — extends [ADR-040](#adr-040-a-steps-ingredients-are-read-out-of-its-words-not-tagged),
+which stands.
+
+**Context.** ADR-040 settled that a step's ingredients are read out of its own words rather than
+tagged, because nobody writing a recipe will tag it and an imported one certainly has not.
+[ADR-055](#adr-055-a-step-finds-its-techniques-by-the-words-it-already-uses) extends the same
+automatic reading to Academy terms.
+
+Automatic reading is right as the default and wrong as the only option. It cannot know which flour
+*"the flour"* means when a recipe uses two, and where a term has several claimants
+([ADR-058](#adr-058-ambiguity-is-shown-where-a-person-resolves-it-and-refused-where-something-computes-on-it))
+it can only offer a chooser. Somebody who knows the answer has no way to record it.
+
+They also have no way to record anything else. **A recipe in this application can be created and
+never edited.** There is no `PUT`, no `PATCH` and no `DELETE` on a recipe — a typo in an imported
+recipe is permanent, a misread quantity is permanent, and a bad import can only be lived with. That
+is a hole independent of anything the Academy wants.
+
+**Decision.** Recipes become editable, and an instruction may carry an explicit link.
+
+The syntax is `[[slug]]`, or `[[slug|the words as written]]` where the link text differs from the
+slug. It resolves against Academy pages, and because an ingredient page names its registry entry
+([ADR-057](#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques)) one namespace covers
+both — `Sift the [[plain-flour|flour]] into the bowl` says which flour.
+
+**An explicit link wins over automatic spotting for the words it covers**, and the rest of the step
+is read automatically as before.
+
+**Only a person may write one.** A model composing an instruction never emits this syntax, and it is
+stripped from model output if it does. A model that could write a link would be deciding one, which
+is exactly what [ADR-053](#adr-053-the-matcher-ranks-a-person-decides) says it must not do.
+
+**Rationale for markup over an offsets table.** Offsets break the moment somebody edits the sentence
+they point into, which is the one thing an editable recipe guarantees will happen. Markup travels
+with the words it marks.
+
+It also degrades well. The interchange format
+([ADR-012](#adr-012-export-format-is-the-import-format)) carries the instruction as written, so a
+reader that does not know the syntax shows `[[plain-flour|flour]]` — legible, ugly, and lossless.
+An offsets table would either be dropped or silently misapplied.
+
+**Cost, and an open question this forces.** Editing a recipe makes
+[recipe versioning](06-domain-model.md#open-questions) pressing rather than theoretical: a plan
+references a recipe, and a cooked meal referenced it at the time. The first cut edits in place and
+keeps no history, which is the honest simple answer and not obviously the right one. A session
+already in progress is insulated by accident rather than by design — cooking mode keeps the meal as
+the server last described it, so a mid-session edit does not move under the cook's hands.

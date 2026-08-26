@@ -3,9 +3,10 @@
 **Status: Built through [Phase 6b](08-roadmap.md#phase-6b--one-product-not-five-screens), plus
 Phase 7's `MatchingEngine`. Every service in the catalogue below exists and the call rules are
 enforced by `import-linter` in `just backend check`. Still Planned: `AcademyManager` and
-`AcademyAccess` — designed in Phase 7, see
-[ADR-054](07-decisions.md#adr-054-academymanager-is-reinstated) — and `CommunityAccess`,
-`ScoringEngine`, `EngagementManager` and `MediaAccess`, which are Phase 8.**
+`AcademyAccess` and `MediaAccess` — designed in Phase 7, see
+[ADR-054](07-decisions.md#adr-054-academymanager-is-reinstated) and
+[ADR-057](07-decisions.md#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques) — and
+`CommunityAccess`, `ScoringEngine` and `EngagementManager`, which are Phase 8.**
 
 This document defines the services, the layers they occupy, the rules governing calls between them,
 and how that maps onto the code. It follows directly from the
@@ -367,10 +368,10 @@ Each service exposes atomic business verbs. Illustrative, not exhaustive:
 | `PantryAccess` | Database | `receive`, `adjust`, `record_waste`, `expiring_before`, `for_ingredients` — **Built**; `reserve`, `release`, `consume` arrive with planning ([ADR-034](07-decisions.md#adr-034-stock-is-held-as-lots-not-as-a-total-per-ingredient), [ADR-035](07-decisions.md#adr-035-adjusting-stock-and-recording-waste-are-different-acts)) |
 | `PlanAccess` | Database | `create`, `fetch`, `list_for_cook`, `open_slot`, `assign`, `attend`, `close_slot` — **Built** |
 | `CommunityAccess` | Database | `follow`, `rate`, `comment`, `award`, `leaderboard` |
-| `AcademyAccess` | Database | `browse`, `detail`, `resolve_term`, `terms_for_spotting`, `store`, `amend`, `approve` — Phase 7, and deliberately the same verbs the ingredient registry ended up with: a technique has a slug, a canonical name and its spellings per locale, a provenance and a review state, and the same things go wrong with it ([ADR-054](07-decisions.md#adr-054-academymanager-is-reinstated)) |
+| `AcademyAccess` | Database | `browse`, `detail`, `claimants_of`, `terms_for_spotting`, `store`, `amend`, `approve` — Phase 7. The same verbs the ingredient registry ended up with, because a *page* has a slug, a canonical name and its spellings per locale, a provenance and a review state, and the same things go wrong with it. `claimants_of` rather than `resolve_term`: several pages may claim one term and the answer is the set ([ADR-057](07-decisions.md#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques), [ADR-058](07-decisions.md#adr-058-ambiguity-is-shown-where-a-person-resolves-it-and-refused-where-something-computes-on-it)) |
 | `ModelAccess` | Inference backend | `complete`, `complete_structured`, `describe`, `reachable` ([ADR-026](07-decisions.md#adr-026-one-openai-shaped-wire-format-not-a-provider-plugin-system)) |
 | `WebContentAccess` | External websites | `fetch_readable` — prose and embedded metadata, neither preferred ([ADR-027](07-decisions.md#adr-027-an-instance-will-not-fetch-its-own-network), [ADR-028](07-decisions.md#adr-028-structured-metadata-is-fetched-not-preferred)) |
-| `MediaAccess` | Media store | `store_image`, `fetch_image`, `delete_image` |
+| `MediaAccess` | Media store | `store_image`, `fetch_image`, `delete_image` — pulled forward into Phase 7 by Academy pictures ([ADR-057](07-decisions.md#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques)); it was Phase 8 while the only caller was a photographed recipe |
 | `SearchIndexAccess` | Index | `index_recipe`, `query`, `remove`, `reindex` — **Built** over SQLite FTS5. The index is derived, so it is rebuilt at start-up rather than migrated, and recipes are indexed where they are stored so no path can forget ([ADR-046](07-decisions.md#adr-046-a-suggestion-earns-its-place-by-saving-something)) |
 | `CookingSessionAccess` | Database | `open_session`, `fetch`, `open_for_slot`, `open_for_cook`, `advance_step`, `record_timer`, `close_session` — **Built** ([ADR-013](07-decisions.md#adr-013-cooking-sessions-are-server-side-state-timers-store-instants)) |
 

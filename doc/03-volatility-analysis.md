@@ -302,13 +302,19 @@ still needs this, and a recipe nobody translates is still perfectly usable.
 **Status: designed, not built.** Phase 7.
 
 **Question:** what does a cook do when they meet a word they do not know?
-**Varies:** which terms are explained, how they are written and at what length, which languages they
-are written in, who may write one, whether an explanation is checked before it is shown, where an
-explanation comes from — shipped, written by a cook, or composed by a model — and how a term in a
-recipe step is recognised as one of them.
+**Varies:** which *sections* exist — techniques, ingredients, and whatever follows — which terms are
+explained, how they are written and at what length, which languages they are written in, what
+pictures accompany them, who may write and edit one, whether an explanation is checked before it is
+shown, where an explanation comes from — shipped, written by a cook, or composed by a model — and how
+a term in a recipe step is recognised as one of them.
 **Stable:** a recipe's steps are written in words, and some of those words are jargon.
 **Encapsulated by:** `AcademyManager` over `AcademyAccess`, with the spotting of terms in a step
 belonging to `MatchingEngine` ([ADR-055](07-decisions.md#adr-055-a-step-finds-its-techniques-by-the-words-it-already-uses)).
+
+The unit is a **page with a kind**, not a technique
+([ADR-057](07-decisions.md#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques)).
+Naming the entity after the first section anybody wrote would have made the second one a migration —
+and the second was already owed, because the ingredient registry needs a page of its own.
 
 Deliberately not V2. Interpretation reads a page and produces a recipe. This reads a recipe that
 already exists and offers a footnote on it — a recipe with no explanations attached is still a

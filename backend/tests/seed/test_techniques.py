@@ -1,4 +1,4 @@
-"""The hand-written seed techniques for the Academy (Phase 7).
+"""The hand-written seed pages for the Academy's technique section (Phase 7).
 
 Written rather than derived: there is no openly available table of cooking techniques the
 way there is one of foods, so `seed/techniques.json` is authored by hand and these tests
@@ -31,7 +31,9 @@ def fold(text: str) -> str:
 def techniques() -> list[dict[str, Any]]:
     document = json.loads(SEED.read_text(encoding="utf-8"))
     assert document["quookly"] == 1
-    return list(document["techniques"])
+    # Techniques are one section of the Academy, not the whole of it (ADR-057).
+    assert document["section"] == "technique"
+    return list(document["pages"])
 
 
 class TestTheCorpus:
@@ -96,13 +98,19 @@ class TestSpellings:
                     fold(spelling) for spelling in written["spellings"]
                 }, (technique["slug"], locale)
 
-    def test_a_term_means_one_technique_per_language(
+    def test_no_term_is_claimed_twice_within_this_section(
         self, techniques: list[dict[str, Any]]
     ) -> None:
-        """The unique index the design gives techniques, checked before it exists.
+        """Not a rule about the Academy — a rule about this file.
 
-        Two techniques answering to one word in one language leaves a step naming it with
-        no single entry to link to — the same failure an ambiguous ingredient name causes.
+        Several pages *may* claim a term, and one that is shared says so at the top and
+        names the others (ADR-058). That is for collisions between sections, and between
+        what cooks write: `butter` will reasonably be both a food and part of mounting a
+        sauce.
+
+        Inside one hand-written section it is still a mistake. Two technique pages
+        answering to one word means one of them was written twice or named carelessly,
+        and nobody chose that.
         """
         for locale in LOCALES:
             claimed: dict[str, str] = {}

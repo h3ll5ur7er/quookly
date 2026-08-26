@@ -1,8 +1,9 @@
 {
   "quookly": 1,
-  "note": "Hand-written seed techniques for the Academy. Written, not derived: there is no openly available table of cooking techniques the way there is one of foods (ADR-056). Edit this file directly -- unlike generic-foods.json there is no builder to re-run. 'spellings' is the load-bearing field: it is what a recipe step's own words are matched against (ADR-055), so a bare word that means something else in a recipe does not belong there.",
+  "section": "technique",
+  "note": "Hand-written seed pages for the Academy's technique section. Written, not derived: there is no openly available table of cooking techniques the way there is one of foods (ADR-056). Edit this file directly -- unlike generic-foods.json there is no builder to re-run. 'spellings' is the load-bearing field: it is what a recipe step's own words are matched against (ADR-055), so a bare word that means something else in a recipe does not belong there.",
   "written": "2026-08-26",
-  "techniques": [
+  "pages": [
     {
       "slug": "al-dente",
       "locales": {

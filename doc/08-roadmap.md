@@ -274,35 +274,52 @@ system a cook currently cannot see or correct without editing code.
 **Designed** — [ADR-054](07-decisions.md#adr-054-academymanager-is-reinstated),
 [ADR-055](07-decisions.md#adr-055-a-step-finds-its-techniques-by-the-words-it-already-uses),
 [ADR-056](07-decisions.md#adr-056-a-generated-explanation-is-marked-unreviewed-and-never-an-input-to-a-judgement),
-[V18](03-volatility-analysis.md#v18-explanation), [the technique](06-domain-model.md#a-technique) and
+[ADR-057](07-decisions.md#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques),
+[ADR-058](07-decisions.md#adr-058-ambiguity-is-shown-where-a-person-resolves-it-and-refused-where-something-computes-on-it),
+[ADR-059](07-decisions.md#adr-059-a-step-may-name-its-own-links-and-a-recipe-may-be-edited),
+[V18](03-volatility-analysis.md#v18-explanation), [the page](06-domain-model.md#an-academy-page) and
 [the flows](05-use-case-flows.md#uc-25-and-uc-95-look-up-a-term-from-a-recipe-or-from-the-step-being-cooked).
 Not built.
 
 There is no published table to derive this from, the way the ingredient registry was derived from the
-Swiss database. The corpus comes from three places instead — a small hand-written seed, what cooks
-write, and what a model composes on request — and the order below is chosen so that the part which
-can be *wrong* arrives last, on top of something that already works without it.
+Swiss database. The corpus comes from three places instead — a hand-written seed, what cooks write,
+and what a model composes on request — and the order below is chosen so that the part which can be
+*wrong* arrives last, on top of something that already works without it.
 
-1. **`AcademyAccess` and the seeded techniques.** Around fifty core terms, hand-written, in the
-   three shipped locales, each with the spellings and inflections that let a step reach it. Shipped
-   and marked, on [ADR-016](07-decisions.md#adr-016-ship-seed-content-marked-and-upgradable)'s terms.
-   Browsing and reading, and nothing else. *An Academy nobody can add to is still an Academy.*
+The unit is a **page with a kind**, not a technique: sections for techniques, for ingredients, and for
+whatever follows. ~~Fifty seeded technique pages~~ **written** — `seed/techniques.json`, in three
+languages, with the spellings a step is actually written with.
+
+0. **A recipe can be edited.** Not an Academy feature at all, and listed here because the Academy
+   found it: a recipe today can be created and never changed. No `PUT`, no `PATCH`, no `DELETE` — a
+   typo in an imported recipe is permanent. Editing has to exist before a step can be annotated, and
+   it should have existed anyway. It makes
+   [recipe versioning](06-domain-model.md#open-questions) a question that has to be answered rather
+   than recorded.
+1. **`AcademyAccess`, and the seeded pages loaded.** Browsing a section, reading a page, and nothing
+   else. *An Academy nobody can add to is still an Academy.*
 2. **Spotting terms in a step** — `MatchingEngine.mentioned`, pure, tested as a table of steps and
    expected offsets. Nothing rendered yet.
 3. **Terms marked on the recipe page (UC-2.5)**, then **in cooking mode (UC-9.5)**, where the
-   constraint is that looking a word up must not cost the cook their place in the recipe.
-4. **Cook-authored entries, and approving them (UC-7.4, moderation half).**
+   constraint is that looking a word up must not cost the cook their place. A term with several
+   claimants offers a chooser; a page whose term is shared carries a hatnote naming the others.
+4. **An administrator edits a page** — text, translations, and **pictures**, which pulls
+   `MediaAccess` forward out of Phase 8.
+5. **Explicit links in a step**, `[[slug|the words as written]]`, for what automatic reading cannot
+   know. Needs 0 and 3.
+6. **Cook-authored pages, and approving them (UC-7.4, moderation half).**
    [ADR-051](07-decisions.md#adr-051-whether-an-entry-has-been-reviewed-is-a-different-column-from-whether-it-has-been-classified)'s
    approval axis, unchanged. Recognition for contributing is V11 and waits for Phase 8.
-5. **Generating an explanation nobody has written.** Last on purpose: it is the only part that can
-   state something untrue, and by this point every screen already works without it. Optional by
+7. **An ingredient section**, sitting over the registry rather than duplicating it: the facts stay
+   where they are computed on, the prose and pictures live on the page.
+8. **Generating a page nobody has written.** Last on purpose: it is the only part that can state
+   something untrue, and by this point every screen already works without it. Optional by
    construction — an instance with no inference provider simply says nobody has explained that yet.
-6. **A public Academy page.** Readable without an account; generation is not.
+9. **A public Academy page.** Readable without an account; generation is not.
 
-The registry half of this phase is where the shape came from. A technique has a slug, canonical names
-and spellings per locale, a provenance and a review state, and the same things go wrong with it —
-which means the correcting, renaming and approving already built have obvious analogues, and merging
-two entries for one term is the same operation with far less to repoint.
+The registry half of this phase is where the shape came from. A page has a slug, canonical names and
+spellings per locale, a provenance and a review state, and the same things go wrong with it — which
+means the correcting, renaming and approving already built have obvious analogues.
 
 ### The ingredient registry, visible and correctable
 
