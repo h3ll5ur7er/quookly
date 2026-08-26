@@ -308,8 +308,10 @@ What this phase owes:
   separate acts on three separate endpoints, which is the point: *correcting* a density, *recording*
   what is inside, and *approving* the entry are different statements, and a single PUT of the whole
   entry would let a correction that omitted allergens silently unclassify a known-milk ingredient
-  ([ADR-006](07-decisions.md#adr-006-allergen-determination-is-structural)). Renaming an entry's
-  canonical spelling is still owed; adding a name in another language is not.
+  ([ADR-006](07-decisions.md#adr-006-allergen-determination-is-structural)). Renaming is a fourth
+  act again: adding a spelling and deciding which spelling *is* the name are different, and the old
+  name is demoted rather than deleted — pages out there still use it, and an import that stopped
+  resolving it would invent the duplicate this screen exists to clean up.
 - **Merging two entries that are the same thing under different names.** The operation that matters:
   an import that created `plain flour` beside a registry that already had `wheat flour` has split one
   ingredient in two, and every allergen and nutrition fact now answers for half a kitchen.

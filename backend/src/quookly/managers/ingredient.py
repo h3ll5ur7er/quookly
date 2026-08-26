@@ -156,3 +156,14 @@ async def name(slug: str, locale: str, spellings: list[str]) -> RegistryEntryDet
 
     await registry.name_in(slug, locale, spellings)
     return await detail(slug)
+
+
+async def rename(slug: str, locale: str, name: str) -> RegistryEntryDetailView | None:
+    """Change what one language calls this entry.
+
+    The old name is kept as a spelling rather than replaced: pages out there still use it,
+    and an import that stopped resolving it would invent the duplicate this screen exists
+    to clean up.
+    """
+    await registry.rename(slug, locale, name)
+    return await detail(slug)

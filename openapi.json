@@ -1099,6 +1099,59 @@
         }
       }
     },
+    "/api/v1/registry/{slug}/name": {
+      "put": {
+        "tags": [
+          "ingredients"
+        ],
+        "summary": "Rename Ingredient",
+        "description": "Change what one language calls this entry.\n\nSeparate from `name_ingredient`, which adds a spelling. This decides which of them is\nthe name \u2014 the one a cook is shown and a shopping list is written with. The previous\none is demoted rather than removed, so pages that use it still resolve.",
+        "operationId": "renameIngredient",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Renaming"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryEntryDetailView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/eaters": {
       "get": {
         "tags": [
@@ -4609,6 +4662,29 @@
         ],
         "title": "RegistryPageView",
         "description": "A page of the registry, with the size of the whole."
+      },
+      "Renaming": {
+        "properties": {
+          "locale": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 2,
+            "title": "Locale"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "locale",
+          "name"
+        ],
+        "title": "Renaming",
+        "description": "What one language should call this entry from now on."
       },
       "SessionOutcome": {
         "type": "string",

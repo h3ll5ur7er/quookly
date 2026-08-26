@@ -512,3 +512,62 @@ class TestNaming:
         payload = {"locale": "de-CH", "spellings": ["Sauerrahm"]}
         assert (await client.post(f"{ONE}/names", json=payload, headers=admin)).status_code == 200
         assert (await client.post(f"{ONE}/names", json=payload, headers=admin)).status_code == 200
+
+
+class TestRenaming:
+    """Changing what a language calls an entry, as opposed to adding another spelling."""
+
+    async def test_an_admin_can_rename_it(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        response = await client.put(
+            f"{ONE}/name", json={"locale": "en-GB", "name": "creme fraiche"}, headers=admin
+        )
+        assert response.status_code == 200
+        assert response.json()["entry"]["name"] == "creme fraiche"
+
+    async def test_the_old_name_stays_as_a_spelling(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        """An import that stopped resolving the old name would invent a duplicate."""
+        body = (
+            await client.put(
+                f"{ONE}/name", json={"locale": "en-GB", "name": "creme fraiche"}, headers=admin
+            )
+        ).json()
+        assert set(body["names"]["en-GB"]) == {"creme fraiche", "crème fraîche"}
+        assert body["names"]["en-GB"][0] == "creme fraiche"
+
+    async def test_a_name_another_entry_means_is_refused(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        await registry.register(
+            slug="sour-cream",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["sour cream"]},
+            origin=Origin.SEED,
+        )
+        response = await client.put(
+            f"{ONE}/name", json={"locale": "en-GB", "name": "sour cream"}, headers=admin
+        )
+        assert response.status_code == 409
+        assert "sour-cream" in response.json()["detail"]
+
+    async def test_an_ordinary_cook_may_not_rename_it(
+        self, client: AsyncClient, cook: dict[str, str], stocked: None
+    ) -> None:
+        response = await client.put(
+            f"{ONE}/name", json={"locale": "en-GB", "name": "whatever"}, headers=cook
+        )
+        assert response.status_code == 403
+
+    async def test_renaming_something_absent_is_a_404(
+        self, client: AsyncClient, admin: dict[str, str], invented: None
+    ) -> None:
+        response = await client.put(
+            f"{REGISTRY}/no-such-thing/name",
+            json={"locale": "en-GB", "name": "whatever"},
+            headers=admin,
+        )
+        assert response.status_code == 404

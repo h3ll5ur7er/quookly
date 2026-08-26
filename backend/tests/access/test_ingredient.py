@@ -14,7 +14,11 @@ from sqlmodel import SQLModel
 
 from quookly.access import ingredient as registry
 from quookly.access.database import dispose_engine, get_engine
-from quookly.contracts.errors import IngredientAlreadyRegistered, IngredientNotRegistered
+from quookly.contracts.errors import (
+    IngredientAlreadyRegistered,
+    IngredientNotRegistered,
+    NameAlreadyMeans,
+)
 from quookly.contracts.ingredient import IngredientKind, Origin
 from quookly.utilities.configuration import get_settings
 
@@ -554,3 +558,103 @@ class TestCorrecting:
     async def test_correcting_something_unregistered_is_refused(self) -> None:
         with pytest.raises(IngredientNotRegistered):
             await registry.amend("no-such-thing", kind=IngredientKind.LIQUID)
+
+
+class TestRenaming:
+    """Changing what a language calls an entry, rather than adding another spelling.
+
+    `name_in` is additive and only ever sets the canonical name when a locale had none,
+    so what an import decided to call something was, until now, permanent. That matters
+    most for the entries an import invents: the name it records is whatever the page
+    wrote, which may be a phrase rather than an ingredient.
+    """
+
+    async def test_the_canonical_name_can_be_changed(self) -> None:
+        await register_butter()
+        await registry.rename("unsalted-butter", ENGLISH, "sweet butter")
+        found = await registry.resolve("sweet butter", ENGLISH)
+        assert found is not None
+        assert found.name == "sweet butter"
+
+    async def test_a_name_it_did_not_have_becomes_the_canonical_one(self) -> None:
+        await register_butter()
+        await registry.rename("unsalted-butter", ENGLISH, "butter, unsalted")
+        found = await registry.resolve("butter, unsalted", ENGLISH)
+        assert found is not None
+        assert found.name == "butter, unsalted"
+
+    async def test_the_old_name_survives_as_a_spelling(self) -> None:
+        """Demoted, not deleted. Recipes and pages out there still say the old one, and
+        an import that stopped resolving it would start inventing a duplicate."""
+        await register_butter()
+        await registry.rename("unsalted-butter", ENGLISH, "butter, unsalted")
+        found = await registry.resolve("unsalted butter", ENGLISH)
+        assert found is not None
+        assert found.slug == "unsalted-butter"
+        assert found.name == "butter, unsalted"
+
+    async def test_only_one_name_is_canonical_afterwards(self) -> None:
+        await register_butter()
+        await registry.rename("unsalted-butter", ENGLISH, "butter, unsalted")
+        found = await registry.detail("unsalted-butter")
+        assert found is not None
+        assert found.names[ENGLISH][0] == "butter, unsalted"
+
+    async def test_renaming_one_language_leaves_the_others_alone(self) -> None:
+        await register_butter()
+        await registry.rename("unsalted-butter", ENGLISH, "butter, unsalted")
+        german = await registry.resolve("ungesalzene Butter", GERMAN)
+        assert german is not None
+        assert german.name == "ungesalzene Butter"
+
+    async def test_a_name_another_entry_means_here_is_refused(self) -> None:
+        await register_butter()
+        await registry.register(
+            slug="margarine",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["margarine"]},
+            origin=Origin.SEED,
+        )
+        with pytest.raises(NameAlreadyMeans):
+            await registry.rename("unsalted-butter", ENGLISH, "margarine")
+
+    async def test_a_refused_rename_changes_nothing(self) -> None:
+        await register_butter()
+        await registry.register(
+            slug="margarine",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["margarine"]},
+            origin=Origin.SEED,
+        )
+        with pytest.raises(NameAlreadyMeans):
+            await registry.rename("unsalted-butter", ENGLISH, "margarine")
+        found = await registry.resolve("unsalted butter", ENGLISH)
+        assert found is not None
+        assert found.name == "unsalted butter"
+
+    async def test_renaming_to_what_it_is_already_called_is_harmless(self) -> None:
+        await register_butter()
+        await registry.rename("unsalted-butter", ENGLISH, "unsalted butter")
+        found = await registry.detail("unsalted-butter")
+        assert found is not None
+        assert found.names[ENGLISH][0] == "unsalted butter"
+
+    async def test_renaming_says_nothing_about_allergens_or_review(self) -> None:
+        await registry.register(
+            slug="creme-fraiche",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["crème fraîche"]},
+            origin=Origin.USER,
+        )
+        await registry.rename("creme-fraiche", ENGLISH, "creme fraiche")
+        found = await registry.resolve("creme fraiche", ENGLISH)
+        assert found is not None
+        assert found.classified is False
+        assert found.approved is False
+
+    async def test_renaming_something_unregistered_is_refused(self) -> None:
+        with pytest.raises(IngredientNotRegistered):
+            await registry.rename("no-such-thing", ENGLISH, "whatever")

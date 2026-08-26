@@ -75,6 +75,17 @@ export class IngredientComponent {
   /** Ticked classes. Submitting with none ticked is "I looked, there is nothing in it". */
   protected readonly ticked = signal<ReadonlySet<Allergen>>(new Set());
 
+  /**
+   * Which language to rename, and to what.
+   *
+   * Only the languages the entry already has: renaming one it does not have is just
+   * adding a name, which the form below already does.
+   */
+  protected readonly renaming = this.forms.nonNullable.group({
+    locale: ['', Validators.required],
+    name: ['', Validators.required],
+  });
+
   protected readonly naming = this.forms.nonNullable.group({
     locale: ['', Validators.required],
     spelling: ['', Validators.required],
@@ -157,6 +168,29 @@ export class IngredientComponent {
     });
   }
 
+  /**
+   * Change what one language calls this entry.
+   *
+   * Distinct from adding a spelling: this decides which of them is *the* name, the one a
+   * cook is shown and a shopping list is written with. The previous one is kept, so pages
+   * that use it still resolve.
+   */
+  protected doRename(): void {
+    if (this.renaming.invalid) {
+      return;
+    }
+    const { locale, name } = this.renaming.getRawValue();
+    this.saveFailed.set(false);
+    this.nameRefused.set(null);
+    this.service.renameIngredient(this.slug, { locale, name: name.trim() }).subscribe({
+      next: (renamed) => this.arrived(renamed),
+      error: (refusal: { status?: number; error?: { detail?: string } }) =>
+        refusal.status === 409
+          ? this.nameRefused.set(refusal.error?.detail ?? null)
+          : this.saveFailed.set(true),
+    });
+  }
+
   protected addName(): void {
     if (this.naming.invalid) {
       return;
@@ -190,6 +224,8 @@ export class IngredientComponent {
   private arrived(found: RegistryEntryDetailView): void {
     this.detail.set(found);
     this.restate(found.entry);
+    const [first] = Object.keys(found.names);
+    this.renaming.setValue({ locale: first ?? '', name: '' });
   }
 
   /** A write returns the entry alone; the names it answers to are unchanged. */

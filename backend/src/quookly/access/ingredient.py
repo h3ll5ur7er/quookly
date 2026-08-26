@@ -18,7 +18,11 @@ from quookly.access.models import (
     IngredientRow,
     NutrientProfileRow,
 )
-from quookly.contracts.errors import IngredientAlreadyRegistered, IngredientNotRegistered
+from quookly.contracts.errors import (
+    IngredientAlreadyRegistered,
+    IngredientNotRegistered,
+    NameAlreadyMeans,
+)
 from quookly.contracts.ingredient import (
     UNSET,
     Allergen,
@@ -595,6 +599,72 @@ async def detail(slug: str) -> RegistryEntryDetail | None:
         display = await name_for(active, row.id, SOURCE_LOCALE, slug)
 
     return RegistryEntryDetail(entry=_to_contract(row, display, allergens), names=names)
+
+
+async def rename(slug: str, locale: str, name: str) -> Ingredient:
+    """Change what one language calls this entry.
+
+    Different from `name_in`, which is additive and only ever sets the canonical name for
+    a locale that had none. What an import decided to call something was otherwise
+    permanent, and for the entries an import invents that is the field most likely to be
+    wrong: the name recorded is whatever the page wrote.
+
+    **The old name is demoted, not deleted.** Pages and documents out there still say it,
+    and an import that stopped resolving it would go straight back to inventing a
+    duplicate — the thing this screen exists to clean up. It stays as a spelling; only
+    which one is canonical changes.
+
+    Refused if another entry already means this in this locale, for the same reason
+    `IngredientManager.name` refuses: a name means one thing per language, or a recipe
+    saying it could not be resolved to one ingredient.
+    """
+    wanted = normalise(name)
+    async with session() as active:
+        row = (
+            await active.exec(select(IngredientRow).where(col(IngredientRow.slug) == slug))
+        ).first()
+        if row is None or row.id is None:
+            raise IngredientNotRegistered(slug)
+
+        claimed = (
+            await active.exec(
+                select(IngredientNameRow).where(
+                    col(IngredientNameRow.locale) == locale,
+                    col(IngredientNameRow.normalised) == wanted,
+                )
+            )
+        ).first()
+        if claimed is not None and claimed.ingredient_id != row.id:
+            holder = await active.get(IngredientRow, claimed.ingredient_id)
+            raise NameAlreadyMeans(name, holder.slug if holder is not None else "another entry")
+
+        spellings = (
+            await active.exec(
+                select(IngredientNameRow).where(
+                    col(IngredientNameRow.ingredient_id) == row.id,
+                    col(IngredientNameRow.locale) == locale,
+                )
+            )
+        ).all()
+        for spelling in spellings:
+            spelling.is_canonical = spelling.normalised == wanted
+            active.add(spelling)
+
+        if claimed is None:
+            active.add(
+                IngredientNameRow(
+                    ingredient_id=row.id,
+                    locale=locale,
+                    name=name,
+                    normalised=wanted,
+                    is_canonical=True,
+                )
+            )
+
+        await active.commit()
+        await active.refresh(row)
+
+        return await _restated(active, row, slug)
 
 
 async def amend(

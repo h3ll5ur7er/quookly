@@ -48,6 +48,13 @@ class Classification(BaseModel):
     allergens: list[Allergen]
 
 
+class Renaming(BaseModel):
+    """What one language should call this entry from now on."""
+
+    locale: str = Field(min_length=2, max_length=10)
+    name: str = Field(min_length=1, max_length=200)
+
+
 class Naming(BaseModel):
     """What an entry is called in one language, canonical spelling first."""
 
@@ -186,3 +193,27 @@ async def name_ingredient(
     if named is None:
         raise NOT_FOUND
     return named
+
+
+@router.put("/registry/{slug}/name", response_model=RegistryEntryDetailView)
+async def rename_ingredient(
+    slug: str, renaming: Renaming, admin: CurrentAdmin
+) -> RegistryEntryDetailView:
+    """Change what one language calls this entry.
+
+    Separate from `name_ingredient`, which adds a spelling. This decides which of them is
+    the name — the one a cook is shown and a shopping list is written with. The previous
+    one is demoted rather than removed, so pages that use it still resolve.
+    """
+    try:
+        renamed = await ingredient_manager.rename(slug, renaming.locale, renaming.name)
+    except IngredientNotRegistered as absent:
+        raise NOT_FOUND from absent
+    except NameAlreadyMeans as taken:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"{taken.spelling!r} is already what this language calls {taken.slug!r}.",
+        ) from taken
+    if renamed is None:
+        raise NOT_FOUND
+    return renamed

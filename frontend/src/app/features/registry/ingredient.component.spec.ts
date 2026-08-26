@@ -287,6 +287,95 @@ describe('IngredientComponent', () => {
     });
   });
 
+  describe('renaming it', () => {
+    beforeEach(() => arrive({ admin: true }));
+
+    it('offers only the languages the entry already has', async () => {
+      asked().flush(detail(CREME, { 'en-GB': ['crème fraîche'], 'de-CH': ['Sauerrahm'] }));
+      await fixture.whenStable();
+
+      const options: HTMLOptionElement[] = Array.from(
+        fixture.nativeElement.querySelectorAll('#rename-locale option'),
+      );
+      expect(options.map((option) => option.value)).toEqual(['en-GB', 'de-CH']);
+    });
+
+    it('sends the new name for the chosen language', async () => {
+      asked().flush(detail());
+      await fixture.whenStable();
+
+      set('#rename-to', 'creme fraiche');
+      await fixture.whenStable();
+      click('Rename');
+      await fixture.whenStable();
+
+      const request = backend.expectOne('/api/v1/registry/creme-fraiche/name');
+      expect(request.request.method).toBe('PUT');
+      expect(request.request.body).toEqual({ locale: 'en-GB', name: 'creme fraiche' });
+      request.flush(
+        detail(
+          { ...CREME, name: 'creme fraiche' },
+          { 'en-GB': ['creme fraiche', 'crème fraîche'] },
+        ),
+      );
+      await fixture.whenStable();
+
+      expect(text()).toContain('creme fraiche');
+    });
+
+    it('shows that the old name is kept', async () => {
+      // Demoted, not deleted: pages out there still say it, and an import that stopped
+      // resolving it would invent the duplicate this screen exists to clean up.
+      asked().flush(detail());
+      await fixture.whenStable();
+
+      set('#rename-to', 'creme fraiche');
+      await fixture.whenStable();
+      click('Rename');
+      await fixture.whenStable();
+
+      backend
+        .expectOne('/api/v1/registry/creme-fraiche/name')
+        .flush(
+          detail(
+            { ...CREME, name: 'creme fraiche' },
+            { 'en-GB': ['creme fraiche', 'crème fraîche'] },
+          ),
+        );
+      await fixture.whenStable();
+
+      expect(text()).toContain('crème fraîche');
+    });
+
+    it('says which entry already owns a name it cannot take', async () => {
+      asked().flush(detail());
+      await fixture.whenStable();
+
+      set('#rename-to', 'sour cream');
+      await fixture.whenStable();
+      click('Rename');
+      await fixture.whenStable();
+
+      backend
+        .expectOne('/api/v1/registry/creme-fraiche/name')
+        .flush(
+          { detail: "'sour cream' is already what this language calls 'sour-cream-35-fat'." },
+          { status: 409, statusText: 'Conflict' },
+        );
+      await fixture.whenStable();
+
+      expect(text()).toContain('sour-cream-35-fat');
+    });
+
+    it('offers a cook nothing to rename', async () => {
+      TestBed.resetTestingModule();
+      await arrive();
+      asked().flush(detail());
+      await fixture.whenStable();
+      expect(text()).not.toContain('Rename');
+    });
+  });
+
   describe('approving it', () => {
     beforeEach(() => arrive({ admin: true }));
 

@@ -170,6 +170,36 @@
         }
       </dl>
 
+      @if (nameRefused(); as refusal) {
+        <!-- The server's own words: only it knows which entry holds the spelling, and that
+             is the part worth reading. Shared by both forms below, which can both hit it. -->
+        <p class="notice notice--danger" role="alert">
+          <span i18n="@@entryNameTaken">That name is taken in this language.</span>
+          {{ refusal }}
+        </p>
+      }
+
+      @if (isAdmin() && languages().length > 0) {
+        <form [formGroup]="renaming" (ngSubmit)="doRename()" class="entry__form">
+          <div class="field">
+            <label for="rename-locale" i18n="@@entryRenameLocale">Language to rename</label>
+            <select id="rename-locale" formControlName="locale">
+              @for (language of languages(); track language[0]) {
+                <option [value]="language[0]">{{ language[0] }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label for="rename-to" i18n="@@entryRenameTo">Call it</label>
+            <input id="rename-to" type="text" formControlName="name" />
+            <p class="field__hint" i18n="@@entryRenameHint">
+              The old name is kept as a spelling, so pages that use it still resolve.
+            </p>
+          </div>
+          <button type="submit" class="action action--quiet" i18n="@@entryRename">Rename</button>
+        </form>
+      }
+
       @if (isAdmin()) {
         <form [formGroup]="naming" (ngSubmit)="addName()" class="entry__form">
           <div class="field">
@@ -180,14 +210,6 @@
             <label for="spelling" i18n="@@entrySpelling">What it is called there</label>
             <input id="spelling" type="text" formControlName="spelling" />
           </div>
-          @if (nameRefused(); as refusal) {
-            <!-- The server's own words: only it knows which entry holds the spelling, and
-                 that is the part worth reading. -->
-            <p class="notice notice--danger" role="alert">
-              <span i18n="@@entryNameTaken">That name is taken in this language.</span>
-              {{ refusal }}
-            </p>
-          }
           <button type="submit" class="action action--quiet" i18n="@@entryAddName">
             Add the name
           </button>
