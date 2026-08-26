@@ -333,11 +333,21 @@ What this phase owes:
   Accent folding in `resolve` is separate and *does* resolve, because `crème` and `creme` are one
   word written twice. Run against the shipped registry it found eleven real duplicate pairs,
   including a `pizza doug` typo in the seed data.
-- **Best-effort nutrition matching on creation.** Ask the configured source tree (Swiss, then
-  European, then the rest, then American — [ADR-045](07-decisions.md#adr-045-composition-data-is-tried-in-a-configured-order-nearest-table-first)) for a row matching the
-  new name, and attach it as a *proposal* rather than as a figure. A matched profile a human has not
-  confirmed is not the same fact as a seeded one, and the same rule applies as everywhere: an
-  unconfirmed match must not read as a confirmed one.
+- ~~**Best-effort nutrition matching on creation.**~~ **Reconsidered, and answered differently.**
+  The bullet assumed a source tree that could be asked for a row matching a new name. There is none:
+  composition data is stored per registry entry, so the Swiss rows *are* the nine hundred generic
+  foods, and "ask the source for a match" reduces to "find a resembling entry and borrow its
+  figures". That is unsound in exactly the cases the matcher surfaces. Where two entries are the
+  same food the right act is to **merge**, which already carries the figures across
+  ([ADR-052](07-decisions.md#adr-052-merging-repoints-an-eaters-constraints-which-nothing-in-the-database-protects));
+  copying instead would leave two entries claiming to be one food, which is the split merging exists
+  to undo. Where they are a table variant, borrowing is simply wrong — baked pizza dough is 266 kcal
+  and raw is 229.
+
+  What was built instead is the honest part: a suggestion says **whether it carries figures this
+  entry lacks**, so the cost of leaving a duplicate unmerged is stated rather than inferred. A
+  genuine second source (Ciqual, CoFID, USDA) would reopen this, and that is a Phase 9 question about
+  shipping more data.
 - **The registry as an Academy page** — what an ingredient is, what it is called elsewhere, what it
   weighs, what it contains, what it can be swapped for. That is reference material, which is what an
   Academy is for.

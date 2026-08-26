@@ -4763,6 +4763,10 @@
           "entry": {
             "$ref": "#/components/schemas/RegistryEntryView"
           },
+          "has_nutrition": {
+            "type": "boolean",
+            "title": "Has Nutrition"
+          },
           "names": {
             "additionalProperties": {
               "items": {
@@ -4777,6 +4781,7 @@
         "type": "object",
         "required": [
           "entry",
+          "has_nutrition",
           "names"
         ],
         "title": "RegistryEntryDetailView",
@@ -4931,6 +4936,10 @@
           },
           "reason": {
             "$ref": "#/components/schemas/Resemblance"
+          },
+          "carries_nutrition": {
+            "type": "boolean",
+            "title": "Carries Nutrition"
           }
         },
         "type": "object",
@@ -4938,7 +4947,8 @@
           "slug",
           "name",
           "confidence",
-          "reason"
+          "reason",
+          "carries_nutrition"
         ],
         "title": "ResemblingView",
         "description": "One entry a name might mean, as a client reads it.\n\nA suggestion. Nothing here resolves anything: an import that acted on a resemblance\nwould attach one food's allergens to another food's recipe (ADR-006)."

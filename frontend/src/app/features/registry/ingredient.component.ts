@@ -68,6 +68,18 @@ export class IngredientComponent {
 
   protected readonly entry = computed(() => this.detail()?.entry ?? null);
 
+  /**
+   * Whether a suggestion carries published figures this entry has not got.
+   *
+   * What leaving the pair unmerged costs, stated rather than left to be inferred. An
+   * entry an import invented has no figures by design (ADR-029), and merging is what
+   * brings them across (ADR-052) — copying them instead would leave two entries claiming
+   * to be one food, which is the split merging exists to undo.
+   */
+  protected wouldRecoverNutrition(suggestion: ResemblingView): boolean {
+    return suggestion.carries_nutrition && this.detail()?.has_nutrition === false;
+  }
+
   /** Locale to spellings, as rows a template can loop over. */
   protected readonly languages = computed(() => Object.entries(this.detail()?.names ?? {}));
 

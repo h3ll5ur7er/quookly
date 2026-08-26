@@ -39,7 +39,14 @@
             <li class="entry__candidate">
               <span>
                 <a [routerLink]="['/settings/registry', suggestion.slug]">{{ suggestion.name }}</a>
-                <span class="entry__because">{{ resemblanceLabel(suggestion.reason) }}</span>
+                <span class="entry__because">
+                  {{ resemblanceLabel(suggestion.reason) }}
+                  @if (wouldRecoverNutrition(suggestion)) {
+                    <span class="entry__gain" i18n="@@entryWouldRecover">
+                      — and has nutrition this one does not
+                    </span>
+                  }
+                </span>
               </span>
               @if (isAdmin()) {
                 <button

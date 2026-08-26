@@ -26,6 +26,7 @@ from quookly.contracts.ingredient import (
     ResemblingView,
     Unset,
 )
+from quookly.contracts.matching import Resemblance
 from quookly.engines import matching
 
 
@@ -109,7 +110,11 @@ async def detail(slug: str) -> RegistryEntryDetailView | None:
     found = await registry.detail(slug)
     if found is None:
         return None
-    return RegistryEntryDetailView(entry=_viewed(found.entry), names=found.names)
+    return RegistryEntryDetailView(
+        entry=_viewed(found.entry),
+        has_nutrition=bool(await registry.profiles_for([found.entry.id])),
+        names=found.names,
+    )
 
 
 async def amend(
@@ -202,18 +207,28 @@ async def resembling(slug: str, cook_id: int, limit: int = 5) -> list[Resembling
     entries = [entry for entry in await registry.named(locale) if entry.slug != slug]
     names = [name for spellings in found.names.values() for name in spellings]
 
-    best: dict[str, ResemblingView] = {}
+    best: dict[str, tuple[Decimal, str, Resemblance]] = {}
     for name in names:
         for match in matching.resembling(name, entries, limit=limit):
             held = best.get(match.slug)
-            if held is None or match.confidence > held.confidence:
-                best[match.slug] = ResemblingView(
-                    slug=match.slug,
-                    name=match.name,
-                    confidence=match.confidence,
-                    reason=match.reason,
-                )
-    return sorted(best.values(), key=lambda one: (-one.confidence, one.slug))[:limit]
+            if held is None or match.confidence > held[0]:
+                best[match.slug] = (match.confidence, match.name, match.reason)
+
+    ranked = sorted(best.items(), key=lambda one: (-one[1][0], one[0]))[:limit]
+    ids = await registry.ids_by_slug([slug for slug, _ in ranked])
+    carrying = {
+        profile.ingredient_id for profile in await registry.profiles_for(list(ids.values()))
+    }
+    return [
+        ResemblingView(
+            slug=slug,
+            name=name,
+            confidence=confidence,
+            reason=reason,
+            carries_nutrition=ids.get(slug) in carrying,
+        )
+        for slug, (confidence, name, reason) in ranked
+    ]
 
 
 async def duplicates(cook_id: int, limit: int = 50) -> list[DuplicateView]:

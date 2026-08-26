@@ -22,6 +22,7 @@ from quookly.access import ingredient as registry
 from quookly.access.database import dispose_engine, get_engine
 from quookly.api import app
 from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
+from quookly.contracts.nutrition import Nutrient, NutrientProfile, NutritionSource
 from quookly.utilities.configuration import get_settings
 from tests.support import PASSWORD, sign_up
 
@@ -737,3 +738,70 @@ class TestSuggestingMerges:
         """The whole design: the matcher ranks, a person decides (ADR-053)."""
         await client.get(f"{REGISTRY}/duplicates", headers=cook)
         assert (await client.get(f"{REGISTRY}/sugar-brown", headers=cook)).status_code == 200
+
+
+class TestWhatMergingWouldRecover:
+    """What an unmerged duplicate actually costs, said on the page.
+
+    An entry an import invented carries no figures — deliberately, because nothing is
+    known about it (ADR-029). The entry it duplicates usually carries a full published
+    profile. Saying so turns "these names look alike" into a reason to act: merging is
+    what brings the figures across (ADR-052), and copying them instead would leave two
+    entries claiming to be one food, which is the split merging exists to undo.
+    """
+
+    @pytest.fixture
+    async def split(self) -> None:
+        """A seeded entry with figures, and the one an import invented beside it.
+
+        The figure is recorded here rather than relied on from start-up: these tests drive
+        the app through `ASGITransport`, which does not run the lifespan, so what a booted
+        instance would have attached is not here. The flag is what is under test, not the
+        seeding.
+        """
+        held = await registry.resolve("brown sugar", ENGLISH)
+        assert held is not None
+        await registry.record_profile(
+            NutrientProfile(
+                ingredient_id=held.id,
+                source=NutritionSource.SWISS,
+                reference="471 Sugar, brown",
+                amounts={Nutrient.ENERGY_KCAL: Decimal("390")},
+            )
+        )
+        await registry.register(
+            slug="sugar-brown",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["sugar, brown"]},
+            origin=Origin.USER,
+        )
+
+    async def test_a_suggestion_says_it_carries_figures_this_entry_lacks(
+        self, client: AsyncClient, admin: dict[str, str], split: None
+    ) -> None:
+        found = (await client.get(f"{REGISTRY}/sugar-brown/resembling", headers=admin)).json()
+        brown = next(one for one in found if one["slug"] == "brown-sugar")
+        assert brown["carries_nutrition"] is True
+
+    async def test_an_entry_knows_whether_it_has_any_of_its_own(
+        self, client: AsyncClient, admin: dict[str, str], split: None
+    ) -> None:
+        invented = (await client.get(f"{REGISTRY}/sugar-brown", headers=admin)).json()
+        seeded = (await client.get(f"{REGISTRY}/brown-sugar", headers=admin)).json()
+        assert invented["has_nutrition"] is False
+        assert seeded["has_nutrition"] is True
+
+    async def test_merging_actually_recovers_them(
+        self, client: AsyncClient, admin: dict[str, str], split: None
+    ) -> None:
+        """The claim the page makes, checked rather than asserted at the reader."""
+        assert (await client.get(f"{REGISTRY}/sugar-brown", headers=admin)).json()[
+            "has_nutrition"
+        ] is False
+
+        await client.post(
+            f"{REGISTRY}/sugar-brown/merge", json={"into": "brown-sugar"}, headers=admin
+        )
+        survivor = (await client.get(f"{REGISTRY}/brown-sugar", headers=admin)).json()
+        assert survivor["has_nutrition"] is True

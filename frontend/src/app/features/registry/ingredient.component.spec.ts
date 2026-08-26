@@ -22,8 +22,16 @@ const CREME = {
   approved: false,
 };
 
-function detail(entry: Record<string, unknown> = CREME, names?: Record<string, string[]>) {
-  return { entry, names: names ?? { 'en-GB': ['crème fraîche'] } };
+function detail(
+  entry: Record<string, unknown> = CREME,
+  names?: Record<string, string[]>,
+  hasNutrition = false,
+) {
+  return {
+    entry,
+    has_nutrition: hasNutrition,
+    names: names ?? { 'en-GB': ['crème fraîche'] },
+  };
 }
 
 describe('IngredientComponent', () => {
@@ -534,6 +542,67 @@ describe('IngredientComponent', () => {
 
       expect(text()).toContain('cannot be undone');
       backend.expectNone('/api/v1/registry/creme-fraiche/merge');
+    });
+  });
+
+  describe('what merging would recover', () => {
+    it('says the other entry carries figures this one lacks', async () => {
+      // The reason to act on the suggestion rather than shrug at it. Merging brings the
+      // figures across; copying them would leave two entries claiming to be one food.
+      await arrive({
+        admin: true,
+        resembles: [
+          {
+            slug: 'brown-sugar',
+            name: 'brown sugar',
+            confidence: '1',
+            reason: 'same_words',
+            carries_nutrition: true,
+          },
+        ],
+      });
+      asked().flush(detail());
+      await fixture.whenStable();
+
+      expect(text()).toContain('has nutrition this one does not');
+    });
+
+    it('says nothing of the sort when this entry already has its own', async () => {
+      await arrive({
+        admin: true,
+        resembles: [
+          {
+            slug: 'brown-sugar',
+            name: 'brown sugar',
+            confidence: '1',
+            reason: 'same_words',
+            carries_nutrition: true,
+          },
+        ],
+      });
+      asked().flush(detail(CREME, undefined, true));
+      await fixture.whenStable();
+
+      expect(text()).not.toContain('has nutrition this one does not');
+    });
+
+    it('says nothing when the other entry has none either', async () => {
+      await arrive({
+        admin: true,
+        resembles: [
+          {
+            slug: 'x',
+            name: 'something',
+            confidence: '1',
+            reason: 'same_words',
+            carries_nutrition: false,
+          },
+        ],
+      });
+      asked().flush(detail());
+      await fixture.whenStable();
+
+      expect(text()).not.toContain('has nutrition this one does not');
     });
   });
 

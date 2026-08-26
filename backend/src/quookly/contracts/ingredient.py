@@ -184,6 +184,9 @@ class RegistryEntryDetailView(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     entry: RegistryEntryView
+    #: Whether any published figures are held for this entry, from any source. Not which
+    #: — that is decided at read time against the configured order (ADR-045).
+    has_nutrition: bool
     #: Locale to spellings, canonical first. An entry an import created carries one
     #: locale — the language of the page it came from — and that is the gap to fill.
     names: dict[str, list[str]]
@@ -202,6 +205,11 @@ class ResemblingView(BaseModel):
     name: str
     confidence: Decimal
     reason: Resemblance
+    #: Whether this one carries published figures. Shown because it is what leaving the
+    #: pair unmerged costs: an entry an import invented has none, and merging is what
+    #: brings them across (ADR-052). Copying them instead would leave two entries claiming
+    #: to be one food, which is the split merging exists to undo.
+    carries_nutrition: bool
 
 
 class DuplicateView(BaseModel):

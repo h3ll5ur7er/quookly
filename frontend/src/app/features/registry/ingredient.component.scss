@@ -143,3 +143,9 @@
   color: var(--on-surface-muted);
   font-size: var(--text-sm);
 }
+
+/* What merging would actually recover. The reason to act, not decoration. */
+.entry__gain {
+  color: var(--on-surface);
+  font-weight: 600;
+}
