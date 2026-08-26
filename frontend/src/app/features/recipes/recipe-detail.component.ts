@@ -42,6 +42,14 @@ export class RecipeDetailComponent {
   private readonly cooking = inject(CookingService);
   private readonly plans = inject(PlansService);
   protected readonly leaving = signal(false);
+  /**
+   * Whether the cook has asked to put this recipe away and not yet confirmed.
+   *
+   * Two steps because archiving takes a recipe out of the list and out of search, and the
+   * control sits beside ones that do not — a mis-tap should not disappear something.
+   */
+  protected readonly archiving = signal(false);
+  protected readonly archiveFailed = signal(false);
   protected readonly wontStart = signal(false);
   protected readonly varyFailed = signal<string | null>(null);
   protected readonly refused = signal<VerdictView | null>(null);
@@ -188,6 +196,25 @@ export class RecipeDetailComponent {
           plan ? `/plans/${plan.id}/meal?recipe=${this.recipeId}` : '/plans',
         ),
       error: () => this.leaving.set(false),
+    });
+  }
+
+  /** Put this recipe away, then go back to the list it has just left. */
+  protected archive(): void {
+    const held = this.recipe();
+    if (held === null) {
+      return;
+    }
+    this.archiveFailed.set(false);
+    this.recipes.archiveRecipe(held.id).subscribe({
+      next: () => {
+        this.archiving.set(false);
+        void this.router.navigate(['/recipes']);
+      },
+      error: () => {
+        this.archiving.set(false);
+        this.archiveFailed.set(true);
+      },
     });
   }
 }

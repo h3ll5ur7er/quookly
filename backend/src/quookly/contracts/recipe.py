@@ -16,7 +16,7 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from quookly.contracts.execution import Attention, TimingView
-from quookly.contracts.ingredient import Ingredient, Origin
+from quookly.contracts.ingredient import Ingredient, IngredientKind, Origin
 from quookly.contracts.interpretation import Source
 from quookly.contracts.measure import DecimalString, Quantity, Unit
 from quookly.contracts.nutrition import NutritionView
@@ -241,6 +241,14 @@ class PresentedLine(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     ingredient: str
+    #: The registry entry this line points at, and what sort of thing it is.
+    #:
+    #: The name alone is enough to *read* a recipe and not enough to *correct* one: a form
+    #: that only knew what a line was called would have to resolve the name back to an
+    #: entry, which is guessing at something the server already knew. The kind comes with
+    #: it because which units to offer is decided by kind (ADR-059).
+    ingredient_id: int
+    ingredient_kind: IngredientKind
     # Absent for a line the cook judges themselves. A client shows the ingredient and its
     # note, and nothing where a number would go.
     quantity: QuantityView | None = None

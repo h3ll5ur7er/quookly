@@ -30,6 +30,15 @@ export class RecipeListComponent {
   protected readonly search = new FormControl('', { nonNullable: true });
   protected readonly order = signal<Order>('name');
 
+  /**
+   * Whether the cook is looking through what they put away.
+   *
+   * One list or the other, never both: what a cook has and what they archived are
+   * different questions, and mixing them would make putting something away pointless
+   * (ADR-059).
+   */
+  protected readonly showingArchived = signal(false);
+
   protected readonly reasonLabel = reasonLabel;
   protected readonly isWarning = isWarning;
 
@@ -113,5 +122,16 @@ export class RecipeListComponent {
         error: () => this.failed.set(true),
       });
     }
+  }
+
+  /** Look through what has been put away, or come back to what is current. */
+  protected showArchived(archived: boolean): void {
+    this.showingArchived.set(archived);
+    this.recipes.set(null);
+    this.failed.set(false);
+    this.service.listRecipes(archived).subscribe({
+      next: (found) => this.recipes.set(found),
+      error: () => this.failed.set(true),
+    });
   }
 }

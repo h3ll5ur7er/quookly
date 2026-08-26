@@ -64,9 +64,18 @@ async def suggest_recipes(
 
 
 @router.get("/recipes", response_model=list[RecipeSummaryView])
-async def list_recipes(cook: CurrentCook) -> list[RecipeSummaryView]:
-    """The cook's own recipes."""
-    return await recipe_manager.list_for(cook.cook_id)
+async def list_recipes(
+    cook: CurrentCook,
+    archived: bool = Query(
+        default=False, description="Show what has been put away instead of what is current."
+    ),
+) -> list[RecipeSummaryView]:
+    """The cook's own recipes, or the ones they have put away.
+
+    One or the other, never both: a cook looking at what they have and a cook looking
+    through what they archived are asking different questions (ADR-059).
+    """
+    return await recipe_manager.list_for(cook.cook_id, archived=archived)
 
 
 @router.post("/recipes", response_model=PresentedRecipe, status_code=status.HTTP_201_CREATED)

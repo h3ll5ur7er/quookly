@@ -119,7 +119,35 @@
     <p class="recipes__loading" i18n="@@recipesLoading">Loading…</p>
   }
 
-  <a class="action" routerLink="/recipes/import" i18n="@@recipesImport">Import from a link</a>
+  <!-- What a cook put away, asked for by name: archiving that hid a recipe with no way
+       back would be losing it. -->
+  <div class="recipes__keeping" role="group" i18n-aria-label="@@recipesShow" aria-label="Show">
+    <button
+      type="button"
+      class="recipes__order-choice"
+      [class.recipes__order-choice--on]="!showingArchived()"
+      [attr.aria-pressed]="!showingArchived()"
+      (click)="showArchived(false)"
+      i18n="@@recipesCurrent"
+    >
+      Your recipes
+    </button>
+    <button
+      type="button"
+      class="recipes__order-choice"
+      [class.recipes__order-choice--on]="showingArchived()"
+      [attr.aria-pressed]="showingArchived()"
+      (click)="showArchived(true)"
+      i18n="@@recipesArchived"
+    >
+      Put away
+    </button>
+  </div>
+
+  <a class="action" routerLink="/recipes/new" i18n="@@recipesWrite">Write one yourself</a>
+  <a class="action action--quiet" routerLink="/recipes/import" i18n="@@recipesImport"
+    >Import from a link</a
+  >
   <a class="action action--quiet" routerLink="/recipes/invent" i18n="@@recipesInvent">
     Write me a recipe
   </a>

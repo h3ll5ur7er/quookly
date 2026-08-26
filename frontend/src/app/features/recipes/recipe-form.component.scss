@@ -1,0 +1,124 @@
+.recipe-form section {
+  margin-block-end: var(--space-6);
+}
+
+.recipe-form__yield {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+}
+
+.recipe-form__list {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.line,
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.line__name {
+  font-weight: 600;
+}
+
+.line__ingredient {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.line__change,
+.line__remove,
+.step__remove {
+  min-height: 44px;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.line__remove,
+.step__remove {
+  align-self: flex-start;
+  color: var(--on-surface-muted);
+}
+
+.line__matches {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.line__matches button {
+  width: 100%;
+  min-height: 44px;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  text-align: start;
+  cursor: pointer;
+}
+
+.line__quantity,
+.step__facts {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: 1fr;
+}
+
+.line__optional {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+}
+
+.step__instruction {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+}
+
+.recipe-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/* The phone is the design target; widen from there (ADR-015). */
+@media (min-width: 40rem) {
+  .recipe-form__yield {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .line__quantity {
+    grid-template-columns: 6rem 8rem 1fr;
+    align-items: end;
+  }
+
+  .step__facts {
+    grid-template-columns: repeat(3, minmax(0, 10rem));
+  }
+}

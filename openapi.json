@@ -367,19 +367,43 @@
           "recipes"
         ],
         "summary": "List Recipes",
-        "description": "The cook's own recipes.",
+        "description": "The cook's own recipes, or the ones they have put away.\n\nOne or the other, never both: a cook looking at what they have and a cook looking\nthrough what they archived are asking different questions (ADR-059).",
         "operationId": "listRecipes",
+        "parameters": [
+          {
+            "name": "archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Show what has been put away instead of what is current.",
+              "default": false,
+              "title": "Archived"
+            },
+            "description": "Show what has been put away instead of what is current."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/RecipeSummaryView"
                   },
-                  "type": "array",
                   "title": "Response Listrecipes"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -394,14 +418,14 @@
         "description": "Author a recipe.",
         "operationId": "createRecipe",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RecipeInput"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -4415,6 +4439,13 @@
             "type": "string",
             "title": "Ingredient"
           },
+          "ingredient_id": {
+            "type": "integer",
+            "title": "Ingredient Id"
+          },
+          "ingredient_kind": {
+            "$ref": "#/components/schemas/IngredientKind"
+          },
           "quantity": {
             "anyOf": [
               {
@@ -4444,7 +4475,9 @@
         },
         "type": "object",
         "required": [
-          "ingredient"
+          "ingredient",
+          "ingredient_id",
+          "ingredient_kind"
         ],
         "title": "PresentedLine"
       },

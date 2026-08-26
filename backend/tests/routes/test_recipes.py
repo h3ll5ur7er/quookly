@@ -562,3 +562,68 @@ class TestArchiving:
         theirs = await sign_up(client, "other@example.com")
         response = await client.post(f"/api/v1/recipes/{recipe_id}/archived", headers=theirs)
         assert response.status_code == 404
+
+    async def test_the_archived_can_be_asked_for(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """Otherwise putting one away is indistinguishable from losing it."""
+        headers, recipe_id = await self.mine(client, pantry)
+        await client.post(f"/api/v1/recipes/{recipe_id}/archived", headers=headers)
+        listed = (
+            await client.get("/api/v1/recipes", params={"archived": True}, headers=headers)
+        ).json()
+        assert [one["id"] for one in listed] == [recipe_id]
+
+    async def test_asking_for_the_archived_shows_only_those(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers, archived = await self.mine(client, pantry)
+        kept = (
+            await client.post(
+                "/api/v1/recipes", json={**pancakes(pantry), "title": "Blini"}, headers=headers
+            )
+        ).json()["id"]
+        await client.post(f"/api/v1/recipes/{archived}/archived", headers=headers)
+
+        current = (await client.get("/api/v1/recipes", headers=headers)).json()
+        put_away = (
+            await client.get("/api/v1/recipes", params={"archived": True}, headers=headers)
+        ).json()
+        assert [one["id"] for one in current] == [kept]
+        assert [one["id"] for one in put_away] == [archived]
+
+
+class TestALineSaysWhatItPointsAt:
+    """A presented line carried the ingredient's *name* and nothing else.
+
+    Enough to read a recipe and not enough to correct one: an edit form that only knows
+    what a line is called would have to resolve the name back to an entry, which is
+    guessing at something the server already knew. A recipe has to be able to round-trip
+    through the form that edits it (ADR-059).
+    """
+
+    async def test_a_line_carries_the_entry_it_points_at(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        created = await client.post("/api/v1/recipes", json=pancakes(pantry), headers=headers)
+        line = created.json()["lines"][0]
+        assert line["ingredient_id"] == pantry["plain-flour"]
+
+    async def test_it_carries_the_kind_so_a_form_can_offer_units(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """Which units to offer is decided by kind — powders in grams, liquids in
+        millilitres — and a form that had to guess would offer the wrong ones."""
+        headers = await sign_up(client, "chef@example.com")
+        created = await client.post("/api/v1/recipes", json=pancakes(pantry), headers=headers)
+        line = created.json()["lines"][0]
+        assert line["ingredient_kind"] == "powder"
+
+    async def test_the_name_is_still_there(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """Additive: reading a recipe is what this model is for."""
+        headers = await sign_up(client, "chef@example.com")
+        created = await client.post("/api/v1/recipes", json=pancakes(pantry), headers=headers)
+        assert created.json()["lines"][0]["ingredient"] == "plain flour"

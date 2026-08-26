@@ -275,19 +275,22 @@ async def _lines_for(active: AsyncSession, recipe_id: int, locale: str) -> list[
     return lines
 
 
-async def list_for_cook(cook_id: int) -> list[RecipeSummary]:
+async def list_for_cook(cook_id: int, *, archived: bool = False) -> list[RecipeSummary]:
     """A cook's own recipes. Private by default means private from other accounts.
 
-    Archived ones are left out — that is what archiving is for. They are still reachable
-    by id, because a plan or a cooked meal pointing at one has to resolve (ADR-059).
+    Archived ones are left out — that is what archiving is for — and asked for by name,
+    because putting a recipe away should not be indistinguishable from losing it. One list
+    or the other, never both: a cook looking at what they have and a cook looking through
+    what they put away are asking different questions (ADR-059).
     """
     async with session() as active:
+        put_away = col(RecipeRow.archived_at)
         rows = (
             await active.exec(
                 select(RecipeRow)
                 .where(
                     col(RecipeRow.cook_id) == cook_id,
-                    col(RecipeRow.archived_at).is_(None),
+                    put_away.is_not(None) if archived else put_away.is_(None),
                 )
                 .order_by(col(RecipeRow.title))
             )

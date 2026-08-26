@@ -289,6 +289,8 @@ def rendered_lines(
     return [
         PresentedLine(
             ingredient=line.ingredient.name,
+            ingredient_id=line.ingredient.id,
+            ingredient_kind=line.ingredient.kind,
             quantity=(
                 None
                 if line.quantity is None

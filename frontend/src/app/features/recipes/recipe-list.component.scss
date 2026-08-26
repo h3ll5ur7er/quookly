@@ -178,3 +178,12 @@
     margin-top: var(--space-6);
   }
 }
+
+/* What a cook has, and what they put away: two questions, one at a time. */
+.recipes__keeping {
+  display: flex;
+  gap: var(--space-1);
+  margin-block: var(--space-4) var(--space-3);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}

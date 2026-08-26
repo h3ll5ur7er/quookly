@@ -1,0 +1,262 @@
+<main class="page recipe-form">
+  @if (missing()) {
+    <p class="notice notice--danger" role="alert" i18n="@@formMissing">
+      No such recipe, or it is not yours.
+    </p>
+    <a class="action action--quiet" routerLink="/recipes" i18n="@@formBack">Back to your recipes</a>
+  } @else {
+    <h1>
+      @if (editing()) {
+        <ng-container i18n="@@formEditHeading">Correct this recipe</ng-container>
+      } @else {
+        <ng-container i18n="@@formNewHeading">Write a recipe</ng-container>
+      }
+    </h1>
+
+    @if (failed()) {
+      <p class="notice notice--danger" role="alert" i18n="@@formFailed">
+        Could not save that. Nothing was changed — what you typed is still here, so try again.
+      </p>
+    }
+    @if (incomplete()) {
+      <p class="notice notice--danger" role="alert" i18n="@@formIncomplete">
+        This needs a title, an ingredient for every line, and something in every step.
+      </p>
+    }
+
+    <form [formGroup]="details" (ngSubmit)="save()">
+      <section aria-labelledby="what-heading">
+        <h2 id="what-heading" i18n="@@formWhatHeading">What it is</h2>
+
+        <div class="field">
+          <label for="title" i18n="@@formTitle">Title</label>
+          <input id="title" type="text" formControlName="title" />
+        </div>
+
+        <div class="field">
+          <label for="summary" i18n="@@formSummary">A line about it</label>
+          <input id="summary" type="text" formControlName="summary" />
+        </div>
+
+        <div class="recipe-form__yield">
+          <div class="field">
+            <label for="yield-magnitude" i18n="@@formYield">Makes</label>
+            <input
+              id="yield-magnitude"
+              type="text"
+              inputmode="decimal"
+              formControlName="yield_magnitude"
+            />
+          </div>
+          <div class="field">
+            <label for="yield-unit" i18n="@@formYieldUnit">Of</label>
+            <select id="yield-unit" formControlName="yield_unit">
+              @for (unit of yieldUnits; track unit) {
+                <option [value]="unit">{{ unit }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label for="serves" i18n="@@formServes">Serves</label>
+            <input id="serves" type="text" inputmode="decimal" formControlName="serves" />
+            <p class="field__hint" i18n="@@formServesHint">
+              Leave empty when the yield already says. "Makes 12 pancakes" does not say how many
+              feed one person, and without this it can be scaled to a number of pancakes but never
+              to a table.
+            </p>
+          </div>
+        </div>
+      </section>
+    </form>
+
+    <!-- --- what goes in it ---------------------------------------------------------- -->
+    <section aria-labelledby="lines-heading">
+      <h2 id="lines-heading" i18n="@@formLinesHeading">What goes in it</h2>
+
+      <ul class="recipe-form__list">
+        @for (line of lines.controls; track $index; let index = $index) {
+          <li class="line" [formGroup]="line">
+            <div class="line__ingredient">
+              @if (line.getRawValue().ingredient_id > 0) {
+                <span class="line__name">{{ line.getRawValue().name }}</span>
+                <button
+                  type="button"
+                  class="line__change"
+                  (click)="searchAt(index)"
+                  i18n="@@formChange"
+                >
+                  Change
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  class="line__change"
+                  (click)="searchAt(index)"
+                  i18n="@@formPick"
+                >
+                  Choose an ingredient
+                </button>
+              }
+            </div>
+
+            @if (searchingAt() === index) {
+              <div class="line__picker">
+                <label class="visually-hidden" [attr.for]="'search-' + index" i18n="@@formSearch">
+                  Search the registry
+                </label>
+                <input
+                  [id]="'search-' + index"
+                  type="search"
+                  class="line__search"
+                  [formControl]="search"
+                  i18n-placeholder="@@formSearchPlaceholder"
+                  placeholder="An ingredient name"
+                />
+                @if (matches().length > 0) {
+                  <ul class="line__matches">
+                    @for (found of matches(); track found.id) {
+                      <li>
+                        <button type="button" (click)="choose(found)">{{ found.name }}</button>
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+            }
+
+            <div class="line__quantity">
+              <label class="visually-hidden" [attr.for]="'magnitude-' + index" i18n="@@formHowMuch">
+                How much
+              </label>
+              <input
+                [id]="'magnitude-' + index"
+                type="text"
+                inputmode="decimal"
+                class="line__magnitude"
+                formControlName="magnitude"
+                i18n-placeholder="@@formToTaste"
+                placeholder="to taste"
+              />
+              <label class="visually-hidden" [attr.for]="'unit-' + index" i18n="@@formUnit"
+                >Unit</label
+              >
+              <select [id]="'unit-' + index" formControlName="unit">
+                @for (unit of unitsForLine(index); track unit) {
+                  <option [value]="unit">{{ unit }}</option>
+                }
+              </select>
+              <label class="visually-hidden" [attr.for]="'prep-' + index" i18n="@@formPrep">
+                Prepared how
+              </label>
+              <input
+                [id]="'prep-' + index"
+                type="text"
+                formControlName="preparation"
+                i18n-placeholder="@@formPrepPlaceholder"
+                placeholder="sifted, chopped…"
+              />
+            </div>
+
+            <label class="line__optional">
+              <input type="checkbox" formControlName="optional" />
+              <ng-container i18n="@@formOptional">Can be left out</ng-container>
+            </label>
+
+            @if (lines.length > 1) {
+              <button
+                type="button"
+                class="line__remove"
+                (click)="removeLine(index)"
+                i18n="@@formRemoveLine"
+              >
+                Remove
+              </button>
+            }
+          </li>
+        }
+      </ul>
+
+      <button type="button" class="action action--quiet" (click)="addLine()" i18n="@@formAddLine">
+        Add an ingredient
+      </button>
+    </section>
+
+    <!-- --- how it is made ----------------------------------------------------------- -->
+    <section aria-labelledby="steps-heading">
+      <h2 id="steps-heading" i18n="@@formStepsHeading">How it is made</h2>
+
+      <ol class="recipe-form__list">
+        @for (step of steps.controls; track $index; let index = $index) {
+          <li class="step" [formGroup]="step">
+            <label class="visually-hidden" [attr.for]="'instruction-' + index" i18n="@@formStep">
+              Step
+            </label>
+            <textarea
+              [id]="'instruction-' + index"
+              class="step__instruction"
+              rows="2"
+              formControlName="instruction"
+            ></textarea>
+
+            <div class="step__facts">
+              <div class="field">
+                <label [attr.for]="'duration-' + index" i18n="@@formDuration">Seconds</label>
+                <input
+                  [id]="'duration-' + index"
+                  type="text"
+                  inputmode="numeric"
+                  formControlName="duration_seconds"
+                />
+              </div>
+              <div class="field">
+                <label [attr.for]="'temperature-' + index" i18n="@@formTemperature">°C</label>
+                <input
+                  [id]="'temperature-' + index"
+                  type="text"
+                  inputmode="numeric"
+                  formControlName="temperature_celsius"
+                />
+              </div>
+              <div class="field">
+                <label [attr.for]="'attention-' + index" i18n="@@formAttention">Asks for</label>
+                <select [id]="'attention-' + index" formControlName="attention">
+                  @for (kind of attentions; track kind) {
+                    <option [value]="kind">{{ kind }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            @if (steps.length > 1) {
+              <button
+                type="button"
+                class="step__remove"
+                (click)="removeStep(index)"
+                i18n="@@formRemoveStep"
+              >
+                Remove
+              </button>
+            }
+          </li>
+        }
+      </ol>
+
+      <button type="button" class="action action--quiet" (click)="addStep()" i18n="@@formAddStep">
+        Add a step
+      </button>
+    </section>
+
+    <div class="recipe-form__actions">
+      <button type="button" class="action" [disabled]="saving()" (click)="save()" i18n="@@formSave">
+        Save recipe
+      </button>
+      @if (editing() && recipeId !== null) {
+        <a class="action action--quiet" [routerLink]="['/recipes', recipeId]" i18n="@@formCancel">
+          Cancel
+        </a>
+      } @else {
+        <a class="action action--quiet" routerLink="/recipes" i18n="@@formCancelNew">Cancel</a>
+      }
+    </div>
+  }
+</main>

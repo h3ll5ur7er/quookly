@@ -193,9 +193,11 @@ async def _outcomes_for(cook_id: int, locale: str) -> dict[int, Outcome]:
     }
 
 
-async def list_for(cook_id: int, locale: str | None = None) -> list[RecipeSummaryView]:
+async def list_for(
+    cook_id: int, locale: str | None = None, *, archived: bool = False
+) -> list[RecipeSummaryView]:
     locale = locale or await cook_access.locale_for(cook_id)
-    summaries = await recipe_access.list_for_cook(cook_id)
+    summaries = await recipe_access.list_for_cook(cook_id, archived=archived)
     outcomes = await _outcomes_for(cook_id, locale)
     steps = await recipe_access.steps_for_cook(cook_id)
     return [_summary_view(summary, outcomes, steps) for summary in summaries]

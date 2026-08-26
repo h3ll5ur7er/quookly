@@ -295,7 +295,14 @@ languages, with the spellings a step is actually written with.
    Academy feature at all, and listed here because the Academy found it: a recipe could be created
    and never changed, so a typo in an imported recipe was permanent. Everyone edits their own and
    another cook's is *absent rather than forbidden*; archived rather than deleted, because plans,
-   cooked meals and shopping ticks point at a recipe. The screens for both follow.
+   cooked meals and shopping ticks point at a recipe.
+
+   The screens came with it, and one of them was missing before any of this: there was **no manual
+   authoring form at all**. UC-1.1 was built on the backend and the only ways in were an import or a
+   model. `/recipes/new` and `/recipes/:id/edit` are one form — writing and correcting differ only
+   in whether it arrives filled in — and the detail page carries *Correct this recipe* and *Put it
+   away*, the second behind a confirmation because it takes a recipe out of the list and out of
+   search.
 1. **`AcademyAccess`, and the seeded pages loaded.** Browsing a section, reading a page, and nothing
    else. *An Academy nobody can add to is still an Academy.*
 2. **Spotting terms in a step** — `MatchingEngine.mentioned`, pure, tested as a table of steps and
