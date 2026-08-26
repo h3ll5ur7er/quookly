@@ -17,7 +17,14 @@ from sqlmodel import col, delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from quookly.access.database import session
-from quookly.access.models import MealPlanRow, PlanSlotRow, ReservationRow, SlotAttendeeRow
+from quookly.access.models import (
+    CookingSessionRow,
+    CookingTimerRow,
+    MealPlanRow,
+    PlanSlotRow,
+    ReservationRow,
+    SlotAttendeeRow,
+)
 from quookly.contracts.plan import Meal, MealPlan, PlanSlot
 
 
@@ -209,6 +216,32 @@ async def mark_cooked(slot_id: int) -> PlanSlot | None:
         return _slot_to_contract(row, seated[slot_id])
 
 
+async def _forget_sessions_for(active: AsyncSession, slot_ids: Sequence[int]) -> None:
+    """Take the cooking sessions held against these slots, and their timers.
+
+    Sessions cascade where reservations refuse, and the difference is what each one is a
+    claim on. A reservation holds real stock, which lives outside the plan and is the
+    cook's to release; a session is only the transcript of cooking one of these slots, and
+    whether the meal was cooked at all is recorded on the slot itself — which is going
+    either way. Timers first: they hang off the session, so the same constraint refuses
+    one level further down otherwise.
+    """
+    if not slot_ids:
+        return
+    sessions = (
+        await active.exec(
+            select(CookingSessionRow).where(col(CookingSessionRow.plan_slot_id).in_(slot_ids))
+        )
+    ).all()
+    session_ids = [one.id for one in sessions if one.id is not None]
+    if not session_ids:
+        return
+    await active.exec(
+        delete(CookingTimerRow).where(col(CookingTimerRow.session_id).in_(session_ids))
+    )
+    await active.exec(delete(CookingSessionRow).where(col(CookingSessionRow.id).in_(session_ids)))
+
+
 async def close_slot(slot_id: int) -> bool:
     """Take a meal off the plan entirely, guest list and all.
 
@@ -229,6 +262,7 @@ async def close_slot(slot_id: int) -> bool:
         if held is not None:
             raise ValueError("this meal is holding stock aside; release it first")
         await active.exec(delete(SlotAttendeeRow).where(col(SlotAttendeeRow.slot_id) == slot_id))
+        await _forget_sessions_for(active, [slot_id])
         await active.delete(row)
         await active.commit()
         return True
@@ -259,6 +293,7 @@ async def remove(plan_id: int) -> bool:
             await active.exec(
                 delete(SlotAttendeeRow).where(col(SlotAttendeeRow.slot_id).in_(slot_ids))
             )
+            await _forget_sessions_for(active, slot_ids)
             await active.exec(delete(PlanSlotRow).where(col(PlanSlotRow.plan_id) == plan_id))
         await active.delete(row)
         await active.commit()

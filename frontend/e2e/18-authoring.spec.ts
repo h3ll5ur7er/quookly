@@ -12,11 +12,6 @@ import { expect, test } from '@playwright/test';
 
 test.describe.configure({ mode: 'serial' });
 
-// No `beforeAll`. Files run in parallel, so claiming the instance from here races the spec
-// that claims it properly — and this one only needs an account to exist, which a sibling
-// has already made. The cost is that this file cannot run on its own, which is true of
-// most of them.
-
 // Claimed here rather than inherited from whichever file ran first, so this one can
 // be run on its own.
 test.beforeAll(async ({ request }) => {
@@ -70,4 +65,39 @@ test('a recipe can be written, corrected and put away', async ({ page }) => {
   // Put away, not lost.
   await page.getByRole('button', { name: 'Put away' }).click();
   await expect(page.getByRole('link', { name: /Sourdough/ })).toBeVisible();
+});
+
+test('a cook can link a word in a step, and the link survives an edit', async ({ page }) => {
+  await page.goto('/recipes/new');
+
+  await page.getByLabel('Title').fill('Linked Pancakes');
+  await page.getByLabel('Makes').fill('12');
+  await page.getByRole('button', { name: 'Choose an ingredient' }).click();
+  await page.getByPlaceholder('An ingredient name').fill('plain flour');
+  await page.getByRole('button', { name: 'plain flour', exact: true }).click();
+  await page.getByLabel('How much').fill('250');
+
+  // The author says which entry this word means, rather than leaving it to be recognised.
+  await page.getByLabel('Step').fill('Sift the [[plain-flour|flour]] into a bowl.');
+  await page.getByRole('button', { name: 'Save recipe' }).click();
+  await expect(page.getByRole('heading', { name: 'Linked Pancakes' })).toBeVisible();
+
+  // The brackets are markup, not words: a cook reads the sentence, and the linked word is
+  // a link.
+  const step = page.getByRole('listitem').filter({ hasText: 'Sift the' });
+  await expect(step).toContainText('Sift the flour into a bowl.');
+  await expect(step).not.toContainText('[[');
+  await expect(step.getByRole('link', { name: 'flour', exact: true })).toBeVisible();
+
+  // --- and it is still there after an unrelated correction --------------------------
+  await page.getByRole('link', { name: 'Correct this recipe' }).click();
+  // The form shows the markup, because that is what an author edits.
+  await expect(page.getByLabel('Step')).toHaveValue('Sift the [[plain-flour|flour]] into a bowl.');
+
+  await page.getByLabel('Title').fill('Linked Blini');
+  await page.getByRole('button', { name: 'Save recipe' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Linked Blini' })).toBeVisible();
+  const again = page.getByRole('listitem').filter({ hasText: 'Sift the' });
+  await expect(again.getByRole('link', { name: 'flour', exact: true })).toBeVisible();
 });

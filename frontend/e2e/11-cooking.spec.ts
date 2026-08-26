@@ -1,4 +1,4 @@
-import { claim, emptyKitchen, signIn } from './support';
+import { claim, emptyKitchen, noSessionOpen, signIn } from './support';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
@@ -47,10 +47,7 @@ test.beforeAll(async ({ request }) => {
  */
 test.beforeEach(async ({ request }) => {
   // Every test in this file starts from no session, whatever the one before it left.
-  const open = await request.get('/api/v1/cooking/sessions', { headers });
-  for (const session of (await open.json()) as { id: number }[]) {
-    await request.post(`/api/v1/cooking/sessions/${session.id}/abandoned`, { headers });
-  }
+  await noSessionOpen(request, headers);
 });
 
 test.beforeEach(async ({ page }) => {

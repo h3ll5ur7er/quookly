@@ -259,3 +259,25 @@ async def test_removing_a_plan_takes_its_slots_with_it(cook_id: int, eater_ids: 
 
     assert await plan_access.fetch(plan.id) is None
     assert await plan_access.fetch_slot(slot.id) is None
+
+
+async def test_removing_a_plan_that_holds_stock_aside_is_refused(cook_id: int, flour: int) -> None:
+    """The counterpart to taking a plan's sessions with it, and the reason the two differ.
+
+    A reservation is a claim on real stock, which lives outside the plan and is the cook's
+    to release; cascading it would make stock vanish as a side effect of tidying up a week.
+    A cooking session is only the plan's own transcript, so it goes.
+    """
+    plan = await plan_access.create(cook_id=cook_id, starts_on=MONDAY, ends_on=SUNDAY)
+    slot = await plan_access.open_slot(plan.id, on_date=MONDAY, meal=Meal.DINNER)
+    lot = await pantry_access.receive(
+        cook_id=cook_id, ingredient_id=flour, quantity=Quantity(Decimal("500"), Unit.GRAM)
+    )
+    await pantry_access.reserve_against(
+        lot.id, plan_slot_id=slot.id, quantity=Quantity(Decimal("250"), Unit.GRAM)
+    )
+
+    with pytest.raises(ValueError, match="release"):
+        await plan_access.remove(plan.id)
+
+    assert await plan_access.fetch(plan.id) is not None

@@ -138,7 +138,19 @@ export async function openRecipe(page: Page, title: RegExp | string): Promise<vo
  * belong to the instance, and every file that imports one imports the same document twice
  * without harm.
  */
-export async function emptyKitchen(
+/**
+ * End any cooking session that is still open, without cooking it.
+ *
+ * A session remembers which step the cook reached, and starting one on a slot that already
+ * has an open session *resumes* it rather than opening a second — which is right in a
+ * kitchen and wrong between two tests. Without this, a test that walked to step four left
+ * the next one starting at step four, and the failure landed on whichever test happened to
+ * run after it rather than on anything actually broken.
+ *
+ * Abandoned rather than completed: completing a meal takes its ingredients out of the
+ * pantry, so tidying up would quietly spend the stock the next test is counting on.
+ */
+export async function noSessionOpen(
   request: APIRequestContext,
   headers: Record<string, string>,
 ): Promise<void> {
@@ -146,6 +158,13 @@ export async function emptyKitchen(
   for (const session of (await open.json()) as { id: number }[]) {
     await request.post(`/api/v1/cooking/sessions/${session.id}/abandoned`, { headers });
   }
+}
+
+export async function emptyKitchen(
+  request: APIRequestContext,
+  headers: Record<string, string>,
+): Promise<void> {
+  await noSessionOpen(request, headers);
 
   const plans = await request.get('/api/v1/plans', { headers });
   for (const plan of (await plans.json()) as { id: number }[]) {

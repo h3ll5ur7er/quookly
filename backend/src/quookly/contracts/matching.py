@@ -96,3 +96,16 @@ class MentionView(BaseModel):
     name: str
     start: int
     end: int
+
+
+@dataclass(frozen=True, slots=True)
+class StepReading:
+    """A step as a cook reads it, and the words in it that lead somewhere.
+
+    `text` is the instruction with any link markup resolved — the brackets are not on the
+    screen, and `mentions` are offsets into *this*, not into what is stored. Counting the
+    markup would underline the wrong words by exactly its length.
+    """
+
+    text: str
+    mentions: list[Mention]

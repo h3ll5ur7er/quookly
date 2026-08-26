@@ -333,8 +333,17 @@ languages, with the spellings a step is actually written with.
    in a directory beside the database, an upload is re-encoded rather than kept as it arrived, and a
    file is named by a UUID the database refers to. Nothing deletes on its own: taking a picture off a
    page leaves the file, and collecting what is no longer referred to is owed to the CLI.
-5. **Explicit links in a step**, `[[slug|the words as written]]`, for what automatic reading cannot
-   know. Needs 0 and 3.
+5. ~~**Explicit links in a step**, `[[slug|the words as written]]`~~ **Built** — for what automatic
+   reading cannot know, which is mainly *which* flour "the flour" means. An author's link wins over
+   automatic spotting for the words it covers; the rest of the step is still read as before.
+
+   Two texts fall out of it, and the split is the whole trick: a reader gets the instruction with
+   the markup resolved and the marks positioned into *that*, and an edit form is filled from what is
+   stored. The obvious shortcut — one text, filled from what is shown — deletes an author's link the
+   first time somebody fixes a typo in the same sentence. Model-composed instructions have the
+   syntax stripped at the single point where a read recipe becomes a stored one: generating, varying
+   and importing all pass through it, and writing a link is deciding what a word means
+   ([ADR-053](07-decisions.md#adr-053-the-matcher-ranks-a-person-decides)).
 6. **Cook-authored pages, and approving them (UC-7.4, moderation half).**
    [ADR-051](07-decisions.md#adr-051-whether-an-entry-has-been-reviewed-is-a-different-column-from-whether-it-has-been-classified)'s
    approval axis, unchanged. Recognition for contributing is V11 and waits for Phase 8.

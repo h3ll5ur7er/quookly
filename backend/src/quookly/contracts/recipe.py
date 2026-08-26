@@ -261,7 +261,11 @@ class PresentedStep(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     position: int
+    #: What a cook reads: any link markup resolved, because the brackets are not on screen.
     instruction: str
+    #: What is stored, for a form that has to send it back. Filling an editor from the
+    #: rendered text would drop the link the moment somebody corrected a typo (ADR-059).
+    written: str
     duration_seconds: int | None = None
     temperature_celsius: int | None = None
     # Not defaulted, unlike the input. What a client is *shown* always says what the step

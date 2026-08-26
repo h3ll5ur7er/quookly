@@ -708,3 +708,96 @@ class TestJargonInASteps:
             headers=headers,
         )
         assert [one["slug"] for one in created.json()["steps"][0]["mentions"]] == ["fold"]
+
+
+class TestLinksAnAuthorWrote:
+    """`[[slug|words]]` in a step, through the API (ADR-059)."""
+
+    @pytest.fixture
+    async def academy(self) -> int:
+        from quookly.managers.seed import stock_academy
+
+        return await stock_academy()
+
+    async def written(
+        self, client: AsyncClient, headers: dict[str, str], pantry: dict[str, int], step: str
+    ) -> Any:
+        created = await client.post(
+            "/api/v1/recipes",
+            json={**pancakes(pantry), "steps": [{"instruction": step}]},
+            headers=headers,
+        )
+        return created.json()["steps"][0]
+
+    async def test_a_reader_never_sees_the_brackets(
+        self, client: AsyncClient, pantry: dict[str, int], academy: int
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        step = await self.written(
+            client, headers, pantry, "Sift the [[plain-flour|flour]] into the bowl."
+        )
+        assert step["instruction"] == "Sift the flour into the bowl."
+
+    async def test_the_link_is_marked_where_the_words_are(
+        self, client: AsyncClient, pantry: dict[str, int], academy: int
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        step = await self.written(
+            client, headers, pantry, "Sift the [[plain-flour|flour]] into the bowl."
+        )
+        # Not the first mention: "Sift" is a technique the Academy explains, and it comes
+        # earlier in the sentence. Both are found, which is the point.
+        found = next(one for one in step["mentions"] if one["slug"] == "plain-flour")
+        assert step["instruction"][found["start"] : found["end"]] == "flour"
+
+    async def test_what_is_stored_comes_back_for_an_editor(
+        self, client: AsyncClient, pantry: dict[str, int], academy: int
+    ) -> None:
+        """A form filled from the rendered text would drop the link the moment somebody
+        corrected a typo, which is the one thing an editable recipe must not do."""
+        headers = await sign_up(client, "chef@example.com")
+        step = await self.written(
+            client, headers, pantry, "Sift the [[plain-flour|flour]] into the bowl."
+        )
+        assert step["written"] == "Sift the [[plain-flour|flour]] into the bowl."
+
+    async def test_a_step_with_no_links_says_the_same_thing_twice(
+        self, client: AsyncClient, pantry: dict[str, int], academy: int
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        step = await self.written(client, headers, pantry, "Put it on a plate.")
+        assert step["instruction"] == step["written"] == "Put it on a plate."
+
+    async def test_the_rest_of_the_step_is_still_read(
+        self, client: AsyncClient, pantry: dict[str, int], academy: int
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        step = await self.written(
+            client, headers, pantry, "[[plain-flour|Sift the flour]], then blanch the beans."
+        )
+        assert [one["slug"] for one in step["mentions"]] == ["plain-flour", "blanch"]
+
+    async def test_it_survives_a_round_trip_through_the_editor(
+        self, client: AsyncClient, pantry: dict[str, int], academy: int
+    ) -> None:
+        """Editing sends back what was stored, so the link is still there afterwards."""
+        headers = await sign_up(client, "chef@example.com")
+        created = await client.post(
+            "/api/v1/recipes",
+            json={
+                **pancakes(pantry),
+                "steps": [{"instruction": "Sift the [[plain-flour|flour]] in."}],
+            },
+            headers=headers,
+        )
+        recipe_id = created.json()["id"]
+        stored = created.json()["steps"][0]["written"]
+
+        amended = await client.put(
+            f"/api/v1/recipes/{recipe_id}",
+            json={**pancakes(pantry), "title": "Blini", "steps": [{"instruction": stored}]},
+            headers=headers,
+        )
+        step = amended.json()["steps"][0]
+        assert step["instruction"] == "Sift the flour in."
+        assert "plain-flour" in [one["slug"] for one in step["mentions"]]

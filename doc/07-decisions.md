@@ -2601,6 +2601,14 @@ is read automatically as before.
 stripped from model output if it does. A model that could write a link would be deciding one, which
 is exactly what [ADR-053](#adr-053-the-matcher-ranks-a-person-decides) says it must not do.
 
+**Two texts, and which one each caller gets.** The stored instruction keeps the markup; a reader is
+sent the resolved text with the brackets gone, because the brackets are not on screen. Marks are
+therefore positioned into the *resolved* text, not the stored one — a step comes back as
+`instruction` (what a cook reads, which the marks index into) alongside `written` (what is stored,
+which is what an edit form must be filled from). Filling a form from the resolved text would delete
+the author's link the moment somebody corrected a typo in the same sentence, which is precisely the
+failure this decision exists to prevent.
+
 **Rationale for markup over an offsets table.** Offsets break the moment somebody edits the sentence
 they point into, which is the one thing an editable recipe guarantees will happen. Markup travels
 with the words it marks.

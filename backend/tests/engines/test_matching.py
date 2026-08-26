@@ -10,6 +10,8 @@ Those cases are marked, because each one is a rule that looks unnecessary until 
 
 from decimal import Decimal
 
+import pytest
+
 from quookly.contracts.matching import Named, Resemblance
 from quookly.engines import matching
 
@@ -296,3 +298,150 @@ class TestNothingToSpot:
 
     def test_a_page_with_no_spellings_at_all_is_skipped(self) -> None:
         assert matching.mentioned("Fold in the whites.", [Named(slug="x", names=())]) == []
+
+
+class TestLinksAnAuthorWrote:
+    """`[[slug|the words as written]]` in an instruction (ADR-059).
+
+    Automatic reading is the default because nobody tags a recipe. It is wrong only as the
+    *only* option: it cannot know which flour "the flour" means when a recipe uses two, and
+    where a term has several claimants it can only offer a chooser. This is how somebody who
+    knows the answer records it.
+
+    The offsets are into what the cook **reads**, not into what is stored. The brackets are
+    not on the screen, so an offset that counted them would underline the wrong words.
+    """
+
+    def test_a_step_with_no_links_reads_as_written(self) -> None:
+        read = matching.read("Fold in the whites.", [])
+        assert read.text == "Fold in the whites."
+        assert read.mentions == []
+
+    def test_the_brackets_do_not_reach_the_reader(self) -> None:
+        read = matching.read("Sift the [[plain-flour|flour]] into the bowl.", [])
+        assert read.text == "Sift the flour into the bowl."
+
+    def test_the_link_covers_the_words_as_written(self) -> None:
+        read = matching.read("Sift the [[plain-flour|flour]] into the bowl.", [])
+        assert [(one.slug, read.text[one.start : one.end]) for one in read.mentions] == [
+            ("plain-flour", "flour")
+        ]
+
+    def test_a_link_with_no_words_of_its_own_shows_its_slug(self) -> None:
+        read = matching.read("Now [[blanch]] the beans.", [])
+        assert read.text == "Now blanch the beans."
+        assert [one.slug for one in read.mentions] == ["blanch"]
+
+    def test_two_links_in_one_step(self) -> None:
+        read = matching.read("[[blanch|Blanch]] them, then [[saute|sauté]].", [])
+        assert read.text == "Blanch them, then sauté."
+        assert [(one.slug, read.text[one.start : one.end]) for one in read.mentions] == [
+            ("blanch", "Blanch"),
+            ("saute", "sauté"),
+        ]
+
+    def test_what_is_written_wins_over_what_is_recognised(self) -> None:
+        """The whole point: an author who knows which flour is meant has said so, and a
+        matcher that overrode them would make the annotation pointless."""
+        read = matching.read("Sift the [[plain-flour|flour]] in.", [entry("wholemeal", "flour")])
+        assert [one.slug for one in read.mentions] == ["plain-flour"]
+
+    def test_the_rest_of_the_step_is_still_read_automatically(self) -> None:
+        read = matching.read(
+            "[[plain-flour|Sift the flour]], then blanch the beans.",
+            [entry("blanch", "blanch")],
+        )
+        assert [one.slug for one in read.mentions] == ["plain-flour", "blanch"]
+
+    def test_a_term_inside_a_link_is_not_found_again(self) -> None:
+        """Two links over the same words is not something a reader can act on."""
+        read = matching.read("[[plain-flour|blanch]] it.", [entry("blanch", "blanch")])
+        assert [one.slug for one in read.mentions] == ["plain-flour"]
+
+    def test_offsets_stay_right_after_a_link_has_been_removed(self) -> None:
+        """The brackets shorten the text, so everything after a link moves. An offset taken
+        before the rendering would drift by exactly the length of the markup."""
+        read = matching.read(
+            "[[plain-flour|Flour]] first, then blanch.", [entry("blanch", "blanch")]
+        )
+        found = next(one for one in read.mentions if one.slug == "blanch")
+        assert read.text[found.start : found.end] == "blanch"
+
+    def test_something_that_is_not_a_link_is_left_alone(self) -> None:
+        """A slug is lower case, digits and hyphens. Anything else stays as the words it is,
+        because a step is prose and prose contains brackets."""
+        for written in ("See [[Note 1]] below.", "A [[ ]] gap.", "Use [[UPPER]] case."):
+            assert matching.read(written, []).text == written
+
+    def test_a_lone_bracket_is_not_a_link(self) -> None:
+        assert matching.read("Use [[plain-flour here.", []).text == "Use [[plain-flour here."
+
+
+class TestOnlyAPersonMayWriteALink:
+    """Link syntax is stripped from anything a model composed (ADR-059).
+
+    A model that could write a link would be deciding which ingredient a word means, which
+    is exactly the judgement ADR-053 says it must not make. The words survive; the claim
+    about what they mean does not.
+    """
+
+    def test_the_words_of_a_link_survive_it(self) -> None:
+        assert matching.unlinked("Sift the [[plain-flour|flour]] in.") == "Sift the flour in."
+
+    def test_a_slug_only_link_leaves_the_slug(self) -> None:
+        assert matching.unlinked("Now [[blanch]] the beans.") == "Now blanch the beans."
+
+    def test_prose_without_links_is_returned_unchanged(self) -> None:
+        assert matching.unlinked("Put it on a plate.") == "Put it on a plate."
+
+    def test_something_that_only_looks_like_a_link_is_left_alone(self) -> None:
+        assert matching.unlinked("Season [[to taste]].") == "Season [[to taste]]."
+
+    def test_stripping_agrees_with_reading(self) -> None:
+        """Both render the same text, so a stripped step reads as the linked one would."""
+        written = "Sift the [[plain-flour|flour]], then [[blanch]] it."
+        assert matching.unlinked(written) == matching.read(written, []).text
+
+
+class TestReadingAWholeRecipe:
+    """Many steps, one vocabulary.
+
+    `_prepared` says in its own docstring that rebuilding the vocabulary per step was, when
+    measured, most of the cost of showing a recipe. Reading a step at a time reintroduces
+    exactly that, so the recipe-wide form is the one callers use and this is what holds it
+    to its promise.
+    """
+
+    def test_every_step_is_read(self) -> None:
+        read = matching.read_all(
+            ["Sift the [[plain-flour|flour]].", "Then blanch the beans."],
+            [entry("blanch", "blanch")],
+        )
+        assert [one.text for one in read] == ["Sift the flour.", "Then blanch the beans."]
+        assert [[mention.slug for mention in one.mentions] for one in read] == [
+            ["plain-flour"],
+            ["blanch"],
+        ]
+
+    def test_it_agrees_with_reading_one_step(self) -> None:
+        entries = [entry("blanch", "blanch")]
+        steps = ["Now [[blanch]] them.", "Rest it.", "Blanch the rest."]
+        assert matching.read_all(steps, entries) == [matching.read(one, entries) for one in steps]
+
+    def test_the_vocabulary_is_built_once_for_the_whole_recipe(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        built = 0
+        original = matching._prepared
+
+        def counting(entries: object) -> object:
+            nonlocal built
+            built += 1
+            return original(entries)  # type: ignore[arg-type]
+
+        monkeypatch.setattr(matching, "_prepared", counting)
+        matching.read_all(["One.", "Two.", "Three."], [entry("blanch", "blanch")])
+        assert built == 1
+
+    def test_no_steps_is_no_reading(self) -> None:
+        assert matching.read_all([], [entry("blanch", "blanch")]) == []

@@ -74,12 +74,13 @@ def _step_view(
     lines: list[PresentedLine],
     timers: dict[int, Timer],
     jargon: dict[int, list[MentionView]],
+    reading: dict[int, str],
 ) -> GuidedStepView:
     step = recipe.steps[planned.position]
     timer = timers.get(planned.position)
     return GuidedStepView(
         position=planned.position,
-        instruction=step.instruction,
+        instruction=reading.get(planned.position, step.instruction),
         mentions=jargon.get(planned.position, []),
         duration_seconds=step.duration_seconds,
         temperature_celsius=step.temperature_celsius,
@@ -141,13 +142,14 @@ async def _view(session: CookingSession, slot: PlanSlot, locale: str) -> Session
     # The same marks the recipe page carries (UC-9.5). Fetched once for the session rather
     # than per step: the vocabulary is the same for every step of it.
     vocabulary, names = await academy_access.vocabulary(locale)
-    spotted = matching.mentioned_in([step.instruction for step in recipe.steps], vocabulary)
+    spotted = matching.read_all([step.instruction for step in recipe.steps], vocabulary)
+    reading = {position: one.text for position, one in enumerate(spotted)}
     jargon = {
         position: [
             MentionView(
                 slug=one.slug, name=names.get(one.slug, one.slug), start=one.start, end=one.end
             )
-            for one in found
+            for one in found.mentions
         ]
         for position, found in enumerate(spotted)
     }
@@ -167,8 +169,8 @@ async def _view(session: CookingSession, slot: PlanSlot, locale: str) -> Session
             )
             for group in arranged.mise_en_place
         ],
-        ahead=[_step_view(recipe, one, lines, timers, jargon) for one in arranged.ahead],
-        steps=[_step_view(recipe, one, lines, timers, jargon) for one in arranged.steps],
+        ahead=[_step_view(recipe, one, lines, timers, jargon, reading) for one in arranged.ahead],
+        steps=[_step_view(recipe, one, lines, timers, jargon, reading) for one in arranged.steps],
         at_step=session.at_step,
         started_at=session.started_at,
         finished_at=session.finished_at,

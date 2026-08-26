@@ -27,7 +27,15 @@ const PRESENTED = {
       optional: false,
     },
   ],
-  steps: [{ position: 0, instruction: 'Whisk it.', duration_seconds: 300, attention: 'hands_on' }],
+  steps: [
+    {
+      position: 0,
+      instruction: 'Whisk the flour in.',
+      written: 'Whisk the [[plain-flour|flour]] in.',
+      duration_seconds: 300,
+      attention: 'hands_on',
+    },
+  ],
 };
 
 describe('RecipeFormComponent', () => {
@@ -205,6 +213,24 @@ describe('RecipeFormComponent', () => {
       // than patches and a partial body would delete what it left out.
       expect(sent.request.body.lines.length).toBe(1);
       expect(sent.request.body.steps.length).toBe(1);
+      sent.flush(PRESENTED);
+    });
+
+    it('fills a step with what was written, not with what a cook reads', () => {
+      // The two differ when an author linked a word. Filling from the rendered text would
+      // quietly delete the link the moment somebody fixed a typo in the same step.
+      const step: HTMLTextAreaElement = fixture.nativeElement.querySelector('.step textarea');
+      expect(step.value).toBe('Whisk the [[plain-flour|flour]] in.');
+    });
+
+    it('sends the link back untouched when something else is edited', async () => {
+      set('#title', 'Blini');
+      await fixture.whenStable();
+      click('Save recipe');
+      await fixture.whenStable();
+
+      const sent = backend.expectOne('/api/v1/recipes/7');
+      expect(sent.request.body.steps[0].instruction).toBe('Whisk the [[plain-flour|flour]] in.');
       sent.flush(PRESENTED);
     });
 

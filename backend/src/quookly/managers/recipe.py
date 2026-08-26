@@ -442,7 +442,7 @@ async def _present(
     vocabulary, names = await academy_access.vocabulary(locale)
     # Once for the recipe rather than once per step: preparing the vocabulary is most of
     # the cost, and a recipe has one vocabulary and many steps.
-    jargon = matching.mentioned_in([step.instruction for step in recipe.steps], vocabulary)
+    read = matching.read_all([step.instruction for step in recipe.steps], vocabulary)
 
     return PresentedRecipe(
         id=recipe.id,
@@ -466,11 +466,12 @@ async def _present(
         steps=[
             PresentedStep(
                 position=position,
-                instruction=step.instruction,
+                instruction=read[position].text,
+                written=step.instruction,
                 duration_seconds=step.duration_seconds,
                 temperature_celsius=step.temperature_celsius,
                 attention=step.attention,
-                mentions=_marked(jargon[position], names),
+                mentions=_marked(read[position].mentions, names),
             )
             for position, step in enumerate(recipe.steps)
         ],
@@ -681,7 +682,10 @@ def _draft_from(
         ],
         steps=[
             StepDraft(
-                instruction=step.instruction,
+                # Stripped, not stored as written: this instruction came off a page or out
+                # of a model, and only a person may say a word means a particular
+                # ingredient (ADR-059). A cook can add the link back by editing the step.
+                instruction=matching.unlinked(step.instruction),
                 duration_seconds=step.duration_seconds,
                 temperature_celsius=step.temperature_celsius,
                 attention=step.attention,

@@ -28,6 +28,7 @@ from quookly.contracts.matching import (
     Named,
     Resemblance,
     Resembling,
+    StepReading,
 )
 from quookly.utilities.text import fold
 
@@ -355,12 +356,91 @@ def mentioned(text: str, entries: Sequence[Named]) -> list[Mention]:
     The vocabulary arrives as an argument and no database is read, which is what keeps this
     a rule engine and its tests a table of steps and expected offsets.
 
-    For a whole recipe use `mentioned_in`, which prepares the vocabulary once.
+    For a whole recipe use `read_all`, which prepares the vocabulary once and resolves
+    any links the author wrote.
     """
     return _spot(text, _prepared(entries))
 
 
-def mentioned_in(texts: Sequence[str], entries: Sequence[Named]) -> list[list[Mention]]:
-    """The same, for every step of a recipe, preparing the vocabulary once."""
+#: A link an author wrote into an instruction: `[[slug]]` or `[[slug|the words as written]]`.
+#:
+#: The slug is spelled the way every other slug in this application is — lower case, digits
+#: and hyphens — so that a step containing `[[Note 1]]` is a step containing those words. A
+#: recipe is prose, and prose has brackets in it.
+_WRITTEN_LINK = re.compile(r"\[\[([a-z0-9-]+)(?:\|([^\]|]+))?\]\]")
+
+
+def unlinked(instruction: str) -> str:
+    """The same instruction with any link markup taken back out.
+
+    For text a model composed. Writing a link is deciding what a word means, and a model
+    does not get to decide that (ADR-053, ADR-059) — so the words are kept and the claim
+    is dropped. Stripping here rather than refusing the step means a model that emits the
+    syntax produces a plain instruction, not a failed import.
+    """
+    return _WRITTEN_LINK.sub(lambda found: found.group(2) or found.group(1), instruction)
+
+
+def read(instruction: str, entries: Sequence[Named]) -> StepReading:
+    """A step as a cook reads it: markup resolved, and every term it names located.
+
+    For a whole recipe use `read_all`, which prepares the vocabulary once.
+    """
+    return _read(instruction, _prepared(entries))
+
+
+def read_all(instructions: Sequence[str], entries: Sequence[Named]) -> list[StepReading]:
+    """The same, for every step of a recipe, preparing the vocabulary once.
+
+    The form callers use. A recipe has many steps and one vocabulary, and building it per
+    step is what `_prepared` records as having been most of the cost of showing a recipe.
+    """
     vocabulary = _prepared(entries)
-    return [_spot(text, vocabulary) for text in texts]
+    return [_read(one, vocabulary) for one in instructions]
+
+
+def _read(instruction: str, vocabulary: list[tuple[tuple[str, ...], str]]) -> StepReading:
+    """A step read against a vocabulary that has already been built.
+
+    **What an author wrote wins.** Automatic reading is the default because nobody tags a
+    recipe (ADR-040), and it is wrong only as the *only* option — it cannot know which flour
+    "the flour" means. Where somebody has said, the rest of the step is still read
+    automatically and the words they claimed are left alone: two links over the same words
+    is not something a reader can act on (ADR-059).
+    """
+    rendered: list[str] = []
+    written: list[Mention] = []
+    gaps: list[tuple[str, int]] = []
+    at = 0
+    length = 0
+
+    for found in _WRITTEN_LINK.finditer(instruction):
+        plain = instruction[at : found.start()]
+        if plain:
+            gaps.append((plain, length))
+            rendered.append(plain)
+            length += len(plain)
+
+        slug, words = found.group(1), found.group(2)
+        shown = words if words is not None else slug
+        rendered.append(shown)
+        written.append(Mention(slug=slug, start=length, end=length + len(shown)))
+        length += len(shown)
+        at = found.end()
+
+    trailing = instruction[at:]
+    if trailing:
+        gaps.append((trailing, length))
+        rendered.append(trailing)
+
+    text = "".join(rendered)
+    if not written:
+        return StepReading(text=text, mentions=_spot(text, vocabulary))
+
+    # Only the parts nobody claimed, and shifted to where they sit in what is read.
+    spotted = [
+        Mention(slug=one.slug, start=one.start + offset, end=one.end + offset)
+        for plain, offset in gaps
+        for one in _spot(plain, vocabulary)
+    ]
+    return StepReading(text=text, mentions=sorted(written + spotted, key=lambda one: one.start))

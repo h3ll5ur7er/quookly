@@ -682,3 +682,59 @@ class TestCookingSomethingNobodyPlanned:
         assert (
             await client.post(f"{SESSIONS}/for-recipe", json={"recipe_id": 1})
         ).status_code == 401
+
+
+class TestForgettingAPlanThatWasCooked:
+    """Deleting a week takes its cooking sessions with it.
+
+    A plan slot is what a session is a session *of*, and whether a meal was cooked is
+    recorded on the slot itself — so deleting the plan already ends that history. Leaving
+    the session behind pointed it at a slot that no longer exists, and SQLite refused the
+    delete outright: a cook who cooked a meal and then deleted the week got a 500.
+    """
+
+    PLANS = "/api/v1/plans"
+
+    async def test_a_plan_with_a_session_against_it_can_be_forgotten(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        session = await a_session(client, cook, flour, butter)
+        plan_id = (await client.get(self.PLANS, headers=cook)).json()[0]["id"]
+
+        gone = await client.delete(f"{self.PLANS}/{plan_id}", headers=cook)
+        assert gone.status_code == 204, gone.text
+        assert (await client.get(f"{SESSIONS}/{session['id']}", headers=cook)).status_code == 404
+
+    async def test_a_finished_session_goes_too(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        """The common case: the week is over, it was cooked, and it is being tidied away."""
+        session = await a_session(client, cook, flour, butter)
+        await client.post(f"{SESSIONS}/{session['id']}/completed", headers=cook)
+        plan_id = (await client.get(self.PLANS, headers=cook)).json()[0]["id"]
+
+        assert (await client.delete(f"{self.PLANS}/{plan_id}", headers=cook)).status_code == 204
+
+    async def test_its_timers_go_with_it(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        """A timer hangs off the session, so it has to be unwound first or the same
+        constraint refuses one level down."""
+        session = await a_session(client, cook, flour, butter)
+        await client.post(f"{SESSIONS}/{session['id']}/timers/2/started", headers=cook)
+        plan_id = (await client.get(self.PLANS, headers=cook)).json()[0]["id"]
+
+        assert (await client.delete(f"{self.PLANS}/{plan_id}", headers=cook)).status_code == 204
+
+    async def test_taking_the_meal_itself_off_the_plan_works_the_same_way(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        """The same constraint, one level down: a slot is deletable on its own, and a
+        session points at the slot rather than at the plan."""
+        session = await a_session(client, cook, flour, butter)
+        plan_id = (await client.get(self.PLANS, headers=cook)).json()[0]["id"]
+        slot_id = session["plan_slot_id"]
+
+        cleared = await client.delete(f"{self.PLANS}/{plan_id}/slots/{slot_id}", headers=cook)
+        assert cleared.status_code in (200, 204), cleared.text
+        assert (await client.get(f"{SESSIONS}/{session['id']}", headers=cook)).status_code == 404

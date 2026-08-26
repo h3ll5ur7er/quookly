@@ -18,7 +18,19 @@ test.describe.configure({ mode: 'serial' });
 // Claimed here rather than inherited from whichever file ran first, so this one can
 // be run on its own.
 test.beforeAll(async ({ request }) => {
-  await claim(request);
+  const headers = { Authorization: `Bearer ${await claim(request)}` };
+
+  // Something on the shelf, because one of these tests is about the shelf. It used to read
+  // whatever an earlier file happened to leave in the pantry, so it passed or failed on
+  // run order rather than on anything it was testing.
+  const registry = await request.get('/api/v1/ingredients?search=plain%20flour', { headers });
+  const flour = ((await registry.json()) as { id: number; slug: string }[]).find(
+    (entry) => entry.slug === 'plain-flour',
+  )!;
+  await request.post('/api/v1/pantry', {
+    data: { ingredient_id: flour.id, magnitude: '1', unit: 'kg' },
+    headers,
+  });
 });
 
 test.beforeEach(async ({ page }) => {

@@ -5242,6 +5242,10 @@
             "type": "string",
             "title": "Instruction"
           },
+          "written": {
+            "type": "string",
+            "title": "Written"
+          },
           "duration_seconds": {
             "anyOf": [
               {
@@ -5280,6 +5284,7 @@
         "required": [
           "position",
           "instruction",
+          "written",
           "attention"
         ],
         "title": "PresentedStep"

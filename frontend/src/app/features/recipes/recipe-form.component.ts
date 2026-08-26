@@ -144,7 +144,10 @@ export class RecipeFormComponent {
     for (const step of recipe.steps) {
       const control = this.blankStep();
       control.setValue({
-        instruction: step.instruction,
+        // What was stored, not what a cook reads: the two differ when the author linked a
+        // word, and filling from the rendered text would delete the link as soon as
+        // anything else in the step was corrected.
+        instruction: step.written,
         duration_seconds: step.duration_seconds == null ? '' : String(step.duration_seconds),
         temperature_celsius:
           step.temperature_celsius == null ? '' : String(step.temperature_celsius),
