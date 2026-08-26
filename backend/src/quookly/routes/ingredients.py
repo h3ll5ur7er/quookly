@@ -13,12 +13,14 @@ from quookly.contracts.errors import (
 from quookly.contracts.ingredient import (
     UNSET,
     Allergen,
+    DuplicateView,
     IngredientKind,
     IngredientView,
     Origin,
     RegistryEntryDetailView,
     RegistryEntryView,
     RegistryPageView,
+    ResemblingView,
 )
 from quookly.managers import ingredient as ingredient_manager
 from quookly.routes.dependencies import CurrentAdmin, CurrentCook
@@ -130,6 +132,24 @@ async def approve_ingredient(slug: str, admin: CurrentAdmin) -> RegistryEntryVie
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="No such ingredient."
         ) from absent
+
+
+@router.get("/registry/duplicates", response_model=list[DuplicateView])
+async def find_duplicates(
+    cook: CurrentCook,
+    limit: int = Query(default=50, ge=1, le=200),
+) -> list[DuplicateView]:
+    """Pairs of entries that might be one ingredient.
+
+    Declared **before** `/registry/{slug}`, or that route would swallow it and answer
+    "no such ingredient named duplicates". The same first-match-wins rule the Angular
+    routing table lives by.
+
+    Suggestions only, each carrying why it is here. Merging them is a separate, deliberate
+    act — this cannot tell two spellings of one food from two foods described alike, and
+    says which reading it took so somebody can check.
+    """
+    return await ingredient_manager.duplicates(cook.cook_id, limit=limit)
 
 
 @router.get("/registry/{slug}", response_model=RegistryEntryDetailView)
@@ -257,3 +277,16 @@ async def merge_ingredient(slug: str, merge: Merge, admin: CurrentAdmin) -> Regi
     if merged is None:
         raise NOT_FOUND
     return merged
+
+
+@router.get("/registry/{slug}/resembling", response_model=list[ResemblingView])
+async def resembling_ingredients(
+    slug: str, cook: CurrentCook, limit: int = Query(default=5, ge=1, le=20)
+) -> list[ResemblingView]:
+    """Other entries this one might be the same food as.
+
+    A prompt towards merging, not a merge. An entry an import invented is the usual reason
+    somebody is on this page, and the entry it duplicates is the usual thing they are
+    looking for.
+    """
+    return await ingredient_manager.resembling(slug, cook.cook_id, limit=limit)

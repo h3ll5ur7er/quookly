@@ -647,3 +647,93 @@ class TestMerging:
             f"{REGISTRY}/farine-t55/merge", json={"into": "plain-flour"}, headers=cook
         )
         assert response.status_code == 403
+
+
+class TestSuggestingMerges:
+    """The matcher, through the API. Suggestions — nothing here merges anything."""
+
+    @pytest.fixture
+    async def split(self) -> None:
+        """One ingredient written two ways, which is what an import leaves behind.
+
+        Both halves registered here: signing up does not seed the registry, so the entry
+        the duplicate duplicates has to exist for there to be a pair at all.
+        """
+        await registry.register(
+            slug="brown-sugar",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["brown sugar"]},
+            origin=Origin.SEED,
+        )
+        await registry.register(
+            slug="sugar-brown",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["sugar, brown"]},
+            origin=Origin.USER,
+        )
+
+    async def test_the_registry_can_be_swept_for_duplicates(
+        self, client: AsyncClient, cook: dict[str, str], split: None
+    ) -> None:
+        response = await client.get(f"{REGISTRY}/duplicates", headers=cook)
+        assert response.status_code == 200
+        pairs = {tuple(sorted((one["slug"], one["other"]))) for one in response.json()}
+        assert ("brown-sugar", "sugar-brown") in pairs
+
+    async def test_the_sweep_route_is_not_swallowed_by_the_entry_route(
+        self, client: AsyncClient, cook: dict[str, str], split: None
+    ) -> None:
+        """`/registry/duplicates` and `/registry/{slug}` share a shape and the first match
+        wins, so the order they are declared in is the whole behaviour."""
+        response = await client.get(f"{REGISTRY}/duplicates", headers=cook)
+        assert isinstance(response.json(), list)
+
+    async def test_every_suggestion_says_why_it_is_there(
+        self, client: AsyncClient, cook: dict[str, str], split: None
+    ) -> None:
+        """A list that only reordered itself would be asking to be trusted (ADR-046)."""
+        pairs = (await client.get(f"{REGISTRY}/duplicates", headers=cook)).json()
+        assert all(one["reason"] for one in pairs)
+        assert all(Decimal(one["confidence"]) > 0 for one in pairs)
+
+    async def test_one_entry_can_be_asked_what_it_resembles(
+        self, client: AsyncClient, cook: dict[str, str], split: None
+    ) -> None:
+        response = await client.get(f"{REGISTRY}/sugar-brown/resembling", headers=cook)
+        assert response.status_code == 200
+        assert "brown-sugar" in [one["slug"] for one in response.json()]
+
+    async def test_an_entry_never_resembles_itself(
+        self, client: AsyncClient, cook: dict[str, str], split: None
+    ) -> None:
+        found = (await client.get(f"{REGISTRY}/sugar-brown/resembling", headers=cook)).json()
+        assert "sugar-brown" not in [one["slug"] for one in found]
+
+    async def test_an_entry_nothing_resembles_reports_nothing(
+        self, client: AsyncClient, cook: dict[str, str], split: None
+    ) -> None:
+        await registry.register(
+            slug="xylophone-fruit",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["xylophone fruit"]},
+            origin=Origin.USER,
+        )
+        found = (await client.get(f"{REGISTRY}/xylophone-fruit/resembling", headers=cook)).json()
+        assert found == []
+
+    async def test_an_entry_that_is_not_there_resembles_nothing(
+        self, client: AsyncClient, cook: dict[str, str], split: None
+    ) -> None:
+        response = await client.get(f"{REGISTRY}/no-such-thing/resembling", headers=cook)
+        assert response.status_code == 200
+        assert response.json() == []
+
+    async def test_suggesting_does_not_merge_anything(
+        self, client: AsyncClient, cook: dict[str, str], split: None
+    ) -> None:
+        """The whole design: the matcher ranks, a person decides (ADR-053)."""
+        await client.get(f"{REGISTRY}/duplicates", headers=cook)
+        assert (await client.get(f"{REGISTRY}/sugar-brown", headers=cook)).status_code == 200

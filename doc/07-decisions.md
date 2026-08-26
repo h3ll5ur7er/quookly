@@ -2293,3 +2293,62 @@ into a seeded one produces a seeded row carrying names a cook contributed. If a 
 ([ADR-016](#adr-016-ship-seed-content-marked-and-upgradable)) replaces seeded rows wholesale it must
 not discard those aliases. Recorded here rather than solved, because the upgrade path is Phase 9 and
 guessing at its shape now would be inventing a constraint for it.
+
+
+## ADR-053 The matcher ranks; a person decides
+
+**Status:** Accepted
+
+**Context.** Two entries in the registry can be the same food under different names, and
+[ADR-052](#adr-052-merging-repoints-an-eaters-constraints-which-nothing-in-the-database-protects)
+gave an administrator a way to put them back together. Finding them by hand across nine hundred
+entries is another matter. The obvious next step is a fuzzy matcher — and the obvious next step
+after *that* is to use it during import, so a page saying `creme fraiche` resolves to the entry
+already there instead of inventing a duplicate.
+
+That second step is where the danger is. Today an ingredient the registry cannot resolve is recorded
+and reported ([ADR-029](#adr-029-an-ingredient-the-registry-does-not-know-is-recorded-and-reported)),
+which leaves the recipe reading *unknown* — conservative, and visible. A fuzzy match that is wrong
+reads *known*, with another food's allergens attached, and nothing anywhere says so.
+
+**Decision.** `MatchingEngine` returns **ranked candidates with a reason, and never a decision**. The
+registry screen shows an administrator possible duplicates and they choose. An import may attach a
+suspicion to the entry it creates; it still creates the entry, and never resolves a line to a
+candidate.
+
+Separately, and not part of this: accent folding in `IngredientAccess.resolve` *does* resolve, because
+`crème` and `creme` are one word written two ways rather than two words that resemble each other. It
+is exact, it is a fallback behind an exact match, and it refuses when ambiguous.
+
+**Rationale.** The two failures are not symmetrical. A missed duplicate costs an administrator a
+merge they have to find themselves; a wrong match costs somebody an allergic reaction. Where the
+errors are that unequal, the machine gets the half it cannot get wrong.
+
+**Every suggestion says why**, the same rule as [ADR-046](#adr-046-a-suggestion-earns-its-place-by-saving-something).
+"The same words in a different order" is something a person can check at a glance; a confidence of
+0.92 is not.
+
+**What the engine learned from being measured.** The first version was written against intuition and
+run against the shipped registry, where its highest-scoring duplicate was `condensed milk, sweetened`
+against `condensed milk, unsweetened` at 0.98. Three rules came out of that, and each looks
+unnecessary until it is not:
+
+- **Numbers distinguish.** The first version dropped digits, reasoning they would swamp the
+  comparison. Backwards: in this registry the number *is* the distinction — `at least 15% fidm
+  appenzeller` and `at least 45% fidm appenzeller` are different cheeses.
+- **Negation is invisible to character similarity.** `sweetened`/`unsweetened` and
+  `drained`/`not drained` are near-identical as strings and opposite as foods. Checked explicitly,
+  not scored lower.
+- **Compare word by word, not character by character.** `peach with sweetener, canned, drained` and
+  `pear with sweetener, canned, drained` scored 0.96 on the whole string. A long agreeing description
+  must not outvote the word that differs.
+
+**What it cannot do.** It finds names that are *written* alike. It cannot tell that `plain flour` and
+`wheat flour` are one ingredient, because nothing about the strings says so — that is a question
+about food, not about spelling. Widening the threshold until it caught such pairs would bury the real
+ones; the honest answer is that semantic synonyms need a person or a model, and the review queue is
+where a person already is.
+
+**Cost.** The sweep is O(pairs) and takes a few seconds against nine hundred entries even with
+blocking, so it is on demand rather than on page load. If it ever wants running regularly it belongs
+in a CLI command and a cron job rather than inside the request that serves the page.

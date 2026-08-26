@@ -60,7 +60,7 @@ describe('IngredientComponent', () => {
     box.click();
   }
 
-  async function arrive({ admin = false } = {}): Promise<void> {
+  async function arrive({ admin = false, resembles = [] as unknown[] } = {}): Promise<void> {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [IngredientComponent],
@@ -81,6 +81,9 @@ describe('IngredientComponent', () => {
     fixture = TestBed.createComponent(IngredientComponent);
     backend = TestBed.inject(HttpTestingController);
     await fixture.whenStable();
+    // Answered here so every test does not have to: the screen asks what this entry
+    // might be a duplicate of as soon as it opens, which is the point of the flag.
+    backend.expectOne('/api/v1/registry/creme-fraiche/resembling').flush(resembles);
   }
 
   function asked() {
@@ -478,6 +481,59 @@ describe('IngredientComponent', () => {
       asked().flush(detail());
       await fixture.whenStable();
       expect(text()).not.toContain('Merge');
+    });
+  });
+
+  describe('being told it might be a duplicate', () => {
+    it('says so, and names the other entry', async () => {
+      await arrive({
+        admin: true,
+        resembles: [
+          { slug: 'sour-cream', name: 'sour cream', confidence: '0.92', reason: 'same_words' },
+        ],
+      });
+      asked().flush(detail());
+      await fixture.whenStable();
+
+      expect(text()).toContain('sour cream');
+      expect(text()).toContain('same words');
+    });
+
+    it('says nothing when nothing resembles it', async () => {
+      await arrive({ admin: true });
+      asked().flush(detail());
+      await fixture.whenStable();
+      expect(text()).not.toContain('might be the same');
+    });
+
+    it('offers a cook the observation without the button', async () => {
+      await arrive({
+        resembles: [
+          { slug: 'sour-cream', name: 'sour cream', confidence: '0.92', reason: 'same_words' },
+        ],
+      });
+      asked().flush(detail());
+      await fixture.whenStable();
+
+      expect(text()).toContain('sour cream');
+      expect(text()).not.toContain('Merge into this');
+    });
+
+    it('takes an admin straight to confirming the merge', async () => {
+      await arrive({
+        admin: true,
+        resembles: [
+          { slug: 'sour-cream', name: 'sour cream', confidence: '0.92', reason: 'same_words' },
+        ],
+      });
+      asked().flush(detail());
+      await fixture.whenStable();
+
+      click('Merge into this');
+      await fixture.whenStable();
+
+      expect(text()).toContain('cannot be undone');
+      backend.expectNone('/api/v1/registry/creme-fraiche/merge');
     });
   });
 

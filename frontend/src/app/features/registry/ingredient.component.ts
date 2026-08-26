@@ -7,10 +7,12 @@ import {
   IngredientsService,
   RegistryEntryDetailView,
   RegistryEntryView,
+  ResemblingView,
 } from '@api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { AuthStore } from '../../core/auth/auth.store';
+import { resemblanceLabel } from '../../core/registry/labels';
 import { ALLERGENS, allergenLabel } from '../../core/dietary/labels';
 import { kindLabel } from '../../core/measure/kinds';
 
@@ -61,6 +63,7 @@ export class IngredientComponent {
   protected readonly kinds = KINDS;
   protected readonly allergens = ALLERGENS;
   protected readonly kindLabel = kindLabel;
+  protected readonly resemblanceLabel = resemblanceLabel;
   protected readonly allergenLabel = allergenLabel;
 
   protected readonly entry = computed(() => this.detail()?.entry ?? null);
@@ -111,6 +114,16 @@ export class IngredientComponent {
    */
   protected readonly proposed = signal<RegistryEntryView | null>(null);
 
+  /**
+   * Entries the matcher thinks this might be the same food as.
+   *
+   * Asked for as the page opens, because it is a *notification*: the reason somebody is
+   * looking at an invented entry is usually that it duplicates one already here, and
+   * making them go and search for it defeats the point. Suggestions only — the matcher
+   * ranks and a person decides, so nothing here merges anything on its own.
+   */
+  protected readonly resembles = signal<ResemblingView[]>([]);
+
   protected readonly naming = this.forms.nonNullable.group({
     locale: ['', Validators.required],
     spelling: ['', Validators.required],
@@ -135,6 +148,13 @@ export class IngredientComponent {
         },
         error: () => this.failed.set(true),
       });
+
+    this.service.resemblingIngredients(this.slug).subscribe({
+      next: (found) => this.resembles.set(found),
+      // A missing suggestion is not worth a notice: the page is still perfectly usable
+      // without it, and an error banner would imply the entry itself is in doubt.
+      error: () => this.resembles.set([]),
+    });
 
     this.service.getIngredient(this.slug).subscribe({
       next: (found) => this.arrived(found),
@@ -257,6 +277,16 @@ export class IngredientComponent {
   }
 
   /** Choose a target, which shows the confirmation rather than doing anything. */
+
+  /** Take a suggestion straight to the confirmation, skipping the search. */
+  protected proposeSlug(suggestion: ResemblingView): void {
+    this.proposed.set({
+      ...(this.entry() as RegistryEntryView),
+      slug: suggestion.slug,
+      name: suggestion.name,
+    });
+  }
+
   protected propose(candidate: RegistryEntryView): void {
     this.proposed.set(candidate);
   }

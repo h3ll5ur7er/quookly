@@ -362,4 +362,79 @@ describe('RegistryComponent', () => {
       expect(text()).not.toContain('crème fraîche');
     });
   });
+
+  describe('sweeping for duplicates', () => {
+    it('does not sweep until asked', async () => {
+      // It compares every entry with every other. On demand, because nobody arriving at
+      // the registry asked that question.
+      asked().flush(page([BUTTER]));
+      await fixture.whenStable();
+      backend.expectNone('/api/v1/registry/duplicates');
+    });
+
+    it('reports the pairs it found', async () => {
+      asked().flush(page([BUTTER]));
+      await fixture.whenStable();
+
+      click('Find possible duplicates');
+      await fixture.whenStable();
+
+      backend.expectOne('/api/v1/registry/duplicates').flush([
+        {
+          slug: 'brown-sugar',
+          other: 'sugar-brown',
+          name: 'brown sugar',
+          other_name: 'sugar, brown',
+          confidence: '1',
+          reason: 'same_words',
+        },
+      ]);
+      await fixture.whenStable();
+
+      expect(text()).toContain('brown sugar');
+      expect(text()).toContain('sugar, brown');
+    });
+
+    it('says why each pair is there', async () => {
+      asked().flush(page([BUTTER]));
+      await fixture.whenStable();
+      click('Find possible duplicates');
+      await fixture.whenStable();
+      backend.expectOne('/api/v1/registry/duplicates').flush([
+        {
+          slug: 'a',
+          other: 'b',
+          name: 'pizza dough',
+          other_name: 'pizza doug',
+          confidence: '1',
+          reason: 'spelling',
+        },
+      ]);
+      await fixture.whenStable();
+      expect(text()).toContain('a close spelling');
+    });
+
+    it('says plainly when it found none, rather than showing nothing', async () => {
+      asked().flush(page([BUTTER]));
+      await fixture.whenStable();
+      click('Find possible duplicates');
+      await fixture.whenStable();
+      backend.expectOne('/api/v1/registry/duplicates').flush([]);
+      await fixture.whenStable();
+      expect(text()).toContain('No likely duplicates');
+    });
+
+    it('keeps the registry list when the sweep fails', async () => {
+      asked().flush(page([BUTTER]));
+      await fixture.whenStable();
+      click('Find possible duplicates');
+      await fixture.whenStable();
+      backend
+        .expectOne('/api/v1/registry/duplicates')
+        .flush({}, { status: 500, statusText: 'Server Error' });
+      await fixture.whenStable();
+
+      expect(text()).toContain('unsalted butter');
+    });
+  });
 });

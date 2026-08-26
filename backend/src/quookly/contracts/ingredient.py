@@ -12,6 +12,8 @@ from typing import Final
 
 from pydantic import BaseModel, ConfigDict
 
+from quookly.contracts.matching import Resemblance
+
 
 class Origin(Enum):
     """Where a record came from.
@@ -185,3 +187,31 @@ class RegistryEntryDetailView(BaseModel):
     #: Locale to spellings, canonical first. An entry an import created carries one
     #: locale — the language of the page it came from — and that is the gap to fill.
     names: dict[str, list[str]]
+
+
+class ResemblingView(BaseModel):
+    """One entry a name might mean, as a client reads it.
+
+    A suggestion. Nothing here resolves anything: an import that acted on a resemblance
+    would attach one food's allergens to another food's recipe (ADR-006).
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    slug: str
+    name: str
+    confidence: Decimal
+    reason: Resemblance
+
+
+class DuplicateView(BaseModel):
+    """Two entries that might be one ingredient."""
+
+    model_config = ConfigDict(frozen=True)
+
+    slug: str
+    other: str
+    name: str
+    other_name: str
+    confidence: Decimal
+    reason: Resemblance

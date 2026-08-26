@@ -326,6 +326,13 @@ What this phase owes:
   It needed a column of its own rather than being read off either candidate already on the row:
   486 of the 893 seeded entries are unclassified, so that flag would bury the queue, and an approved
   entry stays `Origin.USER` for ever, so provenance never empties it. Correcting and merging follow.
+- ~~**Finding entries that might be duplicates.**~~ **Built**
+  ([ADR-053](07-decisions.md#adr-053-the-matcher-ranks-a-person-decides)) — a pure `MatchingEngine`,
+  a sweep across the registry and a notification on each entry. It **ranks and never decides**: an
+  import that acted on a resemblance would attach one food's allergens to another food's recipe.
+  Accent folding in `resolve` is separate and *does* resolve, because `crème` and `creme` are one
+  word written twice. Run against the shipped registry it found eleven real duplicate pairs,
+  including a `pizza doug` typo in the seed data.
 - **Best-effort nutrition matching on creation.** Ask the configured source tree (Swiss, then
   European, then the rest, then American — [ADR-045](07-decisions.md#adr-045-composition-data-is-tried-in-a-configured-order-nearest-table-first)) for a row matching the
   new name, and attach it as a *proposal* rather than as a figure. A matched profile a human has not

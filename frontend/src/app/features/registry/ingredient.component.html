@@ -26,6 +26,37 @@
       </p>
     }
 
+    <!-- The matcher's notification. A suggestion, always: it can tell two spellings of one
+         food from two foods described alike only sometimes, so it says which reading it
+         took and leaves the decision to a person (ADR-053). -->
+    @if (resembles().length > 0) {
+      <section class="entry__resembles" aria-labelledby="resembles-heading">
+        <h2 id="resembles-heading" i18n="@@entryResemblesHeading">
+          This might be the same as something already here
+        </h2>
+        <ul class="entry__candidates">
+          @for (suggestion of resembles(); track suggestion.slug) {
+            <li class="entry__candidate">
+              <span>
+                <a [routerLink]="['/settings/registry', suggestion.slug]">{{ suggestion.name }}</a>
+                <span class="entry__because">{{ resemblanceLabel(suggestion.reason) }}</span>
+              </span>
+              @if (isAdmin()) {
+                <button
+                  type="button"
+                  class="entry__approve"
+                  (click)="proposeSlug(suggestion)"
+                  i18n="@@entryMergeChoose"
+                >
+                  Merge into this
+                </button>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
     @if (saveFailed()) {
       <p class="notice notice--danger" role="alert" i18n="@@entrySaveFailed">
         Could not save that. Nothing was changed — please try again.

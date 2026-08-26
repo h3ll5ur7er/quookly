@@ -149,3 +149,38 @@
 .registry__approve:hover {
   background: var(--surface-sunken);
 }
+
+/* --- names that might be one ingredient -------------------------------------------------- */
+
+.registry__sweep {
+  margin-block-start: var(--space-6);
+  padding-block-start: var(--space-4);
+  border-block-start: 1px solid var(--border);
+}
+
+.registry__pairs {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.registry__pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+/* Why the pair is here. A suggestion nobody can check is one to be trusted rather than
+   one that earns its place (ADR-046). */
+.registry__because {
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}

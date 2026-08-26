@@ -38,6 +38,7 @@ from quookly.contracts.ingredient import (
     RegistryPage,
     Unset,
 )
+from quookly.contracts.matching import Named
 from quookly.contracts.nutrition import NutrientProfile, NutritionSource
 from quookly.utilities.text import fold, normalise
 
@@ -604,6 +605,35 @@ async def _restated(active: AsyncSession, row: IngredientRow, slug: str) -> Ingr
     carried = await allergens_within(active, [row.id])
     allergens, _ = carried.get(row.id, (frozenset(), False))
     return _to_contract(row, await name_for(active, row.id, SOURCE_LOCALE, slug), allergens)
+
+
+async def named(locale: str) -> list[Named]:
+    """Every entry with every spelling it answers to, for the matcher to compare.
+
+    Reference data for a rule engine, which is why it comes out as a plain list rather
+    than being reached for: `MatchingEngine` reads no database, so the whole registry
+    arrives as an argument.
+
+    One locale at a time — the reader's, falling back to the one the registry was seeded
+    in, the same reach as every other read here. Comparing an English name against a German
+    one would find nothing but coincidence.
+    """
+    async with session() as active:
+        spellings = (
+            await active.exec(
+                select(IngredientRow, IngredientNameRow)
+                .join(
+                    IngredientNameRow,
+                    onclause=col(IngredientNameRow.ingredient_id) == IngredientRow.id,
+                )
+                .where(col(IngredientNameRow.locale).in_([locale, SOURCE_LOCALE]))
+            )
+        ).all()
+
+    gathered: dict[str, list[str]] = {}
+    for row, spelling in spellings:
+        gathered.setdefault(row.slug, []).append(spelling.name)
+    return [Named(slug=slug, names=tuple(names)) for slug, names in sorted(gathered.items())]
 
 
 async def detail(slug: str) -> RegistryEntryDetail | None:

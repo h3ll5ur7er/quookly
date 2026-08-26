@@ -15,6 +15,7 @@ from quookly.contracts.errors import NameAlreadyMeans
 from quookly.contracts.ingredient import (
     UNSET,
     Allergen,
+    DuplicateView,
     Ingredient,
     IngredientKind,
     IngredientView,
@@ -22,8 +23,10 @@ from quookly.contracts.ingredient import (
     RegistryEntryDetailView,
     RegistryEntryView,
     RegistryPageView,
+    ResemblingView,
     Unset,
 )
+from quookly.engines import matching
 
 
 async def search(term: str, cook_id: int, locale: str | None = None) -> list[IngredientView]:
@@ -183,3 +186,53 @@ async def merge(*, keeper: str, loser: str) -> RegistryEntryDetailView | None:
     await registry.merge(keeper=keeper, loser=loser)
     await search_index.reindex()
     return await detail(keeper)
+
+
+async def resembling(slug: str, cook_id: int, limit: int = 5) -> list[ResemblingView]:
+    """Other entries this one might be the same food as.
+
+    Read on demand rather than stored. A stored answer goes stale the moment somebody
+    renames an entry, and the whole point of the report is to be looked at once and acted
+    on.
+    """
+    found = await registry.detail(slug)
+    if found is None:
+        return []
+    locale = await cook_access.locale_for(cook_id)
+    entries = [entry for entry in await registry.named(locale) if entry.slug != slug]
+    names = [name for spellings in found.names.values() for name in spellings]
+
+    best: dict[str, ResemblingView] = {}
+    for name in names:
+        for match in matching.resembling(name, entries, limit=limit):
+            held = best.get(match.slug)
+            if held is None or match.confidence > held.confidence:
+                best[match.slug] = ResemblingView(
+                    slug=match.slug,
+                    name=match.name,
+                    confidence=match.confidence,
+                    reason=match.reason,
+                )
+    return sorted(best.values(), key=lambda one: (-one.confidence, one.slug))[:limit]
+
+
+async def duplicates(cook_id: int, limit: int = 50) -> list[DuplicateView]:
+    """Pairs across the whole registry that might be one ingredient.
+
+    On demand. Against the shipped nine hundred entries this takes a few seconds, which is
+    fine for something an administrator asks for and would not be fine on every request —
+    if it ever wants running regularly it belongs in a CLI command and a cron job rather
+    than in this process.
+    """
+    entries = await registry.named(await cook_access.locale_for(cook_id))
+    return [
+        DuplicateView(
+            slug=pair.slug,
+            other=pair.other,
+            name=pair.name,
+            other_name=pair.other_name,
+            confidence=pair.confidence,
+            reason=pair.reason,
+        )
+        for pair in matching.duplicates(entries, limit=limit)
+    ]

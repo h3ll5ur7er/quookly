@@ -899,6 +899,56 @@
         }
       }
     },
+    "/api/v1/registry/duplicates": {
+      "get": {
+        "tags": [
+          "ingredients"
+        ],
+        "summary": "Find Duplicates",
+        "description": "Pairs of entries that might be one ingredient.\n\nDeclared **before** `/registry/{slug}`, or that route would swallow it and answer\n\"no such ingredient named duplicates\". The same first-match-wins rule the Angular\nrouting table lives by.\n\nSuggestions only, each carrying why it is here. Merging them is a separate, deliberate\nact \u2014 this cannot tell two spellings of one food from two foods described alike, and\nsays which reading it took so somebody can check.",
+        "operationId": "findDuplicates",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DuplicateView"
+                  },
+                  "title": "Response Findduplicates"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/registry/{slug}": {
       "get": {
         "tags": [
@@ -1188,6 +1238,65 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RegistryEntryDetailView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/registry/{slug}/resembling": {
+      "get": {
+        "tags": [
+          "ingredients"
+        ],
+        "summary": "Resembling Ingredients",
+        "description": "Other entries this one might be the same food as.\n\nA prompt towards merging, not a merge. An entry an import invented is the usual reason\nsomebody is on this page, and the entry it duplicates is the usual thing they are\nlooking for.",
+        "operationId": "resemblingIngredients",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 5,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ResemblingView"
+                  },
+                  "title": "Response Resemblingingredients"
                 }
               }
             }
@@ -3054,6 +3163,45 @@
         ],
         "title": "CreditView"
       },
+      "DuplicateView": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "other": {
+            "type": "string",
+            "title": "Other"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "other_name": {
+            "type": "string",
+            "title": "Other Name"
+          },
+          "confidence": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Confidence"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/Resemblance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "other",
+          "name",
+          "other_name",
+          "confidence",
+          "reason"
+        ],
+        "title": "DuplicateView",
+        "description": "Two entries that might be one ingredient."
+      },
       "EaterInput": {
         "properties": {
           "name": {
@@ -4754,6 +4902,46 @@
         ],
         "title": "Renaming",
         "description": "What one language should call this entry from now on."
+      },
+      "Resemblance": {
+        "type": "string",
+        "enum": [
+          "same_spelling",
+          "same_words",
+          "contains",
+          "spelling"
+        ],
+        "title": "Resemblance",
+        "description": "Why two names look like the same thing.\n\nCarried alongside the score for the same reason `RankingEngine` gives reasons\n(ADR-046): a list that only reordered itself would be asking to be trusted rather than\nearning it. \"Same words, different order\" is something an admin can check at a glance;\na number on its own is not."
+      },
+      "ResemblingView": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "confidence": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Confidence"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/Resemblance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "confidence",
+          "reason"
+        ],
+        "title": "ResemblingView",
+        "description": "One entry a name might mean, as a client reads it.\n\nA suggestion. Nothing here resolves anything: an import that acted on a resemblance\nwould attach one food's allergens to another food's recipe (ADR-006)."
       },
       "SessionOutcome": {
         "type": "string",

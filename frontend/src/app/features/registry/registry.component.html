@@ -164,6 +164,48 @@
         </button>
       }
     }
+    <!-- --- names that might be one ingredient -------------------------------------- -->
+    <section class="registry__sweep" aria-labelledby="sweep-heading">
+      <h2 id="sweep-heading" i18n="@@registrySweepHeading">Names that might be one thing</h2>
+      <p class="registry__what" i18n="@@registrySweepWhy">
+        Compares every entry with every other. It finds names written differently — a word order, a
+        spelling, an accent — and cannot tell two names for one food from two foods described alike,
+        so every pair says why it is here and nothing is merged for you.
+      </p>
+
+      <button
+        type="button"
+        class="action action--quiet"
+        [disabled]="sweeping()"
+        (click)="sweep()"
+        i18n="@@registrySweep"
+      >
+        Find possible duplicates
+      </button>
+
+      @if (sweepFailed()) {
+        <p class="notice notice--danger" role="alert" i18n="@@registrySweepFailed">
+          Could not look for duplicates. Please try again.
+        </p>
+      } @else if (pairs(); as found) {
+        @if (found.length === 0) {
+          <p class="registry__what" i18n="@@registryNoDuplicates">
+            No likely duplicates. That is a good sign, not a failure.
+          </p>
+        } @else {
+          <ul class="registry__pairs">
+            @for (pair of found; track pair.slug + pair.other) {
+              <li class="registry__pair">
+                <a [routerLink]="['/settings/registry', pair.slug]">{{ pair.name }}</a>
+                <span aria-hidden="true">~</span>
+                <a [routerLink]="['/settings/registry', pair.other]">{{ pair.other_name }}</a>
+                <span class="registry__because">{{ resemblanceLabel(pair.reason) }}</span>
+              </li>
+            }
+          </ul>
+        }
+      }
+    </section>
   } @else {
     <p class="registry__loading" i18n="@@registryLoading">Loading…</p>
   }

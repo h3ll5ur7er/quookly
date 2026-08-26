@@ -193,6 +193,7 @@ type = "forbidden"
 source_modules = [
     "quookly.engines.exchange",
     "quookly.engines.execution",
+    "quookly.engines.matching",
     "quookly.engines.measure",
     "quookly.engines.onboarding",
     "quookly.engines.planning",

@@ -2,9 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { IngredientsService, Origin, RegistryEntryView } from '@api';
+import { DuplicateView, IngredientsService, Origin, RegistryEntryView } from '@api';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthStore } from '../../core/auth/auth.store';
+import { resemblanceLabel } from '../../core/registry/labels';
 import { kindLabel } from '../../core/measure/kinds';
 import { allergenLabel } from '../../core/dietary/labels';
 
@@ -49,9 +50,22 @@ export class RegistryComponent {
   protected readonly Origin = Origin;
 
   protected readonly kindLabel = kindLabel;
+  protected readonly resemblanceLabel = resemblanceLabel;
   protected readonly allergenLabel = allergenLabel;
 
   /** Whether the list on screen is all of it, or the start of something longer. */
+  /**
+   * Pairs the matcher thinks are one ingredient. Empty until somebody asks.
+   *
+   * On demand rather than on arrival: it compares every entry with every other, which
+   * takes seconds against the shipped nine hundred, and nobody opening the registry asked
+   * that question. If it ever wants running regularly it belongs in a CLI command and a
+   * cron job rather than in a page load.
+   */
+  protected readonly pairs = signal<DuplicateView[] | null>(null);
+  protected readonly sweeping = signal(false);
+  protected readonly sweepFailed = signal(false);
+
   protected readonly more = computed(() => (this.entries() ?? []).length < this.total());
 
   constructor() {
@@ -157,6 +171,24 @@ export class RegistryComponent {
         }
       },
       error: () => this.approvalFailed.set(true),
+    });
+  }
+
+  /** Compare every entry with every other, and report what might be one ingredient. */
+  protected sweep(): void {
+    this.sweeping.set(true);
+    this.sweepFailed.set(false);
+    this.service.findDuplicates().subscribe({
+      next: (found) => {
+        this.pairs.set(found);
+        this.sweeping.set(false);
+      },
+      // The registry list stays: the sweep is an extra, and losing the page because an
+      // extra failed would be a worse answer than no suggestions.
+      error: () => {
+        this.sweepFailed.set(true);
+        this.sweeping.set(false);
+      },
     });
   }
 }
