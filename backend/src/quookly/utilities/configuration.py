@@ -17,6 +17,14 @@ Environment = Literal["development", "production"]
 
 DEFAULT_DATABASE_URL = "sqlite+aiosqlite:///./quookly.db"
 
+#: Where uploaded pictures are kept.
+#:
+#: A directory beside the database rather than rows in it. Two consequences worth stating:
+#: backing an instance up is copying two things rather than one, and a picture is served
+#: from disk rather than through the ORM. Both are the point — a database that holds
+#: megabytes of photographs is a database that is slow to copy and awkward to inspect.
+DEFAULT_MEDIA_DIR = "./media"
+
 # RFC 7518 section 3.2: an HMAC key for HS256 should be at least as long as the hash
 # output. A shorter key weakens every token signed with it.
 MINIMUM_SECRET_KEY_BYTES = 32
@@ -33,6 +41,7 @@ class Settings(BaseSettings):
 
     environment: Environment = "development"
     database_url: str = DEFAULT_DATABASE_URL
+    media_dir: str = DEFAULT_MEDIA_DIR
     secret_key: SecretStr = SecretStr("")
     token_lifetime_hours: int = 12
     log_level: str = "INFO"

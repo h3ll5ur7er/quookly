@@ -1712,6 +1712,152 @@
         }
       }
     },
+    "/api/v1/academy/{slug}/pictures": {
+      "post": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Illustrate Page",
+        "description": "Put a picture on a page.\n\nThe description is required, not optional: a picture without alt text is an\naccessibility failure, and the rule here is that accessibility is checked as it is\nbuilt rather than retrofitted.",
+        "operationId": "illustratePage",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_illustratePage"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/{slug}/pictures/{picture_id}": {
+      "delete": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Unillustrate Page",
+        "description": "Take a picture off a page.\n\nThe file itself stays. A reference changing is not evidence that nobody wants the\nbytes, and collecting what is no longer referred to is a job for a command somebody\nruns deliberately.",
+        "operationId": "unillustratePage",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "picture_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Picture Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/media/{media_id}": {
+      "get": {
+        "tags": [
+          "media"
+        ],
+        "summary": "Read Media",
+        "description": "The bytes of a stored picture.\n\nSigned in, like everything else here: this is a household's instance, and what it holds\nis not offered to whoever asks.",
+        "operationId": "readMedia",
+        "parameters": [
+          {
+            "name": "media_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Media Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/eaters": {
       "get": {
         "tags": [
@@ -3320,6 +3466,30 @@
         "title": "Authenticated",
         "description": "A signed-in cook and the token proving it."
       },
+      "Body_illustratePage": {
+        "properties": {
+          "picture": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Picture",
+            "description": "A photograph of the thing this page explains.",
+            "format": "binary"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Description",
+            "description": "What the picture shows, for somebody who cannot see it."
+          }
+        },
+        "type": "object",
+        "required": [
+          "picture",
+          "description"
+        ],
+        "title": "Body_illustratePage"
+      },
       "BootstrapState": {
         "properties": {
           "required": {
@@ -4650,6 +4820,14 @@
             "type": "array",
             "title": "Also",
             "default": []
+          },
+          "pictures": {
+            "items": {
+              "$ref": "#/components/schemas/PictureView"
+            },
+            "type": "array",
+            "title": "Pictures",
+            "default": []
           }
         },
         "type": "object",
@@ -4730,6 +4908,35 @@
         ],
         "title": "PantryEntry",
         "description": "Everything the cook has of one ingredient, lot by lot.\n\n`total` is absent when the lots cannot honestly be added up \u2014 a jar and 200 g of the\nsame thing have no sum. Absent rather than approximated: the lots are all listed\nanyway, so nothing is hidden by declining to invent a number."
+      },
+      "PictureView": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "media_id": {
+            "type": "string",
+            "title": "Media Id"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "locale": {
+            "type": "string",
+            "title": "Locale"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "media_id",
+          "description",
+          "locale"
+        ],
+        "title": "PictureView",
+        "description": "A picture as a client reads it."
       },
       "PlanInput": {
         "properties": {

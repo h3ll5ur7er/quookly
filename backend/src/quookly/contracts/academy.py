@@ -74,6 +74,16 @@ class Claimant:
 
 
 @dataclass(frozen=True, slots=True)
+class Picture:
+    """A photograph on a page, and what it shows."""
+
+    id: int
+    media_id: str
+    description: str
+    locale: str
+
+
+@dataclass(frozen=True, slots=True)
 class Page:
     """A page as one reader reads it."""
 
@@ -92,6 +102,9 @@ class Page:
     #: Other pages this one's name also belongs to. Shown at the top the way an
     #: encyclopedia does, because several pages may claim a term here (ADR-058).
     also: list[Claimant] = field(default_factory=list)
+    #: What it looks like. A page about julienne without a photograph of julienne is a
+    #: knife cut explained in words (ADR-057).
+    pictures: list[Picture] = field(default_factory=list)
 
 
 class ClaimantView(BaseModel):
@@ -100,6 +113,21 @@ class ClaimantView(BaseModel):
     slug: str
     name: str
     summary: str
+
+
+class PictureView(BaseModel):
+    """A picture as a client reads it."""
+
+    model_config = ConfigDict(frozen=True)
+
+    id: int
+    #: Where to fetch the bytes. A client builds `/api/v1/media/{media_id}` from this.
+    media_id: str
+    #: Alt text. Not optional: a picture without it is an accessibility failure, and the
+    #: rule here is that accessibility is checked as UI is built rather than retrofitted.
+    description: str
+    #: The language the description is written in, which is not always the reader's.
+    locale: str
 
 
 class PageSummaryView(BaseModel):
@@ -129,3 +157,4 @@ class PageView(BaseModel):
     approved: bool
     caution: str | None = None
     also: list[ClaimantView] = []
+    pictures: list[PictureView] = []

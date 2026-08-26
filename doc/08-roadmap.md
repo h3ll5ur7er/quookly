@@ -329,7 +329,10 @@ languages, with the spellings a step is actually written with.
    ([ADR-051](07-decisions.md#adr-051-whether-an-entry-has-been-reviewed-is-a-different-column-from-whether-it-has-been-classified)),
    and correcting one does not claim a person wrote it
    ([ADR-056](07-decisions.md#adr-056-a-generated-explanation-is-marked-unreviewed-and-never-an-input-to-a-judgement)).
-   **Pictures** are still owed, and pull `MediaAccess` forward out of Phase 8.
+   ~~**Pictures**~~ **Built** too, and they brought `MediaAccess` forward out of Phase 8. Files sit
+   in a directory beside the database, an upload is re-encoded rather than kept as it arrived, and a
+   file is named by a UUID the database refers to. Nothing deletes on its own: taking a picture off a
+   page leaves the file, and collecting what is no longer referred to is owed to the CLI.
 5. **Explicit links in a step**, `[[slug|the words as written]]`, for what automatic reading cannot
    know. Needs 0 and 3.
 6. **Cook-authored pages, and approving them (UC-7.4, moderation half).**

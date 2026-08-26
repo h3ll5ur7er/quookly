@@ -23,3 +23,8 @@ wheels/
 
 # e2e database
 e2e-run.db
+
+# Uploaded pictures. They live beside the database rather than inside it, so they are
+# ignored for the same reason it is: an instance's own content, not the application.
+media/
+e2e-run-media/

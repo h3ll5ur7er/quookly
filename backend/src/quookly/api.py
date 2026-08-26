@@ -4,6 +4,7 @@ import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from enum import Enum
+from typing import Any
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,6 +28,7 @@ from .routes import (
     eaters_router,
     ingredients_router,
     instance_router,
+    media_router,
     pantry_router,
     plans_router,
     preferences_router,
@@ -141,6 +143,7 @@ app.include_router(accounts_router, prefix=API_PREFIX, tags=["accounts"])
 app.include_router(recipes_router, prefix=API_PREFIX, tags=["recipes"])
 app.include_router(ingredients_router, prefix=API_PREFIX, tags=["ingredients"])
 app.include_router(academy_router, prefix=API_PREFIX, tags=["academy"])
+app.include_router(media_router, prefix=API_PREFIX, tags=["media"])
 app.include_router(eaters_router, prefix=API_PREFIX, tags=["eaters"])
 app.include_router(setup_router, prefix=API_PREFIX, tags=["setup"])
 app.include_router(pantry_router, prefix=API_PREFIX, tags=["pantry"])
@@ -180,7 +183,33 @@ def main() -> None:
     uvicorn.run("quookly.api:app", host="0.0.0.0", port=port, reload=True)
 
 
+def _also_say_binary_the_old_way(schema: Any) -> None:
+    """Mark a binary property with OpenAPI 3.0's `format` as well as 3.1's.
+
+    FastAPI emits 3.1, which describes an upload as `contentMediaType`. The
+    openapi-generator this project uses to build both clients reads 3.0's
+    `format: "binary"` and nothing else, so without this it does not recognise a file at
+    all: the Angular client URL-encodes the `File` through `HttpParams` and the server
+    sees the string `[object File]`.
+
+    Both keys together, rather than downgrading the whole document to 3.0. A 3.1 reader
+    ignores `format` here and a 3.0 one ignores `contentMediaType`, so the contract says
+    the same thing to both — and every upload endpoint after this one is covered without
+    anybody remembering.
+    """
+    if isinstance(schema, dict):
+        if schema.get("contentMediaType") == "application/octet-stream":
+            schema.setdefault("format", "binary")
+        for value in schema.values():
+            _also_say_binary_the_old_way(value)
+    elif isinstance(schema, list):
+        for value in schema:
+            _also_say_binary_the_old_way(value)
+
+
 def export_openapi() -> None:
     import json
 
-    print(json.dumps(app.openapi(), indent=2))
+    document = app.openapi()
+    _also_say_binary_the_old_way(document)
+    print(json.dumps(document, indent=2))

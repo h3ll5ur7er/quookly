@@ -4,6 +4,7 @@ from .cooking import router as cooking_router
 from .eaters import router as eaters_router
 from .ingredients import router as ingredients_router
 from .instance import router as instance_router
+from .media import router as media_router
 from .pantry import router as pantry_router
 from .plans import router as plans_router
 from .preferences import router as preferences_router
@@ -13,6 +14,7 @@ from .status import router as status_router
 
 __all__ = [
     "academy_router",
+    "media_router",
     "accounts_router",
     "cooking_router",
     "eaters_router",

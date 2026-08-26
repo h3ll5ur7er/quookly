@@ -1,6 +1,6 @@
 """Academy endpoints."""
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, status
 from pydantic import BaseModel, Field
 
 from quookly.contracts.academy import (
@@ -10,7 +10,7 @@ from quookly.contracts.academy import (
     PageView,
     Wording,
 )
-from quookly.contracts.errors import PageNotWritten
+from quookly.contracts.errors import PageNotWritten, UnreadableImage
 from quookly.managers import academy as academy_manager
 from quookly.routes.dependencies import CurrentAdmin, CurrentCook
 
@@ -116,3 +116,59 @@ async def approve_page(slug: str, admin: CurrentAdmin) -> PageView:
     if approved is None:
         raise NOT_FOUND
     return approved
+
+
+#: What an upload may weigh before it is refused. Generous for a photograph and small
+#: enough that a page cannot be used as somebody's file store.
+LARGEST_UPLOAD = 12 * 1024 * 1024
+
+
+@router.post("/academy/{slug}/pictures", response_model=PageView)
+async def illustrate_page(
+    slug: str,
+    admin: CurrentAdmin,
+    picture: UploadFile = File(description="A photograph of the thing this page explains."),
+    description: str = Form(
+        min_length=1,
+        max_length=300,
+        description="What the picture shows, for somebody who cannot see it.",
+    ),
+) -> PageView:
+    """Put a picture on a page.
+
+    The description is required, not optional: a picture without alt text is an
+    accessibility failure, and the rule here is that accessibility is checked as it is
+    built rather than retrofitted.
+    """
+    upload = await picture.read()
+    if len(upload) > LARGEST_UPLOAD:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="That picture is larger than this instance accepts.",
+        )
+    try:
+        illustrated = await academy_manager.illustrate(slug, upload, description, admin.cook_id)
+    except UnreadableImage as unreadable:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="That file is not a picture this instance can read.",
+        ) from unreadable
+    except PageNotWritten as absent:
+        raise NOT_FOUND from absent
+    if illustrated is None:
+        raise NOT_FOUND
+    return illustrated
+
+
+@router.delete("/academy/{slug}/pictures/{picture_id}", response_model=PageView)
+async def unillustrate_page(slug: str, picture_id: int, admin: CurrentAdmin) -> PageView:
+    """Take a picture off a page.
+
+    The file itself stays. A reference changing is not evidence that nobody wants the
+    bytes, and collecting what is no longer referred to is a job for a command somebody
+    runs deliberately.
+    """
+    removed = await academy_manager.unillustrate(slug, picture_id, admin.cook_id)
+    if removed is None:
+        raise NOT_FOUND
+    return removed

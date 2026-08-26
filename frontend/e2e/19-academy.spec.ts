@@ -54,3 +54,32 @@ test('a recipe marks the words it uses, and they lead to the Academy', async ({ 
   await expect(page.getByRole('heading', { name: 'fold' })).toBeVisible();
   await expect(page.getByText('Combine without knocking out the air.')).toBeVisible();
 });
+
+test('an administrator can correct a page and illustrate it', async ({ page }) => {
+  await page.goto('/academy/julienne');
+  await expect(page.getByRole('heading', { name: 'julienne' })).toBeVisible();
+
+  // --- correcting one language -----------------------------------------------------
+  await page.getByRole('button', { name: 'Correct this page' }).click();
+  await page.getByLabel('In one line').fill('Thin matchsticks, about 2 mm square.');
+  await page.getByRole('button', { name: 'Save the page' }).click();
+  await expect(page.getByText('Thin matchsticks, about 2 mm square.')).toBeVisible();
+
+  // --- and putting a picture on it -------------------------------------------------
+  await page.getByRole('button', { name: 'Add a picture' }).click();
+  // A one-pixel PNG is enough: this is about the round trip, and the re-encoding is
+  // covered where it can be inspected rather than through a browser.
+  await page.getByLabel('The picture').setInputFiles({
+    name: 'julienne.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    ),
+  });
+  await page.getByLabel('What it shows').fill('Carrot cut into fine matchsticks.');
+  await page.getByRole('button', { name: 'Add it' }).click();
+
+  // The alt text is the picture, for a reader who cannot see it.
+  await expect(page.getByAltText('Carrot cut into fine matchsticks.')).toBeVisible();
+});

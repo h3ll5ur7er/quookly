@@ -552,3 +552,28 @@ class AcademyTermRow(SQLModel, table=True):
     # name that is also an ordinary word is the exception — German `sieben` is *to sift*
     # and *seven*, and "sieben Minuten" is not about a sieve.
     matchable: bool = Field(default=True, index=True)
+
+
+class AcademyPictureRow(SQLModel, table=True):
+    """A picture on an Academy page.
+
+    `media_id` refers to a file in the media directory rather than holding bytes: a
+    database full of photographs is slow to copy and awkward to inspect. Removing this row
+    leaves the file, by decision — collecting what is no longer referred to is a job for a
+    CLI command, not for a delete somebody did not ask for.
+
+    `description` is the alt text, which accessibility requires and which is therefore not
+    optional. It is written in one language and read in every one, the same position a
+    recipe is in before translation exists (ADR-032).
+    """
+
+    __tablename__ = "academy_picture"
+
+    id: int | None = Field(default=None, primary_key=True)
+    page_id: int = Field(foreign_key="academy_page.id", index=True)
+    media_id: str = Field(index=True)
+    description: str
+    #: The language the description is written in, so a reader can be told when it is not
+    #: theirs rather than being given English silently.
+    locale: str
+    position: int = Field(default=0)

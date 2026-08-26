@@ -8,13 +8,14 @@ Reading is what this does today. Writing, approving and asking a model for an ex
 follow, in that order, so that the part which can be *wrong* arrives last.
 """
 
-from quookly.access import academy
+from quookly.access import academy, media
 from quookly.access import cook as cook_access
 from quookly.contracts.academy import (
     ClaimantView,
     PageKind,
     PageSummaryView,
     PageView,
+    PictureView,
     Wording,
 )
 
@@ -49,6 +50,15 @@ async def read(slug: str, cook_id: int) -> PageView | None:
         also=[
             ClaimantView(slug=one.slug, name=one.name, summary=one.summary) for one in found.also
         ],
+        pictures=[
+            PictureView(
+                id=one.id,
+                media_id=one.media_id,
+                description=one.description,
+                locale=one.locale,
+            )
+            for one in found.pictures
+        ],
     )
 
 
@@ -74,4 +84,25 @@ async def amend(slug: str, locale: str, wording: Wording, cook_id: int) -> PageV
 async def approve(slug: str, cook_id: int) -> PageView | None:
     """Record that somebody has read this page."""
     await academy.approve(slug)
+    return await read(slug, cook_id)
+
+
+async def illustrate(slug: str, upload: bytes, description: str, cook_id: int) -> PageView | None:
+    """Put a picture on a page.
+
+    The file is re-encoded and kept beside the database; the page holds the id it was given
+    (see `MediaAccess`). The description is the alt text, written in the language the
+    administrator is reading in — which is not always the reader's, and the page says so
+    rather than handing somebody English silently.
+    """
+    locale = await cook_access.locale_for(cook_id)
+    media_id = await media.store_image(upload)
+    await academy.add_picture(slug, media_id, description, locale)
+    return await read(slug, cook_id)
+
+
+async def unillustrate(slug: str, picture_id: int, cook_id: int) -> PageView | None:
+    """Take a picture off a page. The file stays — see `MediaAccess`."""
+    if not await academy.remove_picture(slug, picture_id):
+        return None
     return await read(slug, cook_id)

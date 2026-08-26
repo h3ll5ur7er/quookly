@@ -15,8 +15,20 @@ from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from quookly.access.database import session
-from quookly.access.models import AcademyPageRow, AcademyTermRow, AcademyTextRow
-from quookly.contracts.academy import Claimant, NewPage, Page, PageKind, Wording
+from quookly.access.models import (
+    AcademyPageRow,
+    AcademyPictureRow,
+    AcademyTermRow,
+    AcademyTextRow,
+)
+from quookly.contracts.academy import (
+    Claimant,
+    NewPage,
+    Page,
+    PageKind,
+    Picture,
+    Wording,
+)
 from quookly.contracts.errors import PageNotWritten
 from quookly.contracts.ingredient import Origin
 from quookly.contracts.matching import Named
@@ -206,6 +218,14 @@ async def detail(slug: str, locale: str) -> Page | None:
         if text is None:
             return None
 
+        shown = (
+            await active.exec(
+                select(AcademyPictureRow)
+                .where(col(AcademyPictureRow.page_id) == row.id)
+                .order_by(col(AcademyPictureRow.position), col(AcademyPictureRow.id))
+            )
+        ).all()
+
         spellings = (
             await active.exec(
                 select(AcademyTermRow).where(
@@ -228,6 +248,16 @@ async def detail(slug: str, locale: str) -> Page | None:
         generated=row.generated,
         approved=row.approved,
         also=[one for one in await claimants_of(text.name, locale) if one.slug != slug],
+        pictures=[
+            Picture(
+                id=one.id,
+                media_id=one.media_id,
+                description=one.description,
+                locale=one.locale,
+            )
+            for one in shown
+            if one.id is not None
+        ],
     )
 
 
@@ -334,3 +364,57 @@ async def approve(slug: str) -> None:
         page.approved = True
         active.add(page)
         await active.commit()
+
+
+async def add_picture(slug: str, media_id: str, description: str, locale: str) -> None:
+    """Put a picture on a page, after the last one already there."""
+    async with session() as active:
+        page = (
+            await active.exec(select(AcademyPageRow).where(col(AcademyPageRow.slug) == slug))
+        ).first()
+        if page is None or page.id is None:
+            raise PageNotWritten(slug)
+
+        held = (
+            await active.exec(
+                select(AcademyPictureRow).where(col(AcademyPictureRow.page_id) == page.id)
+            )
+        ).all()
+        active.add(
+            AcademyPictureRow(
+                page_id=page.id,
+                media_id=media_id,
+                description=description,
+                locale=locale,
+                position=len(held),
+            )
+        )
+        await active.commit()
+
+
+async def remove_picture(slug: str, picture_id: int) -> bool:
+    """Take a picture off a page. Returns whether it was there to take off.
+
+    **The file stays.** A reference changing is not evidence that nobody wants the bytes,
+    and a sweep that guessed would eventually guess wrong. Collecting what is no longer
+    referred to is a job for a CLI command.
+    """
+    async with session() as active:
+        page = (
+            await active.exec(select(AcademyPageRow).where(col(AcademyPageRow.slug) == slug))
+        ).first()
+        if page is None or page.id is None:
+            return False
+        held = (
+            await active.exec(
+                select(AcademyPictureRow).where(
+                    col(AcademyPictureRow.id) == picture_id,
+                    col(AcademyPictureRow.page_id) == page.id,
+                )
+            )
+        ).first()
+        if held is None:
+            return False
+        await active.delete(held)
+        await active.commit()
+    return True

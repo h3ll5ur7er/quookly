@@ -39,6 +39,31 @@
       }
 
       <p class="academy__lead">{{ shown.summary }}</p>
+
+      <!-- A page about julienne without a photograph of julienne is a knife cut explained
+           in words (ADR-057). -->
+      @if (shown.pictures && shown.pictures.length > 0) {
+        <ul class="academy__pictures">
+          @for (picture of shown.pictures; track picture.id) {
+            <li>
+              <app-picture [mediaId]="picture.media_id" [description]="picture.description" />
+              <p class="academy__caption">
+                {{ picture.description }}
+                @if (isAdmin()) {
+                  <button
+                    type="button"
+                    class="academy__remove"
+                    (click)="removePicture(picture.id)"
+                    i18n="@@academyRemovePicture"
+                  >
+                    Remove
+                  </button>
+                }
+              </p>
+            </li>
+          }
+        </ul>
+      }
       <p class="academy__explanation">{{ shown.explanation }}</p>
 
       @if (shown.caution) {
@@ -72,6 +97,57 @@
         >
           Approve
         </button>
+      }
+
+      @if (isAdmin() && !illustrating()) {
+        <button
+          type="button"
+          class="action action--quiet"
+          (click)="illustrating.set(true)"
+          i18n="@@academyAddPicture"
+        >
+          Add a picture
+        </button>
+      }
+
+      @if (illustrating()) {
+        <div class="academy__form">
+          <div class="field">
+            <label for="picture" i18n="@@academyPicture">The picture</label>
+            <input id="picture" type="file" accept="image/*" (change)="choose($event)" />
+            <p class="field__hint" i18n="@@academyPictureHint">
+              Kept beside this instance's database, re-encoded and brought down to a size a page can
+              send. What the camera recorded does not come with it.
+            </p>
+          </div>
+          <div class="field">
+            <label for="describes" i18n="@@academyDescribes">What it shows</label>
+            <input id="describes" type="text" [formControl]="describing" />
+            <p class="field__hint" i18n="@@academyDescribesHint">
+              For somebody who cannot see it. Required — a picture without this is one that some
+              readers simply do not get.
+            </p>
+          </div>
+          <div class="academy__actions">
+            <button
+              type="button"
+              class="action"
+              [disabled]="!chosen() || !describing.value.trim()"
+              (click)="illustrate()"
+              i18n="@@academyUpload"
+            >
+              Add it
+            </button>
+            <button
+              type="button"
+              class="action action--quiet"
+              (click)="illustrating.set(false)"
+              i18n="@@academyUploadCancel"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       }
 
       @if (isAdmin() && !correcting()) {

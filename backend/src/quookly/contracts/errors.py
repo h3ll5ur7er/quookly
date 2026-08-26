@@ -96,6 +96,10 @@ class NothingToMerge(QuooklyError):
     """An entry was asked to be merged into itself."""
 
 
+class UnreadableImage(QuooklyError):
+    """An upload was not a picture this instance can read."""
+
+
 class PageNotWritten(QuooklyError):
     """No Academy page answers to that slug."""
 

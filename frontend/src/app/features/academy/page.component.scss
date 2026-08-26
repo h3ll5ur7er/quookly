@@ -87,3 +87,42 @@
   flex-wrap: wrap;
   gap: var(--space-3);
 }
+
+.academy__pictures {
+  list-style: none;
+  margin: var(--space-4) 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.academy__caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin: var(--space-2) 0 0;
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
+.academy__remove {
+  min-height: 44px;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--on-surface-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+/* The phone is the design target; widen from there (ADR-015). */
+@media (min-width: 48rem) {
+  .academy__pictures {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

@@ -6,9 +6,13 @@ that can be *wrong* arrives last.
 """
 
 from collections.abc import AsyncIterator
+from io import BytesIO
+from pathlib import Path
+from typing import Any
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from PIL import Image
 from pytest import MonkeyPatch
 from sqlmodel import SQLModel
 
@@ -264,3 +268,133 @@ class TestCorrecting:
         )
         page = (await client.get(f"{ACADEMY}/fold", headers=admin)).json()
         assert page["spellings"] == ["turn it over itself"]
+
+
+class TestPictures:
+    """A page about julienne without a photograph of julienne is a knife cut in words."""
+
+    @pytest.fixture(autouse=True)
+    def somewhere_to_put_them(self, monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+        monkeypatch.setenv("QUOOKLY_MEDIA_DIR", str(tmp_path / "media"))
+        get_settings.cache_clear()
+
+    @pytest.fixture
+    async def admin(self, client: AsyncClient) -> dict[str, str]:
+        claimed = await client.post(
+            "/api/v1/accounts/bootstrap",
+            json={
+                "email": "admin@example.com",
+                "display_name": "Admin",
+                "password": "a-sufficiently-long-password",
+            },
+        )
+        return {"Authorization": f"Bearer {claimed.json()['token']}"}
+
+    def photograph(self) -> bytes:
+        held = BytesIO()
+        Image.new("RGB", (600, 400), (120, 140, 130)).save(held, format="JPEG")
+        return held.getvalue()
+
+    async def illustrate(
+        self,
+        client: AsyncClient,
+        headers: dict[str, str],
+        slug: str = "julienne",
+        description: str = "Carrot cut into fine matchsticks.",
+    ) -> Any:
+        return await client.post(
+            f"{ACADEMY}/{slug}/pictures",
+            headers=headers,
+            files={"picture": ("julienne.jpg", self.photograph(), "image/jpeg")},
+            data={"description": description},
+        )
+
+    async def test_a_picture_can_be_put_on_a_page(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        response = await self.illustrate(client, admin)
+        assert response.status_code == 200
+        assert len(response.json()["pictures"]) == 1
+
+    async def test_it_says_what_it_shows(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        """Alt text is required, not optional: a picture without it is an accessibility
+        failure, and this project checks that as it builds rather than afterwards."""
+        body = (await self.illustrate(client, admin)).json()
+        assert body["pictures"][0]["description"] == "Carrot cut into fine matchsticks."
+
+    async def test_a_description_is_required(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        response = await client.post(
+            f"{ACADEMY}/julienne/pictures",
+            headers=admin,
+            files={"picture": ("julienne.jpg", self.photograph(), "image/jpeg")},
+        )
+        assert response.status_code == 422
+
+    async def test_it_says_which_language_the_description_is_in(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        """Not always the reader's. Saying so beats handing somebody English silently."""
+        body = (await self.illustrate(client, admin)).json()
+        assert body["pictures"][0]["locale"] == "en-GB"
+
+    async def test_the_bytes_can_be_fetched(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        body = (await self.illustrate(client, admin)).json()
+        media_id = body["pictures"][0]["media_id"]
+        served = await client.get(f"/api/v1/media/{media_id}", headers=admin)
+        assert served.status_code == 200
+        assert served.headers["content-type"] == "image/webp"
+
+    async def test_a_picture_nobody_stored_is_a_404(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        assert (await client.get(f"/api/v1/media/{'0' * 32}", headers=admin)).status_code == 404
+
+    async def test_a_file_that_is_not_a_picture_is_refused(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        response = await client.post(
+            f"{ACADEMY}/julienne/pictures",
+            headers=admin,
+            files={"picture": ("notes.txt", b"this is not a photograph", "text/plain")},
+            data={"description": "Nothing at all."},
+        )
+        assert response.status_code == 422
+
+    async def test_a_picture_can_be_taken_off_again(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        body = (await self.illustrate(client, admin)).json()
+        picture_id = body["pictures"][0]["id"]
+        removed = await client.delete(f"{ACADEMY}/julienne/pictures/{picture_id}", headers=admin)
+        assert removed.status_code == 200
+        assert removed.json()["pictures"] == []
+
+    async def test_taking_it_off_leaves_the_file(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        """By decision: a reference changing is not evidence nobody wants the bytes, and a
+        sweep that guessed would eventually guess wrong. A CLI command collects them."""
+        body = (await self.illustrate(client, admin)).json()
+        media_id = body["pictures"][0]["media_id"]
+        await client.delete(
+            f"{ACADEMY}/julienne/pictures/{body['pictures'][0]['id']}", headers=admin
+        )
+        assert (await client.get(f"/api/v1/media/{media_id}", headers=admin)).status_code == 200
+
+    async def test_an_ordinary_cook_may_not_illustrate(
+        self, client: AsyncClient, cook: dict[str, str], stocked: int
+    ) -> None:
+        response = await self.illustrate(client, cook)
+        assert response.status_code == 403
+
+    async def test_a_page_that_is_not_there_is_a_404(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        response = await self.illustrate(client, admin, slug="no-such-thing")
+        assert response.status_code == 404

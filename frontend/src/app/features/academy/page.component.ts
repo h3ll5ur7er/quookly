@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule } from '@angular/forms';
 import { AcademyService, ClaimantView, PageView } from '@api';
 import { AuthStore } from '../../core/auth/auth.store';
+import { PictureComponent } from '../../core/media/picture.component';
 import { LOCALES } from '../../core/locale/locale.store';
 
 @Component({
   selector: 'app-academy-page',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [PictureComponent, ReactiveFormsModule, RouterLink],
   templateUrl: './page.component.html',
   styleUrl: './page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -22,6 +23,10 @@ export class AcademyPageComponent {
   protected readonly locales = LOCALES;
 
   protected readonly correcting = signal(false);
+  protected readonly illustrating = signal(false);
+  /** Alt text is required, so the button stays disabled until there is some. */
+  protected readonly describing = new FormControl('', { nonNullable: true });
+  protected readonly chosen = signal<File | null>(null);
   protected readonly saveFailed = signal(false);
 
   /**
@@ -141,6 +146,48 @@ export class AcademyPageComponent {
     this.saveFailed.set(false);
     this.service.approvePage(shown.slug).subscribe({
       next: (approved) => this.page.set(approved),
+      error: () => this.saveFailed.set(true),
+    });
+  }
+
+  protected choose(event: Event): void {
+    const picked = (event.target as HTMLInputElement).files;
+    this.chosen.set(picked && picked.length > 0 ? picked[0] : null);
+  }
+
+  /**
+   * Put a picture on this page.
+   *
+   * The description is not optional and the control says so: a picture without alt text is
+   * an accessibility failure, and there is nowhere sensible to default one from.
+   */
+  protected illustrate(): void {
+    const shown = this.page();
+    const picture = this.chosen();
+    const description = this.describing.value.trim();
+    if (shown === null || picture === null || !description) {
+      return;
+    }
+    this.saveFailed.set(false);
+    this.service.illustratePage(shown.slug, picture, description).subscribe({
+      next: (saved) => {
+        this.page.set(saved);
+        this.illustrating.set(false);
+        this.chosen.set(null);
+        this.describing.setValue('');
+      },
+      error: () => this.saveFailed.set(true),
+    });
+  }
+
+  protected removePicture(pictureId: number): void {
+    const shown = this.page();
+    if (shown === null) {
+      return;
+    }
+    this.saveFailed.set(false);
+    this.service.unillustratePage(shown.slug, pictureId).subscribe({
+      next: (saved) => this.page.set(saved),
       error: () => this.saveFailed.set(true),
     });
   }

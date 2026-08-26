@@ -11,7 +11,13 @@ cd "$(dirname "$0")/../.."
 DATABASE="$PWD/backend/e2e-run.db"
 rm -f "$DATABASE"
 
+# Pictures live beside the database, so a fresh run wipes both. Left behind, they would
+# accumulate one webp per upload per run for ever.
+MEDIA="$PWD/backend/e2e-run-media"
+rm -rf "$MEDIA"
+
 export QUOOKLY_DATABASE_URL="sqlite+aiosqlite:///$DATABASE"
+export QUOOKLY_MEDIA_DIR="$MEDIA"
 export QUOOKLY_SECRET_KEY="an-end-to-end-signing-key-of-sufficient-length"
 # The URL import fetches from the *server*, so the pages under test are served from a
 # second local server — which means lifting the guard that stops an instance fetching its
