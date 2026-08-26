@@ -658,3 +658,122 @@ class TestRenaming:
     async def test_renaming_something_unregistered_is_refused(self) -> None:
         with pytest.raises(IngredientNotRegistered):
             await registry.rename("no-such-thing", ENGLISH, "whatever")
+
+
+class TestResolvingWithoutAccents:
+    """A page that strips accents should still find the entry it means.
+
+    28% of the shipped registry's name rows carry diacritics, and plenty of the web writes
+    `creme fraiche`. Until now that resolved to nothing and an import invented a duplicate
+    — an entry with no density and no allergen classification, sitting next to the real one.
+
+    The fold is a **fallback**, not the lookup. An exact match always wins, and an
+    ambiguous fold refuses rather than picks: `pêche` and `pèche` are different words.
+    """
+
+    async def test_a_name_written_without_its_accents_resolves(self) -> None:
+        await registry.register(
+            slug="creme-fraiche",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["crème fraîche"]},
+            origin=Origin.SEED,
+        )
+        found = await registry.resolve("creme fraiche", ENGLISH)
+        assert found is not None
+        assert found.slug == "creme-fraiche"
+
+    async def test_the_accented_spelling_still_resolves(self) -> None:
+        await registry.register(
+            slug="creme-fraiche",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["crème fraîche"]},
+            origin=Origin.SEED,
+        )
+        found = await registry.resolve("crème fraîche", ENGLISH)
+        assert found is not None
+        assert found.slug == "creme-fraiche"
+
+    async def test_an_exact_match_wins_over_a_folded_one(self) -> None:
+        """Both exist as separate entries; the one actually typed is the one meant."""
+        await registry.register(
+            slug="peche-fruit",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["pêche"]},
+            origin=Origin.SEED,
+        )
+        await registry.register(
+            slug="peche-plain",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["peche"]},
+            origin=Origin.SEED,
+        )
+        found = await registry.resolve("peche", ENGLISH)
+        assert found is not None
+        assert found.slug == "peche-plain"
+
+    async def test_an_ambiguous_fold_resolves_to_nothing(self) -> None:
+        """Two entries fold to one string, so folding cannot say which was meant. Refusing
+        leaves the import to record and report it, which is the conservative outcome
+        (ADR-029); guessing would attach one food's allergens to another's recipe."""
+        await registry.register(
+            slug="peche-fruit",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["pêche"]},
+            origin=Origin.SEED,
+        )
+        await registry.register(
+            slug="peche-fishing",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["pèche"]},
+            origin=Origin.SEED,
+        )
+        assert await registry.resolve("peche", ENGLISH) is None
+
+    async def test_two_spellings_of_one_entry_are_not_ambiguous(self) -> None:
+        """Both fold to the same string but belong to the same ingredient, so there is
+        nothing to be unsure about."""
+        await registry.register(
+            slug="creme-fraiche",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["crème fraîche", "creme fraiche"]},
+            origin=Origin.SEED,
+        )
+        found = await registry.resolve("CREME FRAICHE", ENGLISH)
+        assert found is not None
+        assert found.slug == "creme-fraiche"
+
+    async def test_the_canonical_name_still_comes_back(self) -> None:
+        await registry.register(
+            slug="creme-fraiche",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["crème fraîche"]},
+            origin=Origin.SEED,
+        )
+        found = await registry.resolve("creme fraiche", ENGLISH)
+        assert found is not None
+        assert found.name == "crème fraîche"
+
+    async def test_a_folded_match_falls_back_across_to_english(self) -> None:
+        """The same reach as an exact match: a Swiss instance resolves seeded names."""
+        await registry.register(
+            slug="creme-fraiche",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["crème fraîche"]},
+            origin=Origin.SEED,
+        )
+        found = await registry.resolve("creme fraiche", GERMAN)
+        assert found is not None
+        assert found.slug == "creme-fraiche"
+
+    async def test_a_name_nothing_resembles_is_still_absent(self) -> None:
+        await register_butter()
+        assert await registry.resolve("saffron", ENGLISH) is None

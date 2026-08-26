@@ -1,6 +1,5 @@
 """Access to the ingredient registry, in domain verbs."""
 
-import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from decimal import Decimal
@@ -40,18 +39,12 @@ from quookly.contracts.ingredient import (
     Unset,
 )
 from quookly.contracts.nutrition import NutrientProfile, NutritionSource
+from quookly.utilities.text import fold, normalise
 
 # The registry is seeded in English, so a Swiss instance must still resolve a seeded name
 # until a translation for it exists. The fallback is to this one locale only: matching
 # across languages would let `pain` resolve to bread for an English cook.
 SOURCE_LOCALE = "en-GB"
-
-_WHITESPACE = re.compile(r"\s+")
-
-
-def normalise(name: str) -> str:
-    """Fold the variations of a typed name that mean the same ingredient."""
-    return _WHITESPACE.sub(" ", name.strip().lower())
 
 
 def _to_contract(
@@ -283,17 +276,24 @@ async def resolve(name: str, locale: str) -> Ingredient | None:
 
     An unresolvable name is reported to the cook rather than invented (FR-9), which is
     why this returns absence instead of a best guess.
+
+    A name whose accents were stripped is tried second — see `_folded_matches`. Second, not
+    first: what somebody actually typed beats what it resembles.
     """
     wanted = normalise(name)
     async with session() as active:
-        matches = (
-            await active.exec(
-                select(IngredientNameRow).where(
-                    col(IngredientNameRow.normalised) == wanted,
-                    col(IngredientNameRow.locale).in_([locale, SOURCE_LOCALE]),
+        matches = list(
+            (
+                await active.exec(
+                    select(IngredientNameRow).where(
+                        col(IngredientNameRow.normalised) == wanted,
+                        col(IngredientNameRow.locale).in_([locale, SOURCE_LOCALE]),
+                    )
                 )
-            )
-        ).all()
+            ).all()
+        )
+        if not matches:
+            matches = await _folded_matches(active, wanted, locale)
         if not matches:
             return None
 
@@ -312,6 +312,40 @@ async def resolve(name: str, locale: str) -> Ingredient | None:
             )
         ).all()
         return _to_contract(row, display, frozenset(entry.allergen for entry in carried))
+
+
+async def _folded_matches(
+    active: AsyncSession, wanted: str, locale: str
+) -> list[IngredientNameRow]:
+    """Names that match once accents are thrown away — but only if that is unambiguous.
+
+    28% of the shipped registry's name rows carry diacritics and plenty of the web writes
+    `creme fraiche`, which until now resolved to nothing and left an import inventing a
+    duplicate beside the real entry.
+
+    **Nothing is returned when more than one ingredient folds to the same string.** French
+    `pêche` is a peach and `pèche` is fishing; they fold together and folding cannot say
+    which was meant. Refusing leaves the import to record and report an unknown ingredient,
+    which reads as *unknown* (ADR-029, ADR-006) — guessing would attach one food's
+    allergens to another food's recipe.
+
+    Read in Python rather than in SQL because SQLite has no unaccenting function and adding
+    a folded column would mean re-normalising every stored name behind a unique index. It
+    runs only when an exact match failed, over the names of two locales, at household
+    scale.
+    """
+    spellings = (
+        await active.exec(
+            select(IngredientNameRow).where(
+                col(IngredientNameRow.locale).in_([locale, SOURCE_LOCALE])
+            )
+        )
+    ).all()
+    folded = fold(wanted)
+    resembling = [row for row in spellings if fold(row.normalised) == folded]
+    if len({row.ingredient_id for row in resembling}) != 1:
+        return []
+    return resembling
 
 
 async def name_for(active: AsyncSession, ingredient_id: int, locale: str, fallback: str) -> str:
