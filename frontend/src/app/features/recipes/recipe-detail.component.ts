@@ -12,6 +12,7 @@ import {
   VerdictView,
 } from '@api';
 import { VerdictComponent } from '../../core/dietary/verdict.component';
+import { marked } from '../../core/academy/marked';
 import { NutritionComponent } from '../../core/nutrition/nutrition.component';
 import { minutes } from '../../core/time/duration';
 import { attentionNote } from '../../core/time/labels';
@@ -136,6 +137,8 @@ export class RecipeDetailComponent {
 
   /** Seconds are how a timer is stored; minutes are how a cook reads one. */
   protected readonly minutes = minutes;
+  /** Cuts an instruction into the words that link and the words that do not. */
+  protected readonly marked = marked;
 
   /** What this step asks of the cook, where that is worth marking. */
   protected note(step: PresentedStep): string | null {

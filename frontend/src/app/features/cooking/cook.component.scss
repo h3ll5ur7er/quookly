@@ -345,3 +345,12 @@ app-timer {
   font-weight: 600;
   text-decoration: none;
 }
+
+/* A word a cook can look up, at the hob. Underlined rather than coloured, and given a
+   thumb-sized tap area by the line height around it — this screen is read standing up. */
+.cook__term {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 0.25em;
+}

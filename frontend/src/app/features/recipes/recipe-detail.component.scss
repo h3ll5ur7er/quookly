@@ -231,3 +231,17 @@
   border-radius: var(--radius-md);
   background: var(--surface-raised);
 }
+
+/* A word a cook can look up. Underlined rather than coloured: the step is prose and a run
+   of coloured words would read as emphasis rather than as a link. */
+.recipe__term {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 0.2em;
+}
+
+.recipe__term:hover,
+.recipe__term:focus-visible {
+  text-decoration-style: solid;
+}

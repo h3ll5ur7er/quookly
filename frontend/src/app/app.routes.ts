@@ -163,6 +163,27 @@ export const routes: Routes = [
       import('./features/registry/ingredient.component').then((m) => m.IngredientComponent),
   },
   {
+    // Where a step's word sends a reader: the *term*, not a page. One claimant opens it and
+    // several offer a chooser, so nothing picks arbitrarily (ADR-058). Before `:slug`,
+    // because they share a shape and the first match wins.
+    path: 'academy/terms/:term',
+    canActivate: [requireSignedIn],
+    loadComponent: () =>
+      import('./features/academy/page.component').then((m) => m.AcademyPageComponent),
+  },
+  {
+    path: 'academy/:slug',
+    canActivate: [requireSignedIn],
+    loadComponent: () =>
+      import('./features/academy/page.component').then((m) => m.AcademyPageComponent),
+  },
+  {
+    path: 'academy',
+    canActivate: [requireSignedIn],
+    loadComponent: () =>
+      import('./features/academy/academy.component').then((m) => m.AcademyComponent),
+  },
+  {
     // Under settings for the same reason as the applications queue: reference material a
     // cook looks something up in, or corrects, rather than a place they go daily.
     path: 'settings/registry',

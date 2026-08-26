@@ -163,7 +163,20 @@
       <ol class="steps">
         @for (step of shown.steps; track step.position) {
           <li class="steps__step">
-            <p class="recipe__step-text">{{ step.instruction }}</p>
+            <!-- Marked in place rather than listed underneath: the point of UC-2.5 is that
+                 looking a word up does not cost the cook their place. The pieces are cut
+                 from the instruction itself, so what is shown is the cook's own text. -->
+            <p class="recipe__step-text">
+              @for (piece of marked(step.instruction, step.mentions); track $index) {
+                @if (piece.slug) {
+                  <a class="recipe__term" [routerLink]="['/academy', piece.slug]">{{
+                    piece.text
+                  }}</a>
+                } @else {
+                  <span>{{ piece.text }}</span>
+                }
+              }
+            </p>
             @if (step.duration_seconds || step.temperature_celsius || note(step)) {
               <p class="steps__facts">
                 @if (step.duration_seconds) {

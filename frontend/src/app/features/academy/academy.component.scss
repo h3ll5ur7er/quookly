@@ -1,0 +1,36 @@
+.academy__what {
+  max-width: 62ch;
+  color: var(--on-surface-muted);
+  margin-block-end: var(--space-5);
+}
+
+.academy__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.academy__list li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-block-end: var(--space-3);
+  border-block-end: 1px solid var(--border);
+}
+
+.academy__summary {
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
+/* The phone is the design target; widen from there (ADR-015). */
+@media (min-width: 48rem) {
+  .academy__list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3) var(--space-5);
+  }
+}

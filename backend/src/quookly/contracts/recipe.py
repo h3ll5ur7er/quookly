@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from quookly.contracts.execution import Attention, TimingView
 from quookly.contracts.ingredient import Ingredient, IngredientKind, Origin
 from quookly.contracts.interpretation import Source
+from quookly.contracts.matching import MentionView
 from quookly.contracts.measure import DecimalString, Quantity, Unit
 from quookly.contracts.nutrition import NutritionView
 from quookly.contracts.suitability import Outcome, VerdictView
@@ -267,6 +268,13 @@ class PresentedStep(BaseModel):
     # asks of the cook — a field a reader has to supply a default for is a field that
     # reads as absent, and absence is what this codebase refuses to let mean a value.
     attention: Attention
+    #: Words in this instruction a cook can look up, as offsets into it.
+    #:
+    #: Positions rather than content, the same rule the ingredient lines follow (ADR-040):
+    #: what is stored is the instruction, and the marks are read out of its own words when
+    #: it is shown. A recipe imported before a page existed gains the link the day somebody
+    #: writes it, and nothing has to be migrated for that to happen.
+    mentions: list[MentionView] = []
 
 
 class PresentedRecipe(BaseModel):

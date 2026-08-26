@@ -20,9 +20,18 @@ from quookly.access import academy
 from quookly.access.database import dispose_engine, get_engine
 from quookly.contracts.academy import NewPage, PageKind, Wording
 from quookly.contracts.ingredient import Origin
+from quookly.contracts.matching import Named
 from quookly.utilities.configuration import get_settings
 
 ENGLISH = "en-GB"
+
+
+async def spotting_only(locale: str) -> list[Named]:
+    """Just the vocabulary half of , for the tests that are about it."""
+    entries, _ = await academy.vocabulary(locale)
+    return entries
+
+
 GERMAN = "de-CH"
 
 
@@ -266,18 +275,18 @@ class TestWhatMayBeSpottedInAStep:
 
     async def test_a_matchable_name_is_offered_for_spotting(self) -> None:
         await self.sifting(matches=True)
-        offered = await academy.terms_for_spotting(GERMAN)
+        offered = await spotting_only(GERMAN)
         assert "sieben" in offered[0].names
 
     async def test_a_name_with_another_life_is_not(self) -> None:
         await self.sifting(matches=False)
-        offered = await academy.terms_for_spotting(GERMAN)
+        offered = await spotting_only(GERMAN)
         assert "sieben" not in offered[0].names
 
     async def test_its_spellings_are_still_offered(self) -> None:
         """The page is still findable — by the words that only mean it."""
         await self.sifting(matches=False)
-        offered = await academy.terms_for_spotting(GERMAN)
+        offered = await spotting_only(GERMAN)
         assert set(offered[0].names) == {"gesiebt", "durchsieben"}
 
     async def test_it_is_still_the_page_name(self) -> None:
@@ -293,4 +302,4 @@ class TestWhatMayBeSpottedInAStep:
         assert [one.slug for one in await academy.claimants_of("sieben", GERMAN)] == ["sift"]
 
     async def test_nothing_offers_a_page_that_has_none(self) -> None:
-        assert await academy.terms_for_spotting(ENGLISH) == []
+        assert await spotting_only(ENGLISH) == []

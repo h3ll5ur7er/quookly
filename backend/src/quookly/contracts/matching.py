@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
 
+from pydantic import BaseModel, ConfigDict
+
 
 class Resemblance(Enum):
     """Why two names look like the same thing.
@@ -80,5 +82,17 @@ class Mention:
     """
 
     slug: str
+    start: int
+    end: int
+
+
+class MentionView(BaseModel):
+    """A term a step names, as a client reads it."""
+
+    model_config = ConfigDict(frozen=True)
+
+    slug: str
+    #: What the term is called, so a link can be labelled without a second request.
+    name: str
     start: int
     end: int

@@ -1,0 +1,75 @@
+<main class="page academy">
+  @if (missing()) {
+    <p class="notice notice--danger" role="alert" i18n="@@academyMissing">
+      Nobody has explained that yet.
+    </p>
+  } @else if (failed()) {
+    <p class="notice notice--danger" role="alert" i18n="@@academyFailed">
+      Could not load that. Please try again.
+    </p>
+  } @else if (choices(); as claiming) {
+    <!-- Several pages answer to this word, so the cook picks rather than being sent
+         somewhere arbitrary (ADR-058). -->
+    <h1 i18n="@@academyWhichHeading">Which did you mean?</h1>
+    @if (claiming.length === 0) {
+      <p i18n="@@academyNoClaimants">Nobody has explained that yet.</p>
+    } @else {
+      <ul class="academy__choices">
+        @for (one of claiming; track one.slug) {
+          <li>
+            <a [routerLink]="['/academy', one.slug]">{{ one.name }}</a>
+            <span class="academy__summary">{{ one.summary }}</span>
+          </li>
+        }
+      </ul>
+    }
+  } @else if (page(); as shown) {
+    <article>
+      <h1>{{ shown.name }}</h1>
+
+      <!-- The hatnote. A page whose name belongs to others says so at the top, the way an
+           encyclopedia does. -->
+      @if (shown.also && shown.also.length > 0) {
+        <p class="academy__hatnote">
+          <span i18n="@@academyAlso">This name also belongs to</span>
+          @for (one of shown.also ?? []; track one.slug) {
+            <a [routerLink]="['/academy', one.slug]">{{ one.summary }}</a>
+          }
+        </p>
+      }
+
+      <p class="academy__lead">{{ shown.summary }}</p>
+      <p class="academy__explanation">{{ shown.explanation }}</p>
+
+      @if (shown.caution) {
+        <p class="notice notice--danger academy__caution" role="note">
+          <strong i18n="@@academyCaution">Take care</strong>
+          {{ shown.caution }}
+        </p>
+      }
+
+      <!-- Marked where it is true rather than everywhere: a page a model wrote and nobody
+           has checked must not read like one somebody wrote (ADR-056). -->
+      @if (shown.generated && !shown.approved) {
+        <p class="academy__provenance" i18n="@@academyUnchecked">
+          Written by a model on this instance. Nobody here has checked it.
+        </p>
+      }
+
+      @if (shown.spellings.length > 0) {
+        <p class="academy__spellings">
+          <span i18n="@@academyAlsoWritten">Also written</span>
+          @for (spelling of shown.spellings; track spelling) {
+            <span class="chip">{{ spelling }}</span>
+          }
+        </p>
+      }
+    </article>
+  } @else {
+    <p i18n="@@academyLoading">Loading…</p>
+  }
+
+  <a class="action action--quiet" routerLink="/academy" i18n="@@academyAll">
+    Everything in the Academy
+  </a>
+</main>

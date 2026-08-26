@@ -1,3 +1,4 @@
+import { marked } from '../../core/academy/marked';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -35,6 +36,9 @@ import { TimerComponent } from './timer.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CookComponent {
+  /** Cuts an instruction into the words that link and the words that do not. */
+  protected readonly marked = marked;
+
   private readonly cooking = inject(CookingService);
   private readonly router = inject(Router);
   private readonly sessionId = Number(inject(ActivatedRoute).snapshot.paramMap.get('id'));

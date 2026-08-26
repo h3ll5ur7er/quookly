@@ -11,6 +11,7 @@ from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
+from quookly.access import academy as academy_access
 from quookly.access import cook as cook_access
 from quookly.access import eater as eater_access
 from quookly.access import ingredient as registry
@@ -30,6 +31,7 @@ from quookly.contracts.exchange import ExchangeDocument
 from quookly.contracts.execution import TimingView
 from quookly.contracts.ingredient import IngredientKind, Origin
 from quookly.contracts.interpretation import InterpretedLine, InterpretedRecipe
+from quookly.contracts.matching import Mention, MentionView
 from quookly.contracts.measure import Quantity
 from quookly.contracts.nutrition import (
     CREDITS,
@@ -64,6 +66,7 @@ from quookly.engines import (
     execution,
     generation,
     interpretation,
+    matching,
     measure,
     nutrition,
     ranking,
@@ -332,7 +335,9 @@ async def present(
         # Someone else's private recipe is absent, not forbidden: saying "forbidden"
         # confirms it exists.
         return None
-    return await _present(recipe, await preference_access.for_cook(cook_id), servings, cook_id)
+    return await _present(
+        recipe, await preference_access.for_cook(cook_id), servings, cook_id, locale
+    )
 
 
 #: How much of a figure is worth showing. Energy is a whole number — nobody plates half a
@@ -420,12 +425,24 @@ async def _judge(recipe: Recipe, cook_id: int) -> VerdictView | None:
 
 
 async def _present(
-    recipe: Recipe, preferences: UnitPreferences, servings: Decimal | None, cook_id: int
+    recipe: Recipe,
+    preferences: UnitPreferences,
+    servings: Decimal | None,
+    cook_id: int,
+    locale: str | None = None,
 ) -> PresentedRecipe:
+    locale = locale or await cook_access.locale_for(cook_id)
     factor = Decimal(1) if servings is None else servings / recipe.yield_quantity.magnitude
     scaled_yield = measure.scale(recipe.yield_quantity, factor)
 
     lines = measure.rendered_lines(recipe.lines, preferences, factor)
+
+    # Once for the whole recipe rather than once per step: the vocabulary is the same for
+    # every step, and a page is a handful of terms. Simple until measurement says otherwise.
+    vocabulary, names = await academy_access.vocabulary(locale)
+    # Once for the recipe rather than once per step: preparing the vocabulary is most of
+    # the cost, and a recipe has one vocabulary and many steps.
+    jargon = matching.mentioned_in([step.instruction for step in recipe.steps], vocabulary)
 
     return PresentedRecipe(
         id=recipe.id,
@@ -453,6 +470,7 @@ async def _present(
                 duration_seconds=step.duration_seconds,
                 temperature_celsius=step.temperature_celsius,
                 attention=step.attention,
+                mentions=_marked(jargon[position], names),
             )
             for position, step in enumerate(recipe.steps)
         ],
@@ -462,6 +480,23 @@ async def _present(
         timing=TimingView.of(execution.timing(recipe.steps)),
         nutrition=await _nutrition(recipe, factor),
     )
+
+
+def _marked(found: list[Mention], names: dict[str, str]) -> list[MentionView]:
+    """The words of one step a cook can look up, as a client reads them.
+
+    Read out of the instruction rather than tagged onto it (ADR-040, ADR-055). The name
+    travels with the offsets so a client can label the link without a second request.
+    """
+    return [
+        MentionView(
+            slug=one.slug,
+            name=names.get(one.slug, one.slug),
+            start=one.start,
+            end=one.end,
+        )
+        for one in found
+    ]
 
 
 @dataclass(frozen=True, slots=True)

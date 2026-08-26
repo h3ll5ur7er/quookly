@@ -1,0 +1,28 @@
+<main class="page academy">
+  <h1 i18n="@@academyHeading">Academy</h1>
+  <p class="academy__what" i18n="@@academyWhat">
+    Words a recipe uses and does not explain. They are marked in the steps of a recipe as you read
+    it, so looking one up costs a tap rather than a search.
+  </p>
+
+  @if (failed()) {
+    <p class="notice notice--danger" role="alert" i18n="@@academyListFailed">
+      Could not load the Academy. Please try again.
+    </p>
+  } @else if (pages(); as found) {
+    @if (found.length === 0) {
+      <p i18n="@@academyEmpty">Nothing here yet.</p>
+    } @else {
+      <ul class="academy__list">
+        @for (one of found; track one.slug) {
+          <li>
+            <a [routerLink]="['/academy', one.slug]">{{ one.name }}</a>
+            <span class="academy__summary">{{ one.summary }}</span>
+          </li>
+        }
+      </ul>
+    }
+  } @else {
+    <p i18n="@@academyListLoading">Loading…</p>
+  }
+</main>

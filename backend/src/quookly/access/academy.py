@@ -230,11 +230,15 @@ async def detail(slug: str, locale: str) -> Page | None:
     )
 
 
-async def terms_for_spotting(locale: str) -> list[Named]:
-    """Every page and the terms it may be found by, for `MatchingEngine.mentioned`.
+async def vocabulary(locale: str) -> tuple[list[Named], dict[str, str]]:
+    """Every page and the terms it may be found by, with what each page is called.
 
-    Reference data for a rule engine, so it comes out as a plain list: the engine reads no
+    Reference data for a rule engine, so it comes out as plain values: the engine reads no
     database and the vocabulary arrives as an argument.
+
+    Both answers from one query. They were two, and every recipe read paid for both — a
+    screen that had no database cost before this feature should not gain two round trips
+    to underline a word.
 
     Terms marked unmatchable are left out. They are still the page's name and still what a
     reader sees — they simply have another life as ordinary words, and "sieben Minuten" is
@@ -252,7 +256,14 @@ async def terms_for_spotting(locale: str) -> list[Named]:
             )
         ).all()
 
-    gathered: dict[str, list[str]] = {}
-    for page, term in rows:
-        gathered.setdefault(page.slug, []).append(term.spelling)
-    return [Named(slug=slug, names=tuple(terms)) for slug, terms in sorted(gathered.items())]
+        gathered: dict[str, list[str]] = {}
+        pages: dict[int, str] = {}
+        for page, term in rows:
+            gathered.setdefault(page.slug, []).append(term.spelling)
+            if page.id is not None:
+                pages[page.id] = page.slug
+
+        texts = await _texts_for(active, list(pages), locale)
+
+    named = {slug: texts[page_id].name for page_id, slug in pages.items() if page_id in texts}
+    return [Named(slug=slug, names=tuple(terms)) for slug, terms in sorted(gathered.items())], named

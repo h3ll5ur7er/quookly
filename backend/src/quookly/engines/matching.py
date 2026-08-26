@@ -301,23 +301,16 @@ def _joinable(text: str, words: list[tuple[str, int, int]], start: int, end: int
     )
 
 
-def mentioned(text: str, entries: Sequence[Named]) -> list[Mention]:
-    """The known terms a step names, in reading order.
+def _prepared(entries: Sequence[Named]) -> list[tuple[tuple[str, ...], str]]:
+    """The vocabulary as words, longest first.
 
-    Whole words only, which comparing token by token gives for nothing: `scaffold` is not
-    folding. **Longest first** — a step naming a `bain-marie` is not naming a `bain` — and
-    matches never overlap, because two links over the same words is not something a reader
-    can act on.
+    Longest first so a shorter term never claims words a longer one wants; sorted by slug
+    within a length so the result is the same on every run.
 
-    The vocabulary arrives as an argument and no database is read, which is what keeps this
-    a rule engine and its tests a table of steps and expected offsets.
+    Separated from the matching because a recipe has many steps and one vocabulary.
+    Rebuilding it per step tokenised two hundred terms a dozen times over to read one
+    sentence, which measurement put at most of the cost of showing a recipe.
     """
-    words = _tokens(text)
-    if not words:
-        return []
-
-    # Longest first so a shorter term never claims words a longer one wants. Sorted by slug
-    # within a length so the result is the same on every run.
     vocabulary: list[tuple[tuple[str, ...], str]] = []
     for held in entries:
         for spelling in held.names:
@@ -325,6 +318,13 @@ def mentioned(text: str, entries: Sequence[Named]) -> list[Mention]:
             if spoken:
                 vocabulary.append((spoken, held.slug))
     vocabulary.sort(key=lambda one: (-len(one[0]), one[1], one[0]))
+    return vocabulary
+
+
+def _spot(text: str, vocabulary: list[tuple[tuple[str, ...], str]]) -> list[Mention]:
+    words = _tokens(text)
+    if not words:
+        return []
 
     found: list[Mention] = []
     at = 0
@@ -342,3 +342,25 @@ def mentioned(text: str, entries: Sequence[Named]) -> list[Mention]:
         else:
             at += 1
     return found
+
+
+def mentioned(text: str, entries: Sequence[Named]) -> list[Mention]:
+    """The known terms one step names, in reading order.
+
+    Whole words only, which comparing token by token gives for nothing: `scaffold` is not
+    folding. **Longest first** — a step naming a `bain-marie` is not naming a `bain` — and
+    matches never overlap, because two links over the same words is not something a reader
+    can act on.
+
+    The vocabulary arrives as an argument and no database is read, which is what keeps this
+    a rule engine and its tests a table of steps and expected offsets.
+
+    For a whole recipe use `mentioned_in`, which prepares the vocabulary once.
+    """
+    return _spot(text, _prepared(entries))
+
+
+def mentioned_in(texts: Sequence[str], entries: Sequence[Named]) -> list[list[Mention]]:
+    """The same, for every step of a recipe, preparing the vocabulary once."""
+    vocabulary = _prepared(entries)
+    return [_spot(text, vocabulary) for text in texts]

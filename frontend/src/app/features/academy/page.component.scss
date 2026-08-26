@@ -1,0 +1,59 @@
+.academy__hatnote {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-inline-start: 3px solid var(--border-strong);
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
+.academy__lead {
+  font-size: var(--text-lg);
+  font-weight: 500;
+}
+
+.academy__explanation {
+  max-width: 62ch;
+}
+
+.academy__caution {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* Not decoration: a paragraph nobody has checked must not read like one somebody wrote. */
+.academy__provenance {
+  color: var(--warning);
+  font-size: var(--text-sm);
+}
+
+.academy__spellings,
+.academy__choices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
+.academy__choices {
+  flex-direction: column;
+  align-items: stretch;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: var(--space-3);
+}
+
+.academy__choices li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}

@@ -13,6 +13,7 @@ is the pantry's business (V9), and this manager does not know stock accounting e
 from collections.abc import Mapping
 from datetime import UTC, datetime
 
+from quookly.access import academy as academy_access
 from quookly.access import cook as cook_access
 from quookly.access import cooking as cooking_access
 from quookly.access import eater as eater_access
@@ -31,11 +32,12 @@ from quookly.contracts.cooking import (
 from quookly.contracts.eater import Eater
 from quookly.contracts.events import MealCooked
 from quookly.contracts.execution import ExecutionPlan, PlannedStep
+from quookly.contracts.matching import MentionView
 from quookly.contracts.plan import PlanSlot
 from quookly.contracts.planning import PlannedMeal
 from quookly.contracts.recipe import PresentedLine, Recipe
 from quookly.contracts.suitability import VerdictView
-from quookly.engines import execution, measure, planning, suitability
+from quookly.engines import execution, matching, measure, planning, suitability
 from quookly.utilities import events
 from quookly.utilities.diagnostics import get_logger
 
@@ -71,12 +73,14 @@ def _step_view(
     planned: PlannedStep,
     lines: list[PresentedLine],
     timers: dict[int, Timer],
+    jargon: dict[int, list[MentionView]],
 ) -> GuidedStepView:
     step = recipe.steps[planned.position]
     timer = timers.get(planned.position)
     return GuidedStepView(
         position=planned.position,
         instruction=step.instruction,
+        mentions=jargon.get(planned.position, []),
         duration_seconds=step.duration_seconds,
         temperature_celsius=step.temperature_celsius,
         attention=step.attention,
@@ -134,6 +138,20 @@ async def _view(session: CookingSession, slot: PlanSlot, locale: str) -> Session
     arranged: ExecutionPlan = execution.plan(recipe.lines, recipe.steps)
     timers = {timer.step_position: timer for timer in session.timers}
 
+    # The same marks the recipe page carries (UC-9.5). Fetched once for the session rather
+    # than per step: the vocabulary is the same for every step of it.
+    vocabulary, names = await academy_access.vocabulary(locale)
+    spotted = matching.mentioned_in([step.instruction for step in recipe.steps], vocabulary)
+    jargon = {
+        position: [
+            MentionView(
+                slug=one.slug, name=names.get(one.slug, one.slug), start=one.start, end=one.end
+            )
+            for one in found
+        ]
+        for position, found in enumerate(spotted)
+    }
+
     return SessionView(
         id=session.id,
         plan_slot_id=slot.id,
@@ -149,8 +167,8 @@ async def _view(session: CookingSession, slot: PlanSlot, locale: str) -> Session
             )
             for group in arranged.mise_en_place
         ],
-        ahead=[_step_view(recipe, one, lines, timers) for one in arranged.ahead],
-        steps=[_step_view(recipe, one, lines, timers) for one in arranged.steps],
+        ahead=[_step_view(recipe, one, lines, timers, jargon) for one in arranged.ahead],
+        steps=[_step_view(recipe, one, lines, timers, jargon) for one in arranged.steps],
         at_step=session.at_step,
         started_at=session.started_at,
         finished_at=session.finished_at,

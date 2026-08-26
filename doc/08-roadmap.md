@@ -317,9 +317,11 @@ languages, with the spellings a step is actually written with.
    Measuring it against the shipped corpus added a field: a canonical name that is also an ordinary
    word keeps being the name and stops being something a step is matched against. German `sieben` is
    *to sift* and *the number seven*.
-3. **Terms marked on the recipe page (UC-2.5)**, then **in cooking mode (UC-9.5)**, where the
-   constraint is that looking a word up must not cost the cook their place. A term with several
-   claimants offers a chooser; a page whose term is shared carries a hatnote naming the others.
+3. ~~**Terms marked on the recipe page (UC-2.5)**, then **in cooking mode (UC-9.5)**~~ **Built** —
+   and with them the first Academy screens, because a link needs somewhere to lead. A step's words
+   are cut into the parts that link and the parts that do not, so what is shown is the cook's own
+   text. A term with several claimants offers a chooser at `/academy/terms/{term}`; a page whose
+   name is shared carries a hatnote naming the others.
 4. **An administrator edits a page** — text, translations, and **pictures**, which pulls
    `MediaAccess` forward out of Phase 8.
 5. **Explicit links in a step**, `[[slug|the words as written]]`, for what automatic reading cannot

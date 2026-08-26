@@ -3946,6 +3946,14 @@
             "type": "string",
             "title": "Instruction"
           },
+          "mentions": {
+            "items": {
+              "$ref": "#/components/schemas/MentionView"
+            },
+            "type": "array",
+            "title": "Mentions",
+            "default": []
+          },
           "duration_seconds": {
             "anyOf": [
               {
@@ -4262,6 +4270,35 @@
         ],
         "title": "Meal",
         "description": "Which meal of the day a slot is.\n\nFour coarse ones rather than free text or a clock time. A plan is read as a grid, and\na grid needs a fixed number of rows; \"18:30\" would sort correctly and group not at all."
+      },
+      "MentionView": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "start": {
+            "type": "integer",
+            "title": "Start"
+          },
+          "end": {
+            "type": "integer",
+            "title": "End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "start",
+          "end"
+        ],
+        "title": "MentionView",
+        "description": "A term a step names, as a client reads it."
       },
       "Merge": {
         "properties": {
@@ -4917,6 +4954,14 @@
           },
           "attention": {
             "$ref": "#/components/schemas/Attention"
+          },
+          "mentions": {
+            "items": {
+              "$ref": "#/components/schemas/MentionView"
+            },
+            "type": "array",
+            "title": "Mentions",
+            "default": []
           }
         },
         "type": "object",

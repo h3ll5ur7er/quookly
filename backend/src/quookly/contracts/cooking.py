@@ -17,6 +17,7 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict
 
 from quookly.contracts.execution import Attention
+from quookly.contracts.matching import MentionView
 from quookly.contracts.planning import Sizing
 from quookly.contracts.recipe import PresentedLine, QuantityView
 from quookly.contracts.suitability import VerdictView
@@ -109,6 +110,10 @@ class GuidedStepView(BaseModel):
 
     position: int
     instruction: str
+    #: Words in this instruction a cook can look up (UC-9.5). The same marks the recipe
+    #: page carries, because looking a word up at the hob must not cost the cook their
+    #: place in the recipe.
+    mentions: list[MentionView] = []
     duration_seconds: int | None
     temperature_celsius: int | None
     attention: Attention

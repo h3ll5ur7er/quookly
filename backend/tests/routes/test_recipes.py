@@ -627,3 +627,84 @@ class TestALineSaysWhatItPointsAt:
         headers = await sign_up(client, "chef@example.com")
         created = await client.post("/api/v1/recipes", json=pancakes(pantry), headers=headers)
         assert created.json()["lines"][0]["ingredient"] == "plain flour"
+
+
+class TestJargonInASteps:
+    """Terms a cook can look up, marked in place (UC-2.5, ADR-055).
+
+    Nothing is tagged and nothing is stored linking a step to a page: the terms are read
+    out of the step's own words when it is displayed, exactly as its ingredient lines are
+    (ADR-040). A recipe imported before a page existed gains the link the day somebody
+    writes it.
+    """
+
+    @pytest.fixture
+    async def academy(self) -> int:
+        from quookly.managers.seed import stock_academy
+
+        return await stock_academy()
+
+    async def test_a_step_says_which_of_its_words_can_be_looked_up(
+        self, client: AsyncClient, pantry: dict[str, int], academy: int
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        created = await client.post(
+            "/api/v1/recipes",
+            json={
+                **pancakes(pantry),
+                "steps": [{"instruction": "Fold in the whites, then blanch the beans."}],
+            },
+            headers=headers,
+        )
+        step = created.json()["steps"][0]
+        assert [one["slug"] for one in step["mentions"]] == ["fold", "blanch"]
+
+    async def test_the_offsets_point_at_the_words_as_written(
+        self, client: AsyncClient, pantry: dict[str, int], academy: int
+    ) -> None:
+        """A client underlines in place, so the offsets have to be into the instruction it
+        was given."""
+        headers = await sign_up(client, "chef@example.com")
+        created = await client.post(
+            "/api/v1/recipes",
+            json={**pancakes(pantry), "steps": [{"instruction": "Gently fold in the whites."}]},
+            headers=headers,
+        )
+        step = created.json()["steps"][0]
+        found = step["mentions"][0]
+        assert step["instruction"][found["start"] : found["end"]] == "Gently fold"
+
+    async def test_a_step_that_names_nothing_says_so(
+        self, client: AsyncClient, pantry: dict[str, int], academy: int
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        created = await client.post(
+            "/api/v1/recipes",
+            json={**pancakes(pantry), "steps": [{"instruction": "Put it on a plate."}]},
+            headers=headers,
+        )
+        assert created.json()["steps"][0]["mentions"] == []
+
+    async def test_an_instance_with_no_academy_marks_nothing(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """No pages installed, so nothing to link to. The recipe still reads."""
+        headers = await sign_up(client, "chef@example.com")
+        created = await client.post(
+            "/api/v1/recipes",
+            json={**pancakes(pantry), "steps": [{"instruction": "Fold in the whites."}]},
+            headers=headers,
+        )
+        assert created.json()["steps"][0]["mentions"] == []
+
+    async def test_it_marks_terms_in_the_cooks_language(
+        self, client: AsyncClient, pantry: dict[str, int], academy: int
+    ) -> None:
+        headers = await sign_up(client, "koch@example.com")
+        await client.put("/api/v1/setup/locale", json={"locale": "de-CH"}, headers=headers)
+        created = await client.post(
+            "/api/v1/recipes",
+            json={**pancakes(pantry), "steps": [{"instruction": "Die Butter unterheben."}]},
+            headers=headers,
+        )
+        assert [one["slug"] for one in created.json()["steps"][0]["mentions"]] == ["fold"]

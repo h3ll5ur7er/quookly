@@ -60,7 +60,17 @@
           </span>
         </div>
 
-        <p class="cook__instruction">{{ current.instruction }}</p>
+        <!-- Marked in place, the same as on the recipe page (UC-9.5). Looking a word up
+             at the hob must not cost the cook their place in the recipe. -->
+        <p class="cook__instruction">
+          @for (piece of marked(current.instruction, current.mentions); track $index) {
+            @if (piece.slug) {
+              <a class="cook__term" [routerLink]="['/academy', piece.slug]">{{ piece.text }}</a>
+            } @else {
+              <span>{{ piece.text }}</span>
+            }
+          }
+        </p>
 
         @if (attentionNote(current.attention); as asks) {
           <p class="cook__asks">{{ asks }}</p>
