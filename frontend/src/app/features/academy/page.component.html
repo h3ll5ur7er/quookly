@@ -13,6 +13,27 @@
     <h1 i18n="@@academyWhichHeading">Which did you mean?</h1>
     @if (claiming.length === 0) {
       <p i18n="@@academyNoClaimants">Nobody has explained that yet.</p>
+
+      <!-- The only place in this application that can produce something untrue, so it
+           says what it is before anybody presses it (ADR-062). -->
+      <section class="academy__ask">
+        <p i18n="@@academyAskWhat">
+          This can be written by a model. What comes back is marked as a model's and read by nobody,
+          so it will not be marked in recipes until somebody here has read it.
+        </p>
+        @if (askFailed(); as why) {
+          <p class="notice notice--danger" role="alert">{{ why }}</p>
+        }
+        <button
+          type="button"
+          class="action"
+          [disabled]="asking()"
+          (click)="ask()"
+          i18n="@@academyAsk"
+        >
+          Ask for an explanation
+        </button>
+      </section>
     } @else {
       <ul class="academy__choices">
         @for (one of claiming; track one.slug) {

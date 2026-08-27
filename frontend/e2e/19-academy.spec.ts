@@ -177,3 +177,25 @@ test('a page about a food shows what the kitchen knows, and never invents it', a
   await expect(page.getByText('Celery')).toBeVisible();
   await expect(page.getByText('Nobody has classified this yet')).toHaveCount(0);
 });
+
+test('a word nobody has explained offers to ask, and says so when there is nothing to ask', async ({
+  page,
+}) => {
+  /* This harness runs without a model on purpose, which makes this the spec for the
+     honest failure — the same thing 13-invent does for writing a recipe. That the offer
+     is reachable at all is the other half: a word nobody has explained is a word no
+     recipe underlines, so the lookup is the only way to that screen (ADR-062). */
+  await page.goto('/academy');
+  await page.getByLabel('Look a word up').fill('spatchcock');
+  await page.getByRole('button', { name: 'Look it up' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Which did you mean?' })).toBeVisible();
+  await expect(page.getByText('Nobody has explained that yet.')).toBeVisible();
+
+  // Said before it is pressed, not after: this is the one thing here that can be wrong.
+  await expect(page.getByText('written by a model')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Ask for an explanation' }).click();
+  // An operator reading this knows what to go and configure. Not "that did not work".
+  await expect(page.getByText('no model to ask')).toBeVisible();
+});

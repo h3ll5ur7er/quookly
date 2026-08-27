@@ -95,7 +95,12 @@ async def store_many(pages: Sequence[NewPage], origin: Origin = Origin.USER) -> 
     return added
 
 
-async def write(page: NewPage, cook_id: int, ingredient_id: int | None = None) -> None:
+async def write(
+    page: NewPage,
+    cook_id: int | None,
+    ingredient_id: int | None = None,
+    generated: bool = False,
+) -> None:
     """One page, written here by somebody on this instance.
 
     Unreviewed, and recorded against its author. Refuses a slug that is taken rather than
@@ -104,6 +109,10 @@ async def write(page: NewPage, cook_id: int, ingredient_id: int | None = None) -
     `ingredient_id` is the registry entry an ingredient page is about (ADR-061). Refused
     where the section wants one and there is none: a page about an ingredient nobody can
     put in a recipe is a page about nothing.
+
+    `cook_id` is absent for a page a model wrote. Nobody here wrote it, and recording the
+    cook who *asked* would say otherwise — asking for a page is not writing one, and it is
+    `generated` that says what happened (ADR-056).
     """
     if page.kind is PageKind.INGREDIENT and ingredient_id is None:
         raise IngredientNotNamed(f"{page.slug} is an ingredient page and names no entry")
@@ -122,6 +131,7 @@ async def write(page: NewPage, cook_id: int, ingredient_id: int | None = None) -
             approved=False,
             written_by=cook_id,
             ingredient_id=ingredient_id,
+            generated=generated,
         )
         active.add(row)
         await active.flush()

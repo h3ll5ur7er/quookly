@@ -2731,3 +2731,51 @@ somebody has to remember.
 for, except in prose — and prose is exactly where such a claim belongs, since nothing computes on it.
 An operator who wants a fact to be *used* rather than read has to put it in the registry, which is
 the correct shape of that work.
+
+## ADR-062 A model may explain a technique, and may not write about a food
+
+**Status:** Accepted — the last unit of the Academy, constrained by
+[ADR-006](#adr-006-suitability-and-allergen-conclusions-are-computed-from-structured-ingredients),
+[ADR-056](#adr-056-a-generated-explanation-is-marked-unreviewed-and-never-an-input-to-a-judgement) and
+[ADR-061](#adr-061-an-ingredient-page-names-its-entry-and-never-restates-what-the-registry-computes-on).
+
+**Context.** A cook meets a word in a recipe, taps it, and is told *nobody has explained that yet*.
+That is an honest answer and a dead end, and it is the one gap the Academy cannot close by being
+written faster: the words a recipe uses are not a list anybody can finish.
+
+Asking a model is the obvious answer, and it is the only part of this application that can state
+something untrue while looking exactly like something true. It is built last for that reason
+— every screen already works without it, and an instance with no provider configured loses nothing
+it had.
+
+**The unsafe half.** Two sections exist now. A page about a **technique** says what to do with your
+hands. A page about an **ingredient** sits directly beside a panel of the registry's facts, including
+an allergen classification the suitability engine computes on.
+
+Generated prose next to computed facts is the worst arrangement this application could build. The two
+disagree eventually — a paragraph saying *"a good gluten-free option"* under a panel saying
+**gluten** — and the reader has no way to know which half of the screen is the one that was checked.
+Marking the page does not fix it, because the mark is on the *page* while the contradiction is
+between two paragraphs of it.
+
+**Decision.** Generation writes **technique pages only**.
+
+A model may be asked what a word a recipe uses means, when nothing on this instance explains it.
+It may not be asked to write about a food. Prose about an ingredient is written by a person, beside
+facts that are read (ADR-061) — and a person who writes something wrong there is a person somebody
+can ask, which is not true of a paragraph nobody chose.
+
+Everything ADR-056 and ADR-060 already say applies unchanged, and composes exactly:
+
+- the page is marked `generated`, and marked as read by nobody;
+- being unreviewed, **it claims no terms** — so a generated page is not matched into anybody's
+  recipe until a person has read it. The cook who asked for it gets it; the instance does not.
+- approving it is a person saying they have read it, which is the same act as for anything else.
+
+**Refused rather than duplicated.** Asking about a term some page already claims is a conflict, not a
+second opinion. The Academy's tolerance for several pages per term (ADR-058) is for pages people
+wrote; generating another one nobody asked for would fill the queue with near-copies.
+
+**Optional by construction.** An instance with no provider says nobody has explained that yet, and
+offers nothing further. That is the same sentence it says today, which is the point: this feature is
+an addition to that screen and never a dependency of it.

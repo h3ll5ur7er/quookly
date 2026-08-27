@@ -12,10 +12,15 @@ from quookly.contracts.academy import (
     Wording,
 )
 from quookly.contracts.errors import (
+    InferenceNotConfigured,
+    InferenceRefused,
+    InferenceUnavailable,
     IngredientNotNamed,
     IngredientNotRegistered,
+    NothingToExplain,
     PageAlreadyWritten,
     PageNotWritten,
+    StructuredOutputUnusable,
     UnreadableImage,
 )
 from quookly.managers import academy as academy_manager
@@ -155,6 +160,56 @@ async def write_page(submitted: NewPageInput, cook: CurrentCook) -> PageView:
             status_code=status.HTTP_409_CONFLICT,
             detail="There is already a page with that name.",
         ) from taken
+    if written is None:
+        raise NOT_FOUND
+    return written
+
+
+class ExplanationInput(BaseModel):
+    """A word a recipe used and nothing on this instance explains."""
+
+    term: str = Field(min_length=1, max_length=80)
+
+
+@router.post("/academy/explanations", response_model=PageView, status_code=status.HTTP_201_CREATED)
+async def explain_term(submitted: ExplanationInput, cook: CurrentCook) -> PageView:
+    """Ask a model to explain a word nobody here has explained (UC-7.5).
+
+    Declared before `/academy/{slug}`-shaped routes for the usual reason.
+
+    The answer is kept as a page marked as a model's and read by nobody — which, being
+    unreviewed, means it is **not** matched into anybody's recipe until a person has read
+    it (ADR-056, ADR-060). Techniques only: an ingredient page sits beside the registry's
+    computed facts, and generated prose next to computed facts is the one arrangement
+    where a reader cannot tell which half was checked (ADR-062).
+
+    An instance with no provider says so. Every other screen works without one, and this
+    is an addition to a screen rather than a dependency of it.
+    """
+    try:
+        written = await academy_manager.explain(submitted.term, cook.cook_id, cook.is_admin)
+    except PageAlreadyWritten as taken:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Somebody here has already explained that.",
+        ) from taken
+    except InferenceNotConfigured:
+        # Not an error, and not the same answer as a model that would not answer: nothing
+        # is broken, nobody has said where to ask. An operator can act on that.
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Nobody has explained that yet, and this instance has no model to ask.",
+        ) from None
+    except InferenceRefused:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="The model provider refused the request. Check the instance's key.",
+        ) from None
+    except (InferenceUnavailable, NothingToExplain, StructuredOutputUnusable):
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Nobody has explained that yet, and the model could not be asked.",
+        ) from None
     if written is None:
         raise NOT_FOUND
     return written

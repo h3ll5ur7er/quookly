@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { AcademyService, PageKind, PageSummaryView } from '@api';
 
 @Component({
   selector: 'app-academy',
-  imports: [RouterLink],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './academy.component.html',
   styleUrl: './academy.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -21,6 +23,19 @@ export class AcademyComponent {
    */
   protected readonly kinds = PageKind;
   protected readonly section = signal<PageKind | null>(null);
+
+  /**
+   * A word to look up.
+   *
+   * The way in to the term screen, and the reason it needs one: a word nobody has
+   * explained is a word no recipe underlines, so without this the screen that says
+   * "nobody has explained that yet" — and the offer to ask — cannot be reached at all.
+   */
+  protected readonly looking = new FormControl('', { nonNullable: true });
+  private readonly typed = signal('');
+  protected readonly canLook = computed(() => this.typed().length > 0);
+
+  private readonly router = inject(Router);
 
   /**
    * Pages nobody here has read yet.
@@ -42,6 +57,10 @@ export class AcademyComponent {
   });
 
   constructor() {
+    this.looking.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe((word) => this.typed.set(word.trim()));
+
     inject(AcademyService)
       .browseAcademy()
       .subscribe({
@@ -49,5 +68,13 @@ export class AcademyComponent {
         next: (found) => this.pages.set(found),
         error: () => this.failed.set(true),
       });
+  }
+
+  /** Go to whatever claims this word — or to the screen that says nobody has. */
+  protected look(): void {
+    const wanted = this.typed();
+    if (wanted) {
+      void this.router.navigate(['/academy', 'terms', wanted]);
+    }
   }
 }

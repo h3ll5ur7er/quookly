@@ -34,6 +34,10 @@ export class AcademyPageComponent {
   protected readonly chosen = signal<File | null>(null);
   protected readonly saveFailed = signal(false);
 
+  /** Asking a model to explain a word nobody here has explained (ADR-062). */
+  protected readonly asking = signal(false);
+  protected readonly askFailed = signal<string | null>(null);
+
   /**
    * One language's wording, whole.
    *
@@ -214,6 +218,40 @@ export class AcademyPageComponent {
       error: () => {
         this.declining.set(false);
         this.saveFailed.set(true);
+      },
+    });
+  }
+
+  /**
+   * Ask for an explanation of the word that was looked up.
+   *
+   * What comes back is shown in place of the chooser: it is a page, and the page screen
+   * already knows how to say that a model wrote it and nobody has read it (ADR-056).
+   */
+  protected ask(): void {
+    const wanted = this.term;
+    if (wanted === null || this.asking()) {
+      return;
+    }
+    this.asking.set(true);
+    this.askFailed.set(null);
+
+    this.service.explainTerm({ term: wanted }).subscribe({
+      next: (written) => {
+        this.asking.set(false);
+        // Out of the chooser and onto the page, without a navigation: the address still
+        // names the term, and coming back to it should still be the term screen.
+        this.choices.set(null);
+        this.page.set(written);
+      },
+      error: (refusal: { error?: { detail?: unknown } }) => {
+        this.asking.set(false);
+        const detail = refusal.error?.detail;
+        this.askFailed.set(
+          typeof detail === 'string'
+            ? detail
+            : $localize`:@@academyAskFailed:That did not work. Please try again.`,
+        );
       },
     });
   }

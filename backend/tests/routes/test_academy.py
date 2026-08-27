@@ -804,3 +804,132 @@ class TestTheIngredientSection:
         self, client: AsyncClient, cook: dict[str, str]
     ) -> None:
         assert (await client.get(f"{ACADEMY}?about=unicorn-steak", headers=cook)).status_code == 404
+
+
+class TestAskingForAnExplanation:
+    """A page nobody has written, written by a model (UC-7.5, ADR-062).
+
+    Last on purpose: it is the only part of this application that can state something
+    untrue while looking exactly like something true.
+    """
+
+    ASKED = "/api/v1/academy/explanations"
+
+    @pytest.fixture
+    async def admin(self, client: AsyncClient) -> dict[str, str]:
+        return await sign_up_admin(client)
+
+    @pytest.fixture
+    def answering(self, monkeypatch: MonkeyPatch) -> None:
+        from quookly.access import model as inference
+        from quookly.contracts.inference import Completion
+
+        answer = {
+            "name": "spatchcock",
+            "spellings": ["spatchcocked", "butterflied"],
+            "summary": "Flatten a bird so it cooks evenly.",
+            "explanation": "Cut out the backbone with shears and press down on the breastbone.",
+            "caution": "",
+        }
+
+        async def complete_structured(
+            prompt: str, schema: dict[str, Any], system: str | None = None, **rest: Any
+        ) -> tuple[dict[str, Any], Completion]:
+            return answer, Completion(text="{}", model="test")
+
+        monkeypatch.setattr(inference, "complete_structured", complete_structured)
+
+    async def test_a_cook_can_ask(
+        self, client: AsyncClient, cook: dict[str, str], answering: None
+    ) -> None:
+        made = await client.post(self.ASKED, json={"term": "spatchcock"}, headers=cook)
+        assert made.status_code == 201, made.text
+        assert made.json()["summary"] == "Flatten a bird so it cooks evenly."
+
+    async def test_signing_in_is_required(self, client: AsyncClient, answering: None) -> None:
+        assert (await client.post(self.ASKED, json={"term": "spatchcock"})).status_code == 401
+
+    async def test_it_says_a_model_wrote_it(
+        self, client: AsyncClient, cook: dict[str, str], answering: None
+    ) -> None:
+        """A page a model wrote must not read like one somebody wrote (ADR-056)."""
+        made = await client.post(self.ASKED, json={"term": "spatchcock"}, headers=cook)
+        assert made.json()["generated"] is True
+        assert made.json()["approved"] is False
+
+    async def test_nobody_here_is_recorded_as_having_written_it(
+        self, client: AsyncClient, cook: dict[str, str], answering: None
+    ) -> None:
+        """Asking for a page is not writing one, so the cook who asked does not get to
+        polish it before an administrator reads it."""
+        made = await client.post(self.ASKED, json={"term": "spatchcock"}, headers=cook)
+        assert made.json()["may_rewrite"] is False
+
+    async def test_it_is_not_matched_into_a_recipe_yet(
+        self, client: AsyncClient, cook: dict[str, str], answering: None
+    ) -> None:
+        """ADR-060 composing with ADR-056: the cook who asked gets the page, and the
+        instance does not get a new word in everybody's recipes."""
+        await client.post(self.ASKED, json={"term": "spatchcock"}, headers=cook)
+        found = await client.get(f"{ACADEMY}/terms/spatchcocked", headers=cook)
+        assert found.json() == []
+
+    async def test_approving_it_is_what_puts_it_into_recipes(
+        self, client: AsyncClient, cook: dict[str, str], admin: dict[str, str], answering: None
+    ) -> None:
+        made = await client.post(self.ASKED, json={"term": "spatchcock"}, headers=cook)
+        await client.post(f"{ACADEMY}/{made.json()['slug']}/approved", headers=admin)
+
+        found = await client.get(f"{ACADEMY}/terms/spatchcocked", headers=cook)
+        assert [one["slug"] for one in found.json()] == [made.json()["slug"]]
+
+    async def test_it_answers_to_the_word_that_was_asked_about(
+        self, client: AsyncClient, cook: dict[str, str], admin: dict[str, str], answering: None
+    ) -> None:
+        """Otherwise the cook taps the same word again and is told nobody has explained
+        it, which is the screen they just left."""
+        made = await client.post(self.ASKED, json={"term": "spatchcocking"}, headers=cook)
+        await client.post(f"{ACADEMY}/{made.json()['slug']}/approved", headers=admin)
+
+        found = await client.get(f"{ACADEMY}/terms/spatchcocking", headers=cook)
+        assert len(found.json()) == 1
+
+    async def test_a_term_somebody_has_explained_is_refused(
+        self, client: AsyncClient, cook: dict[str, str], answering: None, stocked: int
+    ) -> None:
+        """Not a second opinion. The Academy tolerates several pages per term for pages
+        people wrote; generating near-copies nobody asked for is how a queue fills up."""
+        refused = await client.post(self.ASKED, json={"term": "blanch"}, headers=cook)
+        assert refused.status_code == 409
+
+    async def test_an_instance_with_no_model_says_so(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        """No provider is configured in these tests, which is the honest default: every
+        other screen works without one, and this is an addition to a screen rather than a
+        dependency of it.
+
+        A 422 rather than a 502, the same as writing a recipe: nothing is broken and
+        nobody has said where to ask, which is a thing an operator can act on."""
+        refused = await client.post(self.ASKED, json={"term": "spatchcock"}, headers=cook)
+        assert refused.status_code == 422
+        assert "no model" in refused.json()["detail"]
+
+    async def test_an_answer_with_nothing_in_it_is_not_stored(
+        self, client: AsyncClient, cook: dict[str, str], monkeypatch: MonkeyPatch
+    ) -> None:
+        from quookly.access import model as inference
+        from quookly.contracts.inference import Completion
+
+        async def empty(
+            prompt: str, schema: dict[str, Any], system: str | None = None, **rest: Any
+        ) -> tuple[dict[str, Any], Completion]:
+            return {"name": "x", "summary": "", "explanation": ""}, Completion(
+                text="{}", model="test"
+            )
+
+        monkeypatch.setattr(inference, "complete_structured", empty)
+
+        refused = await client.post(self.ASKED, json={"term": "spatchcock"}, headers=cook)
+        assert refused.status_code == 502
+        assert (await client.get(f"{ACADEMY}?approved=false", headers=cook)).json() == []

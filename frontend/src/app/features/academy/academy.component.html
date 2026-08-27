@@ -5,6 +5,22 @@
     it, so looking one up costs a tap rather than a search.
   </p>
 
+  <!-- A word nobody has explained is a word no recipe underlines, so this is the only way
+       to reach the screen that says so — and the offer to ask (ADR-062). -->
+  <div class="academy__lookup">
+    <label for="lookup" i18n="@@academyLookup">Look a word up</label>
+    <input id="lookup" type="text" [formControl]="looking" (keyup.enter)="look()" />
+    <button
+      type="button"
+      class="action"
+      [disabled]="!canLook()"
+      (click)="look()"
+      i18n="@@academyLookIt"
+    >
+      Look it up
+    </button>
+  </div>
+
   <nav class="academy__sections" aria-label="Sections" i18n-aria-label="@@academySectionsLabel">
     <button
       type="button"

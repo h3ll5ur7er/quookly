@@ -384,9 +384,31 @@ languages, with the spellings a step is actually written with.
    And the way back from the facts to the prose is asked of the Academy rather than answered by the
    registry entry: the registry's contracts already sit underneath the Academy's, so answering it
    there would have made the two import each other.
-8. **Generating a page nobody has written.** Last on purpose: it is the only part that can state
-   something untrue, and by this point every screen already works without it. Optional by
-   construction — an instance with no inference provider simply says nobody has explained that yet.
+8. ~~**Generating a page nobody has written.**~~ **Built** — last on purpose, and it stayed small
+   because everything it needed was already decided.
+
+   **Techniques only.** A page about a food sits directly beside a panel of the registry's computed
+   facts, and generated prose next to computed facts is the one arrangement where a reader cannot
+   tell which half was checked — a paragraph saying *"a good gluten-free option"* under a panel
+   saying **gluten**. Marking the page does not fix that, because the mark is on the page while the
+   contradiction is between two paragraphs of it
+   ([ADR-062](07-decisions.md#adr-062-a-model-may-explain-a-technique-and-may-not-write-about-a-food)).
+
+   The rest composed from what was already there: the page is marked as a model's and as read by
+   nobody, and *because* it is unreviewed it claims no terms
+   ([ADR-060](07-decisions.md#adr-060-an-unreviewed-page-can-be-read-but-cannot-attach-itself-to-somebody-elses-recipe)).
+   The cook who asked gets their page; the instance does not get a new word in everybody's recipes
+   until a person has read it. Nobody here is recorded as having written it — asking for a page is
+   not writing one.
+
+   Building it turned up a gap that had nothing to do with models: **the screen that says "nobody
+   has explained that yet" could not be reached at all.** A word nobody has explained is a word no
+   recipe underlines, so the term screen had no way in. The Academy has a lookup now, which it
+   wanted anyway.
+
+   Optional by construction, and proved so: the e2e harness runs with no provider, and the spec for
+   this feature is the honest failure — *nobody has explained that yet, and this instance has no
+   model to ask*.
 9. **A public Academy page.** Readable without an account; generation is not.
 
 The registry half of this phase is where the shape came from. A page has a slug, canonical names and

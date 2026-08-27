@@ -104,6 +104,14 @@ class PageNotWritten(QuooklyError):
     """No Academy page answers to that slug."""
 
 
+class NothingToExplain(QuooklyError):
+    """The answer had no explanation in it.
+
+    The shape a model's refusal takes, and the one check worth making on prose: whether it
+    is *right* is the question the person approving it answers (ADR-056).
+    """
+
+
 class IngredientNotNamed(QuooklyError):
     """A page in the ingredient section was written without naming a registry entry.
 

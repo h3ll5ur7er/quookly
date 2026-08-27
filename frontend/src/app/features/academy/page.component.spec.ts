@@ -50,7 +50,10 @@ describe('AcademyPageComponent', () => {
     field.dispatchEvent(new Event('input'));
   }
 
-  async function arrive({ admin = false, params = { slug: 'fold' } } = {}): Promise<void> {
+  async function arrive({
+    admin = false,
+    params = { slug: 'fold' } as Record<string, string>,
+  } = {}): Promise<void> {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [AcademyPageComponent],
@@ -65,7 +68,7 @@ describe('AcademyPageComponent', () => {
           provide: ActivatedRoute,
           useValue: {
             snapshot: {
-              paramMap: { get: (key: string) => (params as Record<string, string>)[key] ?? null },
+              paramMap: { get: (key: string) => params[key] ?? null },
             },
           },
         },
@@ -113,6 +116,75 @@ describe('AcademyPageComponent', () => {
         .flush({ ...FOLD, approved: false, may_rewrite: true });
       await fixture.whenStable();
       expect(text()).toContain('not marked in recipes');
+    });
+  });
+
+  describe('a word nobody has explained', () => {
+    /* The only screen in the application that can produce something untrue, so it is the
+       one that has to say what it is doing before and after (ADR-062). */
+    async function arriveOnATerm(): Promise<void> {
+      await arrive({ params: { term: 'spatchcock' } });
+      backend.expectOne('/api/v1/academy/terms/spatchcock').flush([]);
+      await fixture.whenStable();
+    }
+
+    it('offers to ask, rather than stopping at the dead end', async () => {
+      await arriveOnATerm();
+      expect(text()).toContain('Ask for an explanation');
+    });
+
+    it('says who will have written it before anybody asks', async () => {
+      await arriveOnATerm();
+      expect(text()).toContain('written by a model');
+    });
+
+    it('asks, and shows what came back', async () => {
+      await arriveOnATerm();
+      click('Ask for an explanation');
+      await fixture.whenStable();
+
+      const sent = backend.expectOne('/api/v1/academy/explanations');
+      expect(sent.request.method).toBe('POST');
+      expect(sent.request.body.term).toBe('spatchcock');
+      sent.flush({
+        ...FOLD,
+        slug: 'spatchcock',
+        name: 'spatchcock',
+        summary: 'Flatten a bird so it cooks evenly.',
+        generated: true,
+        approved: false,
+      });
+      await fixture.whenStable();
+
+      expect(text()).toContain('Flatten a bird so it cooks evenly.');
+      // Marked, because a page a model wrote must not read like one somebody wrote.
+      expect(text()).toContain('Nobody here has checked it');
+    });
+
+    it('says plainly when the instance has no model to ask', async () => {
+      await arriveOnATerm();
+      click('Ask for an explanation');
+      await fixture.whenStable();
+
+      backend
+        .expectOne('/api/v1/academy/explanations')
+        .flush(
+          { detail: 'Nobody has explained that yet, and this instance has no model to ask.' },
+          { status: 422, statusText: 'Unprocessable Content' },
+        );
+      await fixture.whenStable();
+
+      expect(text()).toContain('no model to ask');
+    });
+
+    it('offers nothing to ask with on a page that simply is not there', async () => {
+      /* A slug nobody wrote is a broken link, not an unexplained word. */
+      await arrive({ params: { slug: 'nothing-of-the-sort' } });
+      backend
+        .expectOne('/api/v1/academy/nothing-of-the-sort')
+        .flush({}, { status: 404, statusText: 'Not Found' });
+      await fixture.whenStable();
+      expect(text()).not.toContain('Ask for an explanation');
     });
   });
 

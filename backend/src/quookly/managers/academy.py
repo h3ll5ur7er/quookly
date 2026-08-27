@@ -24,7 +24,9 @@ from quookly.contracts.academy import (
     Standing,
     Wording,
 )
-from quookly.contracts.errors import IngredientNotRegistered
+from quookly.contracts.errors import IngredientNotRegistered, PageAlreadyWritten
+from quookly.engines import explanation
+from quookly.utilities.text import normalise
 
 
 async def browse(
@@ -163,6 +165,37 @@ async def write(
         named = found.entry.id
     await academy.write(replace(page, wordings={locale: wording}), cook_id, named)
     return await read(page.slug, cook_id, is_admin)
+
+
+async def explain(term: str, cook_id: int, is_admin: bool = False) -> PageView | None:
+    """Ask a model what a word means, and keep the answer as a page (UC-7.5).
+
+    Refused where this instance already explains the term: that is a conflict rather than
+    a second opinion, and generating near-copies nobody asked for is how a review queue
+    fills up (ADR-062).
+
+    What comes back is marked as a model's and as read by nobody — so, being unreviewed,
+    it claims no terms until a person has read it (ADR-056, ADR-060). The cook who asked
+    gets their page; the instance does not get a new word in everybody's recipes.
+    """
+    locale = await cook_access.locale_for(cook_id)
+    if await academy.claimants_of(term, locale):
+        raise PageAlreadyWritten(term)
+
+    wording = await explanation.explain(term, locale)
+    slug = _slugged(term)
+    await academy.write(
+        NewPage(slug=slug, kind=PageKind.TECHNIQUE, wordings={locale: wording}),
+        cook_id=None,
+        generated=True,
+    )
+    return await read(slug, cook_id, is_admin)
+
+
+def _slugged(term: str) -> str:
+    """A term as a slug: lower case, words joined by hyphens, nothing else kept."""
+    folded = normalise(term)
+    return "-".join(folded.split()) or "explained"
 
 
 async def may_rewrite(slug: str, cook_id: int, is_admin: bool) -> bool:
