@@ -126,6 +126,9 @@ class RecipeDraft:
     origin: Origin = Origin.USER
     #: Absent where the yield already says. See `_servings_of`.
     serves: Decimal | None = None
+    #: What the prose is written in, as a bare code — `de`, not `de-CH`. Absent where
+    #: nobody knows: an import from a page that did not say (ADR-032).
+    language: str | None = None
 
     def __post_init__(self) -> None:
         if not self.title.strip():
@@ -186,6 +189,8 @@ class Recipe:
     steps: list[Step] = field(default_factory=list)
     #: Absent where the yield already says. See `_servings_of`.
     serves: Decimal | None = None
+    #: What the prose is written in, as a bare code. Absent where nobody knows (ADR-032).
+    language: str | None = None
     #: When this recipe was put away, if it was. An archived recipe is out of the cook's
     #: list and out of the search index, and still reachable by the plans and cooked meals
     #: that point at it (ADR-059).
@@ -297,6 +302,16 @@ class PresentedRecipe(BaseModel):
     serves: str | None
     visibility: Visibility
     provenance: Provenance
+    #: What the prose is written in, as a bare code — `de`, not `de-CH`. Absent where
+    #: nobody knows: an import from a page that did not say (ADR-032).
+    language: str | None = None
+    #: Whether the words on this page were translated rather than written by their author.
+    #:
+    #: Said out loud, because prose a model produced and shown as somebody's own words is
+    #: the failure ADR-056 exists to prevent — and here the author may be somebody the
+    #: reader knows. False where the reader is reading the original, *and* where no
+    #: translation could be made and the original is being shown instead.
+    translated: bool = False
     # The recipe this one is a version of, where it is a version of one. A cook looking at
     # a dairy-free shortbread should be one tap from the shortbread.
     derived_from: int | None = None

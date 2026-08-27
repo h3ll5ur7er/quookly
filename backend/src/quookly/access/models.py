@@ -146,12 +146,63 @@ class RecipeRow(SQLModel, table=True):
     derived_from: int | None = Field(default=None, foreign_key="recipe.id", index=True)
     visibility: Visibility = Field(default=Visibility.PRIVATE)
     origin: Origin = Field(default=Origin.USER)
+    # What the prose is written in, as a bare code — `de`, not `de-CH`. Absent where
+    # nobody knows: an import from a page with no `<html lang>`, or a recipe stored before
+    # this column existed. Nothing can translate out of a language nobody knows, which is
+    # a better answer than translating out of a guess (ADR-032).
+    language: str | None = Field(default=None)
     created_at: datetime = Field(default_factory=_now)
     # When this recipe was put away, if it was. Archived rather than deleted because plans,
     # cooked meals and shopping ticks point at it, and a cooked meal that lost its recipe
     # is a hole in a history nobody can fill back in (ADR-059). A timestamp rather than a
     # boolean: it records *when* for the same cost.
     archived_at: datetime | None = Field(default=None, index=True)
+
+
+class RecipeTranslationRow(SQLModel, table=True):
+    """A recipe's prose in one other language.
+
+    Prose only: quantities, durations and temperatures are columns rendered per cook, and
+    ingredient names resolve through the registry per locale. A translation therefore
+    cannot change what a recipe asks for, and no verdict is affected — no verdict has ever
+    consulted prose (ADR-006, ADR-032).
+    """
+
+    __tablename__ = "recipe_translation"
+    __table_args__ = (UniqueConstraint("recipe_id", "locale", name="uq_recipe_translation"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    recipe_id: int = Field(foreign_key="recipe.id", index=True)
+    #: A bare language code — `de`, not `de-CH`. One translation per language, not per
+    #: region: the region is a punctuation habit.
+    locale: str = Field(index=True)
+    title: str
+    summary: str | None = Field(default=None)
+    # What this was a translation *of*. A fingerprint of the source prose rather than a
+    # `stale` flag: a flag has to be set by everything that edits a recipe, and the one
+    # somebody forgets shows a German cook instructions for a step that was rewritten.
+    # Compared on read, so editing a recipe needs to know nothing about translations
+    # (ADR-064).
+    source_fingerprint: str = Field(index=True)
+    # Whether a person wrote it. A model's is dropped and derived again when the recipe
+    # moves; a person's is kept and stopped being shown, because a model silently
+    # overwriting somebody's correction is worse than no correction.
+    by_hand: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=_now)
+
+
+class RecipeTranslationStepRow(SQLModel, table=True):
+    """One step of a translation. `position` pairs it with the recipe's own step."""
+
+    __tablename__ = "recipe_translation_step"
+    __table_args__ = (
+        UniqueConstraint("translation_id", "position", name="uq_recipe_translation_step"),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    translation_id: int = Field(foreign_key="recipe_translation.id", index=True)
+    position: int
+    instruction: str
 
 
 class IngredientLineRow(SQLModel, table=True):

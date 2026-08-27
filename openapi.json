@@ -5536,6 +5536,22 @@
           "provenance": {
             "$ref": "#/components/schemas/Provenance"
           },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "translated": {
+            "type": "boolean",
+            "title": "Translated",
+            "default": false
+          },
           "derived_from": {
             "anyOf": [
               {

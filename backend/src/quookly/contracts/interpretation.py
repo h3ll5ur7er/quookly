@@ -69,3 +69,8 @@ class InterpretedRecipe:
     serves: Decimal | None = None
     lines: list[InterpretedLine] = field(default_factory=list)
     steps: list[InterpretedStep] = field(default_factory=list)
+    #: What language the prose is in, as a bare code — `de`, not `de-CH`. Read from the
+    #: page rather than assumed, and **absent where the page did not say**: a recipe whose
+    #: language nobody knows is one nothing can translate *from*, which is a better answer
+    #: than translating out of the wrong language (ADR-032).
+    language: str | None = None

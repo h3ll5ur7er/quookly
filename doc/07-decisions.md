@@ -1092,9 +1092,13 @@ containing eggs.
 
 ---
 
-## ADR-032 (Proposed) Recipes are stored in their own language and read in yours
+## ADR-032 Recipes are stored in their own language and read in yours
 
-**Status: Proposed. Not built.** Recorded now because Phase 3 made the question unavoidable: an
+**Status:** Accepted — the three parts below stand as proposed. Its open questions are settled in
+[ADR-064](#adr-064-a-translation-records-what-it-translated-and-a-persons-words-are-not-re-derived),
+which is where the answers live rather than in edits here.
+
+Recorded originally because Phase 3 made the question unavoidable: an
 import from swissmilk.ch produces a recipe whose ingredient names resolve into any language and
 whose *steps* are German forever.
 
@@ -2825,3 +2829,53 @@ ingredient page into the registry — that screen is the household's.
 gives them no switch. That is a real limitation and it is recorded rather than solved: the honest
 answer is a setting, and a setting nobody has asked for is a setting with no requirements behind it.
 Anything genuinely private is already on the other side of the door.
+
+## ADR-064 A translation records what it translated, and a person's words are not re-derived
+
+**Status:** Accepted — settles the open questions left by
+[ADR-032](#adr-032-recipes-are-stored-in-their-own-language-and-read-in-yours).
+
+**Context.** ADR-032 left four questions to be answered when translation was built. Three of them are
+really one question — *what happens when the thing underneath a translation moves* — and it became
+sharper after [ADR-059](#adr-059-a-step-may-name-its-own-links-and-a-recipe-may-be-edited) made
+recipes editable. A translation of a sentence that no longer exists is not a stale translation. It is
+a **wrong instruction**, and a cook can be burned by one.
+
+**1. A translation records the text it translated.**
+
+Not a `stale` flag. A flag has to be set by everything that edits a recipe, and the failure mode is
+silent: whoever adds the next write path forgets, and a German cook is shown instructions for a step
+somebody rewrote. Instead each stored translation carries a fingerprint of the source it was made
+from, and a translation whose fingerprint does not match the current source **is not used**.
+
+Invalidation by construction rather than by remembering. Editing a recipe needs to know nothing about
+translations, which is the only way it stays correct as write paths are added.
+
+**2. A translation nobody has corrected is re-derived; one somebody wrote is not.**
+
+Where the source has moved and the translation was a model's, it is dropped and derived again on the
+next read — the lazy path ADR-032 already describes, costing nothing but a round trip nobody was
+waiting on.
+
+Where a person wrote or corrected it, it is **kept and stopped being shown**. Kept, because it is
+somebody's work and a model silently overwriting it is worse than no correction at all. Stopped,
+because it now describes words that are not there. The reader sees the recipe's own language for that
+step, which is honest and is what an instance with no model shows anyway.
+
+This is [ADR-056](#adr-056-a-generated-explanation-is-marked-unreviewed-and-never-an-input-to-a-judgement)'s
+axis again — *who wrote this* is a separate fact from *what it says* — and it earns its keep here for
+the third time.
+
+**3. The interchange format carries a person's translations and not a machine's.**
+
+[ADR-012](#adr-012-export-format-is-the-import-format) exports what a cook owns. A model translation
+is not owned by anybody: the receiving instance can derive it in one round trip, with its own model,
+and shipping it instead would spread one instance's model quality to every instance that ever
+imported from it. A human translation is somebody's work, and an export that loses it loses work.
+
+The same line answers ADR-032's question about published recipes when Phase 8 arrives: a person's
+words travel, a machine's are re-derived where they are read.
+
+**What stays open.** The interchange format still does not carry the registry's **per-locale
+ingredient names**, which is the same gap one layer down and is a Phase 8b unit of its own rather
+than a decision.

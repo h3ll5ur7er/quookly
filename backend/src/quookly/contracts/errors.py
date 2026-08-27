@@ -104,6 +104,16 @@ class PageNotWritten(QuooklyError):
     """No Academy page answers to that slug."""
 
 
+class NothingToTranslate(QuooklyError):
+    """The answer was not a translation of what was sent.
+
+    A title missing, or a different number of steps. A stored translation is paired back
+    to the recipe by position, so an answer that does not line up cannot be stored at all
+    — refused rather than repaired, because a repaired one is a recipe with a step
+    quietly missing (ADR-064).
+    """
+
+
 class NothingToExplain(QuooklyError):
     """The answer had no explanation in it.
 

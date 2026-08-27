@@ -8,6 +8,16 @@
   <main class="page recipe">
     <header class="recipe__header">
       <h1>{{ shown.title }}</h1>
+
+      <!-- Said out loud. Prose a model produced, shown as the author's own words, is the
+           failure ADR-056 exists to prevent one layer up — and here the author may be
+           somebody the reader knows (ADR-032). -->
+      @if (shown.translated) {
+        <p class="recipe__translated" i18n="@@recipeTranslated">
+          Translated for you. The cook wrote it in another language, and these are a machine's words
+          rather than theirs.
+        </p>
+      }
       @if (shown.summary) {
         <p class="recipe__summary">{{ shown.summary }}</p>
       }

@@ -44,6 +44,7 @@ async def store(draft: RecipeDraft, cook_id: int) -> Recipe:
         provenance=draft.provenance,
         origin=draft.origin,
         derived_from=draft.derived_from,
+        language=draft.language,
     )
     async with session() as active:
         active.add(row)
@@ -208,6 +209,7 @@ async def fetch(recipe_id: int, locale: str) -> Recipe | None:
         provenance=row.provenance,
         visibility=row.visibility,
         origin=row.origin,
+        language=row.language,
         created_at=row.created_at,
         archived_at=row.archived_at,
         derived_from=row.derived_from,

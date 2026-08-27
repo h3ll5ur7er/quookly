@@ -555,3 +555,27 @@ class TestArchiving:
         assert await recipes.archive(stored.id, other.id) is False
         found = await recipes.fetch(stored.id, ENGLISH)
         assert found is not None and found.archived_at is None
+
+
+class TestTheLanguageARecipeIsWrittenIn:
+    """Recorded, and absent where nobody knows (ADR-032).
+
+    Nullable and not backfilled: guessing at the language of every recipe already stored
+    would be inventing the one fact this exists to stop inventing.
+    """
+
+    async def test_a_draft_that_says_so_is_stored_that_way(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        made = await recipes.store(replace(shortbread(pantry), language="de"), cook_id)
+        found = await recipes.fetch(made.id, ENGLISH)
+        assert found is not None and found.language == "de"
+
+    async def test_a_draft_that_says_nothing_stores_nothing(
+        self, cook_id: int, pantry: dict[str, int]
+    ) -> None:
+        """An import from a page with no `<html lang>`. Nothing can translate out of a
+        language nobody knows, and that is a better answer than a guess."""
+        made = await recipes.store(shortbread(pantry), cook_id)
+        found = await recipes.fetch(made.id, ENGLISH)
+        assert found is not None and found.language is None

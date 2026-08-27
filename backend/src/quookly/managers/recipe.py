@@ -19,10 +19,14 @@ from quookly.access import pantry as pantry_access
 from quookly.access import preferences as preference_access
 from quookly.access import recipe as recipe_access
 from quookly.access import search, web
+from quookly.access import translation as translation_access
 from quookly.access.ingredient import SOURCE_LOCALE
 from quookly.contracts.discovery import Candidate, SuggestionView
 from quookly.contracts.eater import Eater
 from quookly.contracts.errors import (
+    InferenceNotConfigured,
+    InferenceUnavailable,
+    NothingToTranslate,
     UnsuitableForTheTable,
     UnsupportedDocument,
     YieldUnknown,
@@ -60,6 +64,7 @@ from quookly.contracts.recipe import (
     VariantInput,
 )
 from quookly.contracts.suitability import JudgedLine, Outcome, VerdictView
+from quookly.contracts.translation import HeldTranslation, Translatable
 from quookly.contracts.web import ReadableContent
 from quookly.engines import (
     exchange,
@@ -71,15 +76,31 @@ from quookly.engines import (
     nutrition,
     ranking,
     suitability,
+    translation,
 )
 from quookly.utilities.configuration import preferred_sources
+from quookly.utilities.diagnostics import get_logger
+
+log = get_logger("recipe")
 
 #: Resolving a symbol lives in `MeasureEngine`, which owns units. Kept as a local name
 #: because it reads better at the call sites than the qualified one.
 _unit = measure.unit_for
 
 
-def _drafted(submitted: RecipeInput, provenance: Provenance) -> RecipeDraft:
+async def _writing_in(cook_id: int) -> str:
+    """The language this cook is writing in: theirs, as a bare code.
+
+    Nobody is asked. Somebody typing a recipe into a German screen is writing German, and
+    a form field for it would be a question with an obvious answer — and one more thing to
+    get wrong on every recipe (ADR-032).
+    """
+    return (await cook_access.locale_for(cook_id)).split("-")[0]
+
+
+def _drafted(
+    submitted: RecipeInput, provenance: Provenance, language: str | None = None
+) -> RecipeDraft:
     """A submitted recipe as a draft.
 
     Shared by authoring and by editing so the two cannot come to disagree about what a
@@ -115,6 +136,7 @@ def _drafted(submitted: RecipeInput, provenance: Provenance) -> RecipeDraft:
             )
             for step in submitted.steps
         ],
+        language=language,
     )
 
 
@@ -123,7 +145,9 @@ async def author(
 ) -> PresentedRecipe:
     """Store a recipe and hand it back as the cook will read it."""
     locale = locale or await cook_access.locale_for(cook_id)
-    stored = await recipe_access.store(_drafted(submitted, Provenance.AUTHORED), cook_id)
+    stored = await recipe_access.store(
+        _drafted(submitted, Provenance.AUTHORED, await _writing_in(cook_id)), cook_id
+    )
     return await _present(stored, await preference_access.for_cook(cook_id), None, cook_id)
 
 
@@ -141,7 +165,9 @@ async def restate(
     """
     locale = locale or await cook_access.locale_for(cook_id)
     restated = await recipe_access.restate(
-        recipe_id, _drafted(submitted, Provenance.AUTHORED), cook_id
+        recipe_id,
+        _drafted(submitted, Provenance.AUTHORED, await _writing_in(cook_id)),
+        cook_id,
     )
     if restated is None:
         return None
@@ -424,6 +450,55 @@ async def _judge(recipe: Recipe, cook_id: int) -> VerdictView | None:
     return VerdictView.of(suitability.evaluate(suitability.facts_for(recipe.lines), household))
 
 
+async def _read_in(recipe: Recipe, locale: str) -> tuple[Recipe, bool]:
+    """The same recipe with its prose in the reader's language, where one is wanted.
+
+    Returns it untouched where the recipe is already in that language, where nobody knows
+    what language it is in, or where this instance has no model — the last of which is
+    what it does today and is not a failure.
+
+    Lazy and kept: derived on first request for a language and stored, rather than eagerly
+    at import. Eager translation spends round trips on content nobody may read, and makes
+    adding a fourth language a migration over every recipe ever stored instead of a no-op.
+    """
+    wanted = locale.split("-")[0]
+    if recipe.language is None or recipe.language == wanted:
+        return recipe, False
+
+    original = Translatable(
+        title=recipe.title,
+        summary=recipe.summary,
+        steps=[step.instruction for step in recipe.steps],
+    )
+    held = await translation_access.held(recipe.id, wanted, of=original)
+    if held is None:
+        try:
+            said = await translation.render(original, recipe.language, wanted)
+        except (InferenceNotConfigured, InferenceUnavailable, NothingToTranslate):
+            # Reading the original is a worse answer than reading a translation and a much
+            # better one than an error. Logged rather than raised: nothing the cook asked
+            # for has failed.
+            log.info(
+                "no translation of recipe %s into %s; showing it as written", recipe.id, wanted
+            )
+            return recipe, False
+        await translation_access.keep(recipe.id, wanted, said, of=original)
+        held = HeldTranslation(words=said, by_hand=False)
+
+    return (
+        replace(
+            recipe,
+            title=held.words.title,
+            summary=held.words.summary,
+            steps=[
+                replace(step, instruction=said_step)
+                for step, said_step in zip(recipe.steps, held.words.steps, strict=True)
+            ],
+        ),
+        True,
+    )
+
+
 async def _present(
     recipe: Recipe,
     preferences: UnitPreferences,
@@ -432,6 +507,10 @@ async def _present(
     locale: str | None = None,
 ) -> PresentedRecipe:
     locale = locale or await cook_access.locale_for(cook_id)
+    # The prose in the reader's language, where that is not the language it was written
+    # in. Everything else on this page is already language-neutral: quantities are columns
+    # rendered per cook and ingredient names resolve through the registry (ADR-032).
+    recipe, translated = await _read_in(recipe, locale)
     factor = Decimal(1) if servings is None else servings / recipe.yield_quantity.magnitude
     scaled_yield = measure.scale(recipe.yield_quantity, factor)
 
@@ -456,6 +535,8 @@ async def _present(
         serves=measure.servings_of(recipe.serves, factor),
         visibility=recipe.visibility,
         provenance=recipe.provenance,
+        language=recipe.language,
+        translated=translated,
         derived_from=recipe.derived_from,
         derived_from_title=(
             None
@@ -648,7 +729,10 @@ async def _reading_locale(content: ReadableContent, cook_id: int, fallback: str)
 
 
 def _draft_from(
-    read: InterpretedRecipe, resolved: Mapping[str, int], provenance: Provenance
+    read: InterpretedRecipe,
+    resolved: Mapping[str, int],
+    provenance: Provenance,
+    language: str | None = None,
 ) -> RecipeDraft:
     """A recipe a model produced, as a draft this instance can store.
 
@@ -692,6 +776,7 @@ def _draft_from(
             )
             for step in read.steps
         ],
+        language=language,
     )
 
 
@@ -746,7 +831,7 @@ async def generate(
 
     written = replace(written, steps=await interpretation.tidy_steps(written.steps))
     resolved, _ = await _resolve(written.lines, reading)
-    draft = _draft_from(written, resolved, Provenance.GENERATED)
+    draft = _draft_from(written, resolved, Provenance.GENERATED, await _writing_in(cook_id))
 
     if household:
         # Judged before it is stored, from the ingredients as the registry knows them.
@@ -818,7 +903,10 @@ async def vary(
 
     written = replace(written, steps=await interpretation.tidy_steps(written.steps))
     resolved, _ = await _resolve(written.lines, reading)
-    draft = replace(_draft_from(written, resolved, Provenance.DERIVED), derived_from=original.id)
+    draft = replace(
+        _draft_from(written, resolved, Provenance.DERIVED, await _writing_in(cook_id)),
+        derived_from=original.id,
+    )
 
     if household:
         verdict = suitability.evaluate(
@@ -878,7 +966,7 @@ async def import_from_url(url: str, cook_id: int, locale: str | None = None) -> 
 
     resolved, added = await _resolve(read.lines, resolve_in)
     stored = await recipe_access.store(
-        _draft_from(read, resolved, Provenance.IMPORTED_URL), cook_id
+        _draft_from(read, resolved, Provenance.IMPORTED_URL, read.language), cook_id
     )
     return ImportedRecipe(
         recipe=await _present(stored, await preference_access.for_cook(cook_id), None, cook_id),

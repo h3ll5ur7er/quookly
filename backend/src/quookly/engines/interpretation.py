@@ -1172,7 +1172,25 @@ async def read_page(content: ReadableContent) -> InterpretedRecipe:
     # Both readings go through the same edit. A page's method is written to be read on a
     # sofa, and carried through verbatim it is exactly the thing this product exists to
     # replace — however well the page published it.
-    return replace(read, steps=await tidy_steps(read.steps))
+    #
+    # The language is set here rather than in either reader, because it comes from the
+    # page rather than from the recipe and both routes read the same page.
+    return replace(
+        read, steps=await tidy_steps(read.steps), language=spoken_language(content.language)
+    )
+
+
+def spoken_language(said: str | None) -> str | None:
+    """A page's `<html lang>` as a bare language code, or nothing.
+
+    `de-CH`, `de_DE` and `DE` are one language to translate out of; the region is a
+    punctuation habit. Anything that is not two or three letters is not a language — pages
+    put all sorts of things in that attribute — and nothing is invented to fill the gap.
+    """
+    if not said:
+        return None
+    bare = said.strip().replace("_", "-").split("-")[0].casefold()
+    return bare if bare.isalpha() and 2 <= len(bare) <= 3 else None
 
 
 # --- names a registry might know -----------------------------------------------------

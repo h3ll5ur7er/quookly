@@ -541,10 +541,32 @@ construction, and ingredient names resolve per locale through the registry. What
 
 - ~~Serve recipes in the **cook's** language rather than a hardcoded `en-GB`~~ **Built** — the
   plumbing had been there since Phase 1; the routes simply never asked for anything but English
-- Record the language a recipe is written in
-- `TranslationEngine` — a capability engine over `ModelAccess`, the same shape as
-  `InterpretationEngine`
-- Translations stored beside the original, derived lazily on first request for a language
+- ~~Record the language a recipe is written in~~ **Built** — read from `<html lang>` on import as a
+  bare code (`de`, not `de-CH`), and taken from the cook's own language for anything written or
+  composed here. Nobody is asked: somebody typing into a German screen is writing German.
+  **Absent where nobody knows**, and not backfilled — guessing at the language of every recipe
+  already stored would be inventing the one fact this exists to stop inventing.
+- ~~`TranslationEngine`~~ **Built** — the same shape as `InterpretationEngine` pointed at a
+  different question. Prose only: quantities, durations and temperatures are columns rendered per
+  cook and ingredient names resolve through the registry, so a translation *cannot* change what a
+  recipe asks for. The whole recipe in one round trip, because a step translated alone loses what
+  the step before it established.
+- ~~Translations stored beside the original, derived lazily on first request~~ **Built** — and the
+  invalidation is the interesting part. A translation **records what it translated**
+  ([ADR-064](07-decisions.md#adr-064-a-translation-records-what-it-translated-and-a-persons-words-are-not-re-derived)):
+  a fingerprint of the source travels with it, and one that no longer matches is not used.
+  Not a `stale` flag — a flag has to be set by every write path, and the one somebody forgets shows
+  a cook instructions for a step that was rewritten. Editing a recipe needs to know nothing about
+  translations.
+- ~~The reader is told when the words are a machine's~~ **Built** — not optional. Prose a model
+  produced, shown as the author's own words, is the failure
+  [ADR-056](07-decisions.md#adr-056-a-generated-explanation-is-marked-unreviewed-and-never-an-input-to-a-judgement)
+  exists to prevent one layer up, and here the author may be somebody the reader knows.
+- **A cook may correct a translation**, and a correction is never silently re-derived
+  ([ADR-064](07-decisions.md#adr-064-a-translation-records-what-it-translated-and-a-persons-words-are-not-re-derived)
+  decides this; the storage already records `by_hand` and the screens are owed)
+- **The interchange format carries a person's translations and not a machine's** — decided, not yet
+  built
 - Per-locale names for ingredients an import created, so a foreign import is as readable as a
   seeded one
 

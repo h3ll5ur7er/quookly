@@ -428,4 +428,21 @@ describe('RecipeDetailComponent', () => {
       expect(go).toHaveBeenCalledWith('/plans');
     });
   });
+
+  describe('a recipe read in another language', () => {
+    /* Prose a model produced, shown as the author's own words, is the failure ADR-056
+       exists to prevent one layer up — and here the author may be somebody the reader
+       knows (ADR-032). */
+    it('says so when the words were translated', async () => {
+      backend.expectOne('/api/v1/recipes/1').flush({ ...pancakes(), translated: true });
+      await settle();
+      expect(text()).toContain('Translated');
+    });
+
+    it("says nothing when they are the author's own", async () => {
+      backend.expectOne('/api/v1/recipes/1').flush({ ...pancakes(), translated: false });
+      await settle();
+      expect(text()).not.toContain('Translated');
+    });
+  });
 });

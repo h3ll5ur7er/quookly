@@ -801,3 +801,200 @@ class TestLinksAnAuthorWrote:
         step = amended.json()["steps"][0]
         assert step["instruction"] == "Sift the flour in."
         assert "plain-flour" in [one["slug"] for one in step["mentions"]]
+
+
+class TestWhatLanguageARecipeIsIn:
+    """A recipe records the language it is written in (Phase 8b, ADR-032).
+
+    Without it nothing downstream can tell a German recipe from an English one, and a
+    translation has no *from*.
+    """
+
+    async def test_a_recipe_written_here_is_in_the_cooks_language(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """Nobody is asked. Somebody typing a recipe into a German screen is writing
+        German, and a form field for it would be a question with an obvious answer."""
+        headers = await sign_up(client, "chef@example.com")
+        await client.put("/api/v1/setup/locale", json={"locale": "de-CH"}, headers=headers)
+
+        made = await client.post("/api/v1/recipes", json=pancakes(pantry), headers=headers)
+        assert made.json()["language"] == "de"
+
+    async def test_a_cook_who_has_chosen_nothing_writes_the_source_language(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        made = await client.post("/api/v1/recipes", json=pancakes(pantry), headers=headers)
+        assert made.json()["language"] == "en"
+
+    async def test_it_survives_an_edit(self, client: AsyncClient, pantry: dict[str, int]) -> None:
+        """Correcting a typo does not change what language the recipe is in."""
+        headers = await sign_up(client, "chef@example.com")
+        await client.put("/api/v1/setup/locale", json={"locale": "fr-CH"}, headers=headers)
+        made = await client.post("/api/v1/recipes", json=pancakes(pantry), headers=headers)
+
+        amended = await client.put(
+            f"/api/v1/recipes/{made.json()['id']}",
+            json={**pancakes(pantry), "title": "Blini"},
+            headers=headers,
+        )
+        assert amended.json()["language"] == "fr"
+
+
+class TestReadingARecipeInYourOwnLanguage:
+    """Phase 8b, end to end through the API (ADR-032, ADR-064).
+
+    A recipe belongs to the cook who wrote it, so the reader here is the same cook reading
+    in a different language — somebody bilingual, or somebody who changed the language the
+    app speaks to them in. The import path is where a *foreign* recipe arrives, and it
+    arrives into this same cook's kitchen.
+
+    Lazy: derived on first request for a language, not eagerly. Eager spends round trips
+    on content nobody may read, and makes a fourth language a migration over every recipe
+    ever stored instead of a no-op.
+    """
+
+    @pytest.fixture
+    def answering(self, monkeypatch: MonkeyPatch) -> list[str]:
+        """A model that translates, and a note of how often it was asked."""
+        from quookly.access import model as inference
+        from quookly.contracts.inference import Completion
+
+        asked: list[str] = []
+
+        async def complete_structured(
+            prompt: str, schema: dict[str, Any], system: str | None = None, **rest: Any
+        ) -> tuple[dict[str, Any], Completion]:
+            asked.append(prompt)
+            return (
+                {
+                    "title": "Chocolate cake",
+                    "summary": "A simple cake.",
+                    "steps": ["Cream the butter and sugar.", "Bake at 180 C."],
+                },
+                Completion(text="{}", model="test"),
+            )
+
+        monkeypatch.setattr(inference, "complete_structured", complete_structured)
+        return asked
+
+    def german(self, pantry: dict[str, int]) -> dict[str, Any]:
+        return {
+            **pancakes(pantry),
+            "title": "Schokoladenkuchen",
+            "summary": "Ein einfacher Kuchen.",
+            "steps": [
+                {"instruction": "Butter und Zucker schaumig ruehren."},
+                {"instruction": "Bei 180 C backen."},
+            ],
+        }
+
+    async def written(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> tuple[dict[str, str], int]:
+        headers = await sign_up(client, "chef@example.com")
+        await client.put("/api/v1/setup/locale", json={"locale": "de-CH"}, headers=headers)
+        made = await client.post("/api/v1/recipes", json=self.german(pantry), headers=headers)
+        assert made.status_code == 201, made.text
+        return headers, int(made.json()["id"])
+
+    async def reading_english(self, client: AsyncClient, headers: dict[str, str]) -> None:
+        await client.put("/api/v1/setup/locale", json={"locale": "en-GB"}, headers=headers)
+
+    async def test_it_is_read_in_the_language_the_cook_reads_in(
+        self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
+    ) -> None:
+        headers, recipe_id = await self.written(client, pantry)
+        await self.reading_english(client, headers)
+
+        found = await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        assert found.json()["title"] == "Chocolate cake"
+        assert found.json()["steps"][0]["instruction"] == "Cream the butter and sugar."
+
+    async def test_read_in_its_own_language_it_is_the_authors_words(
+        self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
+    ) -> None:
+        """The original is never replaced. Taking a German cook's own recipe away from
+        them in their own kitchen is what normalising-on-import would have done."""
+        headers, recipe_id = await self.written(client, pantry)
+        found = await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        assert found.json()["title"] == "Schokoladenkuchen"
+        assert answering == []
+
+    async def test_it_is_asked_for_once_and_then_kept(
+        self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
+    ) -> None:
+        headers, recipe_id = await self.written(client, pantry)
+        await self.reading_english(client, headers)
+
+        await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        assert len(answering) == 1
+
+    async def test_editing_the_recipe_makes_it_ask_again(
+        self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
+    ) -> None:
+        """The whole of ADR-064. A translation of a sentence that was rewritten is a wrong
+        instruction, and nothing had to remember to mark it."""
+        headers, recipe_id = await self.written(client, pantry)
+        await self.reading_english(client, headers)
+        await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+
+        amended = await client.put(
+            f"/api/v1/recipes/{recipe_id}",
+            json={
+                **self.german(pantry),
+                "steps": [
+                    {"instruction": "Butter und Zucker schaumig schlagen."},
+                    {"instruction": "Bei 180 C backen."},
+                ],
+            },
+            headers=headers,
+        )
+        assert amended.status_code == 200, amended.text
+
+        await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        assert len(answering) == 2
+
+    async def test_an_instance_with_no_model_shows_the_original(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """Which is what it does today, and is not a failure. A cook reading a recipe in
+        the wrong language is better served than one shown an error."""
+        headers, recipe_id = await self.written(client, pantry)
+        await self.reading_english(client, headers)
+
+        found = await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        assert found.status_code == 200
+        assert found.json()["title"] == "Schokoladenkuchen"
+
+    async def test_the_reader_is_told_it_is_a_translation(
+        self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
+    ) -> None:
+        """Not optional. Prose a model produced, shown as the author's words, is exactly
+        what ADR-056 exists to prevent one layer up — and here the author is a person the
+        reader may know."""
+        headers, recipe_id = await self.written(client, pantry)
+        await self.reading_english(client, headers)
+
+        found = await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        assert found.json()["translated"] is True
+
+    async def test_the_authors_own_words_are_not_marked_as_a_translation(
+        self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
+    ) -> None:
+        headers, recipe_id = await self.written(client, pantry)
+        found = await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        assert found.json()["translated"] is False
+
+    async def test_an_untranslated_recipe_is_not_marked_either(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """No model here, so the English reader is shown the German. Saying that is a
+        translation would be saying something false about the words on the screen."""
+        headers, recipe_id = await self.written(client, pantry)
+        await self.reading_english(client, headers)
+
+        found = await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        assert found.json()["translated"] is False
