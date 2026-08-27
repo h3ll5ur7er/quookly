@@ -1,12 +1,20 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { claim } from './support';
 
 /**
  * Appearance, in a real browser: the themes as rendered rather than as token values, the
  * locale as read rather than as a catalogue, and the manifest a phone would install from.
  *
- * Runs after the journey, against a claimed instance.
+ * Every screen here is the signed-out one, which is exactly what an *unclaimed* instance
+ * does not show: it sends a visitor to the bootstrap page instead. So this file claims
+ * rather than assuming a sibling has — without it the whole file failed when run on its
+ * own, and passed in a full run only because of what ran before it.
  */
+
+test.beforeAll(async ({ request }) => {
+  await claim(request);
+});
 
 const THEMES = ['light', 'dark', 'playful', 'decorative'] as const;
 

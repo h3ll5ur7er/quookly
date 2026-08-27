@@ -675,3 +675,132 @@ class TestTheReviewQueue:
     ) -> None:
         queue = await client.get(f"{ACADEMY}?approved=false", headers=cook)
         assert queue.json() == []
+
+
+class TestTheIngredientSection:
+    """Pages about food, sitting over the registry rather than duplicating it (ADR-061)."""
+
+    @pytest.fixture
+    async def admin(self, client: AsyncClient) -> dict[str, str]:
+        return await sign_up_admin(client)
+
+    @pytest.fixture
+    async def flour(self) -> str:
+        from quookly.access import ingredient as registry
+        from quookly.contracts.ingredient import IngredientKind, Origin
+
+        await registry.register(
+            slug="plain-flour",
+            kind=IngredientKind.POWDER,
+            density=None,
+            names={"en-GB": ["plain flour"]},
+            origin=Origin.SEED,
+        )
+        return "plain-flour"
+
+    def page(self, **changes: object) -> dict[str, object]:
+        return {
+            "slug": "about-plain-flour",
+            "kind": "ingredient",
+            "about": "plain-flour",
+            "name": "plain flour",
+            "spellings": [],
+            "summary": "The everyday one.",
+            "explanation": "Around ten per cent protein, which is why it is the everyday one.",
+            "caution": None,
+            "name_matches": True,
+            **changes,
+        }
+
+    async def test_a_cook_can_write_about_a_food(
+        self, client: AsyncClient, cook: dict[str, str], flour: str
+    ) -> None:
+        made = await client.post(ACADEMY, json=self.page(), headers=cook)
+        assert made.status_code == 201, made.text
+        assert made.json()["entry"]["slug"] == "plain-flour"
+
+    async def test_the_facts_come_from_the_registry(
+        self, client: AsyncClient, cook: dict[str, str], flour: str, admin: dict[str, str]
+    ) -> None:
+        """Classified after the page was written, and the page says so without being
+        touched — which is the whole point of not copying them."""
+        await client.post(ACADEMY, json=self.page(), headers=cook)
+        await client.put(
+            "/api/v1/registry/plain-flour/allergens",
+            json={"allergens": ["gluten"]},
+            headers=admin,
+        )
+
+        page = await client.get(f"{ACADEMY}/about-plain-flour", headers=cook)
+        assert page.json()["entry"]["allergens"] == ["gluten"]
+        assert page.json()["entry"]["classified"] is True
+
+    async def test_unexamined_is_not_shown_as_none(
+        self, client: AsyncClient, cook: dict[str, str], flour: str
+    ) -> None:
+        """An empty list with `classified` false means nobody has looked (ADR-006)."""
+        await client.post(ACADEMY, json=self.page(), headers=cook)
+        page = await client.get(f"{ACADEMY}/about-plain-flour", headers=cook)
+        assert page.json()["entry"]["allergens"] == []
+        assert page.json()["entry"]["classified"] is False
+
+    async def test_a_page_about_no_food_is_refused(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        refused = await client.post(ACADEMY, json=self.page(about=None), headers=cook)
+        assert refused.status_code == 422
+
+    async def test_a_food_the_registry_does_not_have_is_refused(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        """A page about an ingredient nobody can put in a recipe is a page about nothing."""
+        refused = await client.post(ACADEMY, json=self.page(about="unicorn-steak"), headers=cook)
+        assert refused.status_code == 404
+
+    async def test_a_technique_page_carries_no_entry(
+        self, client: AsyncClient, cook: dict[str, str], stocked: int
+    ) -> None:
+        page = await client.get(f"{ACADEMY}/blanch", headers=cook)
+        assert page.json()["entry"] is None
+
+    async def test_the_section_can_be_browsed_on_its_own(
+        self, client: AsyncClient, cook: dict[str, str], flour: str, stocked: int
+    ) -> None:
+        await client.post(ACADEMY, json=self.page(), headers=cook)
+
+        listed = await client.get(f"{ACADEMY}?kind=ingredient", headers=cook)
+        assert [one["slug"] for one in listed.json()] == ["about-plain-flour"]
+
+    async def test_a_mixed_list_says_which_section_each_page_is_in(
+        self, client: AsyncClient, cook: dict[str, str], flour: str, stocked: int
+    ) -> None:
+        """Browsing without a filter used to report every page as a technique, because the
+        kind came from the *query* rather than from the page. Invisible while there was one
+        section."""
+        await client.post(ACADEMY, json=self.page(), headers=cook)
+
+        listed = await client.get(ACADEMY, headers=cook)
+        kinds = {one["slug"]: one["kind"] for one in listed.json()}
+        assert kinds["about-plain-flour"] == "ingredient"
+        assert kinds["blanch"] == "technique"
+
+    async def test_the_pages_about_one_food_can_be_asked_for(
+        self, client: AsyncClient, cook: dict[str, str], flour: str, stocked: int
+    ) -> None:
+        """The way back from the facts to the prose. Asked of the Academy rather than
+        answered by the registry entry: each side owns its own vocabulary, and the
+        registry's contracts already sit underneath the Academy's."""
+        await client.post(ACADEMY, json=self.page(), headers=cook)
+
+        found = await client.get(f"{ACADEMY}?about=plain-flour", headers=cook)
+        assert [one["slug"] for one in found.json()] == ["about-plain-flour"]
+
+    async def test_a_food_nobody_has_written_about_answers_with_none(
+        self, client: AsyncClient, cook: dict[str, str], flour: str, stocked: int
+    ) -> None:
+        assert (await client.get(f"{ACADEMY}?about=plain-flour", headers=cook)).json() == []
+
+    async def test_asking_about_a_food_that_is_not_registered_says_so(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        assert (await client.get(f"{ACADEMY}?about=unicorn-steak", headers=cook)).status_code == 404

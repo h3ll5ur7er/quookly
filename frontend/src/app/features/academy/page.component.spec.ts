@@ -22,6 +22,7 @@ const FOLD = {
   may_rewrite: true,
   caution: null,
   also: [],
+  entry: null,
 };
 
 describe('AcademyPageComponent', () => {
@@ -112,6 +113,72 @@ describe('AcademyPageComponent', () => {
         .flush({ ...FOLD, approved: false, may_rewrite: true });
       await fixture.whenStable();
       expect(text()).toContain('not marked in recipes');
+    });
+  });
+
+  describe('a page about a food', () => {
+    /* The facts are the registry's, read rather than copied (ADR-061). The screen's job is
+       to show them without ever turning "nobody has looked" into "contains none". */
+    const FLOUR = {
+      ...FOLD,
+      slug: 'about-plain-flour',
+      kind: 'ingredient',
+      entry: {
+        slug: 'plain-flour',
+        name: 'plain flour',
+        kind: 'powder',
+        allergens: ['gluten'],
+        classified: true,
+        density: null,
+        piece_grams: null,
+        has_nutrition: true,
+      },
+    };
+
+    it('shows what the registry knows about the food', async () => {
+      await arrive({ params: { slug: 'about-plain-flour' } });
+      backend.expectOne('/api/v1/academy/about-plain-flour').flush(FLOUR);
+      await fixture.whenStable();
+      expect(text()).toContain('gluten');
+    });
+
+    it('says nobody has looked rather than showing an empty list', async () => {
+      /* The ADR-006 failure with better typography: a reader seeing no allergens on a
+         food nobody has examined reads that as "contains none". */
+      await arrive({ params: { slug: 'about-plain-flour' } });
+      backend
+        .expectOne('/api/v1/academy/about-plain-flour')
+        .flush({ ...FLOUR, entry: { ...FLOUR.entry, allergens: [], classified: false } });
+      await fixture.whenStable();
+
+      expect(text()).toContain('Nobody has classified');
+      expect(text()).not.toContain('None');
+    });
+
+    it('says so plainly when a classified food contains none of them', async () => {
+      await arrive({ params: { slug: 'about-plain-flour' } });
+      backend
+        .expectOne('/api/v1/academy/about-plain-flour')
+        .flush({ ...FLOUR, entry: { ...FLOUR.entry, allergens: [], classified: true } });
+      await fixture.whenStable();
+
+      expect(text()).toContain('None of the fourteen');
+    });
+
+    it('leads to the registry entry, where the facts are corrected', async () => {
+      await arrive({ params: { slug: 'about-plain-flour' } });
+      backend.expectOne('/api/v1/academy/about-plain-flour').flush(FLOUR);
+      await fixture.whenStable();
+
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.academy__entry a');
+      expect(link.getAttribute('href')).toBe('/settings/registry/plain-flour');
+    });
+
+    it('shows nothing of the sort on a technique page', async () => {
+      await arrive();
+      backend.expectOne('/api/v1/academy/fold').flush(FOLD);
+      await fixture.whenStable();
+      expect(fixture.nativeElement.querySelector('.academy__entry')).toBeNull();
     });
   });
 

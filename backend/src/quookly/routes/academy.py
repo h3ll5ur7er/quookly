@@ -12,6 +12,8 @@ from quookly.contracts.academy import (
     Wording,
 )
 from quookly.contracts.errors import (
+    IngredientNotNamed,
+    IngredientNotRegistered,
     PageAlreadyWritten,
     PageNotWritten,
     UnreadableImage,
@@ -56,7 +58,11 @@ class NewPageInput(WordingInput):
     #: Lower case, digits and hyphens, like every other slug here. It is what an author's
     #: `[[link]]` names, so it has to be typeable and stable (ADR-059).
     slug: str = Field(min_length=1, max_length=80, pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")
-    kind: PageKind
+    kind: PageKind = PageKind.TECHNIQUE
+    #: The registry entry this page is about, for the ingredient section. Required there
+    #: and meaningless elsewhere: a page about a food shows that food's facts by reading
+    #: them, and there is nothing to read without one (ADR-061).
+    about: str | None = None
 
 
 @router.get("/academy", response_model=list[PageSummaryView])
@@ -66,13 +72,22 @@ async def browse_academy(
     approved: bool | None = Query(
         default=None, description="Narrow to what has been reviewed, or to what awaits it."
     ),
+    about: str | None = Query(
+        default=None, description="Only the pages written about one registry entry."
+    ),
 ) -> list[PageSummaryView]:
     """Every page, in the cook's language, ordered by the name they will read.
 
     Pages nobody has reviewed are listed: approval gates what a page may attach itself to,
     not whether it can be read (ADR-060). Pages put away are not listed at all.
     """
-    return await academy_manager.browse(cook.cook_id, kind, approved)
+    try:
+        return await academy_manager.browse(cook.cook_id, kind, approved, about)
+    except IngredientNotRegistered as unknown:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No such ingredient in the registry.",
+        ) from unknown
 
 
 @router.get("/academy/terms/{term}", response_model=list[ClaimantView])
@@ -123,7 +138,18 @@ async def write_page(submitted: NewPageInput, cook: CurrentCook) -> PageView:
             ),
             cook.cook_id,
             cook.is_admin,
+            submitted.about,
         )
+    except IngredientNotNamed as unnamed:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="A page about an ingredient has to say which ingredient.",
+        ) from unnamed
+    except IngredientNotRegistered as unknown:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No such ingredient in the registry.",
+        ) from unknown
     except PageAlreadyWritten as taken:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

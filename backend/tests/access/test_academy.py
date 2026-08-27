@@ -11,6 +11,7 @@ computes on a page, so several may claim a term and the page says so at the top
 """
 
 from collections.abc import AsyncIterator
+from decimal import Decimal
 
 import pytest
 from pytest import MonkeyPatch
@@ -18,10 +19,15 @@ from sqlmodel import SQLModel
 
 from quookly.access import academy
 from quookly.access import cook as cook_access
+from quookly.access import ingredient as registry
 from quookly.access.database import dispose_engine, get_engine
 from quookly.contracts.academy import NewPage, PageKind, Wording
-from quookly.contracts.errors import PageAlreadyWritten, PageNotWritten
-from quookly.contracts.ingredient import Origin
+from quookly.contracts.errors import (
+    IngredientNotNamed,
+    PageAlreadyWritten,
+    PageNotWritten,
+)
+from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.contracts.matching import Named
 from quookly.utilities.configuration import get_settings
 
@@ -589,3 +595,112 @@ class TestDecliningAPage:
         await academy.archive("fold")
         assert await academy.restore("fold") is True
         assert [one.slug for one in await academy.browse(ENGLISH)] == ["fold"]
+
+
+class TestAPageAboutAFood:
+    """The ingredient section: prose here, facts read from the registry (ADR-061)."""
+
+    ABOUT = "about-plain-flour"
+
+    async def flour(self, **facts: object) -> int:
+        made = await registry.register(
+            slug="plain-flour",
+            kind=IngredientKind.POWDER,
+            density=Decimal("0.593"),
+            names={ENGLISH: ["plain flour"]},
+            origin=Origin.SEED,
+            **facts,  # type: ignore[arg-type]
+        )
+        assert made.id is not None
+        return made.id
+
+    def about(self) -> NewPage:
+        return NewPage(
+            slug=self.ABOUT,
+            kind=PageKind.INGREDIENT,
+            wordings={
+                ENGLISH: Wording(
+                    name="plain flour",
+                    spellings=["all-purpose flour"],
+                    summary="The everyday one.",
+                    explanation="Around ten per cent protein, which is why it is the everyday one.",
+                )
+            },
+        )
+
+    async def test_a_page_can_be_about_a_food(self, cook_id: int) -> None:
+        entry = await self.flour()
+        await academy.write(self.about(), cook_id=cook_id, ingredient_id=entry)
+        assert await academy.entry_of(self.ABOUT) == entry
+
+    async def test_it_shows_the_registrys_facts(self, cook_id: int) -> None:
+        await self.flour(allergens=frozenset({Allergen.GLUTEN}))
+        await academy.write(self.about(), cook_id=cook_id, ingredient_id=await self.entry())
+
+        page = await academy.detail(self.ABOUT, ENGLISH)
+        assert page is not None and page.entry is not None
+        assert page.entry.allergens == [Allergen.GLUTEN]
+        assert page.entry.classified is True
+        assert page.entry.kind is IngredientKind.POWDER
+
+    async def test_unclassified_is_not_the_same_as_none(self, cook_id: int) -> None:
+        """The whole reason `classified` travels with the list. A page rendering an
+        unexamined food as "allergens: none" is the ADR-006 failure with typography."""
+        await self.flour()
+        await academy.write(self.about(), cook_id=cook_id, ingredient_id=await self.entry())
+
+        page = await academy.detail(self.ABOUT, ENGLISH)
+        assert page is not None and page.entry is not None
+        assert page.entry.allergens == []
+        assert page.entry.classified is False
+
+    async def test_correcting_the_registry_corrects_the_page(self, cook_id: int) -> None:
+        """No copy, so nothing to go stale — which is the whole of the decision."""
+        await self.flour()
+        await academy.write(self.about(), cook_id=cook_id, ingredient_id=await self.entry())
+        await registry.classify("plain-flour", frozenset({Allergen.GLUTEN}))
+
+        page = await academy.detail(self.ABOUT, ENGLISH)
+        assert page is not None and page.entry is not None
+        assert page.entry.allergens == [Allergen.GLUTEN]
+
+    async def test_a_technique_page_is_about_no_food(self, cook_id: int) -> None:
+        await academy.store_many([folding()], origin=Origin.SEED)
+        page = await academy.detail("fold", ENGLISH)
+        assert page is not None
+        assert page.entry is None
+
+    async def test_an_ingredient_page_must_name_an_entry(self, cook_id: int) -> None:
+        with pytest.raises(IngredientNotNamed):
+            await academy.write(self.about(), cook_id=cook_id)
+
+    async def test_the_section_can_be_asked_for_on_its_own(self, cook_id: int) -> None:
+        await academy.store_many([folding()], origin=Origin.SEED)
+        await academy.write(self.about(), cook_id=cook_id, ingredient_id=await self.flour())
+
+        listed = await academy.browse(ENGLISH, kind=PageKind.INGREDIENT)
+        assert [one.slug for one in listed] == [self.ABOUT]
+
+    async def entry(self) -> int:
+        found = await registry.detail("plain-flour")
+        assert found is not None
+        return found.entry.id
+
+    async def test_the_pages_about_a_food_can_be_found_from_it(self, cook_id: int) -> None:
+        """The other direction. A registry entry is where the facts are corrected, so it
+        is where somebody looking at the facts should be able to reach the prose."""
+        entry = await self.flour()
+        await academy.write(self.about(), cook_id=cook_id, ingredient_id=entry)
+
+        found = await academy.pages_about(entry, ENGLISH)
+        assert [one.slug for one in found] == [self.ABOUT]
+
+    async def test_a_food_nobody_has_written_about_has_no_pages(self, cook_id: int) -> None:
+        assert await academy.pages_about(await self.flour(), ENGLISH) == []
+
+    async def test_a_page_put_away_is_not_reachable_from_the_food(self, cook_id: int) -> None:
+        entry = await self.flour()
+        await academy.write(self.about(), cook_id=cook_id, ingredient_id=entry)
+        await academy.archive(self.ABOUT)
+
+        assert await academy.pages_about(entry, ENGLISH) == []

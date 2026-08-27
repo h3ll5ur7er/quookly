@@ -1,9 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { AcademyService, PageKind } from '@api';
+import { AcademyService, IngredientView, IngredientsService, PageKind } from '@api';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
+
+/** Long enough that a phone keyboard is not searched at, short enough to feel immediate. */
+const SETTLE = 200;
 
 /**
  * Writing a page for the Academy (UC-7.4).
@@ -21,13 +25,21 @@ import { AcademyService, PageKind } from '@api';
 })
 export class WritePageComponent {
   private readonly academy = inject(AcademyService);
+  private readonly ingredients = inject(IngredientsService);
   private readonly router = inject(Router);
+
+  protected readonly kinds: readonly PageKind[] = [PageKind.technique, PageKind.ingredient];
+
+  /** The sections have names a cook reads; the enum has slugs. */
+  protected sectionLabel(kind: PageKind): string {
+    return kind === PageKind.ingredient
+      ? $localize`:@@academySectionIngredient:An ingredient`
+      : $localize`:@@academySectionTechnique:Something you do`;
+  }
 
   protected readonly page = inject(FormBuilder).nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(200)]],
     slug: ['', [Validators.required, Validators.pattern(/^[a-z0-9]+(-[a-z0-9]+)*$/)]],
-    // Not a field: there is one section so far, and a select with a single option is a
-    // question with one answer. It becomes a choice when the ingredient section lands.
     kind: [PageKind.technique],
     spellings: [''],
     summary: ['', [Validators.required, Validators.maxLength(400)]],
@@ -38,6 +50,21 @@ export class WritePageComponent {
 
   protected readonly saving = signal(false);
   protected readonly failed = signal<string | null>(null);
+
+  /** Which section is being written for, so the form can ask what that section needs. */
+  protected readonly section = signal<PageKind>(PageKind.technique);
+  protected readonly aboutFood = computed(() => this.section() === PageKind.ingredient);
+
+  /**
+   * The registry entry an ingredient page is about.
+   *
+   * Chosen from the registry rather than typed. A page about a food the registry does not
+   * have is a page about nothing — and the facts on the page are that entry's, read from
+   * there (ADR-061).
+   */
+  protected readonly about = signal<IngredientView | null>(null);
+  protected readonly looking = new FormControl('', { nonNullable: true });
+  protected readonly matches = signal<IngredientView[]>([]);
 
   /**
    * Whether the cook has typed a slug themselves.
@@ -62,6 +89,16 @@ export class WritePageComponent {
     this.page.statusChanges
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.filled.set(this.page.valid));
+    this.page.controls.kind.valueChanges.pipe(takeUntilDestroyed()).subscribe((kind) => {
+      this.section.set(kind);
+      // A food chosen for a page that is no longer about food would travel silently.
+      if (kind !== PageKind.ingredient) {
+        this.about.set(null);
+      }
+    });
+    this.looking.valueChanges
+      .pipe(debounceTime(SETTLE), distinctUntilChanged(), takeUntilDestroyed())
+      .subscribe((term) => this.look(term));
   }
 
   /**
@@ -72,10 +109,30 @@ export class WritePageComponent {
    * computed reads it once and the submit button never enables.
    */
   private readonly filled = signal(false);
-  protected readonly ready = computed(() => this.filled());
+  protected readonly ready = computed(
+    () => this.filled() && (!this.aboutFood() || this.about() !== null),
+  );
+
+  private look(term: string): void {
+    const wanted = term.trim();
+    if (!wanted) {
+      this.matches.set([]);
+      return;
+    }
+    this.ingredients.searchIngredients(wanted).subscribe({
+      next: (found) => this.matches.set(found),
+      error: () => this.matches.set([]),
+    });
+  }
+
+  protected choose(found: IngredientView): void {
+    this.about.set(found);
+    this.matches.set([]);
+    this.looking.setValue('', { emitEvent: false });
+  }
 
   protected write(): void {
-    if (!this.page.valid || this.saving()) {
+    if (!this.ready() || this.saving()) {
       return;
     }
     this.saving.set(true);
@@ -86,6 +143,7 @@ export class WritePageComponent {
       .writePage({
         slug: written.slug,
         kind: written.kind,
+        about: this.about()?.slug ?? null,
         name: written.name.trim(),
         // One per line rather than comma-separated: a spelling may contain a comma, and a
         // separator that can appear inside a value is one that will split one eventually.

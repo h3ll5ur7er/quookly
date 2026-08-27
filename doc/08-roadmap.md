@@ -361,8 +361,29 @@ languages, with the spellings a step is actually written with.
 
    Declining archives, like a recipe put away. Recognition for contributing is V11 and
    waits for Phase 8.
-7. **An ingredient section**, sitting over the registry rather than duplicating it: the facts stay
-   where they are computed on, the prose and pictures live on the page.
+7. ~~**An ingredient section**, sitting over the registry rather than duplicating it~~ **Built** —
+   a page of kind `ingredient` **names** a registry entry and shows that entry's facts by reading
+   them. It stores none of them.
+
+   The reason is not tidiness. Written twice, the facts disagree — and not symmetrically: a cook
+   reads the page, because the page is the thing written for a reader, while `SuitabilityEngine`
+   reads the registry. A paragraph saying *"contains no gluten"* would be believed by the person and
+   ignored by the machine, which is the direction
+   [ADR-006](07-decisions.md#adr-006-suitability-and-allergen-conclusions-are-computed-from-structured-ingredients)
+   exists to prevent. So the page reads them, and inherits the registry's own distinction:
+   **unclassified is shown as unclassified**, never as an empty list
+   ([ADR-061](07-decisions.md#adr-061-an-ingredient-page-names-its-entry-and-never-restates-what-the-registry-computes-on)).
+
+   Several pages may name one food, and nothing computes on which — the Academy's existing stance
+   on ambiguity, and what saves a tiebreak when two entries are merged. Merging is where
+   [ADR-052](07-decisions.md#adr-052-merging-repoints-an-eaters-constraints-which-nothing-in-the-database-protects)'s
+   eight relationships became **nine**.
+
+   Two things fell out of building it. Browsing reported every page as a technique, because the kind
+   came from the *query* rather than from the page — invisible while the Academy had one section.
+   And the way back from the facts to the prose is asked of the Academy rather than answered by the
+   registry entry: the registry's contracts already sit underneath the Academy's, so answering it
+   there would have made the two import each other.
 8. **Generating a page nobody has written.** Last on purpose: it is the only part that can state
    something untrue, and by this point every screen already works without it. Optional by
    construction — an instance with no inference provider simply says nobody has explained that yet.

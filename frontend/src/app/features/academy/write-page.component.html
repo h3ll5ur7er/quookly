@@ -29,6 +29,50 @@
     </div>
 
     <div class="field">
+      <label for="kind" i18n="@@academyWriteKind">Which section</label>
+      <select id="kind" formControlName="kind">
+        @for (one of kinds; track one) {
+          <option [value]="one">{{ sectionLabel(one) }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Only where the section needs it. A page about a food shows that food's facts by
+         reading them from the registry, so it has to say which food (ADR-061). -->
+    @if (aboutFood()) {
+      <div class="field">
+        <label for="about" i18n="@@academyWriteAbout">Which food</label>
+        @if (about(); as chosen) {
+          <p class="academy__chosen">
+            <span class="chip">{{ chosen.name }}</span>
+            <button
+              type="button"
+              class="academy__remove"
+              (click)="about.set(null)"
+              i18n="@@academyWriteAboutChange"
+            >
+              Change
+            </button>
+          </p>
+        } @else {
+          <input id="about" type="text" [formControl]="looking" placeholder="An ingredient name" />
+          <p class="field__hint" i18n="@@academyWriteAboutHint">
+            From the registry, so the page can show what the kitchen already knows about it.
+          </p>
+          @if (matches().length > 0) {
+            <ul class="academy__matches">
+              @for (one of matches(); track one.id) {
+                <li>
+                  <button type="button" (click)="choose(one)">{{ one.name }}</button>
+                </li>
+              }
+            </ul>
+          }
+        }
+      </div>
+    }
+
+    <div class="field">
       <label for="summary" i18n="@@academySummary">In one line</label>
       <input id="summary" type="text" formControlName="summary" />
     </div>

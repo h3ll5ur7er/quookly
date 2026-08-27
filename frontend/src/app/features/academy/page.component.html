@@ -40,6 +40,51 @@
 
       <p class="academy__lead">{{ shown.summary }}</p>
 
+      <!-- What the registry knows about this food, read from there rather than written
+           here (ADR-061). Two places stating an allergen will one day disagree, and it is
+           the prose a reader believes. -->
+      @if (shown.entry; as food) {
+        <section class="academy__entry">
+          <h2 i18n="@@academyEntryHeading">What the kitchen knows</h2>
+
+          <dl>
+            <dt i18n="@@academyEntryAllergens">Allergens</dt>
+            <dd>
+              @if (!food.classified) {
+                <!-- Never an empty list. A reader seeing nothing listed on a food nobody
+                     has examined reads that as "contains none" (ADR-006). -->
+                <span class="academy__unknown" i18n="@@academyEntryUnclassified">
+                  Nobody has classified this yet, so this is not a list of what it does not contain.
+                </span>
+              } @else if (food.allergens.length === 0) {
+                <span i18n="@@academyEntryNoAllergens">None of the fourteen.</span>
+              } @else {
+                @for (one of food.allergens; track one) {
+                  <span class="chip">{{ allergenLabel(one) }}</span>
+                }
+              }
+            </dd>
+
+            @if (food.density) {
+              <dt i18n="@@academyEntryDensity">Density</dt>
+              <dd>{{ food.density }} <span i18n="@@academyEntryDensityUnit">g/ml</span></dd>
+            }
+            @if (food.piece_grams) {
+              <dt i18n="@@academyEntryPiece">One of them weighs</dt>
+              <dd>{{ food.piece_grams }} g</dd>
+            }
+          </dl>
+
+          <p class="academy__entry-note" i18n="@@academyEntryWhere">
+            These come from the registry, not from this page. Correct them there and every page
+            about this food follows.
+          </p>
+          <a [routerLink]="['/settings/registry', food.slug]" i18n="@@academyEntryLink">
+            {{ food.name }} in the registry
+          </a>
+        </section>
+      }
+
       <!-- A page about julienne without a photograph of julienne is a knife cut explained
            in words (ADR-057). -->
       @if (shown.pictures && shown.pictures.length > 0) {

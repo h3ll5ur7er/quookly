@@ -68,7 +68,11 @@ describe('IngredientComponent', () => {
     box.click();
   }
 
-  async function arrive({ admin = false, resembles = [] as unknown[] } = {}): Promise<void> {
+  async function arrive({
+    admin = false,
+    resembles = [] as unknown[],
+    pages = [] as unknown[],
+  } = {}): Promise<void> {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [IngredientComponent],
@@ -92,6 +96,8 @@ describe('IngredientComponent', () => {
     // Answered here so every test does not have to: the screen asks what this entry
     // might be a duplicate of as soon as it opens, which is the point of the flag.
     backend.expectOne('/api/v1/registry/creme-fraiche/resembling').flush(resembles);
+    // And what has been written about this food, for the same reason (ADR-061).
+    backend.expectOne((one) => one.url === '/api/v1/academy').flush(pages);
   }
 
   function asked() {
@@ -138,6 +144,53 @@ describe('IngredientComponent', () => {
       await fixture.whenStable();
       expect(text()).not.toContain('Save corrections');
       expect(text()).not.toContain('Record what is in it');
+    });
+  });
+
+  describe('the prose written about it', () => {
+    /* Facts live here and prose lives in the Academy. Somebody correcting a figure should
+       be able to reach what will now read differently (ADR-061). */
+    it('leads to a page somebody has written about this food', async () => {
+      await arrive({
+        pages: [
+          {
+            slug: 'about-creme-fraiche',
+            kind: 'ingredient',
+            name: 'crème fraîche',
+            summary: 'Soured cream, thicker than it sounds.',
+            approved: true,
+          },
+        ],
+      });
+      asked().flush(detail());
+      await fixture.whenStable();
+
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.registry__pages a');
+      expect(link.getAttribute('href')).toBe('/academy/about-creme-fraiche');
+    });
+
+    it('marks one nobody has read yet', async () => {
+      await arrive({
+        pages: [
+          {
+            slug: 'about-creme-fraiche',
+            kind: 'ingredient',
+            name: 'crème fraîche',
+            summary: 'Soured cream.',
+            approved: false,
+          },
+        ],
+      });
+      asked().flush(detail());
+      await fixture.whenStable();
+      expect(fixture.nativeElement.textContent).toContain('not read yet');
+    });
+
+    it('shows nothing where nobody has written one', async () => {
+      await arrive();
+      asked().flush(detail());
+      await fixture.whenStable();
+      expect(fixture.nativeElement.querySelector('.registry__pages')).toBeNull();
     });
   });
 

@@ -135,3 +135,45 @@ test('an administrator can put a page away', async ({ page }) => {
   await page.goto('/academy/terms/spatchcocked');
   await expect(page.getByText('Nobody has explained that yet')).toBeVisible();
 });
+
+test('a page about a food shows what the kitchen knows, and never invents it', async ({ page }) => {
+  /* ADR-061 end to end. The facts are the registry's, read rather than copied — so a page
+     about a food nobody has examined says "nobody has looked", and says something
+     different the moment somebody has, without the page being touched.
+
+     Carrot juice because it is one of the seven hundred shipped entries that carry no
+     allergen classification: the published table this registry was built from could not
+     answer, and unexamined is the honest state (ADR-051). */
+  await page.goto('/academy/new');
+  await page.getByLabel('What it is called').fill('carrot juice');
+  await page.locator('#kind').selectOption('ingredient');
+
+  await page.getByLabel('Which food').fill('carrot juice');
+  await page.getByRole('button', { name: 'carrot juice', exact: true }).click();
+
+  await page.getByLabel('In one line').fill('Sweeter than the carrot it came from.');
+  await page.getByLabel('The explanation').fill('Pressed, not cooked, so the sugars stay bright.');
+  await page.getByRole('button', { name: 'Write the page' }).click();
+
+  await expect(page.getByRole('heading', { name: 'What the kitchen knows' })).toBeVisible();
+  // Never an empty list on a food nobody has examined: a reader would take that for
+  // "contains none", which is the one thing ADR-006 exists to prevent.
+  await expect(page.getByText('Nobody has classified this yet')).toBeVisible();
+
+  // --- the registry leads back to the prose -----------------------------------------
+  await page.getByRole('link', { name: 'carrot juice in the registry' }).click();
+  await expect(page.getByRole('heading', { name: 'Written about this' })).toBeVisible();
+  await expect(page.getByText('not read yet')).toBeVisible();
+
+  // --- classify it here, and the page follows without being edited ------------------
+  await page.locator('input[type="checkbox"][value="celery"]').check();
+  await page.getByRole('button', { name: 'Record what is in it' }).click();
+  await expect(page.getByText('Celery')).toBeVisible();
+
+  await page.getByRole('link', { name: 'carrot juice', exact: true }).first().click();
+  await expect(page.getByRole('heading', { name: 'What the kitchen knows' })).toBeVisible();
+  // Nobody edited the page. There is no copy on it, so there was nothing to update —
+  // which is the whole of the decision.
+  await expect(page.getByText('Celery')).toBeVisible();
+  await expect(page.getByText('Nobody has classified this yet')).toHaveCount(0);
+});

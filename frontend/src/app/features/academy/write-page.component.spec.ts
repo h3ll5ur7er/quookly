@@ -121,6 +121,64 @@ describe('WritePageComponent', () => {
     expect(went).toHaveBeenCalledWith(['/academy', 'spatchcock']);
   });
 
+  it('asks which food only once the ingredient section is chosen', async () => {
+    expect(fixture.nativeElement.querySelector('#about')).toBeNull();
+
+    const kind: HTMLSelectElement = fixture.nativeElement.querySelector('#kind');
+    kind.value = 'ingredient';
+    kind.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('#about')).not.toBeNull();
+  });
+
+  it('will not write about a food until one has been chosen', async () => {
+    const kind: HTMLSelectElement = fixture.nativeElement.querySelector('#kind');
+    kind.value = 'ingredient';
+    kind.dispatchEvent(new Event('change'));
+    set('#name', 'plain flour');
+    set('#summary', 'The everyday one.');
+    set('#explanation', 'Around ten per cent protein.');
+    await fixture.whenStable();
+
+    const save: HTMLButtonElement = fixture.nativeElement.querySelector('button[type="submit"]');
+    expect(save.disabled).toBe(true);
+  });
+
+  it('sends the food it is about', async () => {
+    const kind: HTMLSelectElement = fixture.nativeElement.querySelector('#kind');
+    kind.value = 'ingredient';
+    kind.dispatchEvent(new Event('change'));
+    set('#name', 'plain flour');
+    set('#summary', 'The everyday one.');
+    set('#explanation', 'Around ten per cent protein.');
+    await fixture.whenStable();
+
+    // Chosen from the registry rather than typed: a page about a food the registry does
+    // not have is a page about nothing (ADR-061). The search is debounced, so the clock
+    // has to move before the request exists.
+    vi.useFakeTimers();
+    set('#about', 'plain');
+    await vi.advanceTimersByTimeAsync(300);
+    vi.useRealTimers();
+    await fixture.whenStable();
+
+    backend
+      .expectOne((one) => one.url.includes('/api/v1/ingredients'))
+      .flush([{ id: 1, slug: 'plain-flour', name: 'plain flour', kind: 'powder' }]);
+    await fixture.whenStable();
+
+    click('plain flour');
+    await fixture.whenStable();
+    click('Write the page');
+    await fixture.whenStable();
+
+    const sent = backend.expectOne('http://testserver/api/v1/academy');
+    expect(sent.request.body.kind).toBe('ingredient');
+    expect(sent.request.body.about).toBe('plain-flour');
+    sent.flush({ slug: 'about-plain-flour' });
+  });
+
   it('says plainly when the name is taken, rather than failing silently', async () => {
     set('#name', 'blanch');
     set('#summary', 'Into boiling water.');

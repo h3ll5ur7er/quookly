@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from quookly.access import ingredient as ingredient_access
 from quookly.access.database import session
 from quookly.access.models import (
     AcademyPageRow,
@@ -24,6 +25,7 @@ from quookly.access.models import (
 )
 from quookly.contracts.academy import (
     Claimant,
+    Entry,
     Listing,
     NewPage,
     Page,
@@ -32,7 +34,11 @@ from quookly.contracts.academy import (
     Standing,
     Wording,
 )
-from quookly.contracts.errors import PageAlreadyWritten, PageNotWritten
+from quookly.contracts.errors import (
+    IngredientNotNamed,
+    PageAlreadyWritten,
+    PageNotWritten,
+)
 from quookly.contracts.ingredient import Origin
 from quookly.contracts.matching import Named
 from quookly.utilities.text import fold, normalise
@@ -89,12 +95,19 @@ async def store_many(pages: Sequence[NewPage], origin: Origin = Origin.USER) -> 
     return added
 
 
-async def write(page: NewPage, cook_id: int) -> None:
+async def write(page: NewPage, cook_id: int, ingredient_id: int | None = None) -> None:
     """One page, written here by somebody on this instance.
 
     Unreviewed, and recorded against its author. Refuses a slug that is taken rather than
     skipping it the way the bulk path does: a cook told nothing would think it saved.
+
+    `ingredient_id` is the registry entry an ingredient page is about (ADR-061). Refused
+    where the section wants one and there is none: a page about an ingredient nobody can
+    put in a recipe is a page about nothing.
     """
+    if page.kind is PageKind.INGREDIENT and ingredient_id is None:
+        raise IngredientNotNamed(f"{page.slug} is an ingredient page and names no entry")
+
     async with session() as active:
         taken = (
             await active.exec(select(AcademyPageRow).where(col(AcademyPageRow.slug) == page.slug))
@@ -103,13 +116,31 @@ async def write(page: NewPage, cook_id: int) -> None:
             raise PageAlreadyWritten(f"{page.slug} is already a page")
 
         row = AcademyPageRow(
-            slug=page.slug, kind=page.kind, origin=Origin.USER, approved=False, written_by=cook_id
+            slug=page.slug,
+            kind=page.kind,
+            origin=Origin.USER,
+            approved=False,
+            written_by=cook_id,
+            ingredient_id=ingredient_id,
         )
         active.add(row)
         await active.flush()
         assert row.id is not None
         _write_wordings(active, row.id, page.wordings)
         await active.commit()
+
+
+async def entry_of(slug: str) -> int | None:
+    """The registry entry a page is about, where it is about one.
+
+    A separate question from what the page says, and one that survives the page being put
+    away — a caller repointing entries has to reach a page a reader cannot see.
+    """
+    async with session() as active:
+        row = (
+            await active.exec(select(AcademyPageRow).where(col(AcademyPageRow.slug) == slug))
+        ).first()
+        return None if row is None else row.ingredient_id
 
 
 async def standing_of(slug: str) -> Standing | None:
@@ -251,7 +282,49 @@ async def browse(
         texts = await _texts_for(active, list(pages), locale)
 
     listed = [
-        Listing(slug=row.slug, name=text.name, summary=text.summary, approved=row.approved)
+        Listing(
+            slug=row.slug,
+            name=text.name,
+            summary=text.summary,
+            approved=row.approved,
+            kind=row.kind,
+        )
+        for page_id, row in pages.items()
+        if (text := texts.get(page_id)) is not None
+    ]
+    return sorted(listed, key=lambda one: (fold(one.name), one.slug))
+
+
+async def pages_about(ingredient_id: int, locale: str) -> list[Listing]:
+    """Every page written about one food.
+
+    The other direction from `Entry`. A registry entry is where the facts are corrected,
+    so it is where somebody looking at the facts should be able to reach the prose.
+
+    Unreviewed pages are included, and pages put away are not. Listing is not claiming: a
+    page reached by asking about *this food* was reached because somebody went looking,
+    which is the distinction ADR-060 draws.
+    """
+    async with session() as active:
+        rows = (
+            await active.exec(
+                select(AcademyPageRow).where(
+                    col(AcademyPageRow.ingredient_id) == ingredient_id,
+                    col(AcademyPageRow.archived_at).is_(None),
+                )
+            )
+        ).all()
+        pages = {row.id: row for row in rows if row.id is not None}
+        texts = await _texts_for(active, list(pages), locale)
+
+    listed = [
+        Listing(
+            slug=row.slug,
+            name=text.name,
+            summary=text.summary,
+            approved=row.approved,
+            kind=row.kind,
+        )
         for page_id, row in pages.items()
         if (text := texts.get(page_id)) is not None
     ]
@@ -299,6 +372,35 @@ async def claimants_of(term: str, locale: str) -> list[Claimant]:
         if row.id is not None and (text := texts.get(row.id)) is not None
     ]
     return sorted(found, key=lambda one: (fold(one.name), one.slug))
+
+
+async def _entry_for(ingredient_id: int | None, locale: str) -> Entry | None:
+    """The registry's facts about the food a page is about.
+
+    Read here rather than copied onto the page, which is the whole of ADR-061: two places
+    stating an allergen will one day disagree, and the reader believes the prose while the
+    suitability engine reads the column.
+
+    Resource access reaching resource access, which the call rules allow — and the reason
+    to do it here rather than in the manager is that a `Page` without its entry is a page
+    that would have to be assembled twice, once for every caller.
+    """
+    if ingredient_id is None:
+        return None
+    found = (await ingredient_access.for_ids([ingredient_id], locale)).get(ingredient_id)
+    if found is None:
+        return None
+    return Entry(
+        slug=found.slug,
+        name=found.name,
+        kind=found.kind,
+        # Sorted so the page reads the same on every visit; a set has no order to show.
+        allergens=sorted(found.allergens, key=lambda one: one.value),
+        classified=found.classified,
+        density=found.density,
+        piece_grams=found.piece_grams,
+        has_nutrition=bool(await ingredient_access.profiles_for([found.id])),
+    )
 
 
 async def detail(slug: str, locale: str) -> Page | None:
@@ -354,6 +456,7 @@ async def detail(slug: str, locale: str) -> Page | None:
         generated=row.generated,
         approved=row.approved,
         also=[one for one in await claimants_of(text.name, locale) if one.slug != slug],
+        entry=await _entry_for(row.ingredient_id, locale),
         pictures=[
             Picture(
                 id=one.id,

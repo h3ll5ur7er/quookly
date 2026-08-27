@@ -104,6 +104,14 @@ class PageNotWritten(QuooklyError):
     """No Academy page answers to that slug."""
 
 
+class IngredientNotNamed(QuooklyError):
+    """A page in the ingredient section was written without naming a registry entry.
+
+    Refused rather than allowed to be about nothing: an ingredient page shows the
+    registry's facts by reading them, and there is nothing to read (ADR-061).
+    """
+
+
 class PageAlreadyWritten(QuooklyError):
     """That slug is somebody else's page.
 

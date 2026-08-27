@@ -12,6 +12,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from quookly.access.database import session
 from quookly.access.models import (
+    AcademyPageRow,
     EaterConstraintRow,
     IngredientAllergenRow,
     IngredientLineRow,
@@ -922,7 +923,11 @@ async def merge(*, keeper: str, loser: str) -> Ingredient:
             published.add((profile.source, profile.nutrient))
 
         # --- everything that merely points at it ------------------------------------------
-        for pointing in (IngredientLineRow, StockItemRow, WasteRow):
+        # `AcademyPageRow` is the ninth relationship, and the reason it is listed rather
+        # than left to the foreign key: a page about a food that was merged away is a page
+        # about nothing, and several pages naming one entry is not a conflict — nothing
+        # computes on which page is the page (ADR-058, ADR-061).
+        for pointing in (IngredientLineRow, StockItemRow, WasteRow, AcademyPageRow):
             for row in (
                 await active.exec(select(pointing).where(col(pointing.ingredient_id) == going.id))
             ).all():

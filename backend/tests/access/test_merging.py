@@ -16,9 +16,12 @@ import pytest
 from pytest import MonkeyPatch
 from sqlmodel import SQLModel, select
 
+from quookly.access import academy
+from quookly.access import cook as cook_access
 from quookly.access import ingredient as registry
 from quookly.access.database import dispose_engine, get_engine, session
 from quookly.access.models import CookRow, EaterConstraintRow, EaterRow
+from quookly.contracts.academy import NewPage, PageKind, Wording
 from quookly.contracts.cook import Standing
 from quookly.contracts.eater import AgeBand, Severity
 from quookly.contracts.errors import IngredientNotRegistered, NothingToMerge
@@ -61,6 +64,21 @@ async def two_entries() -> tuple[int, int]:
         origin=Origin.USER,
     )
     return keeper.id, loser.id
+
+
+async def a_cook() -> int:
+    """An account for a page to be written by. The column is a key, so it has to exist.
+
+    The same one every time it is asked for: a test that writes two pages wants two pages,
+    not two accounts.
+    """
+    held = await cook_access.fetch_by_email("chef@example.com")
+    if held is not None:
+        assert held.id is not None
+        return held.id
+    made = await cook_access.register("chef@example.com", "Emanuel", "hash")
+    assert made.id is not None
+    return made.id
 
 
 class TestWhatSurvives:
@@ -277,3 +295,61 @@ class TestRefusals:
         with pytest.raises(IngredientNotRegistered):
             await registry.merge(keeper="wheat-flour", loser="no-such-thing")
         assert await registry.detail("plain-flour") is not None
+
+
+class TestAnAcademyPageAboutTheLoser:
+    """The ninth relationship (ADR-061).
+
+    ADR-052 was written about eight, and the list keeps growing. This one is a real
+    foreign key, so forgetting it fails loudly rather than silently — but a page about a
+    food that no longer exists is still a page about nothing, and the point of writing
+    each addition down is that somebody has to remember.
+    """
+
+    async def a_page_about(self, ingredient_id: int, slug: str) -> None:
+        await academy.write(
+            NewPage(
+                slug=slug,
+                kind=PageKind.INGREDIENT,
+                wordings={
+                    ENGLISH: Wording(
+                        name="plain flour",
+                        spellings=[],
+                        summary="The everyday one.",
+                        explanation="Around ten per cent protein.",
+                    )
+                },
+            ),
+            cook_id=await a_cook(),
+            ingredient_id=ingredient_id,
+        )
+
+    async def test_the_page_survives_the_merge(self) -> None:
+        _, loser = await two_entries()
+        await self.a_page_about(loser, "about-plain-flour")
+
+        await registry.merge(keeper="wheat-flour", loser="plain-flour")
+
+        page = await academy.detail("about-plain-flour", ENGLISH)
+        assert page is not None
+        assert page.summary == "The everyday one."
+
+    async def test_it_now_names_the_entry_that_survived(self) -> None:
+        keeper, loser = await two_entries()
+        await self.a_page_about(loser, "about-plain-flour")
+
+        await registry.merge(keeper="wheat-flour", loser="plain-flour")
+
+        assert await academy.entry_of("about-plain-flour") == keeper
+
+    async def test_two_pages_about_one_food_are_not_a_conflict(self) -> None:
+        """Nothing computes on which page is the page, so a second one is a hatnote
+        rather than something to resolve (ADR-058)."""
+        keeper, loser = await two_entries()
+        await self.a_page_about(keeper, "about-wheat-flour")
+        await self.a_page_about(loser, "about-plain-flour")
+
+        await registry.merge(keeper="wheat-flour", loser="plain-flour")
+
+        assert await academy.entry_of("about-wheat-flour") == keeper
+        assert await academy.entry_of("about-plain-flour") == keeper

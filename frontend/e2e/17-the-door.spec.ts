@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { claim } from './support';
 
 /**
  * The front door (UC-10.6).
@@ -23,6 +24,17 @@ const APPLICANT = {
 };
 
 test.describe.configure({ mode: 'serial' });
+
+// The landing page is what a *claimed* instance shows a visitor; an unclaimed one asks
+// for its first administrator instead. Claimed here so the file can be run on its own,
+// and because the administrator below has to exist for the queue half of it.
+test.beforeAll(async ({ request }) => {
+  await claim(request, {
+    email: ADMIN.email,
+    display_name: 'Emanuel',
+    password: ADMIN.password,
+  });
+});
 
 test('a visitor is told what this is before being asked for anything', async ({ page }) => {
   await page.goto('/');

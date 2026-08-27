@@ -1505,6 +1505,24 @@
               "title": "Approved"
             },
             "description": "Narrow to what has been reviewed, or to what awaits it."
+          },
+          {
+            "name": "about",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only the pages written about one registry entry.",
+              "title": "About"
+            },
+            "description": "Only the pages written about one registry entry."
           }
         ],
         "responses": {
@@ -3955,6 +3973,73 @@
         "title": "EaterView",
         "description": "Somebody at the table, as a client reads them.\n\n`appetite` is a string for the same reason a quantity's magnitude is: JSON numbers\nare binary floats in a browser, and these are summed to decide how much food to cook."
       },
+      "EntryView": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/IngredientKind"
+          },
+          "allergens": {
+            "items": {
+              "$ref": "#/components/schemas/Allergen"
+            },
+            "type": "array",
+            "title": "Allergens"
+          },
+          "classified": {
+            "type": "boolean",
+            "title": "Classified"
+          },
+          "density": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Density"
+          },
+          "piece_grams": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Piece Grams"
+          },
+          "has_nutrition": {
+            "type": "boolean",
+            "title": "Has Nutrition"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "kind",
+          "allergens",
+          "classified",
+          "density",
+          "piece_grams",
+          "has_nutrition"
+        ],
+        "title": "EntryView",
+        "description": "The registry's facts about a food, as an ingredient page shows them."
+      },
       "ExchangeDocument": {
         "properties": {
           "quookly": {
@@ -4759,7 +4844,19 @@
             "title": "Slug"
           },
           "kind": {
-            "$ref": "#/components/schemas/PageKind"
+            "$ref": "#/components/schemas/PageKind",
+            "default": "technique"
+          },
+          "about": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "About"
           }
         },
         "type": "object",
@@ -4767,8 +4864,7 @@
           "name",
           "summary",
           "explanation",
-          "slug",
-          "kind"
+          "slug"
         ],
         "title": "NewPageInput",
         "description": "A page somebody here is writing, in the one language they are writing it in.\n\nA wording plus an identity. Written in one language rather than all of them: a cook who\nknows how to spatchcock a chicken is not thereby a translator, and a page that arrives\nin one language is a page the other two fall back from (ADR-057)."
@@ -4887,10 +4983,11 @@
       "PageKind": {
         "type": "string",
         "enum": [
-          "technique"
+          "technique",
+          "ingredient"
         ],
         "title": "PageKind",
-        "description": "Which section of the Academy a page belongs to.\n\nOne value today and the reason the field exists: naming the entity after the first\nsection anybody wrote would have made the second one a migration (ADR-057)."
+        "description": "Which section of the Academy a page belongs to.\n\nThe field exists so that the second section was not a migration (ADR-057), which is\nwhat it turned out to be worth."
       },
       "PageSummaryView": {
         "properties": {
@@ -4968,6 +5065,16 @@
             "type": "boolean",
             "title": "May Rewrite",
             "default": false
+          },
+          "entry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EntryView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "caution": {
             "anyOf": [

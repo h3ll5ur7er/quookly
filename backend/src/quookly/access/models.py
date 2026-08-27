@@ -517,6 +517,12 @@ class AcademyPageRow(SQLModel, table=True):
     # How an administrator declines one: put away rather than destroyed, the same choice a
     # recipe makes. Out of the Academy and out of the queue, and still there.
     archived_at: datetime | None = Field(default=None, index=True)
+    # The registry entry a page of kind `ingredient` is about. Its facts are read from
+    # there and never copied here: written twice they disagree, and a paragraph saying
+    # "contains no gluten" would be believed by the reader and ignored by the suitability
+    # engine (ADR-006, ADR-061). Not unique — several pages may be about one food, and
+    # nothing computes on which (ADR-058).
+    ingredient_id: int | None = Field(default=None, foreign_key="ingredient.id", index=True)
     created_at: datetime = Field(default_factory=_now)
 
 

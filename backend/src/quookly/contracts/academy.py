@@ -12,21 +12,25 @@ verdict.
 """
 
 from dataclasses import dataclass, field
+from decimal import Decimal
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict
 
-from quookly.contracts.ingredient import Origin
+from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 
 
 class PageKind(Enum):
     """Which section of the Academy a page belongs to.
 
-    One value today and the reason the field exists: naming the entity after the first
-    section anybody wrote would have made the second one a migration (ADR-057).
+    The field exists so that the second section was not a migration (ADR-057), which is
+    what it turned out to be worth.
     """
 
     TECHNIQUE = "technique"
+    #: About a food rather than about doing something. Names a registry entry, and shows
+    #: that entry's facts by reading them rather than by holding a copy (ADR-061).
+    INGREDIENT = "ingredient"
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +69,28 @@ class NewPage:
 
 
 @dataclass(frozen=True, slots=True)
+class Entry:
+    """The registry's facts about the food a page is about, as read at the time.
+
+    Read rather than stored (ADR-061). No copy means no copy to go stale, and correcting
+    the registry corrects every page about it.
+
+    `classified` travels with `allergens` and is the reason this is not just a list: an
+    empty list with `classified` false means *nobody has looked*, and a page that renders
+    that as "allergens: none" is the ADR-006 failure with better typography.
+    """
+
+    slug: str
+    name: str
+    kind: IngredientKind
+    allergens: list[Allergen]
+    classified: bool
+    density: Decimal | None
+    piece_grams: Decimal | None
+    has_nutrition: bool
+
+
+@dataclass(frozen=True, slots=True)
 class Listing:
     """A page as it appears in a list of pages.
 
@@ -78,6 +104,7 @@ class Listing:
     name: str
     summary: str
     approved: bool
+    kind: PageKind
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,6 +163,26 @@ class Page:
     #: What it looks like. A page about julienne without a photograph of julienne is a
     #: knife cut explained in words (ADR-057).
     pictures: list[Picture] = field(default_factory=list)
+    #: The food this page is about, for a page in the ingredient section. Read from the
+    #: registry each time rather than stored, so there is no copy to disagree (ADR-061).
+    entry: Entry | None = None
+
+
+class EntryView(BaseModel):
+    """The registry's facts about a food, as an ingredient page shows them."""
+
+    model_config = ConfigDict(frozen=True)
+
+    slug: str
+    name: str
+    kind: IngredientKind
+    allergens: list[Allergen]
+    #: Whether anybody has looked. An empty `allergens` with this false means "unknown",
+    #: not "contains none" (ADR-006).
+    classified: bool
+    density: Decimal | None
+    piece_grams: Decimal | None
+    has_nutrition: bool
 
 
 class ClaimantView(BaseModel):
@@ -195,6 +242,10 @@ class PageView(BaseModel):
     #: (administrator, author, not yet approved) and a client that re-derives it will get
     #: one of them slightly wrong and offer a button that 403s (ADR-060).
     may_rewrite: bool = False
+    #: What the registry knows about the food this page is about, where it is about one.
+    #: Read, never stored: a paragraph and a column that both state an allergen will one
+    #: day disagree, and the reader believes the paragraph (ADR-006, ADR-061).
+    entry: EntryView | None = None
     caution: str | None = None
     also: list[ClaimantView] = []
     pictures: list[PictureView] = []

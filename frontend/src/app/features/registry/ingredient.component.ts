@@ -2,9 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
+  AcademyService,
   Allergen,
   IngredientKind,
   IngredientsService,
+  PageSummaryView,
   RegistryEntryDetailView,
   RegistryEntryView,
   ResemblingView,
@@ -46,6 +48,9 @@ export class IngredientComponent {
   private readonly slug = inject(ActivatedRoute).snapshot.paramMap.get('slug') ?? '';
 
   protected readonly detail = signal<RegistryEntryDetailView | null>(null);
+  /** Academy pages about this food, if anybody has written one. */
+  private readonly academy = inject(AcademyService);
+  protected readonly pages = signal<PageSummaryView[]>([]);
   protected readonly missing = signal(false);
   protected readonly failed = signal(false);
   protected readonly saveFailed = signal(false);
@@ -172,6 +177,15 @@ export class IngredientComponent {
       next: (found) => this.arrived(found),
       error: (refusal: { status?: number }) =>
         refusal.status === 404 ? this.missing.set(true) : this.failed.set(true),
+    });
+
+    // The prose written about this food. Facts are corrected here and read there, so this
+    // is the way across (ADR-061). Asked of the Academy rather than carried on the entry:
+    // the registry's contracts sit underneath the Academy's, and answering it here would
+    // make the two import each other.
+    this.academy.browseAcademy(undefined, undefined, this.slug).subscribe({
+      next: (found) => this.pages.set(found),
+      error: () => this.pages.set([]),
     });
   }
 

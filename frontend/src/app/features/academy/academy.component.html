@@ -5,6 +5,33 @@
     it, so looking one up costs a tap rather than a search.
   </p>
 
+  <nav class="academy__sections" aria-label="Sections" i18n-aria-label="@@academySectionsLabel">
+    <button
+      type="button"
+      [class.academy__section--on]="section() === null"
+      (click)="section.set(null)"
+      i18n="@@academySectionAll"
+    >
+      Everything
+    </button>
+    <button
+      type="button"
+      [class.academy__section--on]="section() === kinds.technique"
+      (click)="section.set(kinds.technique)"
+      i18n="@@academySectionDoing"
+    >
+      Things you do
+    </button>
+    <button
+      type="button"
+      [class.academy__section--on]="section() === kinds.ingredient"
+      (click)="section.set(kinds.ingredient)"
+      i18n="@@academySectionFoods"
+    >
+      Ingredients
+    </button>
+  </nav>
+
   <a class="action action--quiet" routerLink="/academy/new" i18n="@@academyWriteOne">
     Write a page
   </a>
@@ -13,8 +40,8 @@
     <p class="notice notice--danger" role="alert" i18n="@@academyListFailed">
       Could not load the Academy. Please try again.
     </p>
-  } @else if (pages(); as found) {
-    @if (found.length === 0) {
+  } @else if (pages() !== null) {
+    @if (waiting().length === 0 && settled().length === 0) {
       <p i18n="@@academyEmpty">Nothing here yet.</p>
     } @else {
       @if (waiting().length > 0) {

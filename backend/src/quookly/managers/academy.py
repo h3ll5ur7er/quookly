@@ -10,10 +10,12 @@ follow, in that order, so that the part which can be *wrong* arrives last.
 
 from dataclasses import replace
 
-from quookly.access import academy, media
+from quookly.access import academy, ingredient, media
 from quookly.access import cook as cook_access
 from quookly.contracts.academy import (
     ClaimantView,
+    EntryView,
+    Listing,
     NewPage,
     PageKind,
     PageSummaryView,
@@ -22,10 +24,14 @@ from quookly.contracts.academy import (
     Standing,
     Wording,
 )
+from quookly.contracts.errors import IngredientNotRegistered
 
 
 async def browse(
-    cook_id: int, kind: PageKind | None = None, approved: bool | None = None
+    cook_id: int,
+    kind: PageKind | None = None,
+    approved: bool | None = None,
+    about: str | None = None,
 ) -> list[PageSummaryView]:
     """Every page, in the reader's language, in the order they would read them.
 
@@ -33,16 +39,38 @@ async def browse(
     is waiting is how a cook learns their own page has not been read yet.
     """
     locale = await cook_access.locale_for(cook_id)
+    # Asked of the Academy rather than answered by the registry entry, so that each side
+    # keeps its own vocabulary — the registry's contracts already sit underneath the
+    # Academy's, and answering there would make the two import each other (ADR-061).
+    if about is not None:
+        found = await ingredient.detail(about)
+        if found is None:
+            raise IngredientNotRegistered(about)
+        return [_summarised(one) for one in await academy.pages_about(found.entry.id, locale)]
+
     return [
         PageSummaryView(
+            # The page's own section, not the one that was asked for. Taking it from the
+            # query said "technique" for everything whenever nothing was filtered, which
+            # nothing could notice while the Academy had one section.
             slug=one.slug,
-            kind=kind or PageKind.TECHNIQUE,
+            kind=one.kind,
             name=one.name,
             summary=one.summary,
             approved=one.approved,
         )
         for one in await academy.browse(locale, kind, approved)
     ]
+
+
+def _summarised(one: Listing) -> PageSummaryView:
+    return PageSummaryView(
+        slug=one.slug,
+        kind=one.kind,
+        name=one.name,
+        summary=one.summary,
+        approved=one.approved,
+    )
 
 
 async def read(slug: str, cook_id: int, is_admin: bool = False) -> PageView | None:
@@ -66,6 +94,18 @@ async def read(slug: str, cook_id: int, is_admin: bool = False) -> PageView | No
         generated=found.generated,
         approved=found.approved,
         may_rewrite=_may_rewrite(standing, cook_id, is_admin),
+        entry=None
+        if found.entry is None
+        else EntryView(
+            slug=found.entry.slug,
+            name=found.entry.name,
+            kind=found.entry.kind,
+            allergens=found.entry.allergens,
+            classified=found.entry.classified,
+            density=found.entry.density,
+            piece_grams=found.entry.piece_grams,
+            has_nutrition=found.entry.has_nutrition,
+        ),
         caution=found.caution,
         also=[
             ClaimantView(slug=one.slug, name=one.name, summary=one.summary) for one in found.also
@@ -96,7 +136,11 @@ async def claimants(term: str, cook_id: int) -> list[ClaimantView]:
 
 
 async def write(
-    page: NewPage, wording: Wording, cook_id: int, is_admin: bool = False
+    page: NewPage,
+    wording: Wording,
+    cook_id: int,
+    is_admin: bool = False,
+    about: str | None = None,
 ) -> PageView | None:
     """A page somebody here wrote, in the language they are reading in.
 
@@ -108,7 +152,16 @@ async def write(
     it — readable, listed, and not yet a term anybody's step is matched against (ADR-060).
     """
     locale = await cook_access.locale_for(cook_id)
-    await academy.write(replace(page, wordings={locale: wording}), cook_id)
+    # The registry entry an ingredient page is about, named by slug because that is what a
+    # screen has and what a person reads. Resolved here rather than taken as an id: an id
+    # in a request body is a number a client has to have looked up already.
+    named = None
+    if about is not None:
+        found = await ingredient.detail(about)
+        if found is None:
+            raise IngredientNotRegistered(about)
+        named = found.entry.id
+    await academy.write(replace(page, wordings={locale: wording}), cook_id, named)
     return await read(page.slug, cook_id, is_admin)
 
 

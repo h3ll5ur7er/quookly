@@ -323,4 +323,23 @@
   } @else {
     <p class="entry__loading" i18n="@@entryLoading">Loading…</p>
   }
+
+  <!-- Prose lives in the Academy and facts live here. Somebody correcting a figure should
+       be able to reach what will now read differently (ADR-061). -->
+  @if (pages().length > 0) {
+    <section class="registry__pages">
+      <h2 i18n="@@registryPagesHeading">Written about this</h2>
+      <ul>
+        @for (one of pages(); track one.slug) {
+          <li>
+            <a [routerLink]="['/academy', one.slug]">{{ one.name }}</a>
+            <span>{{ one.summary }}</span>
+            @if (!one.approved) {
+              <span class="registry__unread" i18n="@@registryPageUnread">not read yet</span>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  }
 </main>

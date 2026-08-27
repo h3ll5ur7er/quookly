@@ -2681,3 +2681,53 @@ It also means an explicit `[[slug]]` link
 ([ADR-059](#adr-059-a-step-may-name-its-own-links-and-a-recipe-may-be-edited)) may name a page that
 is not yet approved. That link **works** — the author of the step said which page they meant, which
 is a person deciding, and this decision is about what attaches itself *without* anybody deciding.
+
+## ADR-061 An ingredient page names its entry, and never restates what the registry computes on
+
+**Status:** Accepted — the ingredient section promised by
+[ADR-057](#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques), constrained by
+[ADR-006](#adr-006-suitability-and-allergen-conclusions-are-computed-from-structured-ingredients).
+
+**Context.** The Academy's second section is about ingredients rather than techniques: what saffron
+is, why there are four kinds of flour, what to do with a bunch of coriander stalks. That is prose,
+and prose is what the Academy is for.
+
+But the registry already holds facts about the same foods, and those facts are the ones the
+application *computes on*: an allergen list, whether anybody has classified it, a density, a portion
+weight, published nutrition figures. A page about plain flour sitting beside a registry entry for
+plain flour is an invitation to write the facts twice.
+
+Written twice, they disagree. And the disagreement is not symmetric: a cook reads the page, because
+the page is the thing written for a reader, while the suitability engine reads the registry. **A
+paragraph saying "contains no gluten" would be believed by the person and ignored by the machine**,
+which is precisely the direction ADR-006 exists to prevent — a conclusion about safety taken from
+prose.
+
+**Decision.** A page of kind `ingredient` **names a registry entry**, and shows that entry's facts by
+reading them. It stores none of them.
+
+- The link is `academy_page.ingredient_id`. Writing an ingredient page for a slug the registry does
+  not have is refused: a page about an ingredient nobody can put in a recipe is a page about nothing.
+- The facts on the page are the registry's, fetched when the page is read. There is no copy to go
+  stale, and correcting the registry corrects every page about it.
+- **Unclassified is shown as unclassified**, not as an empty list. The page inherits the registry's
+  own distinction, because a page that renders "allergens: none" over an entry nobody has examined is
+  the ADR-006 failure with better typography.
+
+**Several pages may name one entry**, and no uniqueness is imposed. That is the Academy's existing
+stance on ambiguity ([ADR-058](#adr-058-ambiguity-is-shown-where-a-person-resolves-it-and-refused-where-something-computes-on-it)):
+nothing computes on which page, so a second one is a hatnote rather than a conflict. Imposing 1:1
+would buy nothing and would need a tiebreak the moment two entries are merged.
+
+**Merging repoints them.** This is the point at which
+[ADR-052](#adr-052-merging-repoints-an-eaters-constraints-which-nothing-in-the-database-protects)'s
+list of eight relationships becomes nine. A page left naming the entry that was merged away is a page
+about a food that no longer exists — and unlike the eater constraint that ADR-052 was written about,
+this one *is* a foreign key, so it fails loudly rather than silently. It is listed here anyway,
+because the reason to write it down is that the list keeps growing and each addition is a place
+somebody has to remember.
+
+**What this costs.** The page cannot say anything about an ingredient that the registry has no field
+for, except in prose — and prose is exactly where such a claim belongs, since nothing computes on it.
+An operator who wants a fact to be *used* rather than read has to put it in the registry, which is
+the correct shape of that work.

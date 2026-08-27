@@ -5,6 +5,7 @@ import { AcademyService, ClaimantView, PageView } from '@api';
 import { AuthStore } from '../../core/auth/auth.store';
 import { PictureComponent } from '../../core/media/picture.component';
 import { LOCALES } from '../../core/locale/locale.store';
+import { allergenLabel } from '../../core/dietary/labels';
 
 @Component({
   selector: 'app-academy-page',
@@ -21,6 +22,8 @@ export class AcademyPageComponent {
   /** Correcting the Academy changes what every cook here reads, so it is an admin's. */
   protected readonly isAdmin = inject(AuthStore).isAdmin;
   protected readonly locales = LOCALES;
+  /** The fourteen have names a reader knows; the enum has slugs. */
+  protected readonly allergenLabel = allergenLabel;
 
   protected readonly correcting = signal(false);
   /** Whether the admin has asked to put this page away and not yet confirmed. */
