@@ -3,14 +3,21 @@ set shell := ["bash", "-uc"]
 default:
     @just --list
 
+# Run a command against the node this project pins.
+#
+# Through nvm where there is one, and directly where there is not. CI installs the version
+# from `.nvmrc` itself and has no nvm to source — falling back means CI runs the same
+# commands a developer runs rather than a second set that drifts from them.
 _nvm *command:
     export NVM_DIR="${NVM_DIR:-$HOME/.nvm}" && \
-    source "$NVM_DIR/nvm.sh" && \
-    nvm use && \
+    if [ -s "$NVM_DIR/nvm.sh" ]; then . "$NVM_DIR/nvm.sh" && nvm use; fi && \
     {{command}}
 
 install:
-    export NVM_DIR="${NVM_DIR:-$HOME/.nvm}" && source "$NVM_DIR/nvm.sh" && nvm install
+    # Installs the pinned node where nvm is managing it. CI installs it another way and
+    # has no nvm, which is not a failure — the version is pinned either way.
+    export NVM_DIR="${NVM_DIR:-$HOME/.nvm}" && \
+    if [ -s "$NVM_DIR/nvm.sh" ]; then . "$NVM_DIR/nvm.sh" && nvm install; fi
     just _nvm "npm install"
 
 serve:

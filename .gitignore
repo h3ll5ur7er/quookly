@@ -4,3 +4,7 @@
 .coverage.*
 coverage.xml
 htmlcov/
+
+# An instance's own configuration, including its signing key. `.env.example` is the one
+# that is committed.
+.env

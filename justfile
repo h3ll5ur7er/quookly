@@ -62,3 +62,24 @@ openapi:
     @just backend export-openapi
     @just cli generate-openapi-client
     @just frontend generate-openapi-client
+
+# --- running it the way somebody else would -------------------------------------------
+
+# Build the image: the API and the frontend it serves, in one artefact.
+image:
+    docker build -t quookly:local .
+
+# Bring an instance up from this working tree. Needs a `.env` — copy `.env.example`.
+up:
+    docker compose up -d --build
+
+# ...with a model beside it.
+up-with-model:
+    docker compose -f compose.yaml -f compose.ollama.yaml up -d --build
+
+down:
+    docker compose down
+
+# What the instance is saying. `just logs -f` to follow.
+logs *args:
+    docker compose logs {{args}}

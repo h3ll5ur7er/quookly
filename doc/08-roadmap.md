@@ -577,8 +577,21 @@ reading, and because it depends on nothing in Phase 9.
 
 **Goal:** someone other than us runs it.
 
-- Container image serving API and frontend from one artefact (NFR-2)
-- Compose files: standalone, with Postgres, with Ollama
+- ~~Container image serving API and frontend from one artefact (NFR-2)~~ **Built** — a multi-stage
+  build, non-root, with a healthcheck. Migrations run in the entrypoint rather than in the
+  application's lifespan: an instance that migrates itself on every boot is one where two containers
+  starting together race each other, and where a failed migration looks like a failed start-up.
+  **Both the database and the pictures live under one `/data` volume**, which is what turns the
+  two-things-to-back-up trap below into one thing to copy.
+- ~~Compose files: standalone, with Ollama~~ **Built**, and Postgres deliberately not: persistence is
+  SQLite at v1 (ADR-009, ADR-018), and shipping a compose file for a database the application does
+  not support would be shipping a broken instance.
+- ~~CI, and an image published to the GitHub Container Registry~~ **Built** — `check` runs the same
+  `just check` a developer runs rather than a second definition of green, `e2e` runs the suite
+  against the built bundle on the full Chromium, and `image` publishes for amd64 and arm64 because a
+  self-hoster's box is as likely to be a Raspberry Pi as an x86 server.
+- ~~An example `.env`~~ **Built** — every setting, including what an instance can and cannot do
+  without a model, and why the signing key has no default.
 - Backup, restore, and upgrade paths (UC-8.1). **Two things to copy, not one**: pictures live in a
   directory beside the database rather than inside it
   ([ADR-057](07-decisions.md#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques)),

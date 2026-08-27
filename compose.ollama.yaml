@@ -1,0 +1,35 @@
+# Quookly with a model running beside it.
+#
+#   docker compose -f compose.yaml -f compose.ollama.yaml up -d
+#   docker compose exec ollama ollama pull llama3.1:8b
+#
+# Overlays the standalone file rather than repeating it, so there is one description of the
+# application and this adds a model to it.
+#
+# A first pull is several gigabytes and a first answer on CPU is slow. Both are the model's
+# doing rather than Quookly's — and everything that does not need a model stays fast.
+
+services:
+  quookly:
+    environment:
+      QUOOKLY_INFERENCE_BASE_URL: http://ollama:11434/v1
+      QUOOKLY_INFERENCE_MODEL: llama3.1:8b
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama-models:/root/.ollama
+    # Uncomment on a machine with an NVIDIA card and the container toolkit installed.
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+volumes:
+  ollama-models:

@@ -1,0 +1,26 @@
+# Quookly, on its own.
+#
+#   cp .env.example .env && $EDITOR .env    # set QUOOKLY_SECRET_KEY
+#   docker compose up -d
+#
+# Then open http://localhost:8000 and claim the instance. The first account is the
+# administrator's; everybody after that applies and is let in.
+
+services:
+  quookly:
+    image: ghcr.io/h3ll5ur7er/quookly:latest
+    # To run what is in this working tree instead of what is published:
+    #   docker compose up -d --build
+    build:
+      context: .
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      # One volume, holding both the database and the pictures. Back this up — a copy of
+      # the .db file alone restores an instance whose pages have holes in them.
+      - quookly-data:/data
+
+volumes:
+  quookly-data:

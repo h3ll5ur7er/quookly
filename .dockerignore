@@ -1,0 +1,23 @@
+# Everything the build does not read. Keeping this tight is most of the build's speed:
+# the context is sent to the daemon before anything runs.
+.git
+.github
+.claude
+.vscode
+doc
+reference
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.angular
+frontend/src/api
+frontend/e2e/screenshots
+frontend/test-results
+backend/src/quookly/app
+backend/*.db
+backend/media
+*.md
+.env

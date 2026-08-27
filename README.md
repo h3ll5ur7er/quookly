@@ -95,6 +95,63 @@ Design documentation lives in [`doc/`](doc/README.md):
 Start with [the volatility analysis](doc/03-volatility-analysis.md) before judging the
 architecture — the code deliberately does not mirror the feature list above.
 
+## Running your own
+
+One container serves the API and the frontend. Everything an instance keeps — the database
+and the pictures — lives in one volume, so backing it up is copying one thing.
+
+```bash
+curl -O https://raw.githubusercontent.com/h3ll5ur7er/quookly/master/compose.yaml
+curl -o .env https://raw.githubusercontent.com/h3ll5ur7er/quookly/master/.env.example
+
+# The one setting with no default. Shipping one would give every instance the same
+# signing key, which is worse than refusing to start.
+sed -i "s|^QUOOKLY_SECRET_KEY=|QUOOKLY_SECRET_KEY=$(openssl rand -base64 48)|" .env
+
+docker compose up -d
+```
+
+Then open <http://localhost:8000>. The first account you make is the administrator's;
+everybody after that applies and is let in by them.
+
+`.env.example` documents every setting, including the ones with sensible defaults.
+
+### With a model beside it
+
+Quookly works without one. What it cannot do without a model is read a recipe off a blog
+that publishes no structured data, write one from a description, adapt one to a change,
+translate one into your language, or explain a word nobody on the instance has explained.
+Every other screen works, and each of those says so plainly rather than failing as though
+something broke.
+
+```bash
+curl -O https://raw.githubusercontent.com/h3ll5ur7er/quookly/master/compose.ollama.yaml
+docker compose -f compose.yaml -f compose.ollama.yaml up -d
+docker compose exec ollama ollama pull llama3.1:8b
+```
+
+Or point `QUOOKLY_INFERENCE_BASE_URL` at anything OpenAI-compatible you already run.
+
+### Backing it up
+
+Two things live in the volume, not one: the database, and a directory of pictures beside
+it. Copy the volume rather than the `.db` file — a backup of the file alone restores an
+instance whose pages have holes in them.
+
+```bash
+docker run --rm -v quookly-data:/data -v "$PWD:/out" alpine \
+  tar czf /out/quookly-backup.tar.gz -C /data .
+```
+
+### From this working tree
+
+```bash
+cp .env.example .env    # then set QUOOKLY_SECRET_KEY
+just up                 # builds and runs what is checked out
+just logs -f
+just down
+```
+
 ## Tools
 
 - management CLI built with Typer
@@ -103,10 +160,14 @@ architecture — the code deliberately does not mirror the feature list above.
 
 ## Prerequisites
 
+For running an instance: **docker** and nothing else.
+
+For developing:
+
 - uv
 - just
 - nvm
-- openjdk-jre (only for codegen, not required for development or running the app)
+- openjdk-jre (only for codegen, not required for developing or running the app)
 
 ## Development
 
