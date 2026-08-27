@@ -199,3 +199,57 @@ test('a word nobody has explained offers to ask, and says so when there is nothi
   // An operator reading this knows what to go and configure. Not "that did not work".
   await expect(page.getByText('no model to ask')).toBeVisible();
 });
+
+test('a visitor with no account can read the Academy, and nothing else', async ({ browser }) => {
+  /* ADR-063, from the outside. A context of its own rather than the shared page: the
+     signed-in session is in storage, and this is a test about not having one. */
+  const context = await browser.newContext();
+  try {
+    const visitor = await context.newPage();
+    await visitor.goto('/');
+
+    // The only way a visitor finds it. Without the link the public Academy is reachable
+    // by typing a URL, which is not reachable.
+    await visitor.getByRole('link', { name: 'Read the Academy' }).click();
+    await expect(visitor.getByRole('heading', { name: 'Academy' })).toBeVisible();
+
+    await visitor.getByRole('link', { name: 'blanch', exact: true }).click();
+    await expect(visitor.getByRole('heading', { name: 'blanch' })).toBeVisible();
+    await expect(visitor.getByText('Boil briefly')).toBeVisible();
+
+    // Nothing that leads where they cannot go.
+    await expect(visitor.getByRole('link', { name: 'Write a page' })).toHaveCount(0);
+    await expect(visitor.getByRole('button', { name: 'Correct this page' })).toHaveCount(0);
+
+    // And a word nobody has explained is a dead end rather than an offer to spend the
+    // operator's money.
+    await visitor.goto('/academy/terms/spatchcock');
+    await expect(visitor.getByText('Nobody has explained that yet')).toBeVisible();
+    await expect(visitor.getByRole('button', { name: 'Ask for an explanation' })).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
+});
+
+test('a page nobody here has read is not published', async ({ page, browser }) => {
+  /* The load-bearing half of ADR-063. Anyone let through the door could otherwise publish
+     to the open internet under this instance's name. */
+  await page.goto('/academy/new');
+  await page.getByLabel('What it is called').fill('spatchcock');
+  await page.getByLabel('In one line').fill('Flatten a bird so it cooks evenly.');
+  await page.getByLabel('The explanation').fill('Cut out the backbone and press down.');
+  await page.getByRole('button', { name: 'Write the page' }).click();
+  await expect(page.getByText('nobody has read it yet')).toBeVisible();
+
+  const context = await browser.newContext();
+  try {
+    const visitor = await context.newPage();
+    await visitor.goto('/academy/spatchcock');
+    await expect(visitor.getByText('Nobody has explained that yet')).toBeVisible();
+
+    await visitor.goto('/academy');
+    await expect(visitor.getByRole('link', { name: 'spatchcock', exact: true })).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
+});

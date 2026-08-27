@@ -174,20 +174,22 @@ export const routes: Routes = [
     // Where a step's word sends a reader: the *term*, not a page. One claimant opens it and
     // several offer a chooser, so nothing picks arbitrarily (ADR-058). Before `:slug`,
     // because they share a shape and the first match wins.
+    // No guard: reading the Academy needs no account (ADR-063). Which pages a stranger
+    // is shown is the server's rule, not this one's.
     path: 'academy/terms/:term',
-    canActivate: [requireSignedIn],
     loadComponent: () =>
       import('./features/academy/page.component').then((m) => m.AcademyPageComponent),
   },
   {
+    // No guard: reading the Academy needs no account (ADR-063). Which pages a stranger
+    // is shown is the server's rule, not this one's.
     path: 'academy/:slug',
-    canActivate: [requireSignedIn],
     loadComponent: () =>
       import('./features/academy/page.component').then((m) => m.AcademyPageComponent),
   },
   {
+    // No guard, like the pages themselves.
     path: 'academy',
-    canActivate: [requireSignedIn],
     loadComponent: () =>
       import('./features/academy/academy.component').then((m) => m.AcademyComponent),
   },

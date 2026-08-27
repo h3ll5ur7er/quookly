@@ -93,8 +93,11 @@ class TestBrowsing:
         body = (await client.get(ACADEMY, params={"kind": "technique"}, headers=cook)).json()
         assert len(body) == stocked
 
-    async def test_signing_in_is_required(self, client: AsyncClient, stocked: int) -> None:
-        assert (await client.get(ACADEMY)).status_code == 401
+    async def test_signing_in_is_not_required(self, client: AsyncClient, stocked: int) -> None:
+        """Changed deliberately (ADR-063). What `blanch` means is not a household's, and
+        keeping it behind the door turned a link to a page into a link to a sign-in form.
+        Which pages a stranger sees is the rule that matters, and it has its own tests."""
+        assert (await client.get(ACADEMY)).status_code == 200
 
 
 class TestReading:
@@ -933,3 +936,209 @@ class TestAskingForAnExplanation:
         refused = await client.post(self.ASKED, json={"term": "spatchcock"}, headers=cook)
         assert refused.status_code == 502
         assert (await client.get(f"{ACADEMY}?approved=false", headers=cook)).json() == []
+
+
+class TestReadingItWithoutAnAccount:
+    """The Academy from the open internet (ADR-063).
+
+    Everything else here belongs to a household. What `blanch` means does not, and keeping
+    it behind the door turns a link to a page into a link to a sign-in form.
+
+    The load-bearing half is *which* pages: only what somebody here has read. An unreviewed
+    page is readable by the people here, and publishing it is a different act.
+    """
+
+    @pytest.fixture
+    async def admin(self, client: AsyncClient) -> dict[str, str]:
+        return await sign_up_admin(client)
+
+    async def a_draft(self, client: AsyncClient, headers: dict[str, str]) -> None:
+        await client.post(
+            ACADEMY,
+            json={
+                "slug": "spatchcock",
+                "kind": "technique",
+                "name": "spatchcock",
+                "spellings": ["spatchcocked"],
+                "summary": "Flatten a bird so it cooks evenly.",
+                "explanation": "Cut out the backbone and press down.",
+                "caution": None,
+                "name_matches": True,
+            },
+            headers=headers,
+        )
+
+    async def test_the_list_needs_no_account(self, client: AsyncClient, stocked: int) -> None:
+        listed = await client.get(ACADEMY)
+        assert listed.status_code == 200
+        assert any(one["slug"] == "blanch" for one in listed.json())
+
+    async def test_a_page_needs_no_account(self, client: AsyncClient, stocked: int) -> None:
+        assert (await client.get(f"{ACADEMY}/blanch")).status_code == 200
+
+    async def test_a_term_needs_no_account(self, client: AsyncClient, stocked: int) -> None:
+        found = await client.get(f"{ACADEMY}/terms/blanch")
+        assert found.status_code == 200
+        assert [one["slug"] for one in found.json()] == ["blanch"]
+
+    async def test_a_visitor_reads_in_the_language_they_asked_for(
+        self, client: AsyncClient, stocked: int
+    ) -> None:
+        """A signed-out reader has no cook record to take a language from, so they say."""
+        page = await client.get(f"{ACADEMY}/blanch?locale=de-CH")
+        assert page.json()["name"] == "blanchieren"
+
+    async def test_a_visitor_who_says_nothing_gets_the_source_language(
+        self, client: AsyncClient, stocked: int
+    ) -> None:
+        assert (await client.get(f"{ACADEMY}/blanch")).json()["name"] == "blanch"
+
+    async def test_a_page_nobody_has_read_is_not_published(
+        self, client: AsyncClient, cook: dict[str, str], stocked: int
+    ) -> None:
+        """Anyone let through the door could otherwise publish to the open internet under
+        this instance's name."""
+        await self.a_draft(client, cook)
+        assert (await client.get(f"{ACADEMY}/spatchcock")).status_code == 404
+
+    async def test_and_it_is_not_in_the_public_list(
+        self, client: AsyncClient, cook: dict[str, str], stocked: int
+    ) -> None:
+        await self.a_draft(client, cook)
+        listed = await client.get(ACADEMY)
+        assert all(one["slug"] != "spatchcock" for one in listed.json())
+
+    async def test_but_the_people_here_still_see_it(
+        self, client: AsyncClient, cook: dict[str, str], stocked: int
+    ) -> None:
+        """ADR-060 unchanged: an author has to be able to see their own draft."""
+        await self.a_draft(client, cook)
+        assert (await client.get(f"{ACADEMY}/spatchcock", headers=cook)).status_code == 200
+
+    async def test_approving_it_publishes_it(
+        self, client: AsyncClient, cook: dict[str, str], admin: dict[str, str], stocked: int
+    ) -> None:
+        await self.a_draft(client, cook)
+        await client.post(f"{ACADEMY}/spatchcock/approved", headers=admin)
+        assert (await client.get(f"{ACADEMY}/spatchcock")).status_code == 200
+
+    async def test_a_visitor_cannot_ask_for_the_queue(
+        self, client: AsyncClient, cook: dict[str, str], stocked: int
+    ) -> None:
+        """Asking for what is unreviewed is asking for what is not published."""
+        await self.a_draft(client, cook)
+        assert (await client.get(f"{ACADEMY}?approved=false")).json() == []
+
+    async def test_a_visitor_cannot_write_one(self, client: AsyncClient) -> None:
+        made = await client.post(
+            ACADEMY,
+            json={
+                "slug": "spatchcock",
+                "kind": "technique",
+                "name": "spatchcock",
+                "spellings": [],
+                "summary": "Flatten a bird.",
+                "explanation": "Cut out the backbone.",
+                "caution": None,
+                "name_matches": True,
+            },
+        )
+        assert made.status_code == 401
+
+    async def test_a_visitor_cannot_correct_one(self, client: AsyncClient, stocked: int) -> None:
+        refused = await client.put(
+            f"{ACADEMY}/blanch/wordings/en-GB",
+            json={
+                "name": "blanch",
+                "spellings": [],
+                "summary": "Something else.",
+                "explanation": "Something else entirely.",
+                "caution": None,
+                "name_matches": True,
+            },
+        )
+        assert refused.status_code == 401
+
+    async def test_a_visitor_cannot_approve_one(self, client: AsyncClient, stocked: int) -> None:
+        assert (await client.post(f"{ACADEMY}/blanch/approved")).status_code == 401
+
+    async def test_a_visitor_cannot_decline_one(self, client: AsyncClient, stocked: int) -> None:
+        assert (await client.delete(f"{ACADEMY}/blanch")).status_code == 401
+
+    async def test_a_visitor_cannot_spend_the_operators_money(self, client: AsyncClient) -> None:
+        """An open relay to a paid provider is what this would otherwise be."""
+        asked = await client.post("/api/v1/academy/explanations", json={"term": "spatchcock"})
+        assert asked.status_code == 401
+
+
+class TestAPictureOnAPublicPage:
+    """A picture is public exactly when the page it is on is (ADR-063).
+
+    Media ids are unguessable, and that is not an access rule — it is the absence of one.
+    Today every picture here is an Academy picture, and the first recipe photograph would
+    otherwise have been published by a decision nobody revisited.
+    """
+
+    @pytest.fixture
+    async def admin(self, client: AsyncClient) -> dict[str, str]:
+        return await sign_up_admin(client)
+
+    async def illustrated(self, client: AsyncClient, admin: dict[str, str], slug: str) -> str:
+        picture = BytesIO()
+        Image.new("RGB", (40, 30), "white").save(picture, format="PNG")
+        added = await client.post(
+            f"{ACADEMY}/{slug}/pictures",
+            files={"picture": ("shot.png", picture.getvalue(), "image/png")},
+            data={"description": "A pan of water at a rolling boil."},
+            headers=admin,
+        )
+        assert added.status_code == 200, added.text
+        return str(added.json()["pictures"][0]["media_id"])
+
+    async def a_draft(self, client: AsyncClient, headers: dict[str, str]) -> None:
+        await client.post(
+            ACADEMY,
+            json={
+                "slug": "spatchcock",
+                "kind": "technique",
+                "name": "spatchcock",
+                "spellings": [],
+                "summary": "Flatten a bird.",
+                "explanation": "Cut out the backbone.",
+                "caution": None,
+                "name_matches": True,
+            },
+            headers=headers,
+        )
+
+    async def test_a_picture_on_an_approved_page_needs_no_account(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        media_id = await self.illustrated(client, admin, "blanch")
+        assert (await client.get(f"/api/v1/media/{media_id}")).status_code == 200
+
+    async def test_a_picture_on_a_page_nobody_has_read_is_not_served(
+        self, client: AsyncClient, cook: dict[str, str], admin: dict[str, str], stocked: int
+    ) -> None:
+        await self.a_draft(client, cook)
+        media_id = await self.illustrated(client, admin, "spatchcock")
+        assert (await client.get(f"/api/v1/media/{media_id}")).status_code == 404
+
+    async def test_but_the_people_here_still_see_it(
+        self, client: AsyncClient, cook: dict[str, str], admin: dict[str, str], stocked: int
+    ) -> None:
+        await self.a_draft(client, cook)
+        media_id = await self.illustrated(client, admin, "spatchcock")
+        assert (await client.get(f"/api/v1/media/{media_id}", headers=cook)).status_code == 200
+
+    async def test_a_picture_on_no_page_at_all_is_not_served(
+        self, client: AsyncClient, admin: dict[str, str], stocked: int
+    ) -> None:
+        """An orphan — a file whose page was corrected out from under it. Nothing refers to
+        it, so nothing publishes it."""
+        media_id = await self.illustrated(client, admin, "blanch")
+        page = await client.get(f"{ACADEMY}/blanch", headers=admin)
+        await client.delete(
+            f"{ACADEMY}/blanch/pictures/{page.json()['pictures'][0]['id']}", headers=admin
+        )
+        assert (await client.get(f"/api/v1/media/{media_id}")).status_code == 404

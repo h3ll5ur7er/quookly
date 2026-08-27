@@ -409,7 +409,31 @@ languages, with the spellings a step is actually written with.
    Optional by construction, and proved so: the e2e harness runs with no provider, and the spec for
    this feature is the honest failure — *nobody has explained that yet, and this instance has no
    model to ask*.
-9. **A public Academy page.** Readable without an account; generation is not.
+9. ~~**A public Academy page.** Readable without an account; generation is not.~~ **Built** —
+   listing, reading a page and asking which pages claim a term need no account. Writing,
+   correcting, approving, declining, illustrating and **asking a model** still do; the last of
+   those would otherwise be an open relay to a paid provider.
+
+   The load-bearing half is *which* pages: **only what somebody here has read**. An unreviewed
+   page stays readable by the people here — that is
+   [ADR-060](07-decisions.md#adr-060-an-unreviewed-page-can-be-read-but-cannot-attach-itself-to-somebody-elses-recipe),
+   and the author has to see their draft — but publishing it is a different act. Without the rule,
+   anyone let through the door could publish arbitrary text to the open internet under the
+   instance's name, and a generated page nobody had read would be published by the act of asking
+   for it
+   ([ADR-063](07-decisions.md#adr-063-the-academy-is-readable-without-an-account-and-only-what-somebody-here-has-read-is)).
+
+   **A picture is public exactly when its page is** — a query, not an unguessable id. Today every
+   picture here is an Academy picture, so the first recipe photograph would otherwise have been
+   published by a decision nobody revisited.
+
+   A signed-out reader says which language they want, having no cook record to take one from; a
+   stranger asking for the review queue is told there are none rather than quietly handed the
+   published list. And the landing page links to it, because a public Academy nobody can find from
+   the front door is reachable only by typing a URL.
+
+**Phase 7 is complete.** The remaining Academy work is the CLI's, and deliberately later: see
+Phase 9.
 
 The registry half of this phase is where the shape came from. A page has a slug, canonical names and
 spellings per locale, a provenance and a review state, and the same things go wrong with it — which

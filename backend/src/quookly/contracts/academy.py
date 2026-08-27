@@ -108,6 +108,29 @@ class Listing:
 
 
 @dataclass(frozen=True, slots=True)
+class Reader:
+    """Who is reading the Academy: somebody here, or a stranger.
+
+    The difference decides two things. **Which language** — a cook has chosen one and a
+    stranger has to say. And **how much** — a stranger sees only what somebody here has
+    read, because publishing a page is a different act from letting the people here see a
+    draft (ADR-063).
+
+    A value rather than two parameters threaded through three functions: the pair is one
+    fact, and separating them is how one call site comes to pass a locale and forget the
+    visibility.
+    """
+
+    cook_id: int | None = None
+    #: What a stranger asked to read in. Ignored where there is a cook, who has chosen.
+    locale: str | None = None
+
+    @property
+    def is_a_stranger(self) -> bool:
+        return self.cook_id is None
+
+
+@dataclass(frozen=True, slots=True)
 class Standing:
     """Where a page stands, for deciding who may do what to it.
 

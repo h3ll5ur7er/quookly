@@ -52,6 +52,7 @@ describe('AcademyPageComponent', () => {
 
   async function arrive({
     admin = false,
+    signedIn = true,
     params = { slug: 'fold' } as Record<string, string>,
   } = {}): Promise<void> {
     TestBed.resetTestingModule();
@@ -63,7 +64,7 @@ describe('AcademyPageComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideApi(''),
-        { provide: AuthStore, useValue: { isAdmin: signal(admin) } },
+        { provide: AuthStore, useValue: { isAdmin: signal(admin), isSignedIn: signal(signedIn) } },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -84,7 +85,7 @@ describe('AcademyPageComponent', () => {
   describe('reading a page', () => {
     it('shows what it means', async () => {
       await arrive();
-      backend.expectOne('/api/v1/academy/fold').flush(FOLD);
+      backend.expectOne((one) => one.url === '/api/v1/academy/fold').flush(FOLD);
       await fixture.whenStable();
       expect(text()).toContain('Combine without knocking out the air.');
     });
@@ -93,7 +94,9 @@ describe('AcademyPageComponent', () => {
       await arrive();
       // What the server sends somebody who may not: the rule has three parts and is
       // answered there rather than re-derived here (ADR-060).
-      backend.expectOne('/api/v1/academy/fold').flush({ ...FOLD, may_rewrite: false });
+      backend
+        .expectOne((one) => one.url === '/api/v1/academy/fold')
+        .flush({ ...FOLD, may_rewrite: false });
       await fixture.whenStable();
       expect(text()).not.toContain('Correct this page');
     });
@@ -103,7 +106,7 @@ describe('AcademyPageComponent', () => {
          typo will not write a second page. */
       await arrive();
       backend
-        .expectOne('/api/v1/academy/fold')
+        .expectOne((one) => one.url === '/api/v1/academy/fold')
         .flush({ ...FOLD, approved: false, may_rewrite: true });
       await fixture.whenStable();
       expect(text()).toContain('Correct this page');
@@ -112,7 +115,7 @@ describe('AcademyPageComponent', () => {
     it('says so when nobody has read the page yet', async () => {
       await arrive();
       backend
-        .expectOne('/api/v1/academy/fold')
+        .expectOne((one) => one.url === '/api/v1/academy/fold')
         .flush({ ...FOLD, approved: false, may_rewrite: true });
       await fixture.whenStable();
       expect(text()).toContain('not marked in recipes');
@@ -124,7 +127,7 @@ describe('AcademyPageComponent', () => {
        one that has to say what it is doing before and after (ADR-062). */
     async function arriveOnATerm(): Promise<void> {
       await arrive({ params: { term: 'spatchcock' } });
-      backend.expectOne('/api/v1/academy/terms/spatchcock').flush([]);
+      backend.expectOne((one) => one.url === '/api/v1/academy/terms/spatchcock').flush([]);
       await fixture.whenStable();
     }
 
@@ -143,7 +146,7 @@ describe('AcademyPageComponent', () => {
       click('Ask for an explanation');
       await fixture.whenStable();
 
-      const sent = backend.expectOne('/api/v1/academy/explanations');
+      const sent = backend.expectOne((one) => one.url === '/api/v1/academy/explanations');
       expect(sent.request.method).toBe('POST');
       expect(sent.request.body.term).toBe('spatchcock');
       sent.flush({
@@ -167,7 +170,7 @@ describe('AcademyPageComponent', () => {
       await fixture.whenStable();
 
       backend
-        .expectOne('/api/v1/academy/explanations')
+        .expectOne((one) => one.url === '/api/v1/academy/explanations')
         .flush(
           { detail: 'Nobody has explained that yet, and this instance has no model to ask.' },
           { status: 422, statusText: 'Unprocessable Content' },
@@ -181,7 +184,7 @@ describe('AcademyPageComponent', () => {
       /* A slug nobody wrote is a broken link, not an unexplained word. */
       await arrive({ params: { slug: 'nothing-of-the-sort' } });
       backend
-        .expectOne('/api/v1/academy/nothing-of-the-sort')
+        .expectOne((one) => one.url === '/api/v1/academy/nothing-of-the-sort')
         .flush({}, { status: 404, statusText: 'Not Found' });
       await fixture.whenStable();
       expect(text()).not.toContain('Ask for an explanation');
@@ -209,7 +212,7 @@ describe('AcademyPageComponent', () => {
 
     it('shows what the registry knows about the food', async () => {
       await arrive({ params: { slug: 'about-plain-flour' } });
-      backend.expectOne('/api/v1/academy/about-plain-flour').flush(FLOUR);
+      backend.expectOne((one) => one.url === '/api/v1/academy/about-plain-flour').flush(FLOUR);
       await fixture.whenStable();
       expect(text()).toContain('gluten');
     });
@@ -219,7 +222,7 @@ describe('AcademyPageComponent', () => {
          food nobody has examined reads that as "contains none". */
       await arrive({ params: { slug: 'about-plain-flour' } });
       backend
-        .expectOne('/api/v1/academy/about-plain-flour')
+        .expectOne((one) => one.url === '/api/v1/academy/about-plain-flour')
         .flush({ ...FLOUR, entry: { ...FLOUR.entry, allergens: [], classified: false } });
       await fixture.whenStable();
 
@@ -230,7 +233,7 @@ describe('AcademyPageComponent', () => {
     it('says so plainly when a classified food contains none of them', async () => {
       await arrive({ params: { slug: 'about-plain-flour' } });
       backend
-        .expectOne('/api/v1/academy/about-plain-flour')
+        .expectOne((one) => one.url === '/api/v1/academy/about-plain-flour')
         .flush({ ...FLOUR, entry: { ...FLOUR.entry, allergens: [], classified: true } });
       await fixture.whenStable();
 
@@ -239,7 +242,7 @@ describe('AcademyPageComponent', () => {
 
     it('leads to the registry entry, where the facts are corrected', async () => {
       await arrive({ params: { slug: 'about-plain-flour' } });
-      backend.expectOne('/api/v1/academy/about-plain-flour').flush(FLOUR);
+      backend.expectOne((one) => one.url === '/api/v1/academy/about-plain-flour').flush(FLOUR);
       await fixture.whenStable();
 
       const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.academy__entry a');
@@ -248,7 +251,7 @@ describe('AcademyPageComponent', () => {
 
     it('shows nothing of the sort on a technique page', async () => {
       await arrive();
-      backend.expectOne('/api/v1/academy/fold').flush(FOLD);
+      backend.expectOne((one) => one.url === '/api/v1/academy/fold').flush(FOLD);
       await fixture.whenStable();
       expect(fixture.nativeElement.querySelector('.academy__entry')).toBeNull();
     });
@@ -257,7 +260,7 @@ describe('AcademyPageComponent', () => {
   describe('correcting it', () => {
     it('arrives filled in with what the page says', async () => {
       await arrive({ admin: true });
-      backend.expectOne('/api/v1/academy/fold').flush(FOLD);
+      backend.expectOne((one) => one.url === '/api/v1/academy/fold').flush(FOLD);
       await fixture.whenStable();
 
       click('Correct this page');
@@ -272,7 +275,7 @@ describe('AcademyPageComponent', () => {
 
     it('sends the whole wording for one language', async () => {
       await arrive({ admin: true });
-      backend.expectOne('/api/v1/academy/fold').flush(FOLD);
+      backend.expectOne((one) => one.url === '/api/v1/academy/fold').flush(FOLD);
       await fixture.whenStable();
 
       click('Correct this page');
@@ -293,7 +296,7 @@ describe('AcademyPageComponent', () => {
 
     it('sends the language being edited, not always English', async () => {
       await arrive({ admin: true });
-      backend.expectOne('/api/v1/academy/fold').flush(FOLD);
+      backend.expectOne((one) => one.url === '/api/v1/academy/fold').flush(FOLD);
       await fixture.whenStable();
 
       click('Correct this page');
@@ -310,7 +313,7 @@ describe('AcademyPageComponent', () => {
 
     it('keeps what was typed when saving fails', async () => {
       await arrive({ admin: true });
-      backend.expectOne('/api/v1/academy/fold').flush(FOLD);
+      backend.expectOne((one) => one.url === '/api/v1/academy/fold').flush(FOLD);
       await fixture.whenStable();
 
       click('Correct this page');
@@ -336,7 +339,7 @@ describe('AcademyPageComponent', () => {
 
     it('offers approval on a page nobody has checked', async () => {
       await arrive({ admin: true });
-      backend.expectOne('/api/v1/academy/fold').flush(unchecked);
+      backend.expectOne((one) => one.url === '/api/v1/academy/fold').flush(unchecked);
       await fixture.whenStable();
       expect(text()).toContain('Nobody here has checked it');
       expect(text()).toContain('Approve');
@@ -344,7 +347,7 @@ describe('AcademyPageComponent', () => {
 
     it('stops saying so once approved', async () => {
       await arrive({ admin: true });
-      backend.expectOne('/api/v1/academy/fold').flush(unchecked);
+      backend.expectOne((one) => one.url === '/api/v1/academy/fold').flush(unchecked);
       await fixture.whenStable();
 
       click('Approve');
@@ -357,9 +360,63 @@ describe('AcademyPageComponent', () => {
 
     it('offers nothing to approve on a page that is already checked', async () => {
       await arrive({ admin: true });
-      backend.expectOne('/api/v1/academy/fold').flush(FOLD);
+      backend.expectOne((one) => one.url === '/api/v1/academy/fold').flush(FOLD);
       await fixture.whenStable();
       expect(text()).not.toContain('Approve');
+    });
+  });
+
+  describe('to somebody with no account', () => {
+    /* A stranger is shown the page and nothing that leads where they cannot go: no
+       correcting, no asking a model, and no link into the household's registry
+       (ADR-063). */
+    const FLOUR = {
+      ...FOLD,
+      slug: 'about-plain-flour',
+      kind: 'ingredient',
+      may_rewrite: false,
+      entry: {
+        slug: 'plain-flour',
+        name: 'plain flour',
+        kind: 'powder',
+        allergens: ['gluten'],
+        classified: true,
+        density: null,
+        piece_grams: null,
+        has_nutrition: true,
+      },
+    };
+
+    it('reads the page', async () => {
+      await arrive({ signedIn: false });
+      backend.expectOne((one) => one.url === '/api/v1/academy/fold').flush(FOLD);
+      await fixture.whenStable();
+      expect(text()).toContain('Combine without knocking out the air.');
+    });
+
+    it('still sees what the kitchen knows about a food', async () => {
+      /* Generic food data, not the household's. The link to correct it is the private
+         part, not the figures. */
+      await arrive({ signedIn: false, params: { slug: 'about-plain-flour' } });
+      backend.expectOne((one) => one.url === '/api/v1/academy/about-plain-flour').flush(FLOUR);
+      await fixture.whenStable();
+      expect(text()).toContain('gluten');
+    });
+
+    it('is not sent to a registry screen it cannot open', async () => {
+      await arrive({ signedIn: false, params: { slug: 'about-plain-flour' } });
+      backend.expectOne((one) => one.url === '/api/v1/academy/about-plain-flour').flush(FLOUR);
+      await fixture.whenStable();
+      expect(fixture.nativeElement.querySelector('.academy__entry a')).toBeNull();
+    });
+
+    it("is not offered a model to spend somebody else's money on", async () => {
+      await arrive({ signedIn: false, params: { term: 'spatchcock' } });
+      backend.expectOne((one) => one.url === '/api/v1/academy/terms/spatchcock').flush([]);
+      await fixture.whenStable();
+
+      expect(text()).toContain('Nobody has explained that yet');
+      expect(text()).not.toContain('Ask for an explanation');
     });
   });
 });

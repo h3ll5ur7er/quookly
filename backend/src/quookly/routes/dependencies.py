@@ -42,6 +42,23 @@ def current_principal(request: Request) -> Principal:
 CurrentCook = Annotated[Principal, Depends(current_principal)]
 
 
+def maybe_principal(request: Request) -> Principal | None:
+    """Who is asking, if anybody.
+
+    For the endpoints a stranger may read. A bad token is *absent* rather than a refusal:
+    somebody arriving with an expired session should see the public page rather than a
+    401, and every endpoint using this already decides what a stranger may see.
+    """
+    header = request.headers.get("Authorization", "")
+    scheme, _, token = header.partition(" ")
+    if scheme != _SCHEME or not token:
+        return None
+    return read_token(token)
+
+
+MaybeCook = Annotated[Principal | None, Depends(maybe_principal)]
+
+
 def require_admin(cook: "CurrentCook") -> Principal:
     """Who is asking, if they administer this instance.
 

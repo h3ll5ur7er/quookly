@@ -1523,6 +1523,24 @@
               "title": "About"
             },
             "description": "Only the pages written about one registry entry."
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The language to read in, for a caller with no account.",
+              "title": "Locale"
+            },
+            "description": "The language to read in, for a caller with no account."
           }
         ],
         "responses": {
@@ -1610,6 +1628,24 @@
               "type": "string",
               "title": "Term"
             }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The language to read in, for a caller with no account.",
+              "title": "Locale"
+            },
+            "description": "The language to read in, for a caller with no account."
           }
         ],
         "responses": {
@@ -1646,7 +1682,7 @@
           "academy"
         ],
         "summary": "Read Page",
-        "description": "One page, with the other pages its name belongs to named at the top.",
+        "description": "One page, with the other pages its name belongs to named at the top.\n\nReadable without an account, and then only if somebody here has read it: publishing a\npage is a different act from letting the people here see a draft (ADR-063).",
         "operationId": "readPage",
         "parameters": [
           {
@@ -1657,6 +1693,24 @@
               "type": "string",
               "title": "Slug"
             }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The language to read in, for a caller with no account.",
+              "title": "Locale"
+            },
+            "description": "The language to read in, for a caller with no account."
           }
         ],
         "responses": {
@@ -1975,7 +2029,7 @@
           "media"
         ],
         "summary": "Read Media",
-        "description": "The bytes of a stored picture.\n\nSigned in, like everything else here: this is a household's instance, and what it holds\nis not offered to whoever asks.",
+        "description": "The bytes of a stored picture.\n\nSigned in, or on a page that has been published. A picture is part of its page rather\nthan a separate publication, so it follows the page's rule: approved, and not put away\n(ADR-063).\n\nNot left to the id being unguessable. That is the absence of an access rule rather\nthan one \u2014 and today every picture here is an Academy picture, so the first recipe\nphotograph would have been published by a decision nobody revisited.",
         "operationId": "readMedia",
         "parameters": [
           {

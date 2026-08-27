@@ -140,6 +140,28 @@ async def write(
         await active.commit()
 
 
+async def is_published(media_id: str) -> bool:
+    """Whether this picture is on a page a stranger may read.
+
+    On an approved page that has not been put away — the same rule the page itself
+    follows, because a picture is part of the page and not a separate publication
+    (ADR-063).
+    """
+    async with session() as active:
+        found = (
+            await active.exec(
+                select(AcademyPictureRow.id)
+                .join(AcademyPageRow, onclause=col(AcademyPictureRow.page_id) == AcademyPageRow.id)
+                .where(
+                    col(AcademyPictureRow.media_id) == media_id,
+                    col(AcademyPageRow.approved).is_(True),
+                    col(AcademyPageRow.archived_at).is_(None),
+                )
+            )
+        ).first()
+        return found is not None
+
+
 async def entry_of(slug: str) -> int | None:
     """The registry entry a page is about, where it is about one.
 

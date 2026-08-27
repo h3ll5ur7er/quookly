@@ -9,6 +9,7 @@ from quookly.contracts.academy import (
     PageKind,
     PageSummaryView,
     PageView,
+    Reader,
     Wording,
 )
 from quookly.contracts.errors import (
@@ -23,10 +24,29 @@ from quookly.contracts.errors import (
     StructuredOutputUnusable,
     UnreadableImage,
 )
+from quookly.contracts.security import Principal
 from quookly.managers import academy as academy_manager
-from quookly.routes.dependencies import CurrentAdmin, CurrentCook
+from quookly.routes.dependencies import CurrentAdmin, CurrentCook, MaybeCook
 
 router = APIRouter()
+
+
+def _reader(cook: Principal | None, locale: str | None) -> Reader:
+    """Who is reading, in what language, and how much of the Academy they may see.
+
+    A signed-out reader has no cook record to take a language from, so they say — and a
+    language this instance does not speak falls back rather than failing, which is what
+    the page texts do anyway.
+    """
+    if cook is not None:
+        return Reader(cook_id=cook.cook_id)
+    return Reader(locale=locale if locale in SPOKEN else None)
+
+
+#: The languages this instance's pages are written in. A query naming anything else is
+#: read as the source language rather than refused: a stranger with an odd Accept-Language
+#: wants a page, not a validation error.
+SPOKEN = frozenset({"en-GB", "de-CH", "fr-CH"})
 
 NOT_FOUND = HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such page.")
 
@@ -72,13 +92,16 @@ class NewPageInput(WordingInput):
 
 @router.get("/academy", response_model=list[PageSummaryView])
 async def browse_academy(
-    cook: CurrentCook,
+    cook: MaybeCook,
     kind: PageKind | None = Query(default=None, description="Show one section on its own."),
     approved: bool | None = Query(
         default=None, description="Narrow to what has been reviewed, or to what awaits it."
     ),
     about: str | None = Query(
         default=None, description="Only the pages written about one registry entry."
+    ),
+    locale: str | None = Query(
+        default=None, description="The language to read in, for a caller with no account."
     ),
 ) -> list[PageSummaryView]:
     """Every page, in the cook's language, ordered by the name they will read.
@@ -87,7 +110,7 @@ async def browse_academy(
     not whether it can be read (ADR-060). Pages put away are not listed at all.
     """
     try:
-        return await academy_manager.browse(cook.cook_id, kind, approved, about)
+        return await academy_manager.browse(_reader(cook, locale), kind, approved, about)
     except IngredientNotRegistered as unknown:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -96,20 +119,38 @@ async def browse_academy(
 
 
 @router.get("/academy/terms/{term}", response_model=list[ClaimantView])
-async def pages_for_term(term: str, cook: CurrentCook) -> list[ClaimantView]:
+async def pages_for_term(
+    term: str,
+    cook: MaybeCook,
+    locale: str | None = Query(
+        default=None, description="The language to read in, for a caller with no account."
+    ),
+) -> list[ClaimantView]:
     """Every page that answers to a term.
 
     Declared **before** `/academy/{slug}`, or that route would swallow it. A step's word
     links here rather than to a page: one claimant opens it, several offer a chooser, and
     nothing picks arbitrarily (ADR-058).
     """
-    return await academy_manager.claimants(term, cook.cook_id)
+    return await academy_manager.claimants(term, _reader(cook, locale))
 
 
 @router.get("/academy/{slug}", response_model=PageView)
-async def read_page(slug: str, cook: CurrentCook) -> PageView:
-    """One page, with the other pages its name belongs to named at the top."""
-    found = await academy_manager.read(slug, cook.cook_id, cook.is_admin)
+async def read_page(
+    slug: str,
+    cook: MaybeCook,
+    locale: str | None = Query(
+        default=None, description="The language to read in, for a caller with no account."
+    ),
+) -> PageView:
+    """One page, with the other pages its name belongs to named at the top.
+
+    Readable without an account, and then only if somebody here has read it: publishing a
+    page is a different act from letting the people here see a draft (ADR-063).
+    """
+    found = await academy_manager.read(
+        slug, _reader(cook, locale), cook is not None and cook.is_admin
+    )
     if found is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such page.")
     return found

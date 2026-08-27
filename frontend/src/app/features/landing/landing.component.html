@@ -26,6 +26,15 @@
     <p class="landing__whose" i18n="@@landingWhose">
       This Quookly belongs to somebody. They decide who gets in.
     </p>
+
+    <!-- The one thing here that is not a household's. Reachable without an account, and
+         the only way a visitor finds it (ADR-063). -->
+    <p class="landing__open">
+      <a routerLink="/academy" i18n="@@landingAcademy">Read the Academy</a>
+      <span class="landing__open-note" i18n="@@landingAcademyWhat">
+        What the words in a recipe mean. No account needed.
+      </span>
+    </p>
   </section>
 
   <section class="landing__points" aria-labelledby="points-heading">

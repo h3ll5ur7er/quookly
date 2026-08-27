@@ -4,7 +4,7 @@ import { FormBuilder, FormControl, ReactiveFormsModule } from '@angular/forms';
 import { AcademyService, ClaimantView, PageView } from '@api';
 import { AuthStore } from '../../core/auth/auth.store';
 import { PictureComponent } from '../../core/media/picture.component';
-import { LOCALES } from '../../core/locale/locale.store';
+import { LOCALES, preferredLocale } from '../../core/locale/locale.store';
 import { allergenLabel } from '../../core/dietary/labels';
 
 @Component({
@@ -20,7 +20,10 @@ export class AcademyPageComponent {
   private readonly forms = inject(FormBuilder);
 
   /** Correcting the Academy changes what every cook here reads, so it is an admin's. */
-  protected readonly isAdmin = inject(AuthStore).isAdmin;
+  private readonly auth = inject(AuthStore);
+  protected readonly isAdmin = this.auth.isAdmin;
+  /** Reading needs no account; everything that changes the Academy does (ADR-063). */
+  protected readonly isSignedIn = this.auth.isSignedIn;
   protected readonly locales = LOCALES;
   /** The fourteen have names a reader knows; the enum has slugs. */
   protected readonly allergenLabel = allergenLabel;
@@ -73,7 +76,9 @@ export class AcademyPageComponent {
   constructor() {
     const slug = this.route.paramMap.get('slug');
     if (slug !== null) {
-      this.service.readPage(slug).subscribe({
+      // The language is sent, not derived: a signed-out reader has no cook record for the
+      // server to take one from. It is ignored where there is one (ADR-063).
+      this.service.readPage(slug, preferredLocale()).subscribe({
         next: (found) => this.page.set(found),
         error: (refusal: { status?: number }) =>
           refusal.status === 404 ? this.missing.set(true) : this.failed.set(true),
@@ -81,7 +86,7 @@ export class AcademyPageComponent {
       return;
     }
     if (this.term !== null) {
-      this.service.pagesForTerm(this.term).subscribe({
+      this.service.pagesForTerm(this.term, preferredLocale()).subscribe({
         next: (found) => {
           // One claimant is not a choice. Showing a chooser with a single option would be
           // asking a question that answers itself.

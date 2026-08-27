@@ -22,6 +22,17 @@ export default defineConfig({
     // the date field in these screenshots reads mm/dd/yyyy where a European cook's browser
     // would not. The field is the platform's, which is the reason for using it.
     locale: 'en-GB',
+    // The full browser rather than Playwright's `chrome-headless-shell`, which segfaults
+    // here. The crash surfaced one test later as "Target page, context or browser has
+    // been closed", so it landed on whichever test asked for a context next rather than
+    // on anything broken — which is why the failures moved between runs and why every
+    // file passed when run on its own.
+    channel: 'chromium',
+    // No GPU worth using in a headless suite, and `/dev/shm` is the other thing Chromium
+    // falls over on when a machine is not a desktop.
+    launchOptions: {
+      args: ['--disable-gpu', '--disable-dev-shm-usage'],
+    },
   },
   webServer: [
     {

@@ -3,6 +3,8 @@ import { Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { AcademyService, PageKind, PageSummaryView } from '@api';
+import { AuthStore } from '../../core/auth/auth.store';
+import { preferredLocale } from '../../core/locale/locale.store';
 
 @Component({
   selector: 'app-academy',
@@ -21,6 +23,9 @@ export class AcademyComponent {
    * Filtered here rather than re-asked. The Academy arrives whole and is small enough to,
    * and a round trip to hide half a list is a round trip a cook waits for.
    */
+  /** Reading needs no account; everything that changes the Academy does (ADR-063). */
+  protected readonly isSignedIn = inject(AuthStore).isSignedIn;
+
   protected readonly kinds = PageKind;
   protected readonly section = signal<PageKind | null>(null);
 
@@ -62,7 +67,9 @@ export class AcademyComponent {
       .subscribe((word) => this.typed.set(word.trim()));
 
     inject(AcademyService)
-      .browseAcademy()
+      // The language is sent, not derived: a signed-out reader has no cook record for the
+      // server to take one from. It is ignored where there is one (ADR-063).
+      .browseAcademy(undefined, undefined, undefined, preferredLocale())
       .subscribe({
         // An empty Academy and an unreachable one look identical unless one says so.
         next: (found) => this.pages.set(found),

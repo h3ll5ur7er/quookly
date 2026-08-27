@@ -12,6 +12,7 @@ from dataclasses import replace
 
 from quookly.access import academy, ingredient, media
 from quookly.access import cook as cook_access
+from quookly.access.academy import SOURCE_LOCALE
 from quookly.contracts.academy import (
     ClaimantView,
     EntryView,
@@ -21,6 +22,7 @@ from quookly.contracts.academy import (
     PageSummaryView,
     PageView,
     PictureView,
+    Reader,
     Standing,
     Wording,
 )
@@ -30,7 +32,7 @@ from quookly.utilities.text import normalise
 
 
 async def browse(
-    cook_id: int,
+    reader: Reader,
     kind: PageKind | None = None,
     approved: bool | None = None,
     about: str | None = None,
@@ -40,7 +42,15 @@ async def browse(
     `approved=False` is the review queue. Not an administrator's screen alone: seeing what
     is waiting is how a cook learns their own page has not been read yet.
     """
-    locale = await cook_access.locale_for(cook_id)
+    locale = await _language(reader)
+    if reader.is_a_stranger:
+        # Asking for what is unreviewed is asking for what has not been published, and the
+        # honest answer to that is *none* rather than the published list — quietly
+        # answering a different question is how a caller comes to believe the queue is
+        # empty (ADR-063).
+        if approved is False:
+            return []
+        approved = True
     # Asked of the Academy rather than answered by the registry entry, so that each side
     # keeps its own vocabulary — the registry's contracts already sit underneath the
     # Academy's, and answering there would make the two import each other (ADR-061).
@@ -75,14 +85,20 @@ def _summarised(one: Listing) -> PageSummaryView:
     )
 
 
-async def read(slug: str, cook_id: int, is_admin: bool = False) -> PageView | None:
+async def read(slug: str, reader: Reader, is_admin: bool = False) -> PageView | None:
     """One page whole, with the other pages its name belongs to.
 
     `is_admin` is passed in rather than looked up: the caller is a route holding a signed
     token that already says so, and reading a page should not cost a query to re-learn it.
+
+    A stranger reading a page nobody here has read is told there is no such page —
+    *absent rather than refused*, which is what it is: nothing has been published under
+    that name (ADR-063).
     """
-    found = await academy.detail(slug, await cook_access.locale_for(cook_id))
+    found = await academy.detail(slug, await _language(reader))
     if found is None:
+        return None
+    if reader.is_a_stranger and not found.approved:
         return None
     standing = await academy.standing_of(slug)
     return PageView(
@@ -95,7 +111,7 @@ async def read(slug: str, cook_id: int, is_admin: bool = False) -> PageView | No
         origin=found.origin,
         generated=found.generated,
         approved=found.approved,
-        may_rewrite=_may_rewrite(standing, cook_id, is_admin),
+        may_rewrite=_may_rewrite(standing, reader.cook_id, is_admin),
         entry=None
         if found.entry is None
         else EntryView(
@@ -124,17 +140,25 @@ async def read(slug: str, cook_id: int, is_admin: bool = False) -> PageView | No
     )
 
 
-async def claimants(term: str, cook_id: int) -> list[ClaimantView]:
+async def claimants(term: str, reader: Reader) -> list[ClaimantView]:
     """Every page that answers to this term.
 
     The set rather than the answer: a step's word links to the *term*, and one claimant
     opens the page while several offer a chooser (ADR-058).
     """
-    locale = await cook_access.locale_for(cook_id)
+    # No visibility rule needed here: only an approved page claims a term at all, which is
+    # ADR-060 doing the work ADR-063 would otherwise have to repeat.
     return [
         ClaimantView(slug=one.slug, name=one.name, summary=one.summary)
-        for one in await academy.claimants_of(term, locale)
+        for one in await academy.claimants_of(term, await _language(reader))
     ]
+
+
+async def _language(reader: Reader) -> str:
+    """The language to read in: the cook's, or the one a stranger asked for."""
+    if reader.cook_id is not None:
+        return await cook_access.locale_for(reader.cook_id)
+    return reader.locale or SOURCE_LOCALE
 
 
 async def write(
@@ -164,7 +188,7 @@ async def write(
             raise IngredientNotRegistered(about)
         named = found.entry.id
     await academy.write(replace(page, wordings={locale: wording}), cook_id, named)
-    return await read(page.slug, cook_id, is_admin)
+    return await read(page.slug, Reader(cook_id=cook_id), is_admin)
 
 
 async def explain(term: str, cook_id: int, is_admin: bool = False) -> PageView | None:
@@ -189,7 +213,7 @@ async def explain(term: str, cook_id: int, is_admin: bool = False) -> PageView |
         cook_id=None,
         generated=True,
     )
-    return await read(slug, cook_id, is_admin)
+    return await read(slug, Reader(cook_id=cook_id), is_admin)
 
 
 def _slugged(term: str) -> str:
@@ -203,7 +227,7 @@ async def may_rewrite(slug: str, cook_id: int, is_admin: bool) -> bool:
     return _may_rewrite(await academy.standing_of(slug), cook_id, is_admin)
 
 
-def _may_rewrite(standing: Standing | None, cook_id: int, is_admin: bool) -> bool:
+def _may_rewrite(standing: Standing | None, cook_id: int | None, is_admin: bool) -> bool:
     """The rule, in one place.
 
     An administrator always may, because a correction changes what every cook here reads.
@@ -213,7 +237,7 @@ def _may_rewrite(standing: Standing | None, cook_id: int, is_admin: bool) -> boo
     """
     if is_admin:
         return True
-    if standing is None:
+    if standing is None or cook_id is None:
         return False
     return not standing.approved and standing.written_by == cook_id
 
@@ -232,13 +256,13 @@ async def amend(
 ) -> PageView | None:
     """Rewrite one language's wording, and hand the page back as the editor will read it."""
     await academy.amend(slug, locale, wording)
-    return await read(slug, cook_id, is_admin)
+    return await read(slug, Reader(cook_id=cook_id), is_admin)
 
 
 async def approve(slug: str, cook_id: int, is_admin: bool = False) -> PageView | None:
     """Record that somebody has read this page."""
     await academy.approve(slug)
-    return await read(slug, cook_id, is_admin)
+    return await read(slug, Reader(cook_id=cook_id), is_admin)
 
 
 async def illustrate(slug: str, upload: bytes, description: str, cook_id: int) -> PageView | None:
@@ -252,11 +276,11 @@ async def illustrate(slug: str, upload: bytes, description: str, cook_id: int) -
     locale = await cook_access.locale_for(cook_id)
     media_id = await media.store_image(upload)
     await academy.add_picture(slug, media_id, description, locale)
-    return await read(slug, cook_id)
+    return await read(slug, Reader(cook_id=cook_id))
 
 
 async def unillustrate(slug: str, picture_id: int, cook_id: int) -> PageView | None:
     """Take a picture off a page. The file stays — see `MediaAccess`."""
     if not await academy.remove_picture(slug, picture_id):
         return None
-    return await read(slug, cook_id)
+    return await read(slug, Reader(cook_id=cook_id))

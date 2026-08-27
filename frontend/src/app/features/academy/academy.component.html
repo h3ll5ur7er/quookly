@@ -48,9 +48,11 @@
     </button>
   </nav>
 
-  <a class="action action--quiet" routerLink="/academy/new" i18n="@@academyWriteOne">
-    Write a page
-  </a>
+  @if (isSignedIn()) {
+    <a class="action action--quiet" routerLink="/academy/new" i18n="@@academyWriteOne">
+      Write a page
+    </a>
+  }
 
   @if (failed()) {
     <p class="notice notice--danger" role="alert" i18n="@@academyListFailed">
@@ -60,7 +62,9 @@
     @if (waiting().length === 0 && settled().length === 0) {
       <p i18n="@@academyEmpty">Nothing here yet.</p>
     } @else {
-      @if (waiting().length > 0) {
+      <!-- The server sends a stranger nothing unreviewed either; this is the screen
+           agreeing rather than the screen deciding. -->
+      @if (isSignedIn() && waiting().length > 0) {
         <section class="academy__waiting">
           <h2 i18n="@@academyWaitingHeading">Waiting to be read</h2>
           <p class="academy__summary" i18n="@@academyWaitingWhat">

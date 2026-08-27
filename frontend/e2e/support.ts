@@ -173,10 +173,21 @@ export async function emptyKitchen(
 
   // The shelf lists an entry per ingredient, each holding its lots — stock is kept as lots
   // rather than as a total (ADR-034), and it is the lots that are removed.
+  //
+  // A lot with waste recorded against it *cannot* be deleted: the record would be left
+  // pointing at nothing, and the figure a cook is trying to bring down would quietly
+  // shrink (ADR-004). So it is emptied instead. Ignoring the refusal, which is what this
+  // did, left a full packet behind for whatever ran next.
   const shelf = await request.get('/api/v1/pantry', { headers });
   for (const entry of (await shelf.json()) as { lots: { id: number }[] }[]) {
     for (const lot of entry.lots) {
-      await request.delete(`/api/v1/pantry/lots/${lot.id}`, { headers });
+      const gone = await request.delete(`/api/v1/pantry/lots/${lot.id}`, { headers });
+      if (!gone.ok()) {
+        await request.patch(`/api/v1/pantry/lots/${lot.id}`, {
+          data: { magnitude: '0' },
+          headers,
+        });
+      }
     }
   }
 
@@ -184,4 +195,38 @@ export async function emptyKitchen(
   for (const person of (await household.json()) as { id: number }[]) {
     await request.delete(`/api/v1/eaters/${person.id}`, { headers });
   }
+
+  await nothingIsLeft(request, headers);
+}
+
+/**
+ * Prove the kitchen is actually empty, and say what is left if it is not.
+ *
+ * Every tidying request above can be *refused* — a lot with waste against it, a plan
+ * holding stock — and the loops ignored the answers. A refusal then cost nothing where it
+ * happened and turned up several files later as an arithmetic failure in a test about
+ * something else, which is the hardest kind of failure to read.
+ *
+ * Checked rather than trusted, and it fails where it happened.
+ */
+async function nothingIsLeft(
+  request: APIRequestContext,
+  headers: Record<string, string>,
+): Promise<void> {
+  const plans = (await (await request.get('/api/v1/plans', { headers })).json()) as unknown[];
+  const shelf = (await (await request.get('/api/v1/pantry', { headers })).json()) as {
+    lots: unknown[];
+  }[];
+  const household = (await (await request.get('/api/v1/eaters', { headers })).json()) as unknown[];
+
+  const left = [
+    plans.length > 0 ? `${plans.length} plan(s)` : null,
+    shelf.length > 0 ? `${shelf.length} thing(s) on the shelf` : null,
+    household.length > 0 ? `${household.length} person/people` : null,
+  ].filter((one) => one !== null);
+
+  expect(
+    left,
+    `the kitchen would not empty, and something refused without saying so: ${left.join(', ')}`,
+  ).toEqual([]);
 }

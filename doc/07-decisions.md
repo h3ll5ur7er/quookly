@@ -2779,3 +2779,49 @@ wrote; generating another one nobody asked for would fill the queue with near-co
 **Optional by construction.** An instance with no provider says nobody has explained that yet, and
 offers nothing further. That is the same sentence it says today, which is the point: this feature is
 an addition to that screen and never a dependency of it.
+
+## ADR-063 The Academy is readable without an account, and only what somebody here has read is
+
+**Status:** Accepted — completes [ADR-057](#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques),
+and applies [ADR-051](#adr-051-whether-an-entry-has-been-reviewed-is-a-different-column-from-whether-it-has-been-classified)'s
+approval axis to a third question.
+
+**Context.** Everything else this application holds belongs to a household: their recipes, their
+pantry, who eats at their table. The Academy does not. It explains what *blanch* means, and that
+means the same thing in every kitchen there has ever been.
+
+Keeping it behind the door costs something real. A cook sends somebody a recipe; the words in it are
+explained on an instance that stranger cannot open. A link to a page is a link to a sign-in form.
+
+**Decision.** Reading the Academy needs no account. Everything that *changes* it still does.
+
+Public: listing pages, reading one, and asking which pages claim a term. Not public: writing,
+correcting, approving, declining, illustrating — and **asking a model**, which spends the operator's
+money and would otherwise be an open relay to a paid provider.
+
+**Only approved pages are public**, and this is the load-bearing half.
+
+An unreviewed page is readable *by the people here* — that is
+[ADR-060](#adr-060-an-unreviewed-page-can-be-read-but-cannot-attach-itself-to-somebody-elses-recipe),
+and it is right, because the author needs to see their own draft and somebody has to review it.
+Publishing it is a different act. Approval already means exactly *somebody here has read this*, which
+is the only sentence worth putting in front of a stranger.
+
+Without this rule, anyone let through the door could publish arbitrary text to the open internet
+under the instance's name, and a generated page nobody had read would be published by the act of
+asking for it. Neither is something an operator agreed to.
+
+**A picture is public exactly when the page it is on is.** Media ids are unguessable, and that is not
+an access rule — it is the absence of one. A signed-out request for a picture is served when that
+picture is on an approved, unarchived page, and refused otherwise. The check is a query, and it is
+worth it: today every picture here is an Academy picture, and the first recipe photograph would
+otherwise have been published by a decision nobody revisited.
+
+**What a signed-out reader is not shown.** The lookup and the pages, and nothing that leads
+somewhere they cannot go: no review queue, no write form, no correcting, and no link from an
+ingredient page into the registry — that screen is the household's.
+
+**Cost.** An operator who wants a wholly private instance cannot have one this way, and this decision
+gives them no switch. That is a real limitation and it is recorded rather than solved: the honest
+answer is a setting, and a setting nobody has asked for is a setting with no requirements behind it.
+Anything genuinely private is already on the other side of the door.

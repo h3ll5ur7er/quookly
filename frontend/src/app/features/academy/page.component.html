@@ -16,24 +16,26 @@
 
       <!-- The only place in this application that can produce something untrue, so it
            says what it is before anybody presses it (ADR-062). -->
-      <section class="academy__ask">
-        <p i18n="@@academyAskWhat">
-          This can be written by a model. What comes back is marked as a model's and read by nobody,
-          so it will not be marked in recipes until somebody here has read it.
-        </p>
-        @if (askFailed(); as why) {
-          <p class="notice notice--danger" role="alert">{{ why }}</p>
-        }
-        <button
-          type="button"
-          class="action"
-          [disabled]="asking()"
-          (click)="ask()"
-          i18n="@@academyAsk"
-        >
-          Ask for an explanation
-        </button>
-      </section>
+      @if (isSignedIn()) {
+        <section class="academy__ask">
+          <p i18n="@@academyAskWhat">
+            This can be written by a model. What comes back is marked as a model's and read by
+            nobody, so it will not be marked in recipes until somebody here has read it.
+          </p>
+          @if (askFailed(); as why) {
+            <p class="notice notice--danger" role="alert">{{ why }}</p>
+          }
+          <button
+            type="button"
+            class="action"
+            [disabled]="asking()"
+            (click)="ask()"
+            i18n="@@academyAsk"
+          >
+            Ask for an explanation
+          </button>
+        </section>
+      }
     } @else {
       <ul class="academy__choices">
         @for (one of claiming; track one.slug) {
@@ -100,9 +102,13 @@
             These come from the registry, not from this page. Correct them there and every page
             about this food follows.
           </p>
-          <a [routerLink]="['/settings/registry', food.slug]" i18n="@@academyEntryLink">
-            {{ food.name }} in the registry
-          </a>
+          <!-- The figures are generic food data and public with the page; the screen that
+               corrects them is the household's. -->
+          @if (isSignedIn()) {
+            <a [routerLink]="['/settings/registry', food.slug]" i18n="@@academyEntryLink">
+              {{ food.name }} in the registry
+            </a>
+          }
         </section>
       }
 

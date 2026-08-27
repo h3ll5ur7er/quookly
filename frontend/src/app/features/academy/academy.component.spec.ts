@@ -1,9 +1,10 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { provideApi } from '@api';
+import { AuthStore } from '../../core/auth/auth.store';
 import { AcademyComponent } from './academy.component';
 
 /**
@@ -43,7 +44,7 @@ describe('AcademyComponent', () => {
     buttons.find((one) => one.textContent?.trim().includes(name))!.click();
   };
 
-  async function arrive(pages: unknown[] = PAGES): Promise<void> {
+  async function arrive(pages: unknown[] = PAGES, signedIn = true): Promise<void> {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [AcademyComponent],
@@ -53,6 +54,7 @@ describe('AcademyComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideApi(''),
+        { provide: AuthStore, useValue: { isSignedIn: signal(signedIn) } },
       ],
     });
     fixture = TestBed.createComponent(AcademyComponent);
@@ -104,5 +106,32 @@ describe('AcademyComponent', () => {
       fixture.nativeElement.querySelectorAll('button'),
     ).find((one) => one.textContent?.includes('Look it up'))!;
     expect(look.disabled).toBe(true);
+  });
+
+  describe('to somebody with no account', () => {
+    /* Reading needs no account; everything that changes the Academy does. So a stranger is
+       shown the pages and the lookup, and nothing that leads where they cannot go
+       (ADR-063). */
+    it('still reads the Academy', async () => {
+      await arrive(PAGES, false);
+      expect(text()).toContain('blanch');
+    });
+
+    it('is not offered the way to write one', async () => {
+      await arrive(PAGES, false);
+      expect(text()).not.toContain('Write a page');
+    });
+
+    it('is not shown what is waiting to be read', async () => {
+      /* The server does not send it either. This is the screen agreeing rather than the
+         screen deciding. */
+      await arrive(PAGES, false);
+      expect(text()).not.toContain('Waiting to be read');
+    });
+
+    it('can still look a word up', async () => {
+      await arrive(PAGES, false);
+      expect(fixture.nativeElement.querySelector('#lookup')).not.toBeNull();
+    });
   });
 });
