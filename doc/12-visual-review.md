@@ -28,14 +28,14 @@ These are worth doing first because each one fixes several screens at once.
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **X1** | **Eight components use `.page`, `.action` and `.notice` without importing the partial that defines them.** Add the `@use` line to each. | Not a matter of taste — a defect with a one-line fix per file. `_page.scss` defines all three, Angular scopes component styles, and a component that does not `@use` it gets *nothing*: no page padding, browser-default grey buttons, and cautions rendered as plain bold text. It is why the Academy page has text at the very edge of the screen and why **"Ask to be let in" — the primary action on the apply screen — is a pale grey block** while "Start cooking now" is solid red. Affected: `academy/academy`, `academy/page`, `academy/write-page`, `registry/registry`, `registry/ingredient`, `recipes/recipe-form`, `apply/apply`, `sign-in/sign-in`. | |
-| **X2** | Add a lint rule or a test that fails when a template uses a shared class the component does not import. | X1 happened eight times without anybody noticing, which means it will happen a ninth. The check is mechanical: grep the template for the classes, grep the stylesheet for the `@use`. | |
-| **X3** | Replace the five navigation glyphs (`◆ ☰ ▤ ✓ ▦`) with real icons. | They are text characters standing in for icons and they read as missing-font fallbacks — particularly the diamond for Home and the grid for Pantry, which mean nothing. This is the single most visible thing on every screen, since the bar is on all of them. | |
-| **X4** | Give recipes a picture. | There is no imagery anywhere in the product. The recipe list is a wall of text where every card is the same shape and weight, and a cook scanning for tonight's dinner is reading rather than looking. `MediaAccess` already exists and the Academy already uses it. | |
-| **X5** | Decide what a short page does with its space. | Home, Shopping, Pantry, the Academy page and the cooking step all end with 40–60% of the viewport empty. Each currently looks like a page that failed to load. Options: centre the content block, or fill the space with the next useful thing. | |
-| **X6** | Structure the long lists. | The Academy is 11,000 px tall on a phone and the registry is 19,000 px — both flat, unstyled, ungrouped, unvirtualised. An alphabet index, sticky letter headings, or paging would all help; doing nothing is not an option once the registry has 900 entries, which it does today. | |
-| **X7** | Style destructive actions as destructive, consistently. | "Delete this plan" is plain red text and looks like a link; "Put it away" is an outlined button; "Put this page away" is a browser-default button. Three treatments for the same kind of action. | |
-| **X8** | Make absence quiet. | Five identical dashed "Nothing planned" rows on the plan, a full-width grey block on the recipe list saying nobody has been recorded. Absence currently takes more space and weight than presence. | |
+| **X1** | **Eight components use `.page`, `.action` and `.notice` without importing the partial that defines them.** Add the `@use` line to each. | Not a matter of taste — a defect with a one-line fix per file. `_page.scss` defines all three, Angular scopes component styles, and a component that does not `@use` it gets *nothing*: no page padding, browser-default grey buttons, and cautions rendered as plain bold text. It is why the Academy page has text at the very edge of the screen and why **"Ask to be let in" — the primary action on the apply screen — is a pale grey block** while "Start cooking now" is solid red. Affected: `academy/academy`, `academy/page`, `academy/write-page`, `registry/registry`, `registry/ingredient`, `recipes/recipe-form`, `apply/apply`, `sign-in/sign-in`. | A |
+| **X2** | Add a lint rule or a test that fails when a template uses a shared class the component does not import. | X1 happened eight times without anybody noticing, which means it will happen a ninth. The check is mechanical: grep the template for the classes, grep the stylesheet for the `@use`. | A |
+| **X3** | Replace the five navigation glyphs (`◆ ☰ ▤ ✓ ▦`) with real icons. | They are text characters standing in for icons and they read as missing-font fallbacks — particularly the diamond for Home and the grid for Pantry, which mean nothing. This is the single most visible thing on every screen, since the bar is on all of them. | B |
+| **X4** | Give recipes a picture. | There is no imagery anywhere in the product. The recipe list is a wall of text where every card is the same shape and weight, and a cook scanning for tonight's dinner is reading rather than looking. `MediaAccess` already exists and the Academy already uses it. | A |
+| **X5** | Decide what a short page does with its space. | Home, Shopping, Pantry, the Academy page and the cooking step all end with 40–60% of the viewport empty. Each currently looks like a page that failed to load. Options: centre the content block, or fill the space with the next useful thing. | C |
+| **X6** | Structure the long lists. | The Academy is 11,000 px tall on a phone and the registry is 19,000 px — both flat, unstyled, ungrouped, unvirtualised. An alphabet index, sticky letter headings, or paging would all help; doing nothing is not an option once the registry has 900 entries, which it does today. | B |
+| **X7** | Style destructive actions as destructive, consistently. | "Delete this plan" is plain red text and looks like a link; "Put it away" is an outlined button; "Put this page away" is a browser-default button. Three treatments for the same kind of action. | A |
+| **X8** | Make absence quiet. | Five identical dashed "Nothing planned" rows on the plan, a full-width grey block on the recipe list saying nobody has been recorded. Absence currently takes more space and weight than presence. | C |
 
 ---
 
@@ -43,59 +43,63 @@ These are worth doing first because each one fixes several screens at once.
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **H1** | Fill the page, or say why it is empty. | One card, then two thirds of the screen empty. Home is supposed to answer *what is happening now* — what wants eating, what is on tonight, what to do next — and only the first of those appears. | |
-| **H2** | Give "What can I cook with these" an affordance. | It is bold red text with no chevron, underline or button. It is the card's main action and does not look like one. | |
-| **H3** | Consider shrinking the greeting. | "Good evening Emanuel" takes a fifth of the viewport above the fold on a phone, and is the least useful thing on the screen after the first day. | |
+| **H1** | Fill the page, or say why it is empty. | One card, then two thirds of the screen empty. Home is supposed to answer *what is happening now* — what wants eating, what is on tonight, what to do next — and only the first of those appears. | B |
+| **H2** | Give "What can I cook with these" an affordance. | It is bold red text with no chevron, underline or button. It is the card's main action and does not look like one. | B |
+| **H3** | Consider shrinking the greeting. | "Good evening Emanuel" takes a fifth of the viewport above the fold on a phone, and is the least useful thing on the screen after the first day. | B|
 
 ## Recipe list
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **R1** | Add a thumbnail per card (see X4). | Three cards of identical grey text is a list that has to be read. | |
-| **R2** | Fix the A–Z / Worth cooking control. | The selected half's fill has a rounded outer edge and a hard square inner one against a fully-rounded container. It reads as unfinished rather than as a deliberate segmented control. | |
-| **R3** | Lighten the timing metadata. | Two bold lines per card for hands-on and total. On the first card they wrap to two lines because of "at least"; on the others they fit on one. Same information, two shapes. | |
-| **R4** | Put the ways of adding a recipe above the fold. | Write, import and *write me a recipe* are the three things this screen exists to start, and none is visible without scrolling past the list. | |
+| **R1** | Add a thumbnail per card (see X4). | Three cards of identical grey text is a list that has to be read. | C |
+| **R2** | Fix the A–Z / Worth cooking control. | The selected half's fill has a rounded outer edge and a hard square inner one against a fully-rounded container. It reads as unfinished rather than as a deliberate segmented control. | D |
+| **R3** | Lighten the timing metadata. | Two bold lines per card for hands-on and total. On the first card they wrap to two lines because of "at least"; on the others they fit on one. Same information, two shapes. | B |
+| **R4** | Put the ways of adding a recipe above the fold. | Write, import and *write me a recipe* are the three things this screen exists to start, and none is visible without scrolling past the list. | A |
 
 ## Recipe detail
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **D1** | Do not print hands-on and total when they are the same number. | "at least 30 min HANDS-ON / at least 30 min TOTAL" reads as a mistake. | |
-| **D2** | Make the yield stepper symmetrical. | The `+` is a filled circle and the `−` is bare text. They do the same kind of thing in opposite directions. | |
-| **D3** | Move nutrition below the method. | It is the longest block on the page and sits between the ingredients and the thing the cook came for. Nutrition is reference; the method is the recipe. | |
-| **D4** | The "make a version" input clips its own placeholder. | "Dairy-free, without the eggs" is cut off mid-word — the field is too narrow beside its button on a phone. | |
-| **D5** | Match the widths of "Correct this recipe" and "Put it away". | They are stacked, both outlined, and different widths, which reads as accidental. | |
-
+| **D1** | Do not print hands-on and total when they are the same number. | "at least 30 min HANDS-ON / at least 30 min TOTAL" reads as a mistake. | C |
+| **D2** | Make the yield stepper symmetrical. | The `+` is a filled circle and the `−` is bare text. They do the same kind of thing in opposite directions. | C |
+| **D3** | Move nutrition below the method. | It is the longest block on the page and sits between the ingredients and the thing the cook came for. Nutrition is reference; the method is the recipe. | B |
+| **D4** | The "make a version" input clips its own placeholder. | "Dairy-free, without the eggs" is cut off mid-word — the field is too narrow beside its button on a phone. | D |
+| **D5** | Match the widths of "Correct this recipe" and "Put it away". | They are stacked, both outlined, and different widths, which reads as accidental. | C |
+| **D6** | "Start cooking now" shall transfer the number of servings instead of always taking the default saved in the recipe. | The cook has just changed the yield and expects that to be reflected in the cooking step. | B |
 ## Cooking mode
 
 The strongest screen in the product. Large type, clear progress, one obvious next action.
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **C1** | Close the gap between the instruction and the timer. | On a short step there is a third of a screen of nothing between them. Centring the instruction in the space above the timer would keep both in the same glance. | |
-| **C2** | Give the temperature the weight the timer has. | For a baking step, 160 °C matters as much as 40:00 and is a small grey chip beside a very large clock. | |
+| **C1** | Close the gap between the instruction and the timer. | On a short step there is a third of a screen of nothing between them. Centring the instruction in the space above the timer would keep both in the same glance. | B |
+| **C2** | Give the temperature the weight the timer has. | For a baking step, 160 °C matters as much as 40:00 and is a small grey chip beside a very large clock. | B |
 
 ## Plan
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **P1** | Move "Show recipe" inside its meal card, or make the card itself the link. | It currently sits outside and below the card, attached to nothing. | |
-| **P2** | Make an empty day tappable, and say so. | Five dashed rows reading "Nothing planned" are the obvious place to add a meal, and the only way to add one is a button at the bottom of the page. | |
-| **P3** | Decide whether the shopping list belongs here. | It is embedded at the foot of the plan *and* has its own tab in the navigation. One of the two should win. | |
-| **P4** | Style "Delete this plan" as destructive (see X7). | | |
+| **P1** | Move "Show recipe" inside its meal card, or make the card itself the link. | It currently sits outside and below the card, attached to nothing. | B |
+| **P2** | Make an empty day tappable, and say so. | Five dashed rows reading "Nothing planned" are the obvious place to add a meal, and the only way to add one is a button at the bottom of the page. | D |
+| **P3** | Decide whether the shopping list belongs here. | It is embedded at the foot of the plan *and* has its own tab in the navigation. One of the two should win. | D |
+| **P4** | Style "Delete this plan" as destructive (see X7). | | B|
 
 ## Pantry
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **N1** | Stop showing the same lot twice. | "USE THESE SOON" repeats, word for word, the lot displayed immediately below it — including the "Use within 2 days" flag. On a shelf with one thing on it, the screen says everything twice. | |
-| **N2** | Grade the urgency visually. | "Use within 2 days" and "use within 20 days" differ only in the words. A colour ramp or a bar would let the shelf be scanned rather than read. | |
+| **N1** | Stop showing the same lot twice. | "USE THESE SOON" repeats, word for word, the lot displayed immediately below it — including the "Use within 2 days" flag. On a shelf with one thing on it, the screen says everything twice. | D |
+| **N2** | Grade the urgency visually. | "Use within 2 days" and "use within 20 days" differ only in the words. A colour ramp or a bar would let the shelf be scanned rather than read. | B |
 
 ## Shopping
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **S1** | The empty state is two lines at the top of a blank screen. | The sentence is good ("Everything this week needs is already in your kitchen"). It is floating in 80% nothing, and it is the state a well-stocked kitchen sees most often. | |
+| **S1** | The empty state is two lines at the top of a blank screen. | The sentence is good ("Everything this week needs is already in your kitchen"). It is floating in 80% nothing, and it is the state a well-stocked kitchen sees most often. | D |
+| **S2** | Shopping list shall be grouped by category. | The list is 40 items long and flat, with no headings or dividers. | C |
+| **S3** | There should be a "add ticked to pantry" action. | The list is a checklist, but the only way to act on it is to go to the pantry and add each item manually. | D |
+| **S4** | There should be a "trashcan" action. | There should be a way to remove the list without adding it to the pantry. | D |
+
 
 ## Academy
 
@@ -104,35 +108,103 @@ styles, so the section is effectively unstyled.
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **A1** | Apply X1 first, then look again. | Text currently starts at x=0 with no page padding, buttons are browser-default grey rectangles with square corners, and the "Take care" caution — the one piece of safety copy on the page — renders as plain bold text instead of a warning notice. | |
-| **A2** | Structure the list (see X6). | Fifty entries, flat, alphabetical, each a link plus a grey line. Nothing distinguishes a technique from an ingredient, which matters now that both sections exist. | |
-| **A3** | Give the lookup and the section filter room and a selected state. | The three section buttons are unstyled and crowded against the search field; nothing shows which is active. | |
-| **A4** | Style "Write a page" as an action. | It is a plain underlined link above the list, and it is the only way to contribute. | |
-| **A5** | Style the spelling chips. | "Also written blanched blanches blanching" is a run of grey words, not the chips the recipe screen uses for the same idea. | |
+| **A1** | Apply X1 first, then look again. | Text currently starts at x=0 with no page padding, buttons are browser-default grey rectangles with square corners, and the "Take care" caution — the one piece of safety copy on the page — renders as plain bold text instead of a warning notice. | A  |
+| **A2** | Structure the list (see X6). | Fifty entries, flat, alphabetical, each a link plus a grey line. Nothing distinguishes a technique from an ingredient, which matters now that both sections exist. | B |
+| **A3** | Give the lookup and the section filter room and a selected state. | The three section buttons are unstyled and crowded against the search field; nothing shows which is active. | B |
+| **A4** | Style "Write a page" as an action. | It is a plain underlined link above the list, and it is the only way to contribute. | B |
+| **A5** | Style the spelling chips. | "Also written blanched blanches blanching" is a run of grey words, not the chips the recipe screen uses for the same idea. | B |
 
 ## Registry
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **G1** | Apply X1. | No page padding; the filter bar bleeds to both screen edges with no rounding; the search field is a plain full-bleed box. | |
-| **G2** | Structure 900 entries (see X6). | 19,000 px of flat rows, three cramped lines each, with a "Show more" at the bottom. | |
-| **G3** | Reconsider the default sort. | The first screen is entirely "11 vol% wine white", "12 vol% wine red", "12.5 vol% wine white" — an alphabetical sort putting numeric-prefixed entries first means the registry's first impression is a wine list. | |
-| **G4** | Tighten the row. | Name, then "Solid · No density", then "Not checked for allergens" — three lines per entry, all the same weight, most of it saying what is *absent*. | |
+| **G1** | Apply X1. | No page padding; the filter bar bleeds to both screen edges with no rounding; the search field is a plain full-bleed box. | A |
+| **G2** | Structure 900 entries (see X6). | 19,000 px of flat rows, three cramped lines each, with a "Show more" at the bottom. | B |
+| **G3** | Reconsider the default sort. | The first screen is entirely "11 vol% wine white", "12 vol% wine red", "12.5 vol% wine white" — an alphabetical sort putting numeric-prefixed entries first means the registry's first impression is a wine list. | D |
+| **G4** | Tighten the row. | Name, then "Solid · No density", then "Not checked for allergens" — three lines per entry, all the same weight, most of it saying what is *absent*. | B |
+| **G5** | We imported the swiss food table, that contains allergens. For each item in the registry that has no allergens, it says "Not checked for allergens". This is confusing. | The states of "not checked" and "no allergens" has to be clearly distinguished. | A |
+
 
 ## Apply
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **Y1** | Apply X1 — the primary button is unstyled. | "Ask to be let in" is a pale grey block. It is the only action on the page and it looks disabled. | |
-| **Y2** | Align the language and theme selects. | Two native selects of different widths with right-aligned labels at different x positions, adrift at the bottom of the page. | |
+| **Y1** | Apply X1 — the primary button is unstyled. | "Ask to be let in" is a pale grey block. It is the only action on the page and it looks disabled. | B |
+| **Y2** | Align the language and theme selects. | Two native selects of different widths with right-aligned labels at different x positions, adrift at the bottom of the page. | C |
+
+---
+
+## Themes
+
+Four themes ship: light, dark, playful, decorative. **Three of them are the same theme.**
+
+Measured as CIELAB ΔE between the token values — under ~2.3 is *the same colour* to the eye, under
+~5 is *a shade of the same colour*:
+
+| token | light↔playful | light↔decorative | playful↔decorative |
+| --- | --- | --- | --- |
+| `--surface` (the page) | 3.1 | 5.1 | 3.2 |
+| `--surface-raised` (every card) | **0.0** | 4.1 | 4.1 |
+| `--on-surface` (all text) | 7.4 | 4.6 | 6.9 |
+| `--primary` (every filled button) | 17.3 | 20.5 | 36.6 |
+
+The ground a cook looks at for the whole session is the same warm off-white in all three, and
+`--surface-raised` is *literally the same value* in light and playful — both `#ffffff`. Text is a
+warm near-black in all three. Only `--primary` moves, and it stays in the rust family.
+
+What actually differs: **corner radius** (0.5 / 1 / 0.25 rem), **motion** (playful alone has a
+springy `cubic-bezier(0.34, 1.4, 0.64, 1)` and slower durations), and **one font** (decorative alone
+sets a serif body). Side by side, the sign-in screens differ in how round the button is.
+
+| id | Proposal | Why | Grade |
+| --- | --- | --- | --- |
+| **T1** | Give playful and decorative grounds of their own. | Changing `--surface` and `--surface-raised` is what a person actually perceives as "a different theme". Today the only page-sized surface is the same colour in all three, so switching feels like nothing happened. | |
+| **T2** | Make the names true, or change the names. | *Playful* is a rounder rust button on cream. *Decorative* is a squarer rust button on cream with a serif. Neither is playful or decorative; both are the default with one knob turned. Either commit to the personality the name promises — playful gets colour and energy, decorative gets ornament, rules, a patterned surface — or rename them to what they are ("Soft", "Sharp"). | |
+| **T3** | Decide whether `--primary` is the brand or the theme. | Rust is the filled-button colour in all three light themes and the most-seen colour in the product. A theme that cannot change it cannot look different. If rust is the brand, then themes must differentiate on ground and type instead — which is T1 and T4. | |
+| **T4** | Let decorative's serif do more, and playful's motion be seen. | Decorative sets a serif for *body as well as display*, which flattens hierarchy rather than decorating: on the sign-in form the field labels now look like headings. Playful's real distinction is its spring easing, which no screenshot can show — worth a short screen recording before judging it. | |
+| **T5** | Dark is the only theme that is genuinely a second theme, and it has not been reviewed. | It inverts the ground properly. It is also the only one of the four whose contrast pairs have not been checked here at all. | |
+
+## Language
+
+Three catalogues ship complete — `just frontend check` fails when one is not — so this is about
+whether the translations are *right*, not whether they exist. Almost all of them are good: the
+allergen names are the legally correct EU/Swiss terms in both languages (*Schalenfrüchte*, *Fruits à
+coque*, *Anhydride sulfureux et sulfites*), and Swiss orthography is respected — not one `ß` in the
+German catalogue.
+
+Three things are wrong.
+
+| id | Proposal | Why | Grade |
+| --- | --- | --- | --- |
+| **L1** | **The Swiss French meal names are shifted by one meal.** `mealBreakfast` → *Petit-déjeuner*, `mealLunch` → *Déjeuner*, `mealDinner` → *Dîner*. | Those are the **France** French names. In Switzerland the three meals are **déjeuner, dîner, souper** — so this catalogue labels the evening slot *Dîner*, which a Swiss French cook reads as **lunch**. This is a meal planner: it is not a nicety, it is the wrong meal on the wrong day, and it is wrong in the one locale the file is named for. | |
+| **L2** | Settle on one form of address in German, and it should be *Sie*. | 57 strings address the reader formally and 6 informally. The six informal ones are `academyAskFailed`, `academyWaitingWhat`, `academyWriteFailed`, `academyWriteSlugHint`, `academyWriteWhat` and `recipeTranslated` — every one added in Phase 7 or 8b, and all mine. The rest of the product says *Sie brauchen es*, *Wählen Sie einen Eintrag*, *Ihre Bewerbung*; the Academy says *versuche es noch einmal* and *Für dich übersetzt*. | |
+| **L3** | Look at the app in German and French, which nobody has. | There is exactly **one** non-English screenshot in the suite — `sign-in-de-CH` — and none in French. German and French labels are routinely two to three times longer than the English (*Reset* → *Réinitialiser*, *Use by* → *Zu verbrauchen bis*, *Add* → *Hinzufügen*), and the tightest place in the product is the pair of timer buttons in cooking mode, which is the screen a cook reads at arm's length. Nobody has seen it wrap. | |
+
+Smaller, and worth a second opinion from a native speaker rather than from me:
+
+| id | Proposal | Why | Grade |
+| --- | --- | --- | --- |
+| **L4** | `attentionWaiting` DE — *"Sie können weggehen"*. | Literally *you may leave*, which reads as permission to depart rather than *this looks after itself*. Something like *läuft von allein* carries what the English does. | |
+| **L5** | `entryNoneIsAnAnswer` FR — *"ce qui diffère de personne n'ayant vérifié"*. | Grammatical but stilted, and it is the sentence that distinguishes *checked and found nothing* from *nobody checked* — the one piece of allergen copy where being understood matters most (ADR-006). | |
 
 ---
 
 ## What this review did not cover
 
-- **Themes.** Everything above is the light theme. Dark, playful and decorative have screenshots and
-  have not been looked at.
+- **The dark theme.** Covered as a gap (T5), not reviewed. It is the only one of the four that is
+  genuinely a second theme, and its contrast pairs have not been checked.
+- **Every screen in German and French.** This is L3, and it is the largest hole: one screenshot
+  exists in German, none in French, and the translations are long.
 - **Wider viewports.** Phone only, which is the design target — but the laptop and tablet
   screenshots exist and the layouts may simply be stretched.
-- **Motion, focus states, and loading.** None of it is visible in a screenshot. The registry's first
-  capture was of the word "Loading…", which is the only reason it came up at all.
+- **Motion, focus states, and loading.** None of it is visible in a screenshot, which also means
+  playful's spring easing — its only real distinction — could not be judged. The registry's first
+  capture was of the word "Loading…", which is the only reason waiting for content came up at all.
+- **A native speaker's read.** L4 and L5 are as far as I can usefully go on wording.
+
+
+Notes: 
+- X6: the academy as well as the recipes need to become structured pages, otherwise they are not useful. E.g. Academy>Ingredients>>Vegetables>Carrot. Same for recipes, e.g. Recipes>Soups>Carrot-Ginger-Soup. Techniques as well: e.g. Techniques>Cooking>Blanching or Techniques>Cuts>Julienne.
+- R1: Thumbnail or even faint card background image for each recipe would be a huge improvement. The Academy could also benefit from this.
+- P3: The shopping list in the plan is deliberately sepatare from the shopping tab, because the plan's list is scoped to the plan's meals, while the shopping tab is scoped to the pantry and what is needed for all meals. The two lists are different and both useful. To de-clutter the plan screen, we could consider to make the shppping list being collapsible (and collapsed by default) in the plan screen.
+- N2: The pantry could also benefit from a "sort by urgency" option, which would be useful for cooks to quickly see what needs to be used soon.
