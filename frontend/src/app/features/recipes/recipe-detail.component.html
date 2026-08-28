@@ -9,6 +9,26 @@
     <header class="recipe__header">
       <h1>{{ shown.title }}</h1>
 
+      <!-- The dish, where the cook has photographed it. Below the title rather than above:
+           the name is what somebody arriving from a link came to confirm (X4). -->
+      @if (shown.picture; as picture) {
+        <figure class="recipe__shot">
+          <app-picture [mediaId]="picture.media_id" [description]="picture.description" />
+          @if (mine()) {
+            <figcaption>
+              <button
+                type="button"
+                class="action action--quiet"
+                (click)="removePicture()"
+                i18n="@@recipeRemovePicture"
+              >
+                Remove the picture
+              </button>
+            </figcaption>
+          }
+        </figure>
+      }
+
       <!-- Said out loud. Prose a model produced, shown as the author's own words, is the
            failure ADR-056 exists to prevent one layer up — and here the author may be
            somebody the reader knows (ADR-032). -->
@@ -217,13 +237,69 @@
         </p>
       }
 
-      <a
-        class="action action--quiet"
-        [routerLink]="['/recipes', shown.id, 'edit']"
-        i18n="@@recipeEdit"
-      >
-        Correct this recipe
-      </a>
+      <!-- What a cook does to their own recipe, in one row rather than stacked at three
+           different widths (D5). -->
+      <div class="recipe__owner">
+        <a
+          class="action action--quiet"
+          [routerLink]="['/recipes', shown.id, 'edit']"
+          i18n="@@recipeEdit"
+        >
+          Correct this recipe
+        </a>
+
+        @if (!shown.picture) {
+          <button
+            type="button"
+            class="action action--quiet"
+            (click)="illustrating.set(!illustrating())"
+            i18n="@@recipeAddPicture"
+          >
+            Add a picture
+          </button>
+        }
+      </div>
+
+      @if (illustrating()) {
+        <div class="recipe__form">
+          <div class="field">
+            <label for="shot" i18n="@@recipePicture">The picture</label>
+            <input id="shot" type="file" accept="image/*" (change)="choose($event)" />
+          </div>
+          <div class="field">
+            <label for="shows" i18n="@@recipeShows">What it shows</label>
+            <input id="shows" type="text" [formControl]="describing" />
+            <p class="field__hint" i18n="@@recipeShowsHint">
+              For somebody who cannot see it. Required — a picture without this is one that some
+              readers simply do not get.
+            </p>
+          </div>
+          @if (pictureFailed()) {
+            <p class="notice notice--danger" role="alert" i18n="@@recipePictureFailed">
+              Could not add that picture. Please try again.
+            </p>
+          }
+          <div class="recipe__actions">
+            <button
+              type="button"
+              class="action"
+              [disabled]="!chosen() || !describing.value.trim()"
+              (click)="illustrate()"
+              i18n="@@recipeUpload"
+            >
+              Add it
+            </button>
+            <button
+              type="button"
+              class="action action--quiet"
+              (click)="illustrating.set(false)"
+              i18n="@@recipeUploadCancel"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      }
 
       @if (archiving()) {
         <div class="recipe__confirm" role="alertdialog" aria-labelledby="archive-heading">

@@ -15,10 +15,10 @@ from quookly.access import academy as academy_access
 from quookly.access import cook as cook_access
 from quookly.access import eater as eater_access
 from quookly.access import ingredient as registry
+from quookly.access import media, search, web
 from quookly.access import pantry as pantry_access
 from quookly.access import preferences as preference_access
 from quookly.access import recipe as recipe_access
-from quookly.access import search, web
 from quookly.access import translation as translation_access
 from quookly.access.ingredient import SOURCE_LOCALE
 from quookly.contracts.discovery import Candidate, SuggestionView
@@ -51,6 +51,7 @@ from quookly.contracts.recipe import (
     ImportedRecipe,
     IngredientLine,
     IngredientLineDraft,
+    PictureView,
     PresentedRecipe,
     PresentedStep,
     Provenance,
@@ -86,6 +87,25 @@ log = get_logger("recipe")
 #: Resolving a symbol lives in `MeasureEngine`, which owns units. Kept as a local name
 #: because it reads better at the call sites than the qualified one.
 _unit = measure.unit_for
+
+
+async def illustrate(
+    recipe_id: int, cook_id: int, upload: bytes | None, description: str | None
+) -> PresentedRecipe | None:
+    """Put a picture on a recipe, or take the one it has off.
+
+    One picture, so a second replaces the first rather than joining it — a card wants a
+    thumbnail and a page wants a hero, and the Academy's several-per-page is for a
+    technique shown in stages.
+
+    The file is re-encoded and kept beside the database; the recipe holds the id it was
+    given. Nothing deletes the previous file: a reference changing is not evidence that
+    nobody wants the bytes, and collecting orphans is the CLI's (ADR-057).
+    """
+    media_id = None if upload is None else await media.store_image(upload)
+    if not await recipe_access.illustrate(recipe_id, cook_id, media_id, description):
+        return None
+    return await present(recipe_id, cook_id)
 
 
 async def _writing_in(cook_id: int) -> str:
@@ -251,6 +271,13 @@ def _summary_view(
         visibility=summary.visibility,
         suitability=outcomes.get(summary.id),
         timing=TimingView.of(execution.timing(steps.get(summary.id, []))),
+        picture=(
+            None
+            if summary.picture is None
+            else PictureView(
+                media_id=summary.picture.media_id, description=summary.picture.description
+            )
+        ),
     )
 
 
@@ -537,6 +564,13 @@ async def _present(
         provenance=recipe.provenance,
         language=recipe.language,
         translated=translated,
+        picture=(
+            None
+            if recipe.picture is None
+            else PictureView(
+                media_id=recipe.picture.media_id, description=recipe.picture.description
+            )
+        ),
         derived_from=recipe.derived_from,
         derived_from_title=(
             None

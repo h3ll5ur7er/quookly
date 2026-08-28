@@ -493,6 +493,100 @@
         }
       }
     },
+    "/api/v1/recipes/{recipe_id}/picture": {
+      "post": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Illustrate Recipe",
+        "description": "Put a picture on a recipe.\n\nOne picture: a second replaces the first. A card wants a thumbnail and a page wants a\nhero, and the Academy's several-per-page exists because a technique is shown in stages.\n\nThe description is required rather than optional, as it is on an Academy picture: a\nphotograph without alt text is one some readers simply do not get.",
+        "operationId": "illustrateRecipe",
+        "parameters": [
+          {
+            "name": "recipe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Recipe Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_illustrateRecipe"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentedRecipe"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Unillustrate Recipe",
+        "description": "Take the picture off a recipe. The file stays \u2014 collecting orphans is the CLI's.",
+        "operationId": "unillustrateRecipe",
+        "parameters": [
+          {
+            "name": "recipe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Recipe Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentedRecipe"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/recipes/{recipe_id}/variants": {
       "post": {
         "tags": [
@@ -3696,6 +3790,30 @@
         ],
         "title": "Body_illustratePage"
       },
+      "Body_illustrateRecipe": {
+        "properties": {
+          "picture": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Picture",
+            "description": "A photograph of the dish.",
+            "format": "binary"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Description",
+            "description": "What the picture shows, for somebody who cannot see it."
+          }
+        },
+        "type": "object",
+        "required": [
+          "picture",
+          "description"
+        ],
+        "title": "Body_illustrateRecipe"
+      },
       "BootstrapState": {
         "properties": {
           "required": {
@@ -5209,7 +5327,7 @@
           },
           "pictures": {
             "items": {
-              "$ref": "#/components/schemas/PictureView"
+              "$ref": "#/components/schemas/quookly__contracts__academy__PictureView"
             },
             "type": "array",
             "title": "Pictures",
@@ -5294,35 +5412,6 @@
         ],
         "title": "PantryEntry",
         "description": "Everything the cook has of one ingredient, lot by lot.\n\n`total` is absent when the lots cannot honestly be added up \u2014 a jar and 200 g of the\nsame thing have no sum. Absent rather than approximated: the lots are all listed\nanyway, so nothing is hidden by declining to invent a number."
-      },
-      "PictureView": {
-        "properties": {
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
-          "media_id": {
-            "type": "string",
-            "title": "Media Id"
-          },
-          "description": {
-            "type": "string",
-            "title": "Description"
-          },
-          "locale": {
-            "type": "string",
-            "title": "Locale"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "media_id",
-          "description",
-          "locale"
-        ],
-        "title": "PictureView",
-        "description": "A picture as a client reads it."
       },
       "PlanInput": {
         "properties": {
@@ -5612,6 +5701,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/NutritionView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/quookly__contracts__recipe__PictureView"
               },
               {
                 "type": "null"
@@ -5910,6 +6009,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/TimingView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/quookly__contracts__recipe__PictureView"
               },
               {
                 "type": "null"
@@ -7063,6 +7172,54 @@
         ],
         "title": "WordingInput",
         "description": "A page as one language should now read.\n\nThe whole wording, not a patch: it is a small whole, and patching its spellings would\nneed an instruction for reordering that nobody asked for (the reasoning ADR-059 gives\nfor recipes)."
+      },
+      "quookly__contracts__academy__PictureView": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "media_id": {
+            "type": "string",
+            "title": "Media Id"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "locale": {
+            "type": "string",
+            "title": "Locale"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "media_id",
+          "description",
+          "locale"
+        ],
+        "title": "PictureView",
+        "description": "A picture as a client reads it."
+      },
+      "quookly__contracts__recipe__PictureView": {
+        "properties": {
+          "media_id": {
+            "type": "string",
+            "title": "Media Id"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "media_id",
+          "description"
+        ],
+        "title": "PictureView",
+        "description": "A recipe's picture as a client reads it."
       }
     }
   }

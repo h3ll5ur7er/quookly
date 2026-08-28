@@ -20,6 +20,7 @@ from quookly.contracts.ingredient import Ingredient
 from quookly.contracts.measure import Quantity
 from quookly.contracts.recipe import (
     IngredientLine,
+    Picture,
     Recipe,
     RecipeDraft,
     RecipeSummary,
@@ -165,6 +166,29 @@ async def restore(recipe_id: int, cook_id: int) -> bool:
     return await _set_archived(recipe_id, cook_id, None)
 
 
+async def illustrate(
+    recipe_id: int, cook_id: int, media_id: str | None, description: str | None
+) -> bool:
+    """Put a picture on a recipe, or take the one it has off. Returns whether there was one.
+
+    Both or neither, in one call: a media id without alt text is a picture some readers do
+    not get, and separate setters would make that state reachable.
+
+    Nothing deletes the file. A reference changing is not evidence that nobody wants the
+    bytes — collecting what is no longer referred to is the CLI's, as it is for the
+    Academy's pictures (ADR-057).
+    """
+    async with session() as active:
+        row = await active.get(RecipeRow, recipe_id)
+        if row is None or row.cook_id != cook_id or row.archived_at is not None:
+            return False
+        row.picture_media_id = media_id
+        row.picture_description = description
+        active.add(row)
+        await active.commit()
+        return True
+
+
 async def _set_archived(recipe_id: int, cook_id: int, at: datetime | None) -> bool:
     async with session() as active:
         row = await active.get(RecipeRow, recipe_id)
@@ -210,6 +234,11 @@ async def fetch(recipe_id: int, locale: str) -> Recipe | None:
         visibility=row.visibility,
         origin=row.origin,
         language=row.language,
+        picture=(
+            None
+            if row.picture_media_id is None or row.picture_description is None
+            else Picture(media_id=row.picture_media_id, description=row.picture_description)
+        ),
         created_at=row.created_at,
         archived_at=row.archived_at,
         derived_from=row.derived_from,
@@ -305,6 +334,11 @@ async def list_for_cook(cook_id: int, *, archived: bool = False) -> list[RecipeS
             yield_quantity=Quantity(row.yield_magnitude, row.yield_unit),
             serves=row.serves,
             visibility=row.visibility,
+            picture=(
+                None
+                if row.picture_media_id is None or row.picture_description is None
+                else Picture(media_id=row.picture_media_id, description=row.picture_description)
+            ),
         )
         for row in rows
         if row.id is not None

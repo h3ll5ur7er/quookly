@@ -112,6 +112,27 @@ def _check_serves(yield_quantity: Quantity, serves: Decimal | None) -> None:
 
 
 @dataclass(frozen=True, slots=True)
+class Picture:
+    """A photograph, and what it shows.
+
+    The description travels with the id rather than beside it, so there is no shape in
+    which a picture exists without its alt text.
+    """
+
+    media_id: str
+    description: str
+
+
+class PictureView(BaseModel):
+    """A recipe's picture as a client reads it."""
+
+    model_config = ConfigDict(frozen=True)
+
+    media_id: str
+    description: str
+
+
+@dataclass(frozen=True, slots=True)
 class RecipeDraft:
     """A recipe as submitted, before it has identity."""
 
@@ -208,6 +229,9 @@ class Recipe:
         """
         return _servings_of(self.yield_quantity, self.serves)
 
+    #: A photograph of the dish, where the cook has taken one.
+    picture: Picture | None = None
+
 
 @dataclass(frozen=True, slots=True)
 class RecipeSummary:
@@ -223,6 +247,9 @@ class RecipeSummary:
     @property
     def servings(self) -> Decimal | None:
         return _servings_of(self.yield_quantity, self.serves)
+
+    #: A photograph of the dish, where the cook has taken one.
+    picture: Picture | None = None
 
 
 # What leaves the API. These are pydantic rather than dataclasses because they are the
@@ -326,6 +353,8 @@ class PresentedRecipe(BaseModel):
     # What it contains, from whichever published table this instance believes first
     # (ADR-045). Absent where nothing in the recipe could be weighed against one.
     nutrition: NutritionView | None = None
+    #: A photograph of the dish, where the cook has taken one.
+    picture: PictureView | None = None
 
 
 class RecipeSummaryView(BaseModel):
@@ -344,6 +373,8 @@ class RecipeSummaryView(BaseModel):
     # questions asked before a recipe is opened, and answering it after the tap is
     # answering it too late.
     timing: TimingView | None = None
+    #: A photograph of the dish, where the cook has taken one.
+    picture: PictureView | None = None
 
 
 class IngredientLineInput(BaseModel):

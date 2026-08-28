@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, switchMap } from 'rxjs';
@@ -13,6 +13,7 @@ import {
   RecipesService,
   VerdictView,
 } from '@api';
+import { PictureComponent } from '../../core/media/picture.component';
 import { VerdictComponent } from '../../core/dietary/verdict.component';
 import { marked } from '../../core/academy/marked';
 import { NutritionComponent } from '../../core/nutrition/nutrition.component';
@@ -22,7 +23,14 @@ import { TimingComponent } from '../../core/time/timing.component';
 
 @Component({
   selector: 'app-recipe-detail',
-  imports: [NutritionComponent, ReactiveFormsModule, RouterLink, TimingComponent, VerdictComponent],
+  imports: [
+    PictureComponent,
+    NutritionComponent,
+    ReactiveFormsModule,
+    RouterLink,
+    TimingComponent,
+    VerdictComponent,
+  ],
   templateUrl: './recipe-detail.component.html',
   styleUrl: './recipe-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -53,6 +61,21 @@ export class RecipeDetailComponent {
    */
   protected readonly archiving = signal(false);
   protected readonly archiveFailed = signal(false);
+
+  /** Putting a picture of the dish on it (X4). */
+  protected readonly illustrating = signal(false);
+  protected readonly chosen = signal<File | null>(null);
+  protected readonly describing = new FormControl('', { nonNullable: true });
+  protected readonly pictureFailed = signal(false);
+
+  /**
+   * Whether this recipe is the reader's to change.
+   *
+   * A recipe belongs to the cook who wrote it, and another cook's is absent rather than
+   * forbidden — so anything that comes back is theirs. Kept as a name rather than a bare
+   * `true` because it is what the template is asking.
+   */
+  protected readonly mine = computed(() => this.recipe() !== null);
   protected readonly wontStart = signal(false);
   protected readonly varyFailed = signal<string | null>(null);
   protected readonly refused = signal<VerdictView | null>(null);
@@ -235,6 +258,38 @@ export class RecipeDetailComponent {
         this.archiving.set(false);
         this.archiveFailed.set(true);
       },
+    });
+  }
+
+  protected choose(event: Event): void {
+    this.chosen.set((event.target as HTMLInputElement).files?.[0] ?? null);
+  }
+
+  /** Put the chosen picture on the recipe, and show it. */
+  protected illustrate(): void {
+    const file = this.chosen();
+    const shows = this.describing.value.trim();
+    if (file === null || !shows) {
+      return;
+    }
+    this.pictureFailed.set(false);
+    this.recipes.illustrateRecipe(this.recipeId, file, shows).subscribe({
+      next: (shown) => {
+        this.illustrating.set(false);
+        this.chosen.set(null);
+        this.describing.setValue('');
+        this.recipe.set(shown);
+      },
+      error: () => this.pictureFailed.set(true),
+    });
+  }
+
+  /** Take it off again. The file stays — collecting orphans is the CLI's. */
+  protected removePicture(): void {
+    this.pictureFailed.set(false);
+    this.recipes.unillustrateRecipe(this.recipeId).subscribe({
+      next: (shown) => this.recipe.set(shown),
+      error: () => this.pictureFailed.set(true),
     });
   }
 }

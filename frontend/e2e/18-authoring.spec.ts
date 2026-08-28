@@ -101,3 +101,38 @@ test('a cook can link a word in a step, and the link survives an edit', async ({
   const again = page.getByRole('listitem').filter({ hasText: 'Sift the' });
   await expect(again.getByRole('link', { name: 'flour', exact: true })).toBeVisible();
 });
+
+test('a cook photographs the dish, and it shows on the list', async ({ page }) => {
+  /* The list was a wall of identical text cards, which is a list that has to be read
+     rather than looked at (X4, R1). */
+  await page.goto('/recipes/new');
+  await page.getByLabel('Title').fill('Photographed Loaf');
+  await page.getByLabel('Makes').fill('1');
+  await page.getByRole('button', { name: 'Choose an ingredient' }).click();
+  await page.getByPlaceholder('An ingredient name').fill('plain flour');
+  await page.getByRole('button', { name: 'plain flour', exact: true }).click();
+  await page.getByLabel('How much').fill('500');
+  await page.getByLabel('Step').fill('Mix, prove, bake.');
+  await page.getByRole('button', { name: 'Save recipe' }).click();
+  await expect(page.getByRole('heading', { name: 'Photographed Loaf' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Add a picture' }).click();
+  // A one-pixel PNG. What is being tested is the path, not the photograph.
+  await page.locator('#shot').setInputFiles({
+    name: 'loaf.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    ),
+  });
+  await page.getByLabel('What it shows').fill('A dark crusted loaf on a wire rack.');
+  await page.getByRole('button', { name: 'Add it' }).click();
+
+  // Alt text is not optional here, so the picture is findable by what it shows.
+  await expect(page.getByAltText('A dark crusted loaf on a wire rack.')).toBeVisible();
+
+  await page.goto('/recipes');
+  const card = page.locator('.recipes__item').filter({ hasText: 'Photographed Loaf' });
+  await expect(card.locator('img')).toBeVisible();
+});

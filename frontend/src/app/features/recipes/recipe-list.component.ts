@@ -6,6 +6,7 @@ import { RecipeSummaryView, RecipesService, SuggestionView } from '@api';
 import { debounceTime, distinctUntilChanged, startWith, switchMap } from 'rxjs';
 import { isWarning, reasonLabel } from '../../core/discovery/labels';
 import { outcomeBadge, worthMarking } from '../../core/dietary/labels';
+import { PictureComponent } from '../../core/media/picture.component';
 import { TimingComponent } from '../../core/time/timing.component';
 
 /** How the list is ordered when nothing has been typed. */
@@ -16,7 +17,7 @@ const SETTLE = 200;
 
 @Component({
   selector: 'app-recipe-list',
-  imports: [ReactiveFormsModule, RouterLink, TimingComponent],
+  imports: [PictureComponent, ReactiveFormsModule, RouterLink, TimingComponent],
   templateUrl: './recipe-list.component.html',
   styleUrl: './recipe-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

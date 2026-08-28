@@ -28,10 +28,10 @@ These are worth doing first because each one fixes several screens at once.
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **X1** | **Eight components use `.page`, `.action` and `.notice` without importing the partial that defines them.** Add the `@use` line to each. | Not a matter of taste — a defect with a one-line fix per file. `_page.scss` defines all three, Angular scopes component styles, and a component that does not `@use` it gets *nothing*: no page padding, browser-default grey buttons, and cautions rendered as plain bold text. It is why the Academy page has text at the very edge of the screen and why **"Ask to be let in" — the primary action on the apply screen — is a pale grey block** while "Start cooking now" is solid red. Affected: `academy/academy`, `academy/page`, `academy/write-page`, `registry/registry`, `registry/ingredient`, `recipes/recipe-form`, `apply/apply`, `sign-in/sign-in`. | A |
-| **X2** | Add a lint rule or a test that fails when a template uses a shared class the component does not import. | X1 happened eight times without anybody noticing, which means it will happen a ninth. The check is mechanical: grep the template for the classes, grep the stylesheet for the `@use`. | A |
+| ~~**X1**~~ **done** | **Eight components use `.page`, `.action` and `.notice` without importing the partial that defines them.** Add the `@use` line to each. | Not a matter of taste — a defect with a one-line fix per file. `_page.scss` defines all three, Angular scopes component styles, and a component that does not `@use` it gets *nothing*: no page padding, browser-default grey buttons, and cautions rendered as plain bold text. It is why the Academy page has text at the very edge of the screen and why **"Ask to be let in" — the primary action on the apply screen — is a pale grey block** while "Start cooking now" is solid red. Affected: `academy/academy`, `academy/page`, `academy/write-page`, `registry/registry`, `registry/ingredient`, `recipes/recipe-form`, `apply/apply`, `sign-in/sign-in`. | A |
+| ~~**X2**~~ **done** | Add a lint rule or a test that fails when a template uses a shared class the component does not import. | X1 happened eight times without anybody noticing, which means it will happen a ninth. The check is mechanical: grep the template for the classes, grep the stylesheet for the `@use`. | A |
 | **X3** | Replace the five navigation glyphs (`◆ ☰ ▤ ✓ ▦`) with real icons. | They are text characters standing in for icons and they read as missing-font fallbacks — particularly the diamond for Home and the grid for Pantry, which mean nothing. This is the single most visible thing on every screen, since the bar is on all of them. | B |
-| **X4** | Give recipes a picture. | There is no imagery anywhere in the product. The recipe list is a wall of text where every card is the same shape and weight, and a cook scanning for tonight's dinner is reading rather than looking. `MediaAccess` already exists and the Academy already uses it. | A |
+| ~~**X4**~~ **done** | Give recipes a picture. | There is no imagery anywhere in the product. The recipe list is a wall of text where every card is the same shape and weight, and a cook scanning for tonight's dinner is reading rather than looking. `MediaAccess` already exists and the Academy already uses it. | A |
 | **X5** | Decide what a short page does with its space. | Home, Shopping, Pantry, the Academy page and the cooking step all end with 40–60% of the viewport empty. Each currently looks like a page that failed to load. Options: centre the content block, or fill the space with the next useful thing. | C |
 | **X6** | Structure the long lists. | The Academy is 11,000 px tall on a phone and the registry is 19,000 px — both flat, unstyled, ungrouped, unvirtualised. An alphabet index, sticky letter headings, or paging would all help; doing nothing is not an option once the registry has 900 entries, which it does today. | B |
 | **X7** | Style destructive actions as destructive, consistently. | "Delete this plan" is plain red text and looks like a link; "Put it away" is an outlined button; "Put this page away" is a browser-default button. Three treatments for the same kind of action. | A |
@@ -51,10 +51,10 @@ These are worth doing first because each one fixes several screens at once.
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **R1** | Add a thumbnail per card (see X4). | Three cards of identical grey text is a list that has to be read. | C |
+| ~~**R1**~~ **done, with X4** | Add a thumbnail per card (see X4). | Three cards of identical grey text is a list that has to be read. | C |
 | **R2** | Fix the A–Z / Worth cooking control. | The selected half's fill has a rounded outer edge and a hard square inner one against a fully-rounded container. It reads as unfinished rather than as a deliberate segmented control. | D |
 | **R3** | Lighten the timing metadata. | Two bold lines per card for hands-on and total. On the first card they wrap to two lines because of "at least"; on the others they fit on one. Same information, two shapes. | B |
-| **R4** | Put the ways of adding a recipe above the fold. | Write, import and *write me a recipe* are the three things this screen exists to start, and none is visible without scrolling past the list. | A |
+| ~~**R4**~~ **done** | Put the ways of adding a recipe above the fold. | Write, import and *write me a recipe* are the three things this screen exists to start, and none is visible without scrolling past the list. | A |
 
 ## Recipe detail
 
@@ -64,7 +64,7 @@ These are worth doing first because each one fixes several screens at once.
 | **D2** | Make the yield stepper symmetrical. | The `+` is a filled circle and the `−` is bare text. They do the same kind of thing in opposite directions. | C |
 | **D3** | Move nutrition below the method. | It is the longest block on the page and sits between the ingredients and the thing the cook came for. Nutrition is reference; the method is the recipe. | B |
 | **D4** | The "make a version" input clips its own placeholder. | "Dairy-free, without the eggs" is cut off mid-word — the field is too narrow beside its button on a phone. | D |
-| **D5** | Match the widths of "Correct this recipe" and "Put it away". | They are stacked, both outlined, and different widths, which reads as accidental. | C |
+| ~~**D5**~~ **done** | Match the widths of "Correct this recipe" and "Put it away". | They are stacked, both outlined, and different widths, which reads as accidental. | C |
 | **D7** | **The nutrition table is wider than a phone.** | Measured, not eyeballed: `.nutrition__table` ends at **429 px in a 412 px viewport**, so the right-hand column is clipped off-screen and the two figures run together — *"1460 kJ / 347 kcal5840 kJ / 1389 kcal"*. It happens whenever a recipe has both a per-serving and a whole-recipe column. **In English as well**, which I only found by capturing an English control: I had assumed it was translation length and it is not. French is worse (447 px) because *RECETTE ENTIÈRE* is longer, so translation exposes it rather than causing it. `e2e/21-translated-layouts.spec.ts` measures this and carries it as a known exception; delete the exception when this is fixed. | |
 | **D6** | "Start cooking now" shall transfer the number of servings instead of always taking the default saved in the recipe. | The cook has just changed the yield and expects that to be reflected in the cooking step. | B |
 ## Cooking mode
@@ -109,11 +109,11 @@ styles, so the section is effectively unstyled.
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **A1** | Apply X1 first, then look again. | Text currently starts at x=0 with no page padding, buttons are browser-default grey rectangles with square corners, and the "Take care" caution — the one piece of safety copy on the page — renders as plain bold text instead of a warning notice. | A  |
+| ~~**A1**~~ **done, with X1** | Apply X1 first, then look again. | Text currently starts at x=0 with no page padding, buttons are browser-default grey rectangles with square corners, and the "Take care" caution — the one piece of safety copy on the page — renders as plain bold text instead of a warning notice. | A  |
 | **A2** | Structure the list (see X6). | Fifty entries, flat, alphabetical, each a link plus a grey line. Nothing distinguishes a technique from an ingredient, which matters now that both sections exist. | B |
 | **A3** | Give the lookup and the section filter room and a selected state. | The three section buttons are unstyled and crowded against the search field; nothing shows which is active. | B |
 | **A4** | Style "Write a page" as an action. | It is a plain underlined link above the list, and it is the only way to contribute. | B |
-| **A5** | Style the spelling chips. | "Also written blanched blanches blanching" is a run of grey words, not the chips the recipe screen uses for the same idea. | B |
+| ~~**A5**~~ **done, with X1** | Style the spelling chips. | "Also written blanched blanches blanching" is a run of grey words, not the chips the recipe screen uses for the same idea. | B |
 
 ## Wider viewports
 
@@ -132,18 +132,18 @@ Three things are wrong with it.
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **G1** | Apply X1. | No page padding; the filter bar bleeds to both screen edges with no rounding; the search field is a plain full-bleed box. | A |
+| ~~**G1**~~ **done, with X1** | Apply X1. | No page padding; the filter bar bleeds to both screen edges with no rounding; the search field is a plain full-bleed box. | A |
 | **G2** | Structure 900 entries (see X6). | 19,000 px of flat rows, three cramped lines each, with a "Show more" at the bottom. | B |
 | **G3** | Reconsider the default sort. | The first screen is entirely "11 vol% wine white", "12 vol% wine red", "12.5 vol% wine white" — an alphabetical sort putting numeric-prefixed entries first means the registry's first impression is a wine list. | D |
 | **G4** | Tighten the row. | Name, then "Solid · No density", then "Not checked for allergens" — three lines per entry, all the same weight, most of it saying what is *absent*. | B |
-| **G5** | We imported the swiss food table, that contains allergens. For each item in the registry that has no allergens, it says "Not checked for allergens". This is confusing. | The states of "not checked" and "no allergens" has to be clearly distinguished. | A |
+| ~~**G5**~~ **done** | We imported the swiss food table, that contains allergens. For each item in the registry that has no allergens, it says "Not checked for allergens". This is confusing. | The states of "not checked" and "no allergens" has to be clearly distinguished. | A |
 
 
 ## Apply
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **Y1** | Apply X1 — the primary button is unstyled. | "Ask to be let in" is a pale grey block. It is the only action on the page and it looks disabled. | B |
+| ~~**Y1**~~ **done, with X1** | Apply X1 — the primary button is unstyled. | "Ask to be let in" is a pale grey block. It is the only action on the page and it looks disabled. | B |
 | **Y2** | Align the language and theme selects. | Two native selects of different widths with right-aligned labels at different x positions, adrift at the bottom of the page. | C |
 
 ---

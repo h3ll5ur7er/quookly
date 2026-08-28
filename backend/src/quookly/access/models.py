@@ -151,6 +151,11 @@ class RecipeRow(SQLModel, table=True):
     # this column existed. Nothing can translate out of a language nobody knows, which is
     # a better answer than translating out of a guess (ADR-032).
     language: str | None = Field(default=None)
+    # One picture of the dish, as two columns rather than a table: the Academy needs several
+    # per page because a technique is shown in stages, and a dish is one photograph. Both
+    # or neither — a media id without alt text is a picture some readers do not get.
+    picture_media_id: str | None = Field(default=None)
+    picture_description: str | None = Field(default=None)
     created_at: datetime = Field(default_factory=_now)
     # When this recipe was put away, if it was. Archived rather than deleted because plans,
     # cooked meals and shopping ticks point at it, and a cooked meal that lost its recipe

@@ -245,3 +245,32 @@
 .recipe__term:focus-visible {
   text-decoration-style: solid;
 }
+
+/* Wide rather than square: a dish is a wide thing, and a photograph cropped to a circle or
+   a square loses the plate. */
+.recipe__shot {
+  margin: 0 0 var(--space-4);
+}
+
+.recipe__shot img {
+  width: 100%;
+  border-radius: var(--radius-md);
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+/* One row, wrapping. They were stacked at three different widths, which read as
+   accidental (D5). */
+.recipe__owner,
+.recipe__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.recipe__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-block: var(--space-3);
+}

@@ -82,6 +82,14 @@
         @for (row of found; track row.recipe.id) {
           <li class="recipes__item">
             <a class="recipes__link" [routerLink]="['/recipes', row.recipe.id]">
+              <!-- A list of identical text cards is a list that has to be read. The alt
+                   text is empty on purpose: the title is right beside it and a screen
+                   reader announcing both says the dish twice (X4, R1). -->
+              @if (row.recipe.picture; as picture) {
+                <span class="recipes__shot">
+                  <app-picture [mediaId]="picture.media_id" description="" />
+                </span>
+              }
               <span class="recipes__title">{{ row.recipe.title }}</span>
               @if (row.recipe.summary) {
                 <span class="recipes__summary">{{ row.recipe.summary }}</span>

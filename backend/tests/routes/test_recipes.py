@@ -2,10 +2,12 @@
 
 from collections.abc import AsyncIterator
 from decimal import Decimal
+from io import BytesIO
 from typing import Any
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from PIL import Image
 from pytest import MonkeyPatch
 from sqlmodel import SQLModel
 
@@ -998,3 +1000,163 @@ class TestReadingARecipeInYourOwnLanguage:
 
         found = await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
         assert found.json()["translated"] is False
+
+
+class TestAPictureOfTheDish:
+    """One picture per recipe (X4).
+
+    One, not a gallery. A card wants a thumbnail and a page wants a hero; the Academy
+    needs several because a technique is shown in stages, and a dish is not.
+
+    Alt text is required for the same reason it is on an Academy picture: a picture
+    without it is an accessibility failure, and this project checks that as it builds
+    rather than retrofitting it.
+    """
+
+    def a_picture(self) -> bytes:
+        drawn = BytesIO()
+        Image.new("RGB", (60, 40), "white").save(drawn, format="PNG")
+        return drawn.getvalue()
+
+    async def a_recipe(
+        self, client: AsyncClient, headers: dict[str, str], pantry: dict[str, int]
+    ) -> int:
+        made = await client.post("/api/v1/recipes", json=pancakes(pantry), headers=headers)
+        return int(made.json()["id"])
+
+    async def test_a_cook_can_put_a_picture_on_their_recipe(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        recipe_id = await self.a_recipe(client, headers, pantry)
+
+        added = await client.post(
+            f"/api/v1/recipes/{recipe_id}/picture",
+            files={"picture": ("dish.png", self.a_picture(), "image/png")},
+            data={"description": "A stack of pancakes with butter melting on top."},
+            headers=headers,
+        )
+        assert added.status_code == 200, added.text
+        assert added.json()["picture"]["media_id"]
+        assert added.json()["picture"]["description"].startswith("A stack")
+
+    async def test_a_recipe_without_one_says_so_rather_than_pretending(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        recipe_id = await self.a_recipe(client, headers, pantry)
+        found = await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        assert found.json()["picture"] is None
+
+    async def test_the_list_carries_it_too(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """The list is where it earns its keep: a wall of identical text cards is a list
+        that has to be read rather than looked at."""
+        headers = await sign_up(client, "chef@example.com")
+        recipe_id = await self.a_recipe(client, headers, pantry)
+        await client.post(
+            f"/api/v1/recipes/{recipe_id}/picture",
+            files={"picture": ("dish.png", self.a_picture(), "image/png")},
+            data={"description": "A stack of pancakes."},
+            headers=headers,
+        )
+
+        listed = await client.get("/api/v1/recipes", headers=headers)
+        mine = next(one for one in listed.json() if one["id"] == recipe_id)
+        assert mine["picture"]["media_id"]
+
+    async def test_a_second_picture_replaces_the_first(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """One picture, so putting another on is changing it rather than adding to it."""
+        headers = await sign_up(client, "chef@example.com")
+        recipe_id = await self.a_recipe(client, headers, pantry)
+        first = await client.post(
+            f"/api/v1/recipes/{recipe_id}/picture",
+            files={"picture": ("one.png", self.a_picture(), "image/png")},
+            data={"description": "The first."},
+            headers=headers,
+        )
+        second = await client.post(
+            f"/api/v1/recipes/{recipe_id}/picture",
+            files={"picture": ("two.png", self.a_picture(), "image/png")},
+            data={"description": "The second."},
+            headers=headers,
+        )
+        assert second.json()["picture"]["description"] == "The second."
+        assert second.json()["picture"]["media_id"] != first.json()["picture"]["media_id"]
+
+    async def test_it_can_be_taken_off_again(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        recipe_id = await self.a_recipe(client, headers, pantry)
+        await client.post(
+            f"/api/v1/recipes/{recipe_id}/picture",
+            files={"picture": ("dish.png", self.a_picture(), "image/png")},
+            data={"description": "A stack of pancakes."},
+            headers=headers,
+        )
+        removed = await client.delete(f"/api/v1/recipes/{recipe_id}/picture", headers=headers)
+        assert removed.status_code == 200
+        assert removed.json()["picture"] is None
+
+    async def test_somebody_elses_recipe_is_not_theirs_to_illustrate(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        recipe_id = await self.a_recipe(client, headers, pantry)
+        stranger = await sign_up(client, "neighbour@example.com")
+
+        refused = await client.post(
+            f"/api/v1/recipes/{recipe_id}/picture",
+            files={"picture": ("dish.png", self.a_picture(), "image/png")},
+            data={"description": "Not mine."},
+            headers=stranger,
+        )
+        assert refused.status_code == 404
+
+    async def test_a_description_is_required(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        recipe_id = await self.a_recipe(client, headers, pantry)
+        refused = await client.post(
+            f"/api/v1/recipes/{recipe_id}/picture",
+            files={"picture": ("dish.png", self.a_picture(), "image/png")},
+            data={"description": "  "},
+            headers=headers,
+        )
+        assert refused.status_code == 422
+
+    async def test_something_that_is_not_a_picture_is_refused(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        headers = await sign_up(client, "chef@example.com")
+        recipe_id = await self.a_recipe(client, headers, pantry)
+        refused = await client.post(
+            f"/api/v1/recipes/{recipe_id}/picture",
+            files={"picture": ("notes.txt", b"not a picture at all", "text/plain")},
+            data={"description": "A stack of pancakes."},
+            headers=headers,
+        )
+        assert refused.status_code == 415
+
+    async def test_a_stranger_cannot_fetch_it(
+        self, client: AsyncClient, pantry: dict[str, int]
+    ) -> None:
+        """ADR-063 said the first recipe photograph must not be published by a decision
+        nobody revisited. This is that decision, revisited: a signed-out request is served
+        a picture only when it is on an approved Academy page, and this is not one."""
+        headers = await sign_up(client, "chef@example.com")
+        recipe_id = await self.a_recipe(client, headers, pantry)
+        added = await client.post(
+            f"/api/v1/recipes/{recipe_id}/picture",
+            files={"picture": ("dish.png", self.a_picture(), "image/png")},
+            data={"description": "A stack of pancakes."},
+            headers=headers,
+        )
+        media_id = added.json()["picture"]["media_id"]
+        assert (await client.get(f"/api/v1/media/{media_id}")).status_code == 404
+        assert (await client.get(f"/api/v1/media/{media_id}", headers=headers)).status_code == 200

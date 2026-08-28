@@ -2,7 +2,7 @@
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 
@@ -19,6 +19,7 @@ from quookly.contracts.errors import (
     NotARecipe,
     StructuredOutputUnusable,
     UnknownUnit,
+    UnreadableImage,
     UnsuitableForTheTable,
     UnsupportedDocument,
     YieldUnknown,
@@ -155,6 +156,64 @@ async def generate_recipe(submitted: GenerationInput, cook: CurrentCook) -> Pres
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="The model could not be reached, or did not answer usefully. Please try again.",
         ) from None
+
+
+#: What an upload may weigh. Generous for a photograph of dinner and small enough that a
+#: recipe cannot be used as somebody's file store — the same limit the Academy uses.
+LARGEST_UPLOAD = 12 * 1024 * 1024
+
+
+@router.post("/recipes/{recipe_id}/picture", response_model=PresentedRecipe)
+async def illustrate_recipe(
+    recipe_id: int,
+    cook: CurrentCook,
+    picture: UploadFile = File(description="A photograph of the dish."),
+    description: str = Form(
+        min_length=1,
+        max_length=300,
+        description="What the picture shows, for somebody who cannot see it.",
+    ),
+) -> PresentedRecipe:
+    """Put a picture on a recipe.
+
+    One picture: a second replaces the first. A card wants a thumbnail and a page wants a
+    hero, and the Academy's several-per-page exists because a technique is shown in stages.
+
+    The description is required rather than optional, as it is on an Academy picture: a
+    photograph without alt text is one some readers simply do not get.
+    """
+    if not description.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Say what the picture shows, for somebody who cannot see it.",
+        )
+    upload = await picture.read()
+    if len(upload) > LARGEST_UPLOAD:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="That picture is larger than this instance accepts.",
+        )
+    try:
+        shown = await recipe_manager.illustrate(
+            recipe_id, cook.cook_id, upload, description.strip()
+        )
+    except UnreadableImage as unreadable:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="That file is not a picture this instance can read.",
+        ) from unreadable
+    if shown is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such recipe.")
+    return shown
+
+
+@router.delete("/recipes/{recipe_id}/picture", response_model=PresentedRecipe)
+async def unillustrate_recipe(recipe_id: int, cook: CurrentCook) -> PresentedRecipe:
+    """Take the picture off a recipe. The file stays — collecting orphans is the CLI's."""
+    shown = await recipe_manager.illustrate(recipe_id, cook.cook_id, None, None)
+    if shown is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such recipe.")
+    return shown
 
 
 @router.post(
