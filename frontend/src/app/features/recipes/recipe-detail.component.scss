@@ -33,18 +33,24 @@
   background: var(--surface-raised);
 }
 
+/* Both halves are a circle at rest, not only under the pointer. They do the same kind of
+   thing in opposite directions, and a transparent one beside a filled one reads as one
+   button and one piece of text (D2). */
 .stepper__button {
+  display: grid;
+  place-items: center;
   min-width: 44px;
   min-height: 44px;
   border: none;
   border-radius: var(--radius-full);
-  background: transparent;
+  background: var(--surface-sunken);
   color: var(--on-surface);
   font-size: var(--text-lg);
+  line-height: 1;
   cursor: pointer;
 
   &:hover {
-    background: var(--surface-sunken);
+    background: var(--border);
   }
 }
 

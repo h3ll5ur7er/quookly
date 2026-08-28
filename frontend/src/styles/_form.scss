@@ -68,6 +68,23 @@ input[type='checkbox']:disabled {
   cursor: not-allowed;
 }
 
+/* A label, its control, and whatever explains it, wrapped together.
+ *
+ * It has to restate the spacing above, because the rules above are direct-child selectors
+ * and a wrapped label is a grandchild: `form > label` does not match `<div class="field">
+ * <label>`. Five screens wrap their fields, so five screens were quietly missing the
+ * rhythm this partial exists to give them. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.field:first-child {
+  margin-top: 0;
+}
+
 /* Why a field is worth answering, or what happens if it is left alone. Quieter than the
    label, because it is read once and then never again. */
 .hint {

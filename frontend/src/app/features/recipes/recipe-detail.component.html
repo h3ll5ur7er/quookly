@@ -156,13 +156,16 @@
         <label class="visually-hidden" for="change" i18n="@@recipeVaryLabel">
           What to change
         </label>
+        <!-- Three examples do not fit in a field on a phone, and a placeholder that clips
+             itself mid-word is worse than no example at all. They read as a hint under the
+             row, where there is a line to put them on (D4). -->
         <div class="recipe__vary-row">
           <input
             id="change"
             type="text"
             formControlName="change"
             i18n-placeholder="@@recipeVaryPlaceholder"
-            placeholder="Dairy-free, without the eggs, olive oil instead of butter"
+            placeholder="Dairy-free"
           />
           <button type="submit" [disabled]="!variant.valid || varying()">
             @if (varying()) {
@@ -172,6 +175,9 @@
             }
           </button>
         </div>
+        <p class="hint" i18n="@@recipeVaryHint">
+          Or: without the eggs, olive oil instead of butter, half the sugar.
+        </p>
       </form>
 
       @if (refused(); as verdict) {
@@ -270,7 +276,7 @@
           <div class="field">
             <label for="shows" i18n="@@recipeShows">What it shows</label>
             <input id="shows" type="text" [formControl]="describing" />
-            <p class="field__hint" i18n="@@recipeShowsHint">
+            <p class="hint" i18n="@@recipeShowsHint">
               For somebody who cannot see it. Required — a picture without this is one that some
               readers simply do not get.
             </p>

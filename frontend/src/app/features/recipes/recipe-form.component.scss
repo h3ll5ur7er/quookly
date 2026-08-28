@@ -5,6 +5,7 @@
 @use '../../../styles/page';
 @use '../../../styles/controls';
 @use '../../../styles/form';
+@use '../../../styles/a11y';
 
 .recipe-form section {
   margin-block-end: var(--space-6);

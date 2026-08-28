@@ -99,19 +99,27 @@
 }
 
 /* Two words, not two icons. The choice is between two orderings and a magnifying glass
-   beside a saucepan would be a puzzle. */
+   beside a saucepan would be a puzzle.
+
+   A segmented control, not a pill with a square-edged fill in it. The container was
+   fully rounded with `overflow: hidden`, so the selected half had a rounded outer edge
+   and a hard inner one — which reads as unfinished rather than as deliberate (R2). The
+   selection is its own rounded shape, inset in a sunken track. */
 .recipes__order {
   display: flex;
-  border: 1px solid var(--border-strong);
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
   border-radius: var(--radius-full);
-  overflow: hidden;
+  background: var(--surface-sunken);
 }
 
 .recipes__order-choice {
-  min-height: 48px;
+  min-height: 44px;
   padding-inline: var(--space-4);
   border: none;
-  background: var(--surface-raised);
+  border-radius: var(--radius-full);
+  background: transparent;
   color: var(--on-surface-muted);
   font-family: var(--font-body);
   font-size: var(--text-sm);
@@ -126,7 +134,7 @@
 }
 
 .recipes__order-choice:hover:not(.recipes__order-choice--on) {
-  background: var(--surface-sunken);
+  color: var(--on-surface);
 }
 
 /* --- why a recipe is here -------------------------------------------------------------- */

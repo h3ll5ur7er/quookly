@@ -52,8 +52,8 @@ These are worth doing first because each one fixes several screens at once.
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
 | ~~**R1**~~ **done, with X4** | Add a thumbnail per card (see X4). | Three cards of identical grey text is a list that has to be read. | C |
-| **R2** | Fix the A–Z / Worth cooking control. | The selected half's fill has a rounded outer edge and a hard square inner one against a fully-rounded container. It reads as unfinished rather than as a deliberate segmented control. | D |
-| **R3** | Lighten the timing metadata. | Two bold lines per card for hands-on and total. On the first card they wrap to two lines because of "at least"; on the others they fit on one. Same information, two shapes. | B |
+| ~~**R2**~~ **done** | Fix the A–Z / Worth cooking control. | The selected half's fill has a rounded outer edge and a hard square inner one against a fully-rounded container. It reads as unfinished rather than as a deliberate segmented control. | D |
+| ~~**R3**~~ **done** | Lighten the timing metadata. | Two bold lines per card for hands-on and total. On the first card they wrap to two lines because of "at least"; on the others they fit on one. Same information, two shapes. | B |
 | ~~**R4**~~ **done** | Put the ways of adding a recipe above the fold. | Write, import and *write me a recipe* are the three things this screen exists to start, and none is visible without scrolling past the list. | A |
 
 ## Recipe detail
@@ -61,9 +61,9 @@ These are worth doing first because each one fixes several screens at once.
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
 | ~~**D1**~~ **done** | Do not print hands-on and total when they are the same number. | "at least 30 min HANDS-ON / at least 30 min TOTAL" reads as a mistake. | C |
-| **D2** | Make the yield stepper symmetrical. | The `+` is a filled circle and the `−` is bare text. They do the same kind of thing in opposite directions. | C |
+| ~~**D2**~~ **done, though not as reported** | Make the yield stepper symmetrical. **Both halves were already the same rule** — a transparent circle that fills on hover — so what the screenshot caught was almost certainly the `+` under the pointer. What was actually wrong is that at rest *neither* looked like a button. Both are a filled circle now. | The `+` is a filled circle and the `−` is bare text. They do the same kind of thing in opposite directions. | C |
 | ~~**D3**~~ **done** | Move nutrition below the method. | It is the longest block on the page and sits between the ingredients and the thing the cook came for. Nutrition is reference; the method is the recipe. | B |
-| **D4** | The "make a version" input clips its own placeholder. | "Dairy-free, without the eggs" is cut off mid-word — the field is too narrow beside its button on a phone. | D |
+| ~~**D4**~~ **done** | The "make a version" input clips its own placeholder. | "Dairy-free, without the eggs" is cut off mid-word — the field is too narrow beside its button on a phone. | D |
 | ~~**D5**~~ **done** | Match the widths of "Correct this recipe" and "Put it away". | They are stacked, both outlined, and different widths, which reads as accidental. | C |
 | ~~**D7**~~ **done** | **The nutrition table is wider than a phone.** | Measured, not eyeballed: `.nutrition__table` ends at **429 px in a 412 px viewport**, so the right-hand column is clipped off-screen and the two figures run together — *"1460 kJ / 347 kcal5840 kJ / 1389 kcal"*. It happens whenever a recipe has both a per-serving and a whole-recipe column. **In English as well**, which I only found by capturing an English control: I had assumed it was translation length and it is not. French is worse (447 px) because *RECETTE ENTIÈRE* is longer, so translation exposes it rather than causing it. `e2e/21-translated-layouts.spec.ts` measures this and carries it as a known exception; delete the exception when this is fixed. | |
 | ~~**D6**~~ **done** | "Start cooking now" shall transfer the number of servings instead of always taking the default saved in the recipe. | The cook has just changed the yield and expects that to be reflected in the cooking step. | B |
@@ -268,6 +268,21 @@ All four gaps from the first pass are closed, and what they turned up is above. 
   touched — because that component carries its own copy of every shared rule and sits on the
   8 kB ceiling. The `:active` press for T4 went into the global stylesheet instead, where it
   exists once. Worth knowing before anybody adds to a partial.
+- **`.field__hint` is used fifteen times and defined nowhere.** The shared class is `.hint`. Five
+  templates — both Academy screens, the registry entry, the recipe form and the recipe page — carried
+  a class that has never had a rule, so every one of those hints rendered as an ordinary paragraph
+  instead of the quiet line under a field it was written to be. Renamed.
+- **`.field` was defined nowhere either, and that one is a spacing bug.** `_form.scss` spaces labels
+  with `form > label`, a *direct-child* selector — which does not match a label wrapped in
+  `<div class="field">`. Five screens wrap their fields, so five screens quietly lost the rhythm the
+  partial exists to give them. `.field` is now defined in the partial that owns the shape.
+- **Three components printed their screen-reader-only text on the page.** `.visually-hidden` lives in
+  `_a11y.scss`, and cooking mode, the recipe form and the registry never imported it — so five hidden
+  labels in the recipe form and one in the registry were visible. This is X1 exactly, eight months
+  after X1, and **the X2 checker said they were fine**: its class list was hand-written and had three
+  classes on it. It now reads the partials themselves, which is how it found these plus `.hint` and
+  `.error` unstyled on sign-in, apply and bootstrap. A hand-written list of what to check is a list
+  that goes stale.
 - **The contrast checker was not checking links.** `--primary` is a link as well as a button
   fill, and only the button pair was listed — so playful passed `just frontend contrast` and
   failed axe on every link it drew, at 4.47:1. Two pairs added; the check went from 92 to 100.

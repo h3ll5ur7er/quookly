@@ -230,7 +230,7 @@
           <div class="field">
             <label for="picture" i18n="@@academyPicture">The picture</label>
             <input id="picture" type="file" accept="image/*" (change)="choose($event)" />
-            <p class="field__hint" i18n="@@academyPictureHint">
+            <p class="hint" i18n="@@academyPictureHint">
               Kept beside this instance's database, re-encoded and brought down to a size a page can
               send. What the camera recorded does not come with it.
             </p>
@@ -238,7 +238,7 @@
           <div class="field">
             <label for="describes" i18n="@@academyDescribes">What it shows</label>
             <input id="describes" type="text" [formControl]="describing" />
-            <p class="field__hint" i18n="@@academyDescribesHint">
+            <p class="hint" i18n="@@academyDescribesHint">
               For somebody who cannot see it. Required — a picture without this is one that some
               readers simply do not get.
             </p>
@@ -285,7 +285,7 @@
                 <option [value]="one.id">{{ one.label }}</option>
               }
             </select>
-            <p class="field__hint" i18n="@@academyLanguageHint">
+            <p class="hint" i18n="@@academyLanguageHint">
               A language this page does not speak yet is added. The others are left alone.
             </p>
           </div>
@@ -298,7 +298,7 @@
           <div class="field">
             <label for="spellings" i18n="@@academySpellings">The ways a step writes it</label>
             <textarea id="spellings" rows="4" formControlName="spellings"></textarea>
-            <p class="field__hint" i18n="@@academySpellingsHint">
+            <p class="hint" i18n="@@academySpellingsHint">
               One per line. These are what a recipe step is matched against, so a word that means
               something else in a recipe does not belong here.
             </p>
@@ -317,7 +317,7 @@
           <div class="field">
             <label for="caution" i18n="@@academyCautionField">Where getting it wrong matters</label>
             <textarea id="caution" rows="3" formControlName="caution"></textarea>
-            <p class="field__hint" i18n="@@academyCautionHint">
+            <p class="hint" i18n="@@academyCautionHint">
               Leave empty unless it does. A warning on every page is a warning on none.
             </p>
           </div>

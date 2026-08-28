@@ -36,20 +36,28 @@
 }
 
 /* On a list row the two numbers are a fact to scan past, not a heading to land on. The
-   labels stay — "15 min · 45 min" is two numbers nobody can tell apart. */
+   labels stay — "15 min · 45 min" is two numbers nobody can tell apart.
+
+   Each reading is one unbreakable phrase, so a card whose first timing says "at least 30
+   min" wraps as a whole rather than mid-phrase. Two cards of the same information in two
+   different shapes is what made the list read as ragged (R3). */
 .timing--compact {
-  gap: var(--space-3);
+  gap: var(--space-1) var(--space-3);
   margin-top: var(--space-2);
+  color: var(--on-surface-subtle);
 
   .timing__part {
     flex-direction: row;
     align-items: baseline;
     gap: 0.35em;
+    white-space: nowrap;
   }
 
   .timing__value {
+    color: var(--on-surface-muted);
     font-family: var(--font-body);
     font-size: var(--text-sm);
+    font-weight: 500;
   }
 
   .timing__label {

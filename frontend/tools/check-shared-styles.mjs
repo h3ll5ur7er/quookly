@@ -22,13 +22,33 @@ import { dirname, join, relative } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const app = join(here, '..', 'src', 'app');
+const partials = join(here, '..', 'src', 'styles');
 
-/** Which partial defines which class. */
-const DEFINED_BY = {
-  page: ['page', 'action', 'notice'],
-  form: ['field'],
-  chips: ['chip'],
-};
+/**
+ * Which partial defines which class, read off the partials themselves.
+ *
+ * It used to be a hand-written list of three, and a hand-written list is a list that goes
+ * stale: `.visually-hidden` is defined in `_a11y.scss` and was never on it, so three
+ * components printed their screen-reader-only labels across the page and this check said
+ * they were fine. Deriving it means a class added to a partial is covered the day it is
+ * written.
+ */
+function definedByPartial() {
+  const map = new Map();
+  for (const entry of readdirSync(partials)) {
+    if (!entry.startsWith('_') || !entry.endsWith('.scss')) continue;
+    const name = entry.slice(1, -5);
+    const text = readFileSync(join(partials, entry), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const [, one] of text.matchAll(/(?:^|[\s,>+~(])\.(-?[_a-zA-Z][\w-]*)/g)) {
+      // First definition wins. A class two partials both mention belongs to whichever
+      // declares it first, and naming it twice is its own problem.
+      if (!map.has(one)) map.set(one, name);
+    }
+  }
+  return map;
+}
+
+const DEFINED_BY = definedByPartial();
 
 function stylesheets(directory) {
   const found = [];
@@ -67,14 +87,27 @@ for (const stylesheet of stylesheets(app)) {
   checked += 1;
   const styles = readFileSync(stylesheet, 'utf8');
 
-  for (const [partial, classes] of Object.entries(DEFINED_BY)) {
-    const used = classes.filter((one) => new RegExp(`class="[^"]*\\b${one}\\b`).test(markup));
-    if (used.length > 0 && !imports(styles, partial)) {
-      missing.push(
-        `${relative(join(here, '..'), stylesheet)}\n` +
-          `    uses .${used.join(', .')} but does not @use '.../styles/${partial}'`,
-      );
+  // Every class the markup puts on an element, static or bound.
+  const used = new Set();
+  for (const [, value] of markup.matchAll(/\sclass="([^"]*)"/g)) {
+    for (const token of value.replace(/\{\{[^}]*\}\}/g, ' ').split(/\s+/)) {
+      if (token) used.add(token);
     }
+  }
+  for (const [, name] of markup.matchAll(/\[class\.([\w-]+)\]/g)) used.add(name);
+
+  const wanted = new Map();
+  for (const one of used) {
+    const partial = DEFINED_BY.get(one);
+    if (partial !== undefined && !imports(styles, partial)) {
+      wanted.set(partial, [...(wanted.get(partial) ?? []), one]);
+    }
+  }
+  for (const [partial, classes] of wanted) {
+    missing.push(
+      `${relative(join(here, '..'), stylesheet)}\n` +
+        `    uses .${classes.join(', .')} but does not @use '.../styles/${partial}'`,
+    );
   }
 }
 
@@ -85,4 +118,7 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
-console.log(`Shared styles: ${checked} components import every shared class they use.`);
+console.log(
+  `Shared styles: ${checked} components import every shared class they use ` +
+    `(${DEFINED_BY.size} classes across the partials).`,
+);
