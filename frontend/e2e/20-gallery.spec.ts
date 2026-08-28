@@ -1,4 +1,4 @@
-import { claim, letIn, signIn } from './support';
+import { claim, letIn, noSessionOpen, signIn } from './support';
 import { expect, test } from '@playwright/test';
 
 /**
@@ -21,6 +21,14 @@ test.beforeAll(async ({ request }) => {
 
 test.beforeEach(async ({ page }) => {
   await signIn(page);
+});
+
+test('the same recipe in English, as the control', async ({ page }) => {
+  // The German and French captures below are of *this* recipe. Without an English one at
+  // the same width, a broken table there cannot be blamed on the translation.
+  await page.goto('/recipes/1');
+  await expect(page.getByRole('heading', { name: 'Buttermilk Pancakes' })).toBeVisible();
+  await page.screenshot({ path: 'e2e/screenshots/recipe-en.png', fullPage: true });
 });
 
 test('the Academy', async ({ page }) => {
@@ -87,3 +95,64 @@ test('the form somebody applies with', async ({ browser }) => {
     await context.close();
   }
 });
+
+/**
+ * The app in the other two languages.
+ *
+ * There was exactly one non-English picture in this suite — the sign-in screen in German —
+ * and none in French, while German and French labels run two to three times longer than
+ * the English. Nobody had seen the cooking-mode timer buttons say *Réinitialiser*.
+ *
+ * Signed in inside a context of its own, because the language a cook reads in comes from
+ * the browser and the shared page's is English.
+ */
+for (const [locale, tag] of [
+  ['de-CH', 'de'],
+  ['fr-CH', 'fr'],
+] as const) {
+  test(`the screens a cook lives in, in ${locale}`, async ({ browser }) => {
+    // The spread first: the project carries a locale of its own, and spreading it
+    // afterwards would put these pages back into English.
+    const context = await browser.newContext({ ...test.info().project.use, locale });
+    try {
+      const page = await context.newPage();
+      await page.goto('/sign-in');
+      // Labelled in the language under test, so found by position rather than by name.
+      await page.locator('#email').fill('chef@example.com');
+      await page.locator('#password').fill('a-sufficiently-long-password');
+      await page.locator('button[type="submit"]').click();
+      await expect(page).toHaveURL(/\/$/);
+
+      for (const [path, name] of [
+        ['/', 'home'],
+        ['/recipes', 'recipes'],
+        ['/recipes/1', 'recipe'],
+        ['/pantry', 'pantry'],
+        ['/shopping', 'shopping'],
+        ['/academy', 'academy'],
+        ['/settings', 'settings'],
+      ] as const) {
+        await page.goto(path);
+        await page.waitForLoadState('networkidle');
+        await page.screenshot({ path: `e2e/screenshots/${name}-${tag}.png`, fullPage: true });
+      }
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+/*
+ * Cooking mode in German and French was captured here once and reviewed — the prediction
+ * that the timer buttons would wrap was wrong, and `cook-step-de.png` and `cook-step-fr.png`
+ * are the evidence. The test itself is gone.
+ *
+ * It needed a plan, a meal and a session set up through the API, and in a full run it kept
+ * arriving at a prep screen whose start button never enabled. Chasing that cost several
+ * seven-minute suite runs for two pictures that had already served their purpose, and a
+ * screenshot is not worth a flaky test.
+ *
+ * What that screen actually needs guarding is its width, and that is
+ * `21-translated-layouts.spec.ts`, which measures rather than photographs. Adding `/cook`
+ * to it is worth doing when the session setup can be made reliable.
+ */

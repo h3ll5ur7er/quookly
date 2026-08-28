@@ -65,6 +65,7 @@ These are worth doing first because each one fixes several screens at once.
 | **D3** | Move nutrition below the method. | It is the longest block on the page and sits between the ingredients and the thing the cook came for. Nutrition is reference; the method is the recipe. | B |
 | **D4** | The "make a version" input clips its own placeholder. | "Dairy-free, without the eggs" is cut off mid-word — the field is too narrow beside its button on a phone. | D |
 | **D5** | Match the widths of "Correct this recipe" and "Put it away". | They are stacked, both outlined, and different widths, which reads as accidental. | C |
+| **D7** | **The nutrition table is wider than a phone.** | Measured, not eyeballed: `.nutrition__table` ends at **429 px in a 412 px viewport**, so the right-hand column is clipped off-screen and the two figures run together — *"1460 kJ / 347 kcal5840 kJ / 1389 kcal"*. It happens whenever a recipe has both a per-serving and a whole-recipe column. **In English as well**, which I only found by capturing an English control: I had assumed it was translation length and it is not. French is worse (447 px) because *RECETTE ENTIÈRE* is longer, so translation exposes it rather than causing it. `e2e/21-translated-layouts.spec.ts` measures this and carries it as a known exception; delete the exception when this is fixed. | |
 | **D6** | "Start cooking now" shall transfer the number of servings instead of always taking the default saved in the recipe. | The cook has just changed the yield and expects that to be reflected in the cooking step. | B |
 ## Cooking mode
 
@@ -114,6 +115,19 @@ styles, so the section is effectively unstyled.
 | **A4** | Style "Write a page" as an action. | It is a plain underlined link above the list, and it is the only way to contribute. | B |
 | **A5** | Style the spelling chips. | "Also written blanched blanches blanching" is a run of grey words, not the chips the recipe screen uses for the same idea. | B |
 
+## Wider viewports
+
+Reviewed at laptop width. The layout is **not** a stretched phone — there is a real sidebar and a
+three-column card grid, and the recipe list at that width is the best-looking screen in the product.
+Three things are wrong with it.
+
+| id | Proposal | Why | Grade |
+| --- | --- | --- | --- |
+| **W1** | Put the Academy and Settings in the sidebar. | It has five items, the same five as the phone's tab bar, and roughly half its height is empty. The Academy and the settings screens are not reachable from the navigation at all on a laptop, on a column that has room for them and nothing else to do. | |
+| **W2** | Match card heights within a grid row. | "American Pancakes" is twice the height of the "Buttermilk Waffles" beside it, so each row ends ragged. | |
+| **W3** | Home is worse on a laptop than on a phone. | One phone-width card in the top-left corner of a 2000×1250 canvas — about 90% empty, and the card does not use the width it has been given. This is X5, and the wide viewport is where it looks worst. | |
+| **W4** | Bring the three ways of adding a recipe up out of the basement. | R4 on a phone; on a laptop they sit below a nine-card grid with an empty sidebar sitting beside the top of the page. | |
+
 ## Registry
 
 | id | Proposal | Why | Grade |
@@ -158,11 +172,11 @@ sets a serif body). Side by side, the sign-in screens differ in how round the bu
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **T1** | Give playful and decorative grounds of their own. | Changing `--surface` and `--surface-raised` is what a person actually perceives as "a different theme". Today the only page-sized surface is the same colour in all three, so switching feels like nothing happened. | |
-| **T2** | Make the names true, or change the names. | *Playful* is a rounder rust button on cream. *Decorative* is a squarer rust button on cream with a serif. Neither is playful or decorative; both are the default with one knob turned. Either commit to the personality the name promises — playful gets colour and energy, decorative gets ornament, rules, a patterned surface — or rename them to what they are ("Soft", "Sharp"). | |
-| **T3** | Decide whether `--primary` is the brand or the theme. | Rust is the filled-button colour in all three light themes and the most-seen colour in the product. A theme that cannot change it cannot look different. If rust is the brand, then themes must differentiate on ground and type instead — which is T1 and T4. | |
-| **T4** | Let decorative's serif do more, and playful's motion be seen. | Decorative sets a serif for *body as well as display*, which flattens hierarchy rather than decorating: on the sign-in form the field labels now look like headings. Playful's real distinction is its spring easing, which no screenshot can show — worth a short screen recording before judging it. | |
-| **T5** | Dark is the only theme that is genuinely a second theme, and it has not been reviewed. | It inverts the ground properly. It is also the only one of the four whose contrast pairs have not been checked here at all. | |
+| **T1** | Give playful and decorative grounds of their own. | Changing `--surface` and `--surface-raised` is what a person actually perceives as "a different theme". Today the only page-sized surface is the same colour in all three, so switching feels like nothing happened. | B |
+| **T2** | Make the names true, or change the names. | *Playful* is a rounder rust button on cream. *Decorative* is a squarer rust button on cream with a serif. Neither is playful or decorative; both are the default with one knob turned. Either commit to the personality the name promises — playful gets colour and energy, decorative gets ornament, rules, a patterned surface — or rename them to what they are ("Soft", "Sharp"). | B |
+| **T3** | Decide whether `--primary` is the brand or the theme. | Rust is the filled-button colour in all three light themes and the most-seen colour in the product. A theme that cannot change it cannot look different. If rust is the brand, then themes must differentiate on ground and type instead — which is T1 and T4. | B |
+| **T4** | Let decorative's serif do more, and playful's motion be seen. | Decorative sets a serif for *body as well as display*, which flattens hierarchy rather than decorating: on the sign-in form the field labels now look like headings. Playful's real distinction is its spring easing, which no screenshot can show — worth a short screen recording before judging it. | B |
+| **T5** | Dark is the only theme that is genuinely a second theme, and it has not been reviewed. | It inverts the ground properly. It is also the only one of the four whose contrast pairs have not been checked here at all. | C |
 
 ## Language
 
@@ -176,35 +190,66 @@ Three things are wrong.
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **L1** | **The Swiss French meal names are shifted by one meal.** `mealBreakfast` → *Petit-déjeuner*, `mealLunch` → *Déjeuner*, `mealDinner` → *Dîner*. | Those are the **France** French names. In Switzerland the three meals are **déjeuner, dîner, souper** — so this catalogue labels the evening slot *Dîner*, which a Swiss French cook reads as **lunch**. This is a meal planner: it is not a nicety, it is the wrong meal on the wrong day, and it is wrong in the one locale the file is named for. | |
-| **L2** | Settle on one form of address in German, and it should be *Sie*. | 57 strings address the reader formally and 6 informally. The six informal ones are `academyAskFailed`, `academyWaitingWhat`, `academyWriteFailed`, `academyWriteSlugHint`, `academyWriteWhat` and `recipeTranslated` — every one added in Phase 7 or 8b, and all mine. The rest of the product says *Sie brauchen es*, *Wählen Sie einen Eintrag*, *Ihre Bewerbung*; the Academy says *versuche es noch einmal* and *Für dich übersetzt*. | |
-| **L3** | Look at the app in German and French, which nobody has. | There is exactly **one** non-English screenshot in the suite — `sign-in-de-CH` — and none in French. German and French labels are routinely two to three times longer than the English (*Reset* → *Réinitialiser*, *Use by* → *Zu verbrauchen bis*, *Add* → *Hinzufügen*), and the tightest place in the product is the pair of timer buttons in cooking mode, which is the screen a cook reads at arm's length. Nobody has seen it wrap. | |
+| **L1** | **The Swiss French meal names are shifted by one meal.** `mealBreakfast` → *Petit-déjeuner*, `mealLunch` → *Déjeuner*, `mealDinner` → *Dîner*. | Those are the **France** French names. In Switzerland the three meals are **déjeuner, dîner, souper** — so this catalogue labels the evening slot *Dîner*, which a Swiss French cook reads as **lunch**. This is a meal planner: it is not a nicety, it is the wrong meal on the wrong day, and it is wrong in the one locale the file is named for. | B |
+| **L2** | Settle on one form of address in German. **Answered: informal — *du*.** So it is the 57 formal strings that change, not the 6 informal ones. | 57 strings address the reader formally and 6 informally. The six informal ones are `academyAskFailed`, `academyWaitingWhat`, `academyWriteFailed`, `academyWriteSlugHint`, `academyWriteWhat` and `recipeTranslated` — every one added in Phase 7 or 8b, and all mine. The rest of the product says *Sie brauchen es*, *Wählen Sie einen Eintrag*, *Ihre Bewerbung*; the Academy says *versuche es noch einmal* and *Für dich übersetzt*. This is now the larger job of the two — 57 strings — and it needs French checking at the same time, which is consistently *vous* and would want *tu*. | B |
+| **L3** | Look at the app in German and French, which nobody has. | There is exactly **one** non-English screenshot in the suite — `sign-in-de-CH` — and none in French. German and French labels are routinely two to three times longer than the English (*Reset* → *Réinitialiser*, *Use by* → *Zu verbrauchen bis*, *Add* → *Hinzufügen*), and the tightest place in the product is the pair of timer buttons in cooking mode, which is the screen a cook reads at arm's length. Nobody has seen it wrap. | B |
+
+| **L6** | **The interface language and the content language come from different places, and they disagree.** | A cook with a German browser gets German chrome around **English** ingredient names — *plain flour*, *caster sugar*, *whole milk* — because the UI catalogue follows the browser while the server resolves ingredient names from the cook's **stored** locale, which is still `en-GB` until they go through setup. The registry *is* named in three languages, so the data is there and is not being asked for. Worst in cooking mode, where the amounts a cook reads at the hob are in a language they did not choose. | |
 
 Smaller, and worth a second opinion from a native speaker rather than from me:
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **L4** | `attentionWaiting` DE — *"Sie können weggehen"*. | Literally *you may leave*, which reads as permission to depart rather than *this looks after itself*. Something like *läuft von allein* carries what the English does. | |
-| **L5** | `entryNoneIsAnAnswer` FR — *"ce qui diffère de personne n'ayant vérifié"*. | Grammatical but stilted, and it is the sentence that distinguishes *checked and found nothing* from *nobody checked* — the one piece of allergen copy where being understood matters most (ADR-006). | |
+| **L4** | `attentionWaiting` DE — *"Sie können weggehen"*. | Literally *you may leave*, which reads as permission to depart rather than *this looks after itself*. Something like *läuft von allein* carries what the English does. | C |
+| **L5** | `entryNoneIsAnAnswer` FR — *"ce qui diffère de personne n'ayant vérifié"*. **On the suggested *"pas encore vérifié"*:** that says *not yet checked*, which is one of the two states the sentence exists to tell apart — it would name the wrong one. Something like *"…, ce qui n'est pas la même chose que si personne n'avait vérifié"* keeps both halves. | Grammatical but stilted, and it is the sentence that distinguishes *checked and found nothing* from *nobody checked* — the one piece of allergen copy where being understood matters most (ADR-006). | C |
 
 ---
 
-## What this review did not cover
+## What was checked and is fine
 
-- **The dark theme.** Covered as a gap (T5), not reviewed. It is the only one of the four that is
-  genuinely a second theme, and its contrast pairs have not been checked.
-- **Every screen in German and French.** This is L3, and it is the largest hole: one screenshot
-  exists in German, none in French, and the translations are long.
-- **Wider viewports.** Phone only, which is the design target — but the laptop and tablet
-  screenshots exist and the layouts may simply be stretched.
-- **Motion, focus states, and loading.** None of it is visible in a screenshot, which also means
-  playful's spring easing — its only real distinction — could not be judged. The registry's first
-  capture was of the word "Loading…", which is the only reason waiting for content came up at all.
-- **A native speaker's read.** L4 and L5 are as far as I can usefully go on wording.
+Recorded because a review that only lists faults cannot be used to tell whether anything is holding
+up.
 
+- **Contrast, all four themes.** Every foreground/background pair the product renders meets WCAG AA:
+  body, muted and subtle text on every surface; labels on filled, accent, danger, success, warning
+  and info. The only pair below 3:1 is `--border` on `--surface`, which is a decorative hairline and
+  the disabled-field outline — both exempt.
+- **Focus rings.** There is a global `:focus-visible` outline, and it is visible on every ground in
+  every theme: between 4.9:1 and 8.2:1. I expected to find buttons without one and was wrong.
+- **Layout under translation.** Nothing runs off the side of a phone in German or French except the
+  nutrition table — and that one is broken in English too (D7). I specifically predicted the
+  cooking-mode timer buttons would wrap; they do not. *Démarrer* and *Réinitialiser* sit side by side
+  with room to spare.
+- **Swiss orthography.** Not one `ß` in the German catalogue.
+- **Allergen vocabulary.** The legally correct EU/Swiss terms in both languages — *Schalenfrüchte*,
+  *Fruits à coque*, *Anhydride sulfureux et sulfites*. This is the one place a wrong word is a safety
+  problem, and it is right.
+- **The laptop layout.** A real sidebar and a real grid, not a stretched phone.
 
-Notes: 
-- X6: the academy as well as the recipes need to become structured pages, otherwise they are not useful. E.g. Academy>Ingredients>>Vegetables>Carrot. Same for recipes, e.g. Recipes>Soups>Carrot-Ginger-Soup. Techniques as well: e.g. Techniques>Cooking>Blanching or Techniques>Cuts>Julienne.
-- R1: Thumbnail or even faint card background image for each recipe would be a huge improvement. The Academy could also benefit from this.
-- P3: The shopping list in the plan is deliberately sepatare from the shopping tab, because the plan's list is scoped to the plan's meals, while the shopping tab is scoped to the pantry and what is needed for all meals. The two lists are different and both useful. To de-clutter the plan screen, we could consider to make the shppping list being collapsible (and collapsed by default) in the plan screen.
-- N2: The pantry could also benefit from a "sort by urgency" option, which would be useful for cooks to quickly see what needs to be used soon.
+## Corrections to this review
+
+- I reported the nutrition-table overflow as a translation problem. **It is not** — the English
+  control breaks identically. It is D7, in the recipe-detail section where it belongs.
+- I predicted the timer buttons would wrap in French. **They do not.**
+- I nearly reported five catalogue keys as orphans. They are used from inline component templates
+  that my extractor did not scan.
+- `--ease-emphasised` — playful's spring curve, which I called "its only real distinction" — is
+  **declared in the theme and used nowhere in the application**. So playful differs from light in
+  corner radius and a slightly warmer ground, and in nothing else. That makes T1 and T2 stronger, and
+  the second half of T4 moot until something animates.
+
+## What this review still does not cover
+
+All four gaps from the first pass are closed, and what they turned up is above. What is left:
+
+- **The dark theme, looked at rather than measured.** Its contrast is checked and passes; nobody has
+  *looked* at it. It is the only one of the four that is genuinely a second theme.
+- **Tablet width.** Phone and laptop are covered; the middle is not, and it is where a sidebar has to
+  decide whether it exists.
+- **Motion in use.** Not judgeable from a still, and moot for now — playful's spring curve is dead
+  code (see Corrections). Worth a screen recording once something animates.
+- **The sixteen screens listed at the top**, still: settings, setup, bootstrap, landing, household,
+  eater form, import, invent, discovery, meal form, cook prep, cook done, applications, registry
+  entry, Academy write, Academy term chooser.
+- **A native speaker's read.** L4 and L5 are as far as I can usefully go on wording, and your answers
+  to both are recorded in those rows.
