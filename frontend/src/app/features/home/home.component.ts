@@ -12,7 +12,12 @@ import { weekday } from '../../core/dates/format';
  * somewhere else in the app — the point is that a cook should not have to go and look.
  *
  * Ordered by how soon it matters. What is going off is first because it is the only thing
- * here with a deadline; tonight's meal next; the shopping after that.
+ * here with a deadline; tonight's meal next; the shopping after that; then what to do when
+ * none of the three is pressing.
+ *
+ * Every card is asked whether or not it has an answer. Hiding the empty ones left the
+ * ordinary weekday — a shelf with something on it and nothing planned — as one card and two
+ * thirds of an empty screen, which reads as a page that failed to load (H1).
  */
 @Component({
   selector: 'app-home',
@@ -26,27 +31,17 @@ export class HomeComponent {
 
   protected readonly name = computed(() => this.auth.cook()?.display_name ?? '');
 
-  protected readonly pressing = signal<PantryEntry[] | null>(null);
+  protected readonly pressing = signal<PantryEntry[]>([]);
   protected readonly plan = signal<PlanView | null>(null);
-  protected readonly loaded = signal(false);
 
   /** Today, as the plan writes it, so a slot can be matched against it. */
-  private readonly today = new Date().toISOString().slice(0, 10);
+  protected readonly today = new Date().toISOString().slice(0, 10);
 
   protected readonly tonight = computed<SlotView[]>(() =>
     (this.plan()?.slots ?? []).filter((slot) => slot.on_date === this.today && slot.recipe_id),
   );
 
   protected readonly toBuy = computed(() => this.plan()?.shopping.length ?? 0);
-
-  /** Whether there is anything at all to report, as opposed to a quiet day. */
-  protected readonly quiet = computed(
-    () =>
-      this.loaded() &&
-      (this.pressing() ?? []).length === 0 &&
-      this.tonight().length === 0 &&
-      this.toBuy() === 0,
-  );
 
   protected readonly weekday = weekday;
 
@@ -63,11 +58,8 @@ export class HomeComponent {
     inject(PlansService)
       .currentPlan()
       .subscribe({
-        next: (plan) => {
-          this.plan.set(plan);
-          this.loaded.set(true);
-        },
-        error: () => this.loaded.set(true),
+        next: (plan) => this.plan.set(plan),
+        error: () => this.plan.set(null),
       });
   }
 

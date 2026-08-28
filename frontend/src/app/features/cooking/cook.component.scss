@@ -136,14 +136,31 @@
   text-align: end;
 }
 
+/* Read at the same distance as the timer, because on a baking step it is half of what the
+   step says. It was a small muted chip beside a very large clock (C2). */
 .cook__heat {
+  display: flex;
+  align-items: baseline;
   align-self: flex-start;
+  gap: var(--space-1);
   margin: var(--space-4) 0 0;
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-full);
   background: var(--surface-sunken);
-  color: var(--on-surface-muted);
+  color: var(--on-surface);
   font-variant-numeric: tabular-nums;
+}
+
+.cook__degrees {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.cook__unit {
+  font-size: var(--text-md);
+  color: var(--on-surface-muted);
 }
 
 /* Pushed to the foot of the step rather than left under the instruction. The timer is the
@@ -305,34 +322,12 @@ app-timer {
   background: var(--primary-hover);
 }
 
-/* --- finished ------------------------------------------------------------------------ */
+/* --- leaving -------------------------------------------------------------------------- */
 
-.cook__done {
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: var(--space-3);
-  text-align: center;
-}
+/* The finished screen is `app-cook-finished`. It shares nothing with the step view above —
+   different posture, different type, different job — and this stylesheet sits on the 8 kB
+   component budget, so it was where the room for C2 came from. */
 
-.cook__done-mark {
-  display: grid;
-  place-items: center;
-  inline-size: 4rem;
-  block-size: 4rem;
-  margin: 0;
-  border-radius: var(--radius-full);
-  background: var(--success);
-  color: var(--on-success);
-  font-size: var(--text-2xl);
-}
-
-.cook__lede {
-  margin: 0;
-  color: var(--on-surface-muted);
-}
-
-.cook__action,
 .cook__leave {
   display: grid;
   place-items: center;

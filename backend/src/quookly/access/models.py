@@ -425,6 +425,10 @@ class PlanSlotRow(SQLModel, table=True):
     on_date: date = Field(index=True)
     meal: Meal
     recipe_id: int | None = Field(default=None, foreign_key="recipe.id", index=True)
+    # How much of the recipe to make, in the recipe's own yield unit. Nullable because
+    # most slots are never sized by hand: absent means the rule that applied before
+    # anybody could say otherwise — one batch, or as many as the table wants.
+    servings: Decimal | None = Field(default=None, max_digits=12, decimal_places=4)
     # When this meal was cooked, if it was. One way: the food is eaten, and un-marking it
     # would mean re-adding stock that never came back — the bug-prone path ADR-004 was
     # written to avoid. A mistake is corrected in the pantry, where quantities are

@@ -304,6 +304,19 @@ Correcting a quantity is a different act from wasting it. Adjusting says the num
 wasting says food left the kitchen. Only the second belongs in the figure the cook is trying to
 bring down.
 
+### How much of a recipe a meal makes
+
+A plan slot may carry a **yield the cook stated**, in the recipe's own yield unit — 8 of a recipe
+that makes 4 is twice it. Absent is the ordinary case and means the two rules that applied before
+anybody could say otherwise: one batch, or as many as the table wants.
+
+It belongs to the slot rather than to a cooking session because the shopping and the reservation are
+the slot's, and a session making twice the recipe against a meal that reserved one batch is exactly
+the disagreement `Sizing` reports
+([ADR-065](07-decisions.md#adr-065-a-yield-the-cook-set-outranks-one-worked-out-from-the-table)).
+A stated yield outranks one worked out from the guest list: both say how much to make, and only one
+was typed by a person.
+
 ### A meal that was cooked
 
 A plan slot records **when** it was cooked, and that is one way. Un-marking would mean re-adding

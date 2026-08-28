@@ -390,6 +390,24 @@ describe('RecipeDetailComponent', () => {
       expect(go).toHaveBeenCalledWith('/cook/7');
     });
 
+    it('cooks the yield on the screen, not the one the recipe was written at', async () => {
+      // The stepper sits directly above the button. A cook who has just set it to six and
+      // pressed "start cooking now" is making six (D6).
+      await shown();
+      vi.spyOn(router(), 'navigateByUrl').mockResolvedValue(true);
+      fixture.componentInstance.showFor(6);
+      backend.expectOne('/api/v1/recipes/1?servings=6').flush(pancakes());
+      await settle();
+
+      fixture.nativeElement.querySelector('.recipe__cook').click();
+      await settle();
+
+      const asked = backend.expectOne('/api/v1/cooking/sessions/for-recipe');
+      expect(asked.request.body).toEqual({ recipe_id: 1, servings: '6' });
+      asked.flush({ id: 7 });
+      await settle();
+    });
+
     it('says so rather than going quiet when cooking will not start', async () => {
       await shown();
       fixture.nativeElement.querySelector('.recipe__cook').click();

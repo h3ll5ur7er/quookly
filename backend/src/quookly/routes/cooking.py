@@ -54,7 +54,9 @@ async def start_recipe(submitted: CookNowInput, cook: CurrentCook) -> SessionVie
     Its own path rather than a nullable field on the endpoint above: that one names a meal,
     this one names a dish.
     """
-    placed = await plan_manager.slot_for_now(submitted.recipe_id, cook.cook_id)
+    placed = await plan_manager.slot_for_now(
+        submitted.recipe_id, cook.cook_id, servings=submitted.servings
+    )
     if placed is None:
         raise NOT_FOUND
     started = await cooking_manager.start(placed.id, cook.cook_id)

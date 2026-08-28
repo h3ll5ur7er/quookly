@@ -114,6 +114,43 @@ def test_a_recipe_that_only_counts_things_is_sized_by_how_many_it_feeds() -> Non
     assert needed.meals[0].factor == Decimal("1.5")
 
 
+def test_a_yield_the_cook_asked_for_is_the_yield_that_is_made() -> None:
+    """Eight servings of a recipe that makes four is twice it. The cook set the stepper on
+    the recipe screen and pressed "start cooking now"; the number they read is the number
+    they meant (D6)."""
+    meal = PlannedMeal(plan_slot_id=10, recipe=recipe(), asked_for=Decimal("8"))
+
+    needed = planning.requirements_for([meal])
+
+    assert needed.meals[0].sizing is Sizing.AS_ASKED
+    assert needed.meals[0].factor == 2
+    assert needed.requirements[0].quantity == Quantity(Decimal("400"), Unit.GRAM)
+
+
+def test_what_the_cook_asked_for_beats_what_the_table_would_have_wanted() -> None:
+    """Both are statements about how much to make and only one of them was typed. A cook
+    who set the yield by hand has said something more recent than the guest list."""
+    table = [person(f"Guest {n}", "1") for n in range(6)]
+    meal = PlannedMeal(plan_slot_id=10, recipe=recipe(), eaters=table, asked_for=Decimal("2"))
+
+    needed = planning.requirements_for([meal])
+
+    assert needed.meals[0].sizing is Sizing.AS_ASKED
+    assert needed.meals[0].factor == Decimal("0.5")
+
+
+def test_a_yield_of_nothing_is_not_a_yield() -> None:
+    """Zero and below are not sizes. One batch, said out loud, rather than a shopping list
+    with nothing on it or a division that raises at the hob."""
+    for asked in (Decimal("0"), Decimal("-3")):
+        meal = PlannedMeal(plan_slot_id=10, recipe=recipe(), asked_for=asked)
+
+        needed = planning.requirements_for([meal])
+
+        assert needed.meals[0].sizing is Sizing.AS_WRITTEN
+        assert needed.meals[0].factor == 1
+
+
 def test_a_meal_nobody_has_been_invited_to_is_still_shopped_for() -> None:
     """Most of a week is slots with no guest list yet. A plan that needed one before it
     would buy anything would produce an empty list for a full week."""

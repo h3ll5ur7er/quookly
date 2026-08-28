@@ -149,6 +149,9 @@ export class MealComponent {
         meal,
         recipe_id: recipe_id === UNDECIDED ? null : Number(recipe_id),
         attendee_ids: this.attending(),
+        // Restated rather than left out. A slot is stated whole, so a yield the cook set
+        // by hand is dropped by any save that does not carry it back (D6).
+        servings: this.existing()?.servings ?? undefined,
       })
       .subscribe({
         next: () => void this.router.navigateByUrl(`/plans/${this.planId}`),

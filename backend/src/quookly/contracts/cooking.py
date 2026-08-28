@@ -12,9 +12,10 @@ silently loses four minutes is worse than no timer at all.
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from decimal import Decimal
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from quookly.contracts.execution import Attention
 from quookly.contracts.matching import MentionView
@@ -175,6 +176,10 @@ class CookNowInput(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     recipe_id: int
+    #: How much of it, in the recipe's own yield unit. The cook has just set the stepper
+    #: on the recipe screen and the number they read is the number they meant; absent
+    #: means one batch, as before anybody could say otherwise (D6).
+    servings: Decimal | None = Field(default=None, gt=0)
 
 
 class AtStepInput(BaseModel):

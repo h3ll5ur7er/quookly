@@ -8,6 +8,7 @@ of us, something quick".
 
 from dataclasses import dataclass, field
 from datetime import date, datetime
+from decimal import Decimal
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -44,6 +45,9 @@ class PlanSlot:
     meal: Meal
     recipe_id: int | None = None
     attendee_ids: list[int] = field(default_factory=list)
+    #: How much of the recipe to make, in the recipe's own yield unit — 8 of a recipe that
+    #: makes 4 is twice it. Absent where the cook has not said, which is most slots.
+    servings: Decimal | None = None
     #: When it was cooked, if it was. A cooked meal is a record rather than a plan: it
     #: holds no stock, needs no shopping, and is not edited.
     cooked_at: datetime | None = None
@@ -98,6 +102,10 @@ class SlotView(BaseModel):
     sizing: Sizing | None
     #: Absent when nobody has said who is coming, which is not the same as suitable.
     suitability: VerdictView | None
+    #: The yield the cook asked for, if they asked for one. Carried back so that editing
+    #: a meal restates it rather than silently dropping it — `SlotInput` is a statement
+    #: about the whole meal, and a field left out of one is a field set to nothing.
+    servings: str | None
 
 
 class ShoppingLineView(BaseModel):
@@ -187,3 +195,7 @@ class SlotInput(BaseModel):
     meal: Meal
     recipe_id: int | None = None
     attendee_ids: list[int] = Field(default_factory=list, max_length=50)
+    #: How much of the recipe to make, stated the way the recipe states its own yield.
+    #: Absent means "as the recipe writes it, or as the table wants it" — the two rules
+    #: that applied before anybody could say otherwise.
+    servings: Decimal | None = Field(default=None, gt=0)

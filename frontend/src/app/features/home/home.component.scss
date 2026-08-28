@@ -1,15 +1,28 @@
 @use '../../../styles/page';
 @use '../../../styles/breakpoints' as *;
 
+/* A line, not a headline. The day is the page's title; the greeting is the aside (H3). */
+.home__welcome {
+  margin-bottom: var(--space-5);
+}
+
 .home__greeting {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35em;
-  margin-bottom: var(--space-6);
+  margin: 0;
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
 }
 
 .home__name {
   color: var(--primary);
+  font-weight: 600;
+}
+
+.home__today {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xl);
 }
 
 /* One column on a phone, two once there is room. Cards rather than sections because each
@@ -26,14 +39,17 @@
 .card {
   display: flex;
   flex-direction: column;
+  /* Spacing between the parts of a card lives here rather than on each part, so the
+     bottom action can be pushed down with `auto` and still keep a gap above it. */
+  gap: var(--space-3);
   padding: var(--space-5);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface-raised);
 }
 
-/* The one with a deadline. Marked by a bar rather than a fill: a whole card in a warning
-   colour would shout at somebody every time they opened the app. */
+/* The one with a deadline — and only while it has one. A shelf with nothing going off is
+   not urgent, and a permanent warning bar is a warning nobody reads. */
 .card--urgent {
   border-inline-start: 4px solid var(--warning);
 }
@@ -49,7 +65,7 @@
 }
 
 .home__list {
-  margin: var(--space-3) 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -79,7 +95,7 @@
 }
 
 .home__count {
-  margin: var(--space-3) 0 0;
+  margin: 0;
   font-family: var(--font-display);
   font-size: var(--text-2xl);
 }
@@ -88,20 +104,52 @@
   font-variant-numeric: tabular-nums;
 }
 
-.home__quiet {
-  margin: var(--space-3) 0 0;
+/* An answer, said quietly. "Nothing is about to go off" is good news and should not have
+   the weight of a list of things that are (X8). */
+.home__none {
+  margin: 0;
   color: var(--on-surface-muted);
 }
 
-/* At the foot of its card, so every card ends in the thing to do about it. */
-.card__more {
-  margin-block-start: auto;
-  padding-block-start: var(--space-4);
+/* Three ways to start something, in the shape of the lists above them so the card reads
+   as one of the four rather than as a toolbar that wandered in. */
+.home__list--doing a {
   color: var(--primary);
   font-weight: 600;
   text-decoration: none;
 }
 
-.card__more:hover {
+.home__list--doing a:hover {
   text-decoration: underline;
+}
+
+/* At the foot of its card, so every card ends in the thing to do about it — and shaped
+   like something to press. Bold red text with no border, chevron or underline is the
+   card's main action dressed as a sentence (H2). */
+.card__more {
+  display: inline-flex;
+  align-self: start;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block-start: auto;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background var(--motion-fast) var(--ease-standard);
+}
+
+.card__more:hover {
+  background: var(--surface-sunken);
+}
+
+/* Moves with the press, so the row reads as going somewhere. */
+.card__arrow {
+  transition: transform var(--motion-fast) var(--ease-emphasised);
+}
+
+.card__more:hover .card__arrow {
+  transform: translateX(2px);
 }

@@ -24,22 +24,8 @@
       </p>
     }
 
-    @if (meal.outcome) {
-      <section class="cook__body cook__done">
-        @if (meal.outcome === completed) {
-          <p class="cook__done-mark" aria-hidden="true">✓</p>
-          <h2 i18n="@@cookFinishedHeading">That is dinner</h2>
-          <p class="cook__lede" i18n="@@cookFinished">
-            What this meal was holding has come out of your pantry.
-          </p>
-        } @else {
-          <h2 i18n="@@cookStoppedHeading">You stopped this one</h2>
-          <p class="cook__lede" i18n="@@cookStopped">
-            Nothing came out of your pantry. The meal is still on your plan.
-          </p>
-        }
-        <a class="cook__action" routerLink="/plans" i18n="@@cookBackToPlan">Back to the plan</a>
-      </section>
+    @if (meal.outcome; as outcome) {
+      <app-cook-finished [outcome]="outcome" />
     } @else if (step(); as current) {
       <section class="cook__body">
         <p class="cook__place">
@@ -89,9 +75,14 @@
           </ul>
         }
 
+        <!-- Beside the clock, at the clock's weight. On a baking step 160 °C is as much
+             of the instruction as 40:00 is, and it was a small grey chip next to a very
+             large number (C2). -->
         @if (current.temperature_celsius) {
           <p class="cook__heat">
-            <span class="numeric">{{ current.temperature_celsius }} °C</span>
+            <span class="cook__degrees numeric">{{ current.temperature_celsius }}</span>
+            <span class="cook__unit" aria-hidden="true">°C</span>
+            <span class="visually-hidden" i18n="@@cookDegrees">degrees Celsius</span>
           </p>
         }
 

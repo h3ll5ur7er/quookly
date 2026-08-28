@@ -30,7 +30,7 @@ These are worth doing first because each one fixes several screens at once.
 | --- | --- | --- | --- |
 | ~~**X1**~~ **done** | **Eight components use `.page`, `.action` and `.notice` without importing the partial that defines them.** Add the `@use` line to each. | Not a matter of taste — a defect with a one-line fix per file. `_page.scss` defines all three, Angular scopes component styles, and a component that does not `@use` it gets *nothing*: no page padding, browser-default grey buttons, and cautions rendered as plain bold text. It is why the Academy page has text at the very edge of the screen and why **"Ask to be let in" — the primary action on the apply screen — is a pale grey block** while "Start cooking now" is solid red. Affected: `academy/academy`, `academy/page`, `academy/write-page`, `registry/registry`, `registry/ingredient`, `recipes/recipe-form`, `apply/apply`, `sign-in/sign-in`. | A |
 | ~~**X2**~~ **done** | Add a lint rule or a test that fails when a template uses a shared class the component does not import. | X1 happened eight times without anybody noticing, which means it will happen a ninth. The check is mechanical: grep the template for the classes, grep the stylesheet for the `@use`. | A |
-| **X3** | Replace the five navigation glyphs (`◆ ☰ ▤ ✓ ▦`) with real icons. | They are text characters standing in for icons and they read as missing-font fallbacks — particularly the diamond for Home and the grid for Pantry, which mean nothing. This is the single most visible thing on every screen, since the bar is on all of them. | B |
+| ~~**X3**~~ **done** | Replace the five navigation glyphs (`◆ ☰ ▤ ✓ ▦`) with real icons. | They are text characters standing in for icons and they read as missing-font fallbacks — particularly the diamond for Home and the grid for Pantry, which mean nothing. This is the single most visible thing on every screen, since the bar is on all of them. | B |
 | ~~**X4**~~ **done** | Give recipes a picture. | There is no imagery anywhere in the product. The recipe list is a wall of text where every card is the same shape and weight, and a cook scanning for tonight's dinner is reading rather than looking. `MediaAccess` already exists and the Academy already uses it. | A |
 | **X5** | Decide what a short page does with its space. | Home, Shopping, Pantry, the Academy page and the cooking step all end with 40–60% of the viewport empty. Each currently looks like a page that failed to load. Options: centre the content block, or fill the space with the next useful thing. | C |
 | **X6** | Structure the long lists. | The Academy is 11,000 px tall on a phone and the registry is 19,000 px — both flat, unstyled, ungrouped, unvirtualised. An alphabet index, sticky letter headings, or paging would all help; doing nothing is not an option once the registry has 900 entries, which it does today. | B |
@@ -43,9 +43,9 @@ These are worth doing first because each one fixes several screens at once.
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **H1** | Fill the page, or say why it is empty. | One card, then two thirds of the screen empty. Home is supposed to answer *what is happening now* — what wants eating, what is on tonight, what to do next — and only the first of those appears. | B |
-| **H2** | Give "What can I cook with these" an affordance. | It is bold red text with no chevron, underline or button. It is the card's main action and does not look like one. | B |
-| **H3** | Consider shrinking the greeting. | "Good evening Emanuel" takes a fifth of the viewport above the fold on a phone, and is the least useful thing on the screen after the first day. | B|
+| ~~**H1**~~ **done** | Fill the page, or say why it is empty. | One card, then two thirds of the screen empty. Home is supposed to answer *what is happening now* — what wants eating, what is on tonight, what to do next — and only the first of those appears. | B |
+| ~~**H2**~~ **done** | Give "What can I cook with these" an affordance. | It is bold red text with no chevron, underline or button. It is the card's main action and does not look like one. | B |
+| ~~**H3**~~ **done** | Consider shrinking the greeting. | "Good evening Emanuel" takes a fifth of the viewport above the fold on a phone, and is the least useful thing on the screen after the first day. | B|
 
 ## Recipe list
 
@@ -66,7 +66,7 @@ These are worth doing first because each one fixes several screens at once.
 | **D4** | The "make a version" input clips its own placeholder. | "Dairy-free, without the eggs" is cut off mid-word — the field is too narrow beside its button on a phone. | D |
 | ~~**D5**~~ **done** | Match the widths of "Correct this recipe" and "Put it away". | They are stacked, both outlined, and different widths, which reads as accidental. | C |
 | ~~**D7**~~ **done** | **The nutrition table is wider than a phone.** | Measured, not eyeballed: `.nutrition__table` ends at **429 px in a 412 px viewport**, so the right-hand column is clipped off-screen and the two figures run together — *"1460 kJ / 347 kcal5840 kJ / 1389 kcal"*. It happens whenever a recipe has both a per-serving and a whole-recipe column. **In English as well**, which I only found by capturing an English control: I had assumed it was translation length and it is not. French is worse (447 px) because *RECETTE ENTIÈRE* is longer, so translation exposes it rather than causing it. `e2e/21-translated-layouts.spec.ts` measures this and carries it as a known exception; delete the exception when this is fixed. | |
-| **D6** | "Start cooking now" shall transfer the number of servings instead of always taking the default saved in the recipe. | The cook has just changed the yield and expects that to be reflected in the cooking step. | B |
+| ~~**D6**~~ **done** | "Start cooking now" shall transfer the number of servings instead of always taking the default saved in the recipe. | The cook has just changed the yield and expects that to be reflected in the cooking step. | B |
 ## Cooking mode
 
 The strongest screen in the product. Large type, clear progress, one obvious next action.
@@ -74,7 +74,7 @@ The strongest screen in the product. Large type, clear progress, one obvious nex
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
 | ~~**C1**~~ **done** | Close the gap between the instruction and the timer. | On a short step there is a third of a screen of nothing between them. Centring the instruction in the space above the timer would keep both in the same glance. | B |
-| **C2** | Give the temperature the weight the timer has. | For a baking step, 160 °C matters as much as 40:00 and is a small grey chip beside a very large clock. | B |
+| ~~**C2**~~ **done** | Give the temperature the weight the timer has. | For a baking step, 160 °C matters as much as 40:00 and is a small grey chip beside a very large clock. | B |
 
 ## Plan
 
@@ -123,7 +123,7 @@ Three things are wrong with it.
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **W1** | Put the Academy and Settings in the sidebar. | It has five items, the same five as the phone's tab bar, and roughly half its height is empty. The Academy and the settings screens are not reachable from the navigation at all on a laptop, on a column that has room for them and nothing else to do. | |
+| ~~**W1**~~ **done, and half of it was wrong** | Put the Academy in the sidebar. **Settings was already there** — the account row at the foot of the column is a link to it, so the claim that neither was reachable held for the Academy only. | It has five items, the same five as the phone's tab bar, and roughly half its height is empty. The Academy and the settings screens are not reachable from the navigation at all on a laptop, on a column that has room for them and nothing else to do. | |
 | **W2** | Match card heights within a grid row. | "American Pancakes" is twice the height of the "Buttermilk Waffles" beside it, so each row ends ragged. | |
 | **W3** | Home is worse on a laptop than on a phone. | One phone-width card in the top-left corner of a 2000×1250 canvas — about 90% empty, and the card does not use the width it has been given. This is X5, and the wide viewport is where it looks worst. | |
 | **W4** | Bring the three ways of adding a recipe up out of the basement. | R4 on a phone; on a laptop they sit below a nine-card grid with an empty sidebar sitting beside the top of the page. | |
@@ -261,7 +261,8 @@ All four gaps from the first pass are closed, and what they turned up is above. 
   fails the build. C1 was fitted into a rule that already existed rather than raising the budget or
   shaving bytes off unrelated rules. It is one stylesheet holding the prep list, the step view, the
   timer area, the finished screen and the offline states — worth splitting, and worth an item of its
-  own next time.
+  own next time. **Since split:** the finished screen is now `app-cook-finished`, which is where the
+  room for C2 came from. 7.85 kB, which is still not much of a margin.
 - **The shared partials emit CSS, and `@use` copies it into every component.** Growing
   `_page.scss` by one rule failed the build in `cook.component.scss`, a file nothing had
   touched — because that component carries its own copy of every shared rule and sits on the
@@ -272,10 +273,17 @@ All four gaps from the first pass are closed, and what they turned up is above. 
   failed axe on every link it drew, at 4.47:1. Two pairs added; the check went from 92 to 100.
 - **`.week__show` was coloured with `--colour-muted`, which this application does not define.** The
   declaration had been doing nothing since it was written. Fixed with P1.
+- **W1 was half wrong.** Settings *is* reachable from the laptop sidebar — the account row at the
+  foot of the column is a link to it, and has been. What was missing from the navigation was the
+  Academy, on a phone as well as on a laptop; its only ways in were an underlined word inside a
+  recipe step and a row inside Settings. It is now the sixth section, shown where there is a column
+  to show it in. A phone bar holds five: a sixth costs the others a whole word.
+- **The nav glyphs were the smallest fix with the widest reach.** Five characters on every screen in
+  the product, replaced by six drawn icons on one grid and one stroke weight (X3).
 
 ## One question back
 
-**Should French go informal too?** German is now *du* across 99 strings — four were left formal
+**Should French go informal too?** — **answered: leave it, a native speaker will decide.** German is now *du* across 99 strings — four were left formal
 because their "Sie"/"Ihr" is *she/it* rather than the reader ("Sie verlässt die Akademie" is the page
 leaving). French is *vous* in 89 strings.
 

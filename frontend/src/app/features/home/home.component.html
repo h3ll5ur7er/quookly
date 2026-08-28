@@ -1,19 +1,31 @@
 <main class="page home">
   <header class="home__welcome">
-    <h1 class="home__greeting">
+    <!-- Small, and above the heading rather than being it. It was an `h1` taking a fifth of
+         the viewport above the fold, and it is the least useful thing on the screen after
+         the first day (H3). -->
+    <p class="home__greeting">
       <span>{{ greeting() }}</span>
       @if (name()) {
         <span class="home__name">{{ name() }}</span>
       }
-    </h1>
+    </p>
+    <h1 class="home__today">{{ weekday(today) }}</h1>
   </header>
 
   <div class="home__cards">
+    <!-- The three questions this screen exists to answer, asked whether or not there is an
+         answer. Showing only the cards that had something in them left the ordinary weekday
+         as one card and two thirds of an empty screen (H1). -->
+
     <!-- First, because it is the only thing here with a deadline. -->
-    @if (pressing(); as soon) {
-      @if (soon.length > 0) {
-        <section class="card card--urgent" aria-labelledby="soon-heading">
-          <h2 id="soon-heading" class="card__title" i18n="@@homeUsingSoon">Use these first</h2>
+    <section
+      class="card"
+      [class.card--urgent]="pressing().length > 0"
+      aria-labelledby="soon-heading"
+    >
+      <h2 id="soon-heading" class="card__title" i18n="@@homeUsingSoon">Use these first</h2>
+      @if (pressing(); as soon) {
+        @if (soon.length > 0) {
           <ul class="home__list">
             @for (entry of soon.slice(0, 5); track entry.ingredient_id) {
               <li class="home__item">
@@ -24,17 +36,24 @@
               </li>
             }
           </ul>
-          <a class="card__more" routerLink="/recipes" i18n="@@homeWhatToCook">
-            What can I cook with these
+          <a class="card__more" routerLink="/recipes">
+            <span i18n="@@homeWhatToCook">What can I cook with these</span>
+            <span class="card__arrow" aria-hidden="true">→</span>
           </a>
-        </section>
+        } @else {
+          <p class="home__none" i18n="@@homeNothingGoingOff">Nothing is about to go off.</p>
+          <a class="card__more" routerLink="/pantry">
+            <span i18n="@@homeSeeShelf">See the shelf</span>
+            <span class="card__arrow" aria-hidden="true">→</span>
+          </a>
+        }
       }
-    }
+    </section>
 
-    @if (tonight(); as meals) {
-      @if (meals.length > 0) {
-        <section class="card" aria-labelledby="tonight-heading">
-          <h2 id="tonight-heading" class="card__title" i18n="@@homeTonight">On today</h2>
+    <section class="card" aria-labelledby="tonight-heading">
+      <h2 id="tonight-heading" class="card__title" i18n="@@homeTonight">On today</h2>
+      @if (tonight(); as meals) {
+        @if (meals.length > 0) {
           <ul class="home__list">
             @for (meal of meals; track meal.id) {
               <li class="home__item">
@@ -45,31 +64,54 @@
               </li>
             }
           </ul>
-          <a class="card__more" routerLink="/plans" i18n="@@homeSeeWeek">See the week</a>
-        </section>
+          <a class="card__more" routerLink="/plans">
+            <span i18n="@@homeSeeWeek">See the week</span>
+            <span class="card__arrow" aria-hidden="true">→</span>
+          </a>
+        } @else {
+          <p class="home__none" i18n="@@homeNothingToday">Nothing is planned for today.</p>
+          <a class="card__more" routerLink="/plans">
+            <span i18n="@@homePlanAWeek">Plan a week</span>
+            <span class="card__arrow" aria-hidden="true">→</span>
+          </a>
+        }
       }
-    }
+    </section>
 
-    @if (toBuy() > 0) {
-      <section class="card" aria-labelledby="shopping-heading">
-        <h2 id="shopping-heading" class="card__title" i18n="@@homeShopping">Still to buy</h2>
+    <section class="card" aria-labelledby="shopping-heading">
+      <h2 id="shopping-heading" class="card__title" i18n="@@homeShopping">Still to buy</h2>
+      @if (toBuy() > 0) {
         <p class="home__count">
           <span class="numeric">{{ toBuy() }}</span>
           <span i18n="@@homeThings">things</span>
         </p>
-        <a class="card__more" routerLink="/shopping" i18n="@@homeOpenList">Open the list</a>
-      </section>
-    }
-
-    @if (quiet()) {
-      <!-- A quiet day is a real answer, and a better one than an empty screen. -->
-      <section class="card">
-        <h2 class="card__title" i18n="@@homeQuietHeading">Nothing needs you</h2>
-        <p class="home__quiet" i18n="@@homeQuiet">
-          Nothing is about to go off, nothing is planned for today, and there is nothing to buy.
+      } @else {
+        <p class="home__none" i18n="@@homeNothingToBuy">
+          Everything this week needs is already in your kitchen.
         </p>
-        <a class="card__more" routerLink="/plans" i18n="@@homePlanAWeek">Plan a week</a>
-      </section>
-    }
+      }
+      <a class="card__more" routerLink="/shopping">
+        <span i18n="@@homeOpenList">Open the list</span>
+        <span class="card__arrow" aria-hidden="true">→</span>
+      </a>
+    </section>
+
+    <!-- The third thing home is for. "What wants eating" and "what is on tonight" were on
+         the screen; "what to do next" was not, and it is the one a cook acts on when the
+         other two are quiet. -->
+    <section class="card home__next" aria-labelledby="next-heading">
+      <h2 id="next-heading" class="card__title" i18n="@@homeNextHeading">What next</h2>
+      <ul class="home__list home__list--doing">
+        <li class="home__item">
+          <a routerLink="/recipes/new" i18n="@@homeWriteRecipe">Write a recipe</a>
+        </li>
+        <li class="home__item">
+          <a routerLink="/plans" i18n="@@homePlanAWeek">Plan a week</a>
+        </li>
+        <li class="home__item">
+          <a routerLink="/pantry/add" i18n="@@homeAddToPantry">Put something on the shelf</a>
+        </li>
+      </ul>
+    </section>
   </div>
 </main>

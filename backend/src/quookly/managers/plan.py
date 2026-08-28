@@ -80,6 +80,7 @@ async def _meals_of(
             plan_slot_id=slot.id,
             recipe=recipes[slot.recipe_id],
             eaters=[by_id[eater_id] for eater_id in slot.attendee_ids if eater_id in by_id],
+            asked_for=slot.servings,
         )
         for slot in plan.slots
         if slot.recipe_id is not None and slot.recipe_id in recipes and slot.cooked_at is None
@@ -221,6 +222,7 @@ async def _view(plan: MealPlan, locale: str) -> PlanView:
                 factor=None if size is None else _tidy(size.factor),
                 sizing=None if size is None else size.sizing,
                 suitability=None if meal is None else _judge(meal.recipe, meal.eaters),
+                servings=None if slot.servings is None else _tidy(slot.servings),
             )
         )
 
@@ -280,7 +282,12 @@ async def _here() -> datetime:
     return datetime.now()  # noqa: DTZ005
 
 
-async def slot_for_now(recipe_id: int, cook_id: int, locale: str | None = None) -> SlotView | None:
+async def slot_for_now(
+    recipe_id: int,
+    cook_id: int,
+    locale: str | None = None,
+    servings: Decimal | None = None,
+) -> SlotView | None:
     """Put a dish on today, so that it can be cooked (UC-4.2, UC-9.1b).
 
     What "cook this now" means, and the reason it is planning's business rather than
@@ -289,10 +296,11 @@ async def slot_for_now(recipe_id: int, cook_id: int, locale: str | None = None) 
     rather than straight to the store is what makes the reservation happen, in the one
     place that knows how.
 
-    The day is today and the meal is read off the clock. Nobody is seated: the cook is
-    looking at the recipe as it is written, and quietly rescaling it to the household
-    between one screen and the next would change the quantities they just read. Both are
-    editable on the plan.
+    The day is today and the meal is read off the clock. Nobody is seated: quietly
+    rescaling to the household between one screen and the next would change the quantities
+    the cook just read. `servings` is the opposite case and the reason it is a parameter —
+    a yield the cook set themselves, on the screen they pressed the button from, which it
+    would be just as surprising to throw away (D6). Both are editable on the plan.
     """
     reading = locale or await cook_access.locale_for(cook_id)
     now = await _here()
@@ -307,7 +315,9 @@ async def slot_for_now(recipe_id: int, cook_id: int, locale: str | None = None) 
     meal = planning.meal_at(now.time())
     placed = await place(
         plan.id,
-        SlotInput(on_date=today, meal=meal, recipe_id=recipe_id, attendee_ids=[]),
+        SlotInput(
+            on_date=today, meal=meal, recipe_id=recipe_id, attendee_ids=[], servings=servings
+        ),
         cook_id,
         reading,
     )
@@ -389,9 +399,11 @@ async def place(
         if submitted.recipe_id is None
         else await recipe_access.fetch(submitted.recipe_id, reading)
     )
-    await plan_access.assign(
-        slot.id, None if recipe is None or recipe.cook_id != cook_id else recipe.id
-    )
+    kept = None if recipe is None or recipe.cook_id != cook_id else recipe.id
+    await plan_access.assign(slot.id, kept)
+    # Only where there is a dish for it to be a yield of. "Eight" of nothing is not a
+    # statement about anything, and it would come back the moment a recipe was chosen.
+    await plan_access.size(slot.id, None if kept is None else submitted.servings)
     # Scoped to the cook, so an eater id from another household seats nobody.
     theirs = {eater.id for eater in await eater_access.for_ids(submitted.attendee_ids, cook_id)}
     await plan_access.attend(slot.id, [one for one in submitted.attendee_ids if one in theirs])

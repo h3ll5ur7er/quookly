@@ -72,11 +72,20 @@ def meal_at(clock: time) -> Meal:
 def _size(meal: PlannedMeal) -> SizedMeal:
     """How much of this recipe the meal needs, and how sure we are.
 
+    A yield the cook typed wins over one worked out from a guest list. Both are statements
+    about how much to make; only one of them was made by a person, and it is the more
+    recent of the two — a cook who set the stepper and pressed "start cooking now" has
+    said something about tonight that a standing guest list has not (D6).
+
     Both fallbacks come to one batch and both say so. Refusing instead would drop the
     meal's ingredients out of the shopping list entirely, which is a worse answer than a
     flagged one — and staying quiet would be the worst of the three: somebody shops for
     one tray and feeds four of the six people they invited.
     """
+    if meal.asked_for is not None and meal.asked_for > 0:
+        made = meal.recipe.yield_quantity.magnitude
+        if made > 0:
+            return SizedMeal(meal.plan_slot_id, meal.asked_for / made, Sizing.AS_ASKED)
     if not meal.eaters:
         # Most of a week, most of the time. A plan that needed a guest list before it
         # would buy anything would produce an empty list for a full week.

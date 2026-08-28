@@ -11,6 +11,7 @@ delete a slot that still holds any — see `close_slot`.
 
 from collections.abc import Sequence
 from datetime import UTC, date, datetime
+from decimal import Decimal
 
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, delete, select
@@ -37,6 +38,7 @@ def _slot_to_contract(row: PlanSlotRow, attendee_ids: list[int]) -> PlanSlot:
         meal=row.meal,
         recipe_id=row.recipe_id,
         attendee_ids=attendee_ids,
+        servings=row.servings,
         cooked_at=row.cooked_at,
     )
 
@@ -167,6 +169,25 @@ async def assign(slot_id: int, recipe_id: int | None) -> PlanSlot | None:
         if row is None:
             return None
         row.recipe_id = recipe_id
+        active.add(row)
+        await active.commit()
+        await active.refresh(row)
+        seated = await _attendance_for(active, [slot_id])
+        return _slot_to_contract(row, seated[slot_id])
+
+
+async def size(slot_id: int, servings: Decimal | None) -> PlanSlot | None:
+    """Say how much of the recipe this meal makes, or stop saying (UC-9.1b).
+
+    Separate from `assign` because it survives a change of recipe being the wrong
+    behaviour: "eight" means eight of *that* recipe, and carrying it onto another one
+    would silently resize a dish nobody sized.
+    """
+    async with session() as active:
+        row = await active.get(PlanSlotRow, slot_id)
+        if row is None:
+            return None
+        row.servings = servings
         active.add(row)
         await active.commit()
         await active.refresh(row)

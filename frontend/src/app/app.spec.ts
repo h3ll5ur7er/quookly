@@ -44,7 +44,7 @@ describe('App', () => {
     TestBed.inject(AuthStore).signIn(SIGNED_IN);
     await fixture.whenStable();
     fixture.detectChanges();
-    expect(links()).toEqual(['/', '/recipes', '/plans', '/shopping', '/pantry']);
+    expect(links()).toEqual(['/', '/recipes', '/plans', '/shopping', '/pantry', '/academy']);
   });
 
   it('shows no navigation to somebody who cannot use it', async () => {
@@ -100,6 +100,22 @@ describe('App', () => {
     const labels = [...fixture.nativeElement.querySelectorAll('.shell__label')].map(
       (node: Element) => node.textContent!.trim(),
     );
-    expect(labels).toEqual(['Home', 'Recipes', 'Plan', 'Shopping', 'Pantry']);
+    expect(labels).toEqual(['Home', 'Recipes', 'Plan', 'Shopping', 'Pantry', 'Academy']);
+  });
+
+  it('draws a destination rather than typesetting one', async () => {
+    // The five marks were text characters standing in for icons — a diamond for Home, a
+    // grid for Pantry — and they read as a font that failed to load (X3).
+    await signedIn();
+    const icons = [...fixture.nativeElement.querySelectorAll('.shell__icon')];
+    expect(icons.length).toBe(6);
+    for (const icon of icons) {
+      expect(icon.querySelector('svg')).not.toBeNull();
+    }
+  });
+
+  it('gives the laptop column the Academy, which had no way in from the navigation', async () => {
+    await signedIn();
+    expect(links()).toContain('/academy');
   });
 });

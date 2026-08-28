@@ -3973,6 +3973,22 @@
           "recipe_id": {
             "type": "integer",
             "title": "Recipe Id"
+          },
+          "servings": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servings"
           }
         },
         "type": "object",
@@ -6479,11 +6495,12 @@
         "type": "string",
         "enum": [
           "to_the_table",
+          "as_asked",
           "as_written",
           "unscalable"
         ],
         "title": "Sizing",
-        "description": "How confidently a meal was sized, which the cook has to be able to see.\n\nOnly the first is the product working as intended. The other two produce a shopping\nlist for one batch, which is right often enough to be worth doing and wrong often\nenough that saying nothing would be the failure \u2014 somebody shops for one tray and\nfeeds four of the six people they invited."
+        "description": "How confidently a meal was sized, which the cook has to be able to see.\n\nThe first two are the product working as intended \u2014 one worked out, one stated. The\nother two produce a shopping list for one batch, which is right often enough to be\nworth doing and wrong often enough that saying nothing would be the failure \u2014 somebody\nshops for one tray and feeds four of the six people they invited."
       },
       "SlotInput": {
         "properties": {
@@ -6513,6 +6530,22 @@
             "type": "array",
             "maxItems": 50,
             "title": "Attendee Ids"
+          },
+          "servings": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servings"
           }
         },
         "type": "object",
@@ -6607,6 +6640,17 @@
                 "type": "null"
               }
             ]
+          },
+          "servings": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servings"
           }
         },
         "type": "object",
@@ -6621,7 +6665,8 @@
           "cooked",
           "factor",
           "sizing",
-          "suitability"
+          "suitability",
+          "servings"
         ],
         "title": "SlotView",
         "description": "One meal on one day, as a client reads it.\n\nCarries three things a plan screen cannot work out for itself: how the meal was sized\nand how sure that is, whether the people coming can eat it, and the names rather than\nthe ids of both."

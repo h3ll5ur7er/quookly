@@ -2,8 +2,9 @@ import { marked } from '../../core/academy/marked';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { CookingService, GuidedStepView, SessionOutcome, SessionView, Sizing } from '@api';
+import { CookingService, GuidedStepView, SessionView, Sizing } from '@api';
 import { Observable } from 'rxjs';
+import { CookFinishedComponent } from './cook-finished.component';
 import { VerdictComponent } from '../../core/dietary/verdict.component';
 import { kept, keep } from '../../core/offline/kept';
 import { online, whenReconnected } from '../../core/offline/online';
@@ -30,7 +31,7 @@ import { TimerComponent } from './timer.component';
  */
 @Component({
   selector: 'app-cook',
-  imports: [RouterLink, TimerComponent, VerdictComponent],
+  imports: [CookFinishedComponent, RouterLink, TimerComponent, VerdictComponent],
   templateUrl: './cook.component.html',
   styleUrl: './cook.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -72,7 +73,6 @@ export class CookComponent {
   protected readonly attentionNote = attentionNote;
   protected readonly asWritten = Sizing.as_written;
   protected readonly unscalable = Sizing.unscalable;
-  protected readonly completed = SessionOutcome.completed;
 
   /** Where the cook is: the prep list, or one step. */
   protected readonly step = computed<GuidedStepView | null>(() => {

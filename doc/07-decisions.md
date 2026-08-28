@@ -2879,3 +2879,42 @@ words travel, a machine's are re-derived where they are read.
 **What stays open.** The interchange format still does not carry the registry's **per-locale
 ingredient names**, which is the same gap one layer down and is a Phase 8b unit of its own rather
 than a decision.
+
+---
+
+## ADR-065 A yield the cook set outranks one worked out from the table
+
+**Status:** Accepted.
+
+**Context.** "Start cooking now" opened a session at the yield the recipe was written at, whatever
+the cook had just set the stepper to. The stepper is directly above the button. A cook who set it to
+eight, read *600 g plain flour*, pressed the button and was then shown 300 g at the hob is watching
+the application disagree with the screen it came from.
+
+Fixing it needed somewhere to put the number. A cooking session was the tempting place — it is the
+screen with the problem — and it is the wrong one. The stock a meal reserves and the shopping it
+generates belong to the **plan slot**, and a session making twice the recipe against a slot that
+reserved one batch is exactly the disagreement `Sizing` exists to report. So the asked-for yield is a
+nullable column on `plan_slot`, in the recipe's own yield unit, and both the plan and the session
+read the size from the same rule.
+
+**Decision.** A yield the cook stated **wins over one worked out from the guest list**, and says so
+as `Sizing.AS_ASKED`.
+
+Both are statements about how much to make. Only one of them was typed by a person, and it is the
+more recent — a cook who set the stepper on the way into cooking mode has said something about
+tonight that a standing guest list has not. The alternative, letting appetites override, means the
+number a cook typed silently does nothing, which is the failure that started this.
+
+Absent stays absent, and absent is most slots: no statement means the two rules that applied before
+anybody could make one — one batch, or as many as the table wants.
+
+**Consequences.** `Sizing` gains a fourth member, which every client that renders it must handle;
+today only "as written" and "unscalable" are drawn, and both are warnings that this is not. `SlotView`
+carries `servings` back, because `SlotInput` states a whole meal — a field left out of a statement is
+a field set to nothing, so the meal screen must restate a yield it is not editing or saving would
+quietly discard it. That is a sharp edge, and it is the same one attendee lists already have.
+
+**What stays open.** The yield is not editable on the plan screen, only on the way into cooking. A
+cook who wants Thursday's dinner to make eight has to say so through the recipe screen. That is a
+gap rather than a decision.

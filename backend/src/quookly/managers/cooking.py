@@ -131,7 +131,14 @@ async def _view(session: CookingSession, slot: PlanSlot, locale: str) -> Session
     # Sized by the same rule the plan used, so a session and the shopping list that bought
     # for it cannot come to different conclusions about how much to make (FR-18).
     sized = planning.requirements_for(
-        [PlannedMeal(plan_slot_id=slot.id, recipe=recipe, eaters=list(attending))]
+        [
+            PlannedMeal(
+                plan_slot_id=slot.id,
+                recipe=recipe,
+                eaters=list(attending),
+                asked_for=slot.servings,
+            )
+        ]
     ).meals[0]
 
     preferences = await preference_access.for_cook(session.cook_id)

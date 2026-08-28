@@ -212,13 +212,18 @@ export class RecipeDetailComponent {
     }
     this.leaving.set(true);
     this.wontStart.set(false);
-    this.cooking.startRecipe({ recipe_id: this.recipeId }).subscribe({
-      next: (session) => void this.router.navigateByUrl(`/cook/${session.id}`),
-      error: () => {
-        this.leaving.set(false);
-        this.wontStart.set(true);
-      },
-    });
+    // At the yield on the screen, not the one the recipe was written at. The stepper is
+    // directly above this button, and a cook who has just set it to eight and pressed
+    // "start cooking now" is making eight (D6).
+    this.cooking
+      .startRecipe({ recipe_id: this.recipeId, servings: this.servings()?.toString() })
+      .subscribe({
+        next: (session) => void this.router.navigateByUrl(`/cook/${session.id}`),
+        error: () => {
+          this.leaving.set(false);
+          this.wontStart.set(true);
+        },
+      });
   }
 
   /**

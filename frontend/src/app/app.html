@@ -15,12 +15,13 @@
         @for (section of sections; track section.path) {
           <a
             class="shell__link"
+            [class.shell__link--wide]="section.wide"
             [routerLink]="section.path"
             routerLinkActive="shell__link--current"
             [routerLinkActiveOptions]="{ exact: section.path === '/' }"
             ariaCurrentWhenActive="page"
           >
-            <span class="shell__icon" aria-hidden="true">{{ section.mark }}</span>
+            <app-nav-icon class="shell__icon" [name]="section.name" />
             <span class="shell__label">{{ sectionLabel(section.name) }}</span>
           </a>
         }

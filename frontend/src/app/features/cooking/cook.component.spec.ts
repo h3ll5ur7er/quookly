@@ -181,9 +181,13 @@ describe('CookComponent', () => {
       expect(fixture.nativeElement.querySelector('.cook__lines').textContent).toContain('200 g');
     });
 
-    it('shows the oven temperature where there is one', async () => {
+    it('shows the oven temperature where there is one, at the weight the clock has', async () => {
+      // On a baking step 160 °C is as much of the instruction as 40:00 is, and it was a
+      // small muted chip beside a very large number (C2).
       await atStep(1);
-      expect(text()).toContain('160 °C');
+      const heat = fixture.nativeElement.querySelector('.cook__heat');
+      expect(heat.querySelector('.cook__degrees').textContent.trim()).toBe('160');
+      expect(heat.textContent).toContain('°C');
     });
 
     it('marks the step a cook can walk away from', async () => {

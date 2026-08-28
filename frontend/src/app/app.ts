@@ -11,6 +11,7 @@ import {
 import { filter, map, startWith } from 'rxjs';
 import { AuthStore } from './core/auth/auth.store';
 import { LocalePickerComponent } from './core/locale/locale-picker.component';
+import { NavIconComponent } from './core/shell/nav-icon.component';
 import { ThemePickerComponent } from './core/theme/theme-picker.component';
 import { SECTIONS, sectionLabel } from './core/shell/sections';
 import { ThemeStore } from './core/theme/theme.store';
@@ -19,6 +20,7 @@ import { ThemeStore } from './core/theme/theme.store';
   selector: 'app-root',
   imports: [
     LocalePickerComponent,
+    NavIconComponent,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,

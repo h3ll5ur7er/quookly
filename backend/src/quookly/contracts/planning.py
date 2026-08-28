@@ -18,14 +18,16 @@ from quookly.contracts.recipe import Recipe
 class Sizing(Enum):
     """How confidently a meal was sized, which the cook has to be able to see.
 
-    Only the first is the product working as intended. The other two produce a shopping
-    list for one batch, which is right often enough to be worth doing and wrong often
-    enough that saying nothing would be the failure — somebody shops for one tray and
-    feeds four of the six people they invited.
+    The first two are the product working as intended — one worked out, one stated. The
+    other two produce a shopping list for one batch, which is right often enough to be
+    worth doing and wrong often enough that saying nothing would be the failure — somebody
+    shops for one tray and feeds four of the six people they invited.
     """
 
     #: Scaled to the appetites of the people attending (FR-18).
     TO_THE_TABLE = "to_the_table"
+    #: The cook set the yield themselves and this is what they set.
+    AS_ASKED = "as_asked"
     #: Nobody has said who is coming yet, so one batch as the recipe writes it.
     AS_WRITTEN = "as_written"
     #: The recipe does not say how many it feeds, so one batch — see ADR-030.
@@ -39,6 +41,9 @@ class PlannedMeal:
     plan_slot_id: int
     recipe: Recipe
     eaters: list[Eater] = field(default_factory=list)
+    #: How much of the recipe the cook asked for, in the recipe's own yield unit: 8 of a
+    #: recipe that makes 4 is twice it. Absent where nobody has said, which is most slots.
+    asked_for: Decimal | None = None
 
 
 @dataclass(frozen=True, slots=True)

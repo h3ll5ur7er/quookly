@@ -559,10 +559,84 @@ class TestCookingSomethingNobodyPlanned:
     meal somebody actually cooked is the strongest example of one worth recording.
     """
 
-    async def start(self, client: AsyncClient, headers: dict[str, str], recipe_id: int) -> Any:
-        return await client.post(
-            f"{SESSIONS}/for-recipe", json={"recipe_id": recipe_id}, headers=headers
+    async def start(
+        self,
+        client: AsyncClient,
+        headers: dict[str, str],
+        recipe_id: int,
+        servings: str | None = None,
+    ) -> Any:
+        asked: dict[str, Any] = {"recipe_id": recipe_id}
+        if servings is not None:
+            asked["servings"] = servings
+        return await client.post(f"{SESSIONS}/for-recipe", json=asked, headers=headers)
+
+    async def test_the_yield_the_cook_set_is_the_yield_they_cook(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        """The stepper on the recipe screen is right above the button. A cook who set it to
+        eight and pressed "start cooking now" is making eight, and reading 300 g of flour
+        instead of 600 g at the hob is the app disagreeing with the screen it came from
+        (D6)."""
+        recipe_id = await a_recipe(client, cook, flour, butter)
+        session = (await self.start(client, cook, recipe_id, servings="8")).json()
+
+        assert session["yield_quantity"]["display"] == "8 servings"
+        assert session["sizing"] == "as_asked"
+        flour_line = next(
+            line
+            for group in session["mise_en_place"]
+            for line in group["lines"]
+            if "flour" in line["ingredient"]
         )
+        assert flour_line["quantity"]["display"] == "600 g"
+
+    async def test_a_yield_nobody_set_is_the_one_the_recipe_writes(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        recipe_id = await a_recipe(client, cook, flour, butter)
+        session = (await self.start(client, cook, recipe_id)).json()
+        assert session["yield_quantity"]["display"] == "4 servings"
+        assert session["sizing"] == "as_written"
+
+    async def test_it_is_shopped_and_reserved_for_at_the_yield_asked_for(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        """The reason the yield lives on the slot rather than on the session. A session
+        making twice the recipe against a meal that reserved one batch is exactly the
+        disagreement `Sizing` exists to prevent."""
+        stocked = await client.post(
+            "/api/v1/pantry",
+            json={"ingredient_id": flour, "magnitude": "1", "unit": "kg"},
+            headers=cook,
+        )
+        assert stocked.status_code == 201, stocked.text
+
+        recipe_id = await a_recipe(client, cook, flour, butter)
+        session = (await self.start(client, cook, recipe_id, servings="8")).json()
+        finished = await client.post(f"{SESSIONS}/{session['id']}/completed", headers=cook)
+        assert finished.status_code == 200, finished.text
+
+        shelf = (await client.get("/api/v1/pantry", headers=cook)).json()
+        held = next(entry for entry in shelf if entry["ingredient_id"] == flour)
+        # 1 kg less the 600 g twice the recipe asks for, not the 300 g it is written at.
+        assert held["total"] == "400 g"
+
+    async def test_the_yield_survives_the_plan_being_read_back(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        """Carried on the slot so that editing the meal restates it rather than dropping
+        it — `SlotInput` states a whole meal, and a field left out is a field cleared."""
+        recipe_id = await a_recipe(client, cook, flour, butter)
+        await self.start(client, cook, recipe_id, servings="8")
+        plan = (await client.get(f"{PLANS}/current", headers=cook)).json()
+        assert [slot["servings"] for slot in plan["slots"]] == ["8"]
+
+    async def test_a_yield_of_nothing_is_refused_rather_than_cooked(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int
+    ) -> None:
+        recipe_id = await a_recipe(client, cook, flour, butter)
+        assert (await self.start(client, cook, recipe_id, servings="0")).status_code == 422
 
     async def test_a_recipe_can_be_cooked_without_planning_it_first(
         self, client: AsyncClient, cook: dict[str, str], flour: int, butter: int

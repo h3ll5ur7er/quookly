@@ -100,11 +100,17 @@
   }
 }
 
-/* A glyph above the word rather than instead of it. Icons alone are a guessing game, and
+/* An icon above the word rather than instead of it. Icons alone are a guessing game, and
    five words alone do not fit a 360px phone — together they fit and they are readable. */
 .shell__icon {
-  font-size: var(--text-md);
-  line-height: 1;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+/* The sixth destination, which only the sidebar has room for. Hidden rather than dropped
+   from the list: one set of sections, shown as wide as the screen allows (W1). */
+.shell__link--wide {
+  display: none;
 }
 
 .shell__label {
@@ -222,6 +228,21 @@
     padding: var(--space-3);
     font-size: var(--text-md);
     text-align: start;
+  }
+
+  /* Set apart from the five by a rule and a gap: it is a second group — the part of the
+     product that is read rather than done — not a sixth thing to do this week. */
+  .shell__link--wide {
+    display: grid;
+    margin-block-start: var(--space-3);
+    padding-block-start: var(--space-4);
+    border-block-start: 1px solid var(--border);
+    border-radius: 0;
+  }
+
+  .shell__icon {
+    inline-size: 1.375rem;
+    block-size: 1.375rem;
   }
 
   .shell__account {
