@@ -70,6 +70,11 @@ describe('SignInComponent', () => {
 
     expect(TestBed.inject(AuthStore).isSignedIn()).toBe(true);
     expect(navigate).toHaveBeenCalledWith('/');
+
+    // This account has no language recorded, so the one being read is written down —
+    // otherwise the server answers in English while the screen is in something else, for
+    // ever (L6).
+    backend.expectOne('/api/v1/setup/locale').flush({});
   });
 
   it('reports a refusal without saying why', async () => {
@@ -98,6 +103,7 @@ describe('SignInComponent', () => {
     backend.expectOne('/api/v1/accounts/sign-in').flush(AUTHENTICATED);
     await fixture.whenStable();
     expect(TestBed.inject(AuthStore).isSignedIn()).toBe(true);
+    backend.expectOne('/api/v1/setup/locale').flush({});
   });
 
   describe('when the door is not open yet', () => {

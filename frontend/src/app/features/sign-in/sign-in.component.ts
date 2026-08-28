@@ -5,7 +5,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AccountsService } from '@api';
 import { AuthStore } from '../../core/auth/auth.store';
-import { isLocale, preferredLocale, storeLocale } from '../../core/locale/locale.store';
+import { AccountLocale } from '../../core/locale/account-locale';
 
 @Component({
   selector: 'app-sign-in',
@@ -17,6 +17,7 @@ import { isLocale, preferredLocale, storeLocale } from '../../core/locale/locale
 export class SignInComponent {
   private readonly accounts = inject(AccountsService);
   private readonly auth = inject(AuthStore);
+  private readonly language = inject(AccountLocale);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -51,12 +52,10 @@ export class SignInComponent {
       next: (authenticated) => {
         this.auth.signIn(authenticated);
         const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/';
-        const theirs = authenticated.cook.locale;
-        if (isLocale(theirs) && theirs !== preferredLocale()) {
-          // Their language, not this device's. Catalogues are fixed for the life of the
-          // application (ADR-025), so adopting one means loading the page again — done as
-          // a navigation so they still land where they were going.
-          storeLocale(theirs);
+        // Their language, not this device's (L6). Catalogues are fixed for the life of the
+        // application (ADR-025), so adopting one means loading the page again — done as a
+        // navigation so they still land where they were going.
+        if (this.language.settle(authenticated)) {
           location.assign(returnUrl);
           return;
         }

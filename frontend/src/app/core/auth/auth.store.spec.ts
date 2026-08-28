@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import type { Authenticated } from '@api';
 import { keep, kept } from '../offline/kept';
+import { LOCALE_STORAGE_KEY } from '../locale/locale.store';
 import { AuthStore, SESSION_STORAGE_KEY } from './auth.store';
 import { Standing } from '@api';
 
@@ -83,6 +84,20 @@ describe('AuthStore', () => {
       auth.signOut();
 
       expect(kept('cooking.7')).toBeNull();
+    });
+
+    it('forgets the language, because it belonged to whoever chose it', () => {
+      /* A household shares a device. The language on it is the language of the person who
+         signed in, not of the box — so leaving it behind hands the next cook somebody
+         else's language, and hands *their* account that language the first time they have
+         none of their own (L6). */
+      const auth = store();
+      auth.signIn(SESSION);
+      localStorage.setItem(LOCALE_STORAGE_KEY, 'de-CH');
+
+      auth.signOut();
+
+      expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBeNull();
     });
   });
 

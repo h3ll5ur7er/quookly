@@ -70,3 +70,19 @@ export function storeLocale(locale: string): void {
     // The choice holds for this load; it just will not survive a reload.
   }
 }
+
+/**
+ * Forget the stored choice, so the next load falls back to the browser again.
+ *
+ * Called when somebody signs out. A household shares a device, and the language on it
+ * belongs to the person who chose it rather than to the box: leaving it behind hands the
+ * next cook somebody else's language — and hands their *account* that language the first
+ * time they sign in without one of their own (L6).
+ */
+export function forgetLocale(): void {
+  try {
+    localStorage.removeItem(LOCALE_STORAGE_KEY);
+  } catch {
+    // Nothing to do. The next load reads whatever is there, which is what it did before.
+  }
+}

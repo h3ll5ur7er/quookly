@@ -2918,3 +2918,52 @@ quietly discard it. That is a sharp edge, and it is the same one attendee lists 
 **What stays open.** The yield is not editable on the plan screen, only on the way into cooking. A
 cook who wants Thursday's dinner to make eight has to say so through the recipe screen. That is a
 gap rather than a decision.
+
+---
+
+## ADR-066 The language is the account's, and the browser answers only for strangers
+
+**Status:** Accepted.
+
+**Context.** Two halves of the product answered the "which language" question from different places.
+The interface resolved it on the client — a stored choice, else the browser's `navigator.languages`
+— while the server resolved ingredient names from the cook's **stored** locale, defaulting to
+`en-GB` where they had never chosen one. Every account starts with none, so the ordinary case was
+the two disagreeing: German chrome around *caster sugar*, *plain flour* and *whole milk*, worst in
+cooking mode where the amounts a cook reads at the hob were in a language they had not picked.
+
+The screenshot that showed it — `pantry-de.png` — is *Vorrat*, *Bis morgen verbrauchen*, and
+*ist für eine Mahlzeit eingeplant*, wrapped around two English ingredient names.
+
+**Decision.** **The account wins, always.** The browser's languages are the fallback for somebody who
+has no account — a visitor on the landing page, the sign-in screen, the apply form — and nothing
+else.
+
+Three rules make that true rather than merely stated:
+
+1. **Signing in settles the language from the account.** Where the account names one, it is adopted
+   and the page loaded again — catalogues are fixed for the life of the application
+   ([ADR-025](#adr-025-the-interface-is-translated-at-build-time-and-the-catalogues-ship-with-it)),
+   so adopting means reloading. A language this build ships no catalogue for is left alone: it is
+   still a choice somebody made, and overwriting it with the language of whichever device they are
+   standing at is how a preference quietly disappears.
+2. **Where the account names none, the language being read is recorded on it.** This is the rule
+   that closes the gap rather than papering over it. Until the account has a value, the server keeps
+   answering `en-GB` while the screen follows the browser, for ever — and nothing in the product
+   ever writes one except a visit to the picker.
+3. **Signing out forgets the device's choice, and reloads.** A household shares a device and usually
+   a browser. The language on it belonged to the person who chose it, so leaving it behind hands the
+   next cook somebody else's language — and, by rule 2, hands *their account* that language the
+   first time they sign in without one of their own.
+
+**Why not the browser.** Because the browser belongs to the device and the language belongs to the
+person. The case this exists for is a household where the machine is configured in English by
+whoever set it up: a German-speaking cook must be able to sign in and read German without
+reconfiguring an operating system that is not theirs.
+
+**Consequences.** Signing out is a page load rather than a route, which is the visible cost. The
+first sign-in on a fresh account now writes to it, so a cook who has never opened Settings still has
+a language recorded — which is what makes ingredient names, recipe translations and the Academy all
+agree with the furniture around them. `<html lang>` follows the resolved locale, which it never did:
+`index.html` shipped `lang="en"` and nothing changed it, so a German page told a screen reader to
+pronounce German as English.

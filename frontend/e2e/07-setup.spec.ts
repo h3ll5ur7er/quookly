@@ -109,11 +109,24 @@ test.describe('answering with nothing', () => {
 });
 
 test.describe('finishing', () => {
+  test('never asks about the language, because signing in already answered it', async ({
+    page,
+  }) => {
+    /* The language a cook reads in is settled at sign-in and written to the account there
+       (ADR-066), so by the time setup is reached it is not outstanding — it is recorded,
+       and this list is of what is still to do. It used to be a question with a "the
+       current language suits me" button under it. */
+    await page.goto('/setup');
+    await expect(stepFor(page, 'Your language')).toHaveClass(/setup__step--done/);
+    await expect(
+      stepFor(page, 'Your language').getByRole('button', {
+        name: 'The current language suits me',
+      }),
+    ).toHaveCount(0);
+  });
+
   test('says so once nothing is outstanding, and points somewhere useful', async ({ page }) => {
     await page.goto('/setup');
-    await stepFor(page, 'Your language')
-      .getByRole('button', { name: 'The current language suits me' })
-      .click();
     await expect(page.getByText('Everything is set')).toBeVisible();
     await page.getByRole('link', { name: 'See your recipes' }).click();
     await expect(page).toHaveURL(/\/recipes$/);

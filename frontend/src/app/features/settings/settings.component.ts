@@ -36,10 +36,15 @@ export class SettingsComponent {
    * Navigated afterwards rather than left where they were: a signed-out cook standing on
    * their own pantry would see it empty and read that as the pantry rather than as the
    * signing out.
+   *
+   * Loaded rather than routed, because signing out gives the device its own language back
+   * and catalogues are fixed for the life of the application (ADR-025, L6). Routing would
+   * leave the sign-in screen in the language of whoever just left — which is the next
+   * cook's first impression of an application that is supposed to follow their account.
    */
   protected signOut(): void {
     this.auth.signOut();
-    void this.router.navigate(['/sign-in']);
+    location.assign('/sign-in');
   }
 
   protected readonly units = signal<UnitPreferenceView[] | null>(null);

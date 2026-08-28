@@ -77,6 +77,11 @@ describe('BootstrapComponent', () => {
 
     expect(TestBed.inject(AuthStore).isAdmin()).toBe(true);
     expect(navigate).toHaveBeenCalledWith('/setup');
+
+    // The instance is set up in some language, and that is the first account's language
+    // until they say otherwise. Left unrecorded, the server would answer in English
+    // around a screen that is not (L6).
+    backend.expectOne('/api/v1/setup/locale').flush({});
   });
 
   it('explains a claimed instance rather than failing silently', async () => {

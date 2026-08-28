@@ -40,6 +40,10 @@ async function loadCatalogue(locale: string): Promise<void> {
 
 async function start(): Promise<void> {
   const locale = preferredLocale();
+  // What the document says it is written in. `index.html` ships `lang="en"` and nothing
+  // ever changed it, so a German page told a screen reader to pronounce German as
+  // English — and told a translation tool it had nothing to do.
+  document.documentElement.lang = locale;
   await loadCatalogue(locale);
 
   await bootstrapApplication(App, {

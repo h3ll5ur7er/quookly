@@ -1,5 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
 import type { Authenticated, Cook } from '@api';
+import { forgetLocale } from '../locale/locale.store';
 import { forgetKept } from '../offline/kept';
 
 export const SESSION_STORAGE_KEY = 'quookly.session';
@@ -52,6 +53,10 @@ export class AuthStore {
 
   signOut(): void {
     forgetKept();
+    // The language belonged to whoever chose it, not to the device (L6). Not forgotten on
+    // sign-*in*: the next thing that happens there is settling it from the account, and
+    // clearing it first would only make the page flash through the browser's language.
+    forgetLocale();
     this.session.set(null);
     this.write(null);
   }

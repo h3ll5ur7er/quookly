@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AccountsService } from '@api';
 import { AuthStore } from '../../core/auth/auth.store';
+import { AccountLocale } from '../../core/locale/account-locale';
 
 /** The minimum the API will accept; stated here so the form can say so before submitting. */
 const MINIMUM_PASSWORD_LENGTH = 12;
@@ -18,6 +19,7 @@ const MINIMUM_PASSWORD_LENGTH = 12;
 export class BootstrapComponent {
   private readonly accounts = inject(AccountsService);
   private readonly auth = inject(AuthStore);
+  private readonly language = inject(AccountLocale);
   private readonly router = inject(Router);
 
   protected readonly minimumPasswordLength = MINIMUM_PASSWORD_LENGTH;
@@ -39,6 +41,10 @@ export class BootstrapComponent {
     this.accounts.bootstrapAdmin(this.form.getRawValue()).subscribe({
       next: (authenticated) => {
         this.auth.signIn(authenticated);
+        // The first account has no language recorded yet, so this writes down the one the
+        // instance is being set up in — otherwise the server answers in English while the
+        // screen is in German, for ever (L6).
+        this.language.settle(authenticated);
         // Straight into setup: the first thing a new instance needs is somebody to
         // cook for, and an empty recipe list teaches nothing about what to do next.
         void this.router.navigateByUrl('/setup');
