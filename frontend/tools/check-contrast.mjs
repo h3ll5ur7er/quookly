@@ -17,6 +17,11 @@ const AA_LARGE_OR_NON_TEXT = 3;
 /** Foreground token, the surface it is meant to sit on, and the ratio it must clear. */
 const PAIRS = [
   ['--on-surface', '--surface', AA_TEXT],
+  /* `--primary` is a link as well as a button fill, and a link is small text on the page's
+     own ground. Only the button pair was listed, so a theme could pass this and still fail
+     axe on every link it drew — which playful did, at 4.47:1. */
+  ['--primary', '--surface', AA_TEXT],
+  ['--primary', '--surface-raised', AA_TEXT],
   ['--on-surface', '--surface-raised', AA_TEXT],
   ['--on-surface', '--surface-sunken', AA_TEXT],
   ['--on-surface-muted', '--surface', AA_TEXT],

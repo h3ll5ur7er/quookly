@@ -172,10 +172,10 @@ sets a serif body). Side by side, the sign-in screens differ in how round the bu
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **T1** | Give playful and decorative grounds of their own. | Changing `--surface` and `--surface-raised` is what a person actually perceives as "a different theme". Today the only page-sized surface is the same colour in all three, so switching feels like nothing happened. | B |
-| **T2** | Make the names true, or change the names. | *Playful* is a rounder rust button on cream. *Decorative* is a squarer rust button on cream with a serif. Neither is playful or decorative; both are the default with one knob turned. Either commit to the personality the name promises — playful gets colour and energy, decorative gets ornament, rules, a patterned surface — or rename them to what they are ("Soft", "Sharp"). | B |
-| **T3** | Decide whether `--primary` is the brand or the theme. | Rust is the filled-button colour in all three light themes and the most-seen colour in the product. A theme that cannot change it cannot look different. If rust is the brand, then themes must differentiate on ground and type instead — which is T1 and T4. | B |
-| **T4** | Let decorative's serif do more, and playful's motion be seen. | Decorative sets a serif for *body as well as display*, which flattens hierarchy rather than decorating: on the sign-in form the field labels now look like headings. Playful's real distinction is its spring easing, which no screenshot can show — worth a short screen recording before judging it. | B |
+| ~~**T1**~~ **done** | Give playful and decorative grounds of their own. | Changing `--surface` and `--surface-raised` is what a person actually perceives as "a different theme". Today the only page-sized surface is the same colour in all three, so switching feels like nothing happened. | B |
+| ~~**T2**~~ **done** | Make the names true, or change the names. | *Playful* is a rounder rust button on cream. *Decorative* is a squarer rust button on cream with a serif. Neither is playful or decorative; both are the default with one knob turned. Either commit to the personality the name promises — playful gets colour and energy, decorative gets ornament, rules, a patterned surface — or rename them to what they are ("Soft", "Sharp"). | B |
+| ~~**T3**~~ **answered: the theme owns it** | Decide whether `--primary` is the brand or the theme. | Rust is the filled-button colour in all three light themes and the most-seen colour in the product. A theme that cannot change it cannot look different. If rust is the brand, then themes must differentiate on ground and type instead — which is T1 and T4. | B |
+| ~~**T4**~~ **done** | Let decorative's serif do more, and playful's motion be seen. | Decorative sets a serif for *body as well as display*, which flattens hierarchy rather than decorating: on the sign-in form the field labels now look like headings. Playful's real distinction is its spring easing, which no screenshot can show — worth a short screen recording before judging it. | B |
 | **T5** | Dark is the only theme that is genuinely a second theme, and it has not been reviewed. | It inverts the ground properly. It is also the only one of the four whose contrast pairs have not been checked here at all. | C |
 
 ## Language
@@ -190,8 +190,8 @@ Three things are wrong.
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **L1** | **The Swiss French meal names are shifted by one meal.** `mealBreakfast` → *Petit-déjeuner*, `mealLunch` → *Déjeuner*, `mealDinner` → *Dîner*. | Those are the **France** French names. In Switzerland the three meals are **déjeuner, dîner, souper** — so this catalogue labels the evening slot *Dîner*, which a Swiss French cook reads as **lunch**. This is a meal planner: it is not a nicety, it is the wrong meal on the wrong day, and it is wrong in the one locale the file is named for. | B |
-| **L2** | Settle on one form of address in German. **Answered: informal — *du*.** So it is the 57 formal strings that change, not the 6 informal ones. | 57 strings address the reader formally and 6 informally. The six informal ones are `academyAskFailed`, `academyWaitingWhat`, `academyWriteFailed`, `academyWriteSlugHint`, `academyWriteWhat` and `recipeTranslated` — every one added in Phase 7 or 8b, and all mine. The rest of the product says *Sie brauchen es*, *Wählen Sie einen Eintrag*, *Ihre Bewerbung*; the Academy says *versuche es noch einmal* and *Für dich übersetzt*. This is now the larger job of the two — 57 strings — and it needs French checking at the same time, which is consistently *vous* and would want *tu*. | B |
+| ~~**L1**~~ **done** | **The Swiss French meal names are shifted by one meal.** `mealBreakfast` → *Petit-déjeuner*, `mealLunch` → *Déjeuner*, `mealDinner` → *Dîner*. | Those are the **France** French names. In Switzerland the three meals are **déjeuner, dîner, souper** — so this catalogue labels the evening slot *Dîner*, which a Swiss French cook reads as **lunch**. This is a meal planner: it is not a nicety, it is the wrong meal on the wrong day, and it is wrong in the one locale the file is named for. | B |
+| ~~**L2**~~ **German done; French is a question below** | Settle on one form of address in German. **Answered: informal — *du*.** So it is the 57 formal strings that change, not the 6 informal ones. | 57 strings address the reader formally and 6 informally. The six informal ones are `academyAskFailed`, `academyWaitingWhat`, `academyWriteFailed`, `academyWriteSlugHint`, `academyWriteWhat` and `recipeTranslated` — every one added in Phase 7 or 8b, and all mine. The rest of the product says *Sie brauchen es*, *Wählen Sie einen Eintrag*, *Ihre Bewerbung*; the Academy says *versuche es noch einmal* and *Für dich übersetzt*. This is now the larger job of the two — 57 strings — and it needs French checking at the same time, which is consistently *vous* and would want *tu*. | B |
 | **L3** | Look at the app in German and French, which nobody has. | There is exactly **one** non-English screenshot in the suite — `sign-in-de-CH` — and none in French. German and French labels are routinely two to three times longer than the English (*Reset* → *Réinitialiser*, *Use by* → *Zu verbrauchen bis*, *Add* → *Hinzufügen*), and the tightest place in the product is the pair of timer buttons in cooking mode, which is the screen a cook reads at arm's length. Nobody has seen it wrap. | B |
 
 | **L6** | **The interface language and the content language come from different places, and they disagree.** | A cook with a German browser gets German chrome around **English** ingredient names — *plain flour*, *caster sugar*, *whole milk* — because the UI catalogue follows the browser while the server resolves ingredient names from the cook's **stored** locale, which is still `en-GB` until they go through setup. The registry *is* named in three languages, so the data is there and is not being asked for. Worst in cooking mode, where the amounts a cook reads at the hob are in a language they did not choose. | |
@@ -200,8 +200,8 @@ Smaller, and worth a second opinion from a native speaker rather than from me:
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **L4** | `attentionWaiting` DE — *"Sie können weggehen"*. | Literally *you may leave*, which reads as permission to depart rather than *this looks after itself*. Something like *läuft von allein* carries what the English does. | C |
-| **L5** | `entryNoneIsAnAnswer` FR — *"ce qui diffère de personne n'ayant vérifié"*. **On the suggested *"pas encore vérifié"*:** that says *not yet checked*, which is one of the two states the sentence exists to tell apart — it would name the wrong one. Something like *"…, ce qui n'est pas la même chose que si personne n'avait vérifié"* keeps both halves. | Grammatical but stilted, and it is the sentence that distinguishes *checked and found nothing* from *nobody checked* — the one piece of allergen copy where being understood matters most (ADR-006). | C |
+| ~~**L4**~~ **done** | `attentionWaiting` DE — *"Sie können weggehen"*. | Literally *you may leave*, which reads as permission to depart rather than *this looks after itself*. Something like *läuft von allein* carries what the English does. | C |
+| ~~**L5**~~ **done** | `entryNoneIsAnAnswer` FR — *"ce qui diffère de personne n'ayant vérifié"*. **On the suggested *"pas encore vérifié"*:** that says *not yet checked*, which is one of the two states the sentence exists to tell apart — it would name the wrong one. Something like *"…, ce qui n'est pas la même chose que si personne n'avait vérifié"* keeps both halves. | Grammatical but stilted, and it is the sentence that distinguishes *checked and found nothing* from *nobody checked* — the one piece of allergen copy where being understood matters most (ADR-006). | C |
 
 ---
 
@@ -262,5 +262,27 @@ All four gaps from the first pass are closed, and what they turned up is above. 
   shaving bytes off unrelated rules. It is one stylesheet holding the prep list, the step view, the
   timer area, the finished screen and the offline states — worth splitting, and worth an item of its
   own next time.
+- **The shared partials emit CSS, and `@use` copies it into every component.** Growing
+  `_page.scss` by one rule failed the build in `cook.component.scss`, a file nothing had
+  touched — because that component carries its own copy of every shared rule and sits on the
+  8 kB ceiling. The `:active` press for T4 went into the global stylesheet instead, where it
+  exists once. Worth knowing before anybody adds to a partial.
+- **The contrast checker was not checking links.** `--primary` is a link as well as a button
+  fill, and only the button pair was listed — so playful passed `just frontend contrast` and
+  failed axe on every link it drew, at 4.47:1. Two pairs added; the check went from 92 to 100.
 - **`.week__show` was coloured with `--colour-muted`, which this application does not define.** The
   declaration had been doing nothing since it was written. Fixed with P1.
+
+## One question back
+
+**Should French go informal too?** German is now *du* across 99 strings — four were left formal
+because their "Sie"/"Ihr" is *she/it* rather than the reader ("Sie verlässt die Akademie" is the page
+leaving). French is *vous* in 89 strings.
+
+I have not converted them, because unlike the German this is not obviously the same decision. German
+*du* with French *vous* is a defensible pairing rather than an inconsistency: French carries a
+stronger T–V distinction, and plenty of products that say *du* in German say *vous* in French.
+Converting is a cultural call, and 89 strings of French prose from somebody who is not a native
+speaker — for a reviewer who has said the same — is a lot of surface to get subtly wrong at once.
+
+Say the word and I will convert them; it is an afternoon, not a redesign.

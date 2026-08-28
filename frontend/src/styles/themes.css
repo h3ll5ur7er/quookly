@@ -135,20 +135,23 @@
 [data-theme='playful'] {
   color-scheme: light;
 
-  --surface: #fff8f0;
-  --surface-raised: #ffffff;
-  --surface-sunken: #ffeedd;
-  --border: #f3cfa8;
-  --border-strong: #8a6a4a;
+  /* A ground of its own. The three light themes used to share one: `--surface` differed by
+     3 ΔE and `--surface-raised` was #ffffff in both this and the default, so switching
+     between them changed how round the buttons were and nothing else (T1, T2). */
+  --surface: #fff1e2;
+  --surface-raised: #fffaf4;
+  --surface-sunken: #ffdfc2;
+  --border: #f0c295;
+  --border-strong: #94663d;
   --overlay: rgb(60 20 0 / 50%);
 
-  --on-surface: #221208;
-  --on-surface-muted: #5c3a22;
-  --on-surface-subtle: #6f4a30;
+  --on-surface: #2a1508;
+  --on-surface-muted: #6b4223;
+  --on-surface-subtle: #7d5232;
 
-  --primary: #c2340a;
+  --primary: #bd3804;
   --on-primary: #ffffff;
-  --primary-hover: #a32b08;
+  --primary-hover: #992d03;
   --accent: #076a72;
   --on-accent: #ffffff;
 
@@ -176,14 +179,16 @@
 [data-theme='decorative'] {
   color-scheme: light;
 
-  --surface: #f6f1e6;
-  --surface-raised: #fdfaf3;
-  --surface-sunken: #ebe3d3;
-  --border: #d6c9ae;
+  /* Paper and ink rather than the default with squarer corners. Aged stock, a warmer
+     shadow in the sunken wells, and text the colour of old print (T1, T2). */
+  --surface: #efe7d3;
+  --surface-raised: #f9f4e6;
+  --surface-sunken: #ded2b4;
+  --border: #cbbb96;
   --border-strong: #7a6f56;
   --overlay: rgb(40 32 20 / 55%);
 
-  --on-surface: #241d12;
+  --on-surface: #2b2417;
   --on-surface-muted: #55492f;
   --on-surface-subtle: #6a5c3e;
 

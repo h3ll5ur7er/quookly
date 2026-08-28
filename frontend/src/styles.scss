@@ -83,6 +83,23 @@ textarea {
 }
 
 /* Motion is a garnish, and it comes off on request. */
+/* Pressing a button is where a theme's motion is felt, and `--ease-emphasised` was
+   declared by two themes and used by nothing — so playful's spring curve, the one thing
+   making it playful rather than merely round, did not exist (T4).
+
+   Here rather than in `_page.scss`, because that partial is `@use`d per component and every
+   byte in it is duplicated into each one. `cook.component.scss` sits on the 8 kB budget
+   ceiling, so a rule added there fails the build in a file nobody touched. */
+.action,
+button.destructive {
+  transition: transform var(--motion-fast) var(--ease-emphasised);
+}
+
+.action:active,
+button.destructive:active {
+  transform: scale(0.97);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
