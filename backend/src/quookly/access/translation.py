@@ -9,13 +9,14 @@ Invalidation by construction rather than by remembering. Editing a recipe needs 
 nothing about translations, which is the only way that stays correct.
 """
 
+from collections.abc import Sequence
 from hashlib import sha256
 
 from sqlmodel import col, delete, select
 
 from quookly.access.database import session
 from quookly.access.models import RecipeTranslationRow, RecipeTranslationStepRow
-from quookly.contracts.translation import HeldTranslation, Translatable
+from quookly.contracts.translation import HeldTranslation, Rendered, Translatable
 
 
 def fingerprint(prose: Translatable) -> str:
@@ -182,6 +183,55 @@ async def matches(recipe_id: int, locale: str, *, of: Translatable) -> bool:
             )
         ).first()
     return row is not None and row.source_fingerprint == wanted
+
+
+async def corrections_for(recipe_ids: Sequence[int]) -> dict[int, list[Rendered]]:
+    """Every translation a person wrote for these recipes, by recipe id.
+
+    What an export carries, in one query rather than one per recipe per language. A
+    model's is left out: it is nobody's work, the receiving instance can derive one with
+    its own model, and shipping one spreads this instance's model quality to everywhere
+    that ever imported from it (ADR-012, ADR-064).
+
+    Current or not. A correction of words that have moved is still somebody's work, and
+    an export that dropped it would lose exactly what this rule exists to keep.
+    """
+    if not recipe_ids:
+        return {}
+    async with session() as active:
+        rows = (
+            await active.exec(
+                select(RecipeTranslationRow).where(
+                    col(RecipeTranslationRow.recipe_id).in_(list(recipe_ids)),
+                    col(RecipeTranslationRow.by_hand).is_(True),
+                )
+            )
+        ).all()
+        held = {row.id: row for row in rows if row.id is not None}
+        steps: dict[int, list[str]] = {}
+        if held:
+            for one in (
+                await active.exec(
+                    select(RecipeTranslationStepRow)
+                    .where(col(RecipeTranslationStepRow.translation_id).in_(list(held)))
+                    .order_by(col(RecipeTranslationStepRow.position))
+                )
+            ).all():
+                steps.setdefault(one.translation_id, []).append(one.instruction)
+
+    found: dict[int, list[Rendered]] = {}
+    for translation_id, row in held.items():
+        found.setdefault(row.recipe_id, []).append(
+            Rendered(
+                locale=row.locale,
+                words=Translatable(
+                    title=row.title,
+                    summary=row.summary,
+                    steps=steps.get(translation_id, []),
+                ),
+            )
+        )
+    return {recipe_id: sorted(one, key=lambda r: r.locale) for recipe_id, one in found.items()}
 
 
 async def written_by_hand(recipe_id: int) -> list[str]:

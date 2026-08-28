@@ -4540,6 +4540,16 @@
             "minItems": 1,
             "title": "Names"
           },
+          "names_by_locale": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Names By Locale"
+          },
           "allergens": {
             "anyOf": [
               {
@@ -4672,6 +4682,24 @@
             "type": "array",
             "minItems": 1,
             "title": "Steps"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "translations": {
+            "items": {
+              "$ref": "#/components/schemas/ExchangeTranslation"
+            },
+            "type": "array",
+            "title": "Translations"
           }
         },
         "type": "object",
@@ -4723,6 +4751,43 @@
           "instruction"
         ],
         "title": "ExchangeStep"
+      },
+      "ExchangeTranslation": {
+        "properties": {
+          "locale": {
+            "type": "string",
+            "title": "Locale"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "steps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Steps"
+          }
+        },
+        "type": "object",
+        "required": [
+          "locale",
+          "title"
+        ],
+        "title": "ExchangeTranslation",
+        "description": "A recipe's prose in one other language, as somebody here wrote it.\n\nOnly a person's. A model's translation is nobody's work: the receiving instance can\nderive one in a round trip with its own model, and shipping one would spread this\ninstance's model quality to everywhere that ever imported from it (ADR-064)."
       },
       "ExplanationInput": {
         "properties": {

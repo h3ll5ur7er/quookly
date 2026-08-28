@@ -582,10 +582,15 @@ construction, and ingredient names resolve per locale through the registry. What
   correction was being re-derived rather than the recipe being shown in its own language. Both are
   closed, and `translated_by_hand` says whose words a reader is looking at
   ([ADR-064](07-decisions.md#adr-064-a-translation-records-what-it-translated-and-a-persons-words-are-not-re-derived))
-- **The interchange format carries a person's translations and not a machine's** — decided, not yet
-  built
-- Per-locale names for ingredients an import created, so a foreign import is as readable as a
-  seeded one
+- ~~**The interchange format carries a person's translations and not a machine's**~~ **Built** as
+  format 5, with the language a recipe is written in and every language the registry names an
+  ingredient in — three sides of one gap, and useless apart: translations that travel with no
+  record of the source language cannot be used when they land
+- ~~Per-locale names for ingredients an import created~~ **Half built.** A document now carries every
+  language its registry knew, so a Quookly-to-Quookly import is as readable as a seeded entry. What
+  is still owed is the *other* source: an entry invented from a scraped web page has one name in one
+  language and nothing to derive the others from but a model — the same lazy, stored, per-locale
+  shape a recipe translation has, one layer down
 
 Placed here rather than earlier because it is worth having only once there is a corpus worth
 reading, and because it depends on nothing in Phase 9.

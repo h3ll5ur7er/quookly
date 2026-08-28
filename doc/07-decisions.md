@@ -2891,9 +2891,24 @@ screen that exists to bring it up to date.
 `PresentedRecipe` gained `translated_by_hand` at the same time. Saying "a machine wrote this" over a
 cook's own correction is as wrong as the other way round.
 
-**What stays open.** The interchange format still does not carry the registry's **per-locale
-ingredient names**, which is the same gap one layer down and is a Phase 8b unit of its own rather
-than a decision.
+~~**What stays open.** The interchange format still does not carry the registry's per-locale
+ingredient names~~ **Built, as format 5**, together with the two things beside it that turned out to
+be the same gap seen from three sides:
+
+- **A recipe carries the language it is written in.** Without it a German recipe arrived on a fresh
+  instance with nothing to say it was German, so nothing could translate it — and the translations
+  travelling with it could not be used.
+- **And the translations a person wrote**, current or not. A correction of words that have moved is
+  still somebody's work, and an export that dropped it would lose exactly what this ADR keeps. A
+  model's is left out, and what arrives is stored `by_hand` — because that is what it is, and
+  marking it a machine's would let the next model run overwrite work that travelled here to be kept.
+- **An ingredient carries every language the registry names it in.** The names existed and were
+  being dropped on the way out, which made a foreign import less readable than a seeded entry for
+  no reason.
+
+The flat `names` list stays, in the document's own locale, so a build that reads format 4 still
+reads a format 5 document's ingredients. A document written before 5 has its `names_by_locale`
+filled in from its own `locale` by the reader, so no caller has to know which format it came from.
 
 ---
 

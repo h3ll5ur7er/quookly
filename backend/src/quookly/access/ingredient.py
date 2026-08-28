@@ -884,6 +884,37 @@ async def named(locale: str) -> list[Named]:
     return [Named(slug=slug, names=tuple(names)) for slug, names in sorted(gathered.items())]
 
 
+async def names_for(slugs: Sequence[str]) -> dict[str, dict[str, list[str]]]:
+    """Every language each of these entries is named in, in one query.
+
+    What an export carries. `detail` answers the same question for one entry and a screen;
+    asking it nine hundred times to write one document is not the same function.
+    """
+    if not slugs:
+        return {}
+    async with session() as active:
+        rows = (
+            await active.exec(select(IngredientRow).where(col(IngredientRow.slug).in_(slugs)))
+        ).all()
+        by_id = {row.id: row.slug for row in rows if row.id is not None}
+        if not by_id:
+            return {}
+        spellings = (
+            await active.exec(
+                select(IngredientNameRow)
+                .where(col(IngredientNameRow.ingredient_id).in_(list(by_id)))
+                .order_by(col(IngredientNameRow.is_canonical).desc(), col(IngredientNameRow.id))
+            )
+        ).all()
+
+    found: dict[str, dict[str, list[str]]] = {}
+    for one in spellings:
+        slug = by_id.get(one.ingredient_id)
+        if slug is not None:
+            found.setdefault(slug, {}).setdefault(one.locale, []).append(one.name)
+    return found
+
+
 async def detail(slug: str) -> RegistryEntryDetail | None:
     """One entry with every name it answers to, for a screen that corrects it.
 

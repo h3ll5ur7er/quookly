@@ -38,6 +38,19 @@ class HeldTranslation:
     by_hand: bool
 
 
+@dataclass(frozen=True, slots=True)
+class Rendered:
+    """A translation and the language it is in.
+
+    `HeldTranslation` answers "who wrote this"; this answers "which language is it". An
+    export carries several at once and has to say which is which, and a caller holding a
+    list of them should not have to keep a parallel list of locales in step.
+    """
+
+    locale: str
+    words: Translatable
+
+
 class TranslationView(BaseModel):
     """A translation as a client reads it, and who wrote it.
 

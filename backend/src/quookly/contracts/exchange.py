@@ -30,7 +30,14 @@ class ExchangeIngredient(BaseModel):
     slug: str
     kind: IngredientKind
     density: Decimal | None = None
+    #: What it is called in the document's own locale. Kept as it was so a build that
+    #: reads format 4 still reads a format 5 document's ingredients.
     names: list[str] = Field(min_length=1)
+    #: And in every language the exporting registry knew. Added in format 5: without it a
+    #: German import arrived named only in German, which made a foreign entry less readable
+    #: than a seeded one for no reason — the names existed and were being dropped.
+    #: Empty in every earlier document, where `names` and the document's `locale` say it.
+    names_by_locale: dict[str, list[str]] = Field(default_factory=dict)
     # Absent means nobody classified it; an empty list means somebody did and it contains
     # none. The distinction is the basis of ADR-006 and survives the journey intact.
     allergens: list[Allergen] | None = None
@@ -60,6 +67,24 @@ class ExchangeStep(BaseModel):
     attention: Attention = Attention.HANDS_ON
 
 
+class ExchangeTranslation(BaseModel):
+    """A recipe's prose in one other language, as somebody here wrote it.
+
+    Only a person's. A model's translation is nobody's work: the receiving instance can
+    derive one in a round trip with its own model, and shipping one would spread this
+    instance's model quality to everywhere that ever imported from it (ADR-064).
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    locale: str
+    title: str
+    summary: str | None = None
+    #: Paired to the recipe by position, the same as in storage. A translation with a
+    #: different number of steps is refused rather than repaired.
+    steps: list[str] = Field(default_factory=list)
+
+
 class ExchangeRecipe(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -73,6 +98,12 @@ class ExchangeRecipe(BaseModel):
     provenance: Provenance
     lines: list[ExchangeLine] = Field(min_length=1)
     steps: list[ExchangeStep] = Field(min_length=1)
+    #: What the prose is written in, as a bare code. Added in format 5. Absent where
+    #: nobody knows, which is a real answer — and without it a German recipe arrived on a
+    #: fresh instance with nothing to say it was German, so nothing could translate it.
+    language: str | None = None
+    #: Translations somebody here wrote. Added in format 5, and a person's only.
+    translations: list[ExchangeTranslation] = Field(default_factory=list)
 
 
 class ExchangeDocument(BaseModel):

@@ -639,9 +639,20 @@ class ImportResult:
 
 
 async def export_for(cook_id: int, locale: str) -> ExchangeDocument:
-    """Everything a cook owns, in the portable format (FR-11)."""
+    """Everything a cook owns, in the portable format (FR-11).
+
+    With the translations a **person** wrote and every language the registry names each
+    ingredient in. Both are fetched here and handed to the engine: `to_document` is a rule
+    engine, and a rule engine that grew a database call would have stopped being one.
+    """
     recipes = await recipe_access.fetch_all_for_cook(cook_id, locale)
-    return exchange.to_document(recipes, locale)
+    slugs = sorted({line.ingredient.slug for recipe in recipes for line in recipe.lines})
+    return exchange.to_document(
+        recipes,
+        locale,
+        translations=await translation_access.corrections_for([one.id for one in recipes]),
+        names=await registry.names_for(slugs),
+    )
 
 
 async def import_document(
@@ -689,16 +700,30 @@ async def import_document(
             slug=entry.slug,
             kind=entry.kind,
             density=entry.density,
-            names={document.locale: entry.names},
+            # Every language the document knew it by, so a foreign import is as readable
+            # as a seeded entry. Documents written before format 5 carry one, filled in
+            # from their own locale by the reader (ADR-012).
+            names=entry.names_by_locale or {document.locale: entry.names},
             allergens=entry.allergens,
         )
 
     ids = await registry.ids_by_slug(sorted(referenced))
     for recipe in document.recipes:
-        await recipe_access.store(
+        stored = await recipe_access.store(
             exchange.to_draft(recipe, ingredient_ids=ids, provenance=Provenance.IMPORTED_JSON),
             cook_id,
         )
+        # Somebody's words, kept as somebody's. Stored `by_hand` because that is what they
+        # are: a document only ever carries a person's, and marking them a machine's would
+        # let the next model run overwrite work that travelled here to be kept (ADR-064).
+        for said in recipe.translations:
+            await translation_access.keep(
+                stored.id,
+                said.locale,
+                said.words,
+                of=_prose_of(stored),
+                by_hand=True,
+            )
 
     return ImportResult(recipes_added=len(document.recipes), ingredients_added=len(missing))
 

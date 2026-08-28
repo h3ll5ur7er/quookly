@@ -1,5 +1,5 @@
 {
-  "quookly": 4,
+  "quookly": 5,
   "exported_at": "2026-08-20T00:00:00Z",
   "locale": "en-GB",
   "ingredients": [
@@ -384,7 +384,8 @@
           "temperature_celsius": 180,
           "attention": "hands_on"
         }
-      ]
+      ],
+      "language": "en"
     },
     {
       "title": "Shortbread",
@@ -449,7 +450,8 @@
           "duration_seconds": 120,
           "attention": "hands_on"
         }
-      ]
+      ],
+      "language": "en"
     }
   ]
 }

@@ -1125,6 +1125,85 @@ class TestReadingARecipeInYourOwnLanguage:
         )
         assert refused.status_code == 409
 
+    async def test_an_export_carries_a_persons_translation_and_not_a_machines(
+        self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
+    ) -> None:
+        """A model's translation is nobody's work: the receiving instance derives one in a
+        round trip with its own model, and shipping one would spread this instance's model
+        quality to everywhere that ever imported from it (ADR-012, ADR-064)."""
+        headers, recipe_id = await self.written(client, pantry)
+        await self.reading_english(client, headers)
+        # A machine's, first.
+        await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+
+        exported = (await client.get("/api/v1/recipes/export", headers=headers)).json()
+        [recipe] = exported["recipes"]
+        assert recipe["language"] == "de"
+        assert recipe["translations"] == []
+
+        await client.put(
+            f"/api/v1/recipes/{recipe_id}/translations/en",
+            json={
+                "title": "Chocolate cake, properly",
+                "summary": None,
+                "steps": ["Beat the butter and sugar until pale.", "Bake at 180 C."],
+            },
+            headers=headers,
+        )
+
+        exported = (await client.get("/api/v1/recipes/export", headers=headers)).json()
+        [carried] = exported["recipes"][0]["translations"]
+        assert carried["locale"] == "en"
+        assert carried["title"] == "Chocolate cake, properly"
+
+    async def test_an_export_names_an_ingredient_in_every_language_it_knows(
+        self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
+    ) -> None:
+        """Otherwise a German import arrives named only in German, which makes a foreign
+        entry less readable than a seeded one for no reason: the names existed and were
+        being dropped on the way out."""
+        headers, _ = await self.written(client, pantry)
+
+        exported = (await client.get("/api/v1/recipes/export", headers=headers)).json()
+
+        flour = next(one for one in exported["ingredients"] if one["slug"] == "plain-flour")
+        assert "en-GB" in flour["names_by_locale"]
+
+    async def test_an_import_keeps_the_language_and_the_translation(
+        self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
+    ) -> None:
+        """The round trip is the promise ADR-012 makes: what left comes back."""
+        headers, recipe_id = await self.written(client, pantry)
+        await self.reading_english(client, headers)
+        await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        await client.put(
+            f"/api/v1/recipes/{recipe_id}/translations/en",
+            json={
+                "title": "Chocolate cake, properly",
+                "summary": None,
+                "steps": ["Beat the butter and sugar until pale.", "Bake at 180 C."],
+            },
+            headers=headers,
+        )
+        document = (await client.get("/api/v1/recipes/export", headers=headers)).json()
+
+        neighbour = await sign_up(client, "neighbour@example.com")
+        received = await client.post("/api/v1/recipes/import", json=document, headers=neighbour)
+        assert received.status_code == 201, received.text
+
+        theirs = (await client.get("/api/v1/recipes", headers=neighbour)).json()
+        [one] = [row for row in theirs if row["title"] == "Schokoladenkuchen"]
+
+        # Read in English, it is the *person's* words that arrived — not a fresh machine
+        # translation, and not the German.
+        await client.put("/api/v1/setup/locale", json={"locale": "en-GB"}, headers=neighbour)
+        asked = len(answering)
+        read = await client.get(f"/api/v1/recipes/{one['id']}", headers=neighbour)
+
+        assert read.json()["title"] == "Chocolate cake, properly"
+        assert read.json()["translated_by_hand"] is True
+        assert len(answering) == asked
+
     async def test_a_correction_is_not_reported_as_a_machines_words(
         self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
     ) -> None:

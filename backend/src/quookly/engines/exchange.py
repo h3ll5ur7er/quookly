@@ -5,8 +5,8 @@ this instance's registry, creating what is missing — is sequencing, and belong
 manager.
 """
 
-from collections.abc import Mapping
-from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
@@ -20,6 +20,7 @@ from quookly.contracts.exchange import (
     ExchangeLine,
     ExchangeRecipe,
     ExchangeStep,
+    ExchangeTranslation,
 )
 from quookly.contracts.execution import Attention
 from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
@@ -31,13 +32,16 @@ from quookly.contracts.recipe import (
     RecipeDraft,
     StepDraft,
 )
+from quookly.contracts.translation import Rendered, Translatable
 from quookly.engines import measure
 
 #: What this build writes.
-FORMAT_VERSION = 4
+FORMAT_VERSION = 5
 
 #: What this build reads. Format 2 added a recipe's `serves`; format 3 added each step's
-#: `attention`; format 4 added `derived` to the provenances a recipe can carry. Nothing
+#: `attention`; format 4 added `derived` to the provenances a recipe can carry; format 5
+#: added the language a recipe is written in, the translations somebody here wrote, and
+#: every language the registry names an ingredient in (ADR-012, ADR-064). Nothing
 #: else changed, and an older document is a complete recipe that simply does not say those
 #: things. Reading them all is what keeps every document a self-hoster has already
 #: exported valid.
@@ -50,7 +54,7 @@ FORMAT_VERSION = 4
 #: an older build reading a document with an unknown field would drop it in silence —
 #: which is the partial honouring this check exists to prevent. Refusing outright tells
 #: them why.
-READABLE_VERSIONS = frozenset({1, 2, 3, FORMAT_VERSION})
+READABLE_VERSIONS = frozenset({1, 2, 3, 4, FORMAT_VERSION})
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,6 +86,10 @@ class ReadRecipe:
     #: Absent in every format 1 document, and absent is a real answer: such a recipe can
     #: be scaled to a number of pancakes but not to a table.
     serves: Decimal | None = None
+    #: What the prose is written in. Absent before format 5 and absent where nobody knew.
+    language: str | None = None
+    #: Translations a person wrote, ready to store. Empty before format 5.
+    translations: list[Rendered] = field(default_factory=list)
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,6 +99,10 @@ class ReadIngredient:
     density: Decimal | None
     names: list[str]
     allergens: frozenset[Allergen] | None
+    #: Every language the exporting registry named it in. Before format 5 there was one,
+    #: and it is filled in here from the document's own locale so that no caller has to
+    #: know which format it came from.
+    names_by_locale: dict[str, list[str]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,23 +112,38 @@ class ReadDocument:
     recipes: list[ReadRecipe]
 
 
-def to_document(recipes: list[Recipe], locale: str) -> ExchangeDocument:
+def to_document(
+    recipes: list[Recipe],
+    locale: str,
+    translations: Mapping[int, Sequence[Rendered]] | None = None,
+    names: Mapping[str, Mapping[str, list[str]]] | None = None,
+) -> ExchangeDocument:
     """Build a portable document from recipes fetched whole.
 
     Quantities are carried as written rather than as rendered: an export is the recipe,
     not one cook's view of it.
+
+    `translations` are the ones a **person** wrote, by recipe id, and `names` is every
+    language the registry knows an ingredient by. Both are passed in rather than fetched:
+    this is a rule engine, and what it does is a table of inputs to one document.
     """
+    by_recipe = translations or {}
+    known = names or {}
     used: dict[str, ExchangeIngredient] = {}
     for recipe in recipes:
         for line in recipe.lines:
             entry = line.ingredient
+            spellings = known.get(entry.slug, {})
             used.setdefault(
                 entry.slug,
                 ExchangeIngredient(
                     slug=entry.slug,
                     kind=entry.kind,
                     density=entry.density,
-                    names=[entry.name],
+                    # The document's own locale first, so a build reading format 4 gets the
+                    # name it would have got before.
+                    names=list(spellings.get(locale, [entry.name])) or [entry.name],
+                    names_by_locale={one: list(said) for one, said in spellings.items() if said},
                     allergens=sorted(entry.allergens, key=lambda a: a.value)
                     if entry.classified
                     else None,
@@ -155,6 +182,16 @@ def to_document(recipes: list[Recipe], locale: str) -> ExchangeDocument:
                     )
                     for step in recipe.steps
                 ],
+                language=recipe.language,
+                translations=[
+                    ExchangeTranslation(
+                        locale=one.locale,
+                        title=one.words.title,
+                        summary=one.words.summary,
+                        steps=list(one.words.steps),
+                    )
+                    for one in by_recipe.get(recipe.id, [])
+                ],
             )
             for recipe in recipes
         ],
@@ -177,6 +214,10 @@ def to_draft(
 
     `ingredient_ids` maps the document's slugs to this instance's ids: a document refers
     by slug because ids belong to the instance that issued them.
+
+    The translations a document carries are *not* here. A draft is what `RecipeAccess`
+    stores as one recipe, and a translation is stored against the recipe id that comes
+    back from it — so it belongs to the caller, after the store.
     """
     return RecipeDraft(
         title=recipe.title,
@@ -185,6 +226,11 @@ def to_draft(
         serves=recipe.serves,
         provenance=provenance,
         origin=origin,
+        # Carried across, and absent where the document did not say. Without it a German
+        # recipe arrives on a fresh instance with nothing to say it is German, so nothing
+        # can translate it and the translations that travelled with it cannot be used
+        # (ADR-032, format 5).
+        language=recipe.language,
         lines=[
             IngredientLineDraft(
                 ingredient_id=ingredient_ids[line.slug],
@@ -246,6 +292,12 @@ def from_document(raw: dict[str, Any]) -> ReadDocument:
                 density=entry.density,
                 names=list(entry.names),
                 allergens=None if entry.allergens is None else frozenset(entry.allergens),
+                # Filled in from the document's own locale where it said nothing, so that
+                # no caller has to know which format it came from.
+                names_by_locale={
+                    one: list(said) for one, said in entry.names_by_locale.items() if said
+                }
+                or {document.locale: list(entry.names)},
             )
             for entry in document.ingredients
         ],
@@ -256,6 +308,16 @@ def from_document(raw: dict[str, Any]) -> ReadDocument:
                 yield_quantity=Quantity(recipe.yield_magnitude, _unit(recipe.yield_unit)),
                 serves=recipe.serves,
                 provenance=recipe.provenance,
+                language=recipe.language,
+                translations=[
+                    Rendered(
+                        locale=one.locale,
+                        words=Translatable(
+                            title=one.title, summary=one.summary, steps=list(one.steps)
+                        ),
+                    )
+                    for one in recipe.translations
+                ],
                 lines=[
                     ReadLine(
                         slug=line.ingredient,

@@ -24,6 +24,7 @@ from quookly.contracts.recipe import (
     Step,
     Visibility,
 )
+from quookly.contracts.translation import Rendered, Translatable
 from quookly.engines import exchange
 
 FLOUR = Ingredient(
@@ -280,3 +281,134 @@ class TestRoundTrip:
         first = exchange.to_document([pancakes()], "en-GB")
         second = exchange.to_document([pancakes()], "en-GB")
         assert content(first) == content(second)
+
+
+def a_recipe(*, language: str | None) -> Recipe:
+    """One recipe with one ingredient, so the assertions below are about the new fields."""
+    return replace(
+        pancakes(),
+        id=1,
+        language=language,
+        lines=[
+            IngredientLine(
+                id=1,
+                ingredient=FLOUR,
+                quantity=Quantity(Decimal("225"), Unit.GRAM),
+                preparation=None,
+                optional=False,
+            )
+        ],
+    )
+
+
+class TestWhatTravelsBesidesTheRecipe:
+    """Format 5: the language a recipe is written in, the translations a *person* wrote,
+    and every language the registry names an ingredient in.
+
+    All three are the same gap seen from different sides. A German recipe exported into a
+    fresh instance arrived with no record of being German, so nothing could translate it;
+    the corrections somebody had written were left behind; and its ingredients arrived
+    named only in the exporter's language, which made a foreign import less readable than
+    a seeded entry (ADR-012, ADR-064).
+    """
+
+    def test_a_recipe_carries_the_language_it_was_written_in(self) -> None:
+        document = exchange.to_document([a_recipe(language="de")], "de-CH")
+        assert document.recipes[0].language == "de"
+
+    def test_a_recipe_nobody_knows_the_language_of_says_nothing(self) -> None:
+        """An import from a page that did not say. Absent is a real answer and guessing at
+        it would be inventing the one fact this exists to stop inventing (ADR-032)."""
+        document = exchange.to_document([a_recipe(language=None)], "en-GB")
+        assert document.recipes[0].language is None
+
+    def test_a_persons_translation_travels(self) -> None:
+        document = exchange.to_document(
+            [a_recipe(language="de")],
+            "de-CH",
+            translations={
+                1: [
+                    Rendered(
+                        locale="en",
+                        words=Translatable(
+                            title="Chocolate cake",
+                            summary="A simple cake.",
+                            steps=["Cream the butter.", "Bake it."],
+                        ),
+                    )
+                ]
+            },
+        )
+
+        [carried] = document.recipes[0].translations
+        assert carried.locale == "en"
+        assert carried.title == "Chocolate cake"
+        assert carried.steps == ["Cream the butter.", "Bake it."]
+
+    def test_an_ingredient_carries_every_language_it_is_named_in(self) -> None:
+        """Which is what makes a foreign import as readable as a seeded entry."""
+        document = exchange.to_document(
+            [a_recipe(language="de")],
+            "de-CH",
+            names={"plain-flour": {"en-GB": ["plain flour"], "de-CH": ["Weissmehl"]}},
+        )
+
+        [entry] = document.ingredients
+        assert entry.names_by_locale == {"en-GB": ["plain flour"], "de-CH": ["Weissmehl"]}
+        # And the flat list an older build reads is still there, in the document's locale.
+        assert entry.names == ["Weissmehl"]
+
+    def test_an_older_document_still_reads(self) -> None:
+        """Every document a self-hoster has already exported stays valid — which is the
+        whole reason the version is a number rather than a shape."""
+        read = exchange.from_document(
+            {
+                "quookly": 1,
+                "exported_at": "2026-08-24T10:00:00Z",
+                "locale": "en-GB",
+                "ingredients": [
+                    {
+                        "slug": "plain-flour",
+                        "kind": "powder",
+                        "names": ["plain flour"],
+                    }
+                ],
+                "recipes": [
+                    {
+                        "title": "Pancakes",
+                        "yield_magnitude": "12",
+                        "yield_unit": "piece",
+                        "provenance": "authored",
+                        "lines": [{"ingredient": "plain-flour", "magnitude": "125", "unit": "g"}],
+                        "steps": [{"instruction": "Mix."}],
+                    }
+                ],
+            }
+        )
+
+        assert read.recipes[0].language is None
+        assert read.recipes[0].translations == []
+        assert read.ingredients[0].names_by_locale == {"en-GB": ["plain flour"]}
+
+    def test_what_a_new_document_reads_back(self) -> None:
+        made = exchange.to_document(
+            [a_recipe(language="de")],
+            "de-CH",
+            translations={
+                1: [
+                    Rendered(
+                        locale="en",
+                        words=Translatable(
+                            title="Chocolate cake", summary=None, steps=["Cream it.", "Bake it."]
+                        ),
+                    )
+                ]
+            },
+            names={"plain-flour": {"en-GB": ["plain flour"], "de-CH": ["Weissmehl"]}},
+        )
+
+        read = exchange.from_document(made.model_dump(mode="json"))
+
+        assert read.recipes[0].language == "de"
+        assert read.recipes[0].translations[0].words.title == "Chocolate cake"
+        assert read.ingredients[0].names_by_locale["de-CH"] == ["Weissmehl"]
