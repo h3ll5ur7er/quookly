@@ -992,8 +992,9 @@ async def amend(
     kind: IngredientKind | None = None,
     density: Decimal | None | Unset = UNSET,
     piece_grams: Decimal | None | Unset = UNSET,
+    category_slug: str | None | Unset = UNSET,
 ) -> Ingredient:
-    """Correct the three facts an import guesses at.
+    """Correct the facts an import guesses at, and where the food sits.
 
     Only those. It does **not** classify allergens — fixing a density is not looking
     inside the food (ADR-006) — and it does not approve the entry, because "this row is
@@ -1005,6 +1006,12 @@ async def amend(
     both: an ingredient nobody has weighed *has* no piece weight, and a wrong density is
     worse than none. Without the sentinel, correcting the kind would wipe the density
     beside it.
+
+    `category_slug` takes the sentinel for the same reason: filed in the wrong aisle is
+    worse than filed in none, so clearing one is a real correction — and a form that saves
+    a density must not unplace the food beside it (ADR-067). A slug this instance does not
+    know leaves the placement alone rather than clearing it: an unknown category is not
+    evidence about where the food belongs.
 
     `kind` needs no sentinel: an entry always has one, so `None` can only mean "leave it".
     """
@@ -1021,6 +1028,10 @@ async def amend(
             row.density = density
         if not isinstance(piece_grams, Unset):
             row.piece_grams = piece_grams
+        if not isinstance(category_slug, Unset):
+            wanted = await _category_id(active, category_slug)
+            if category_slug is None or wanted is not None:
+                row.category_id = wanted
 
         active.add(row)
         await active.commit()

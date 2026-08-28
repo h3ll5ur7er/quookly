@@ -2,19 +2,75 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { AcademyService, PageKind, PageSummaryView } from '@api';
+import { AcademyService, CategoryView, IngredientsService, PageKind, PageSummaryView } from '@api';
 import { AuthStore } from '../../core/auth/auth.store';
 import { preferredLocale } from '../../core/locale/locale.store';
 
-/** One section of the Academy, split into the letters its entries start with. */
+/**
+ * One section of the Academy.
+ *
+ * A section is split one of two ways. Techniques get letters, because there is nothing
+ * else to file *sear* under. Pages about food get **shelves** — where the registry says
+ * that food sits — and letters inside each, so the section reads as
+ * *Ingredients > Vegetables > Carrot* rather than as one flat alphabet (ADR-067).
+ */
 interface PageGroup {
   readonly kind: PageKind;
+  readonly shelves: readonly Shelf[];
+}
+
+interface Shelf {
+  /** Empty for the section's own shelf, which is every page it has no better place for. */
+  readonly slug: string;
+  /** Absent where the section is not shelved at all, and the letters stand on their own. */
+  readonly name: string | null;
   readonly letters: readonly LetterGroup[];
 }
 
 interface LetterGroup {
   readonly initial: string;
   readonly pages: readonly PageSummaryView[];
+}
+
+/**
+ * Pages about food, on the shelf the registry puts that food on.
+ *
+ * Ordered by the shelf's name in the reader's language, so a German reader gets German
+ * headings in German alphabetical order. What nobody has placed goes last, under a
+ * heading this screen writes — the server does not invent one, because an invented
+ * category cannot be told apart from a known one (ADR-067).
+ */
+function onShelves(
+  pages: readonly PageSummaryView[],
+  named: Map<string, string>,
+  collator: Intl.Collator,
+): Shelf[] {
+  const grouped = new Map<string, PageSummaryView[]>();
+  for (const page of pages) {
+    const slug = page.category_slug ?? '';
+    grouped.set(slug, [...(grouped.get(slug) ?? []), page]);
+  }
+
+  const shelved = [...grouped]
+    .filter(([slug]) => named.has(slug))
+    .map(([slug, found]) => ({
+      slug,
+      name: named.get(slug) ?? slug,
+      letters: byLetter(found, collator),
+    }))
+    .sort((a, b) => collator.compare(a.name, b.name));
+
+  const loose = [...grouped].filter(([slug]) => !named.has(slug)).flatMap(([, found]) => found);
+  return loose.length === 0
+    ? shelved
+    : [
+        ...shelved,
+        {
+          slug: '',
+          name: $localize`:@@academyElsewhere:Anything else`,
+          letters: byLetter(loose, collator),
+        },
+      ];
 }
 
 /**
@@ -105,6 +161,7 @@ export class AcademyComponent {
    */
   protected readonly grouped = computed<PageGroup[]>(() => {
     const collator = new Intl.Collator(preferredLocale());
+    const named = new Map(this.tree().map((one) => [one.slug, one.name]));
     const byKind = new Map<PageKind, PageSummaryView[]>();
     for (const page of this.settled()) {
       byKind.set(page.kind, [...(byKind.get(page.kind) ?? []), page]);
@@ -113,8 +170,26 @@ export class AcademyComponent {
     const order = [PageKind.technique, PageKind.ingredient];
     return order
       .filter((kind) => byKind.has(kind))
-      .map((kind) => ({ kind, letters: byLetter(byKind.get(kind) ?? [], collator) }));
+      .map((kind) => ({
+        kind,
+        shelves:
+          // Only the food section is shelved, and only where there is a tree to shelve it
+          // by. A technique has no aisle, and an instance with no tree keeps the alphabet
+          // it had.
+          kind === PageKind.ingredient && named.size > 0
+            ? onShelves(byKind.get(kind) ?? [], named, collator)
+            : [{ slug: '', name: null, letters: byLetter(byKind.get(kind) ?? [], collator) }],
+      }));
   });
+
+  /**
+   * The food tree, for filing the ingredient section.
+   *
+   * Read rather than derived from the pages: the registry is where a carrot being a
+   * vegetable is recorded, and the Academy holding its own copy would be a second answer
+   * to drift from the first (ADR-061).
+   */
+  private readonly tree = signal<readonly CategoryView[]>([]);
 
   protected readonly kindLabel = kindLabel;
 
@@ -129,6 +204,14 @@ export class AcademyComponent {
     this.looking.valueChanges
       .pipe(takeUntilDestroyed())
       .subscribe((word) => this.typed.set(word.trim()));
+
+    inject(IngredientsService)
+      .listFoodCategories()
+      .subscribe({
+        // A tree that cannot be read leaves the section lettered, which is what it was.
+        next: (tree) => this.tree.set(tree),
+        error: () => this.tree.set([]),
+      });
 
     inject(AcademyService)
       // The language is sent, not derived: a signed-out reader has no cook record for the

@@ -140,13 +140,22 @@ async def amend(
     kind: IngredientKind | None = None,
     density: Decimal | None | Unset = UNSET,
     piece_grams: Decimal | None | Unset = UNSET,
+    category_slug: str | None | Unset = UNSET,
 ) -> RegistryEntryView:
-    """Correct the facts an import guessed at, and nothing else.
+    """Correct the facts an import guessed at, and where the food sits.
 
-    Not the allergens and not the approval: three separate statements, kept separate so
-    that making one cannot be mistaken for making another (ADR-006, ADR-051).
+    Not the allergens and not the approval: separate statements, kept separate so that
+    making one cannot be mistaken for making another (ADR-006, ADR-051).
     """
-    return _viewed(await registry.amend(slug, kind=kind, density=density, piece_grams=piece_grams))
+    return _viewed(
+        await registry.amend(
+            slug,
+            kind=kind,
+            density=density,
+            piece_grams=piece_grams,
+            category_slug=category_slug,
+        )
+    )
 
 
 async def classify(slug: str, allergens: list[Allergen]) -> RegistryEntryView | None:

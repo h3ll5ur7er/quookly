@@ -900,3 +900,67 @@ class TestWhereAFoodSits:
 
     async def test_signing_in_is_required_to_read_the_tree(self, client: AsyncClient) -> None:
         assert (await client.get("/api/v1/registry/categories")).status_code == 401
+
+    async def test_an_admin_can_say_where_a_food_sits(
+        self, client: AsyncClient, admin: dict[str, str], tree: None
+    ) -> None:
+        """The half the seed cannot do. An import invents an entry for a line that resolved
+        to nothing, and nothing places it — so the person who merges or corrects that entry
+        is the only one who can (ADR-067)."""
+        await registry.register(
+            slug="samphire",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["samphire"]},
+            origin=Origin.USER,
+        )
+
+        amended = await client.put(
+            f"{REGISTRY}/samphire",
+            json={"category": "vegetables-fresh-vegetables"},
+            headers=admin,
+        )
+
+        assert amended.status_code == 200, amended.text
+        assert amended.json()["category_slug"] == "vegetables-fresh-vegetables"
+
+    async def test_a_correction_that_says_nothing_about_it_leaves_it_alone(
+        self, client: AsyncClient, admin: dict[str, str], tree: None
+    ) -> None:
+        """The same rule the density has, and the reason it needs one: fixing the kind of a
+        placed food must not unplace it."""
+        amended = await client.put(f"{REGISTRY}/carrot", json={"kind": "liquid"}, headers=admin)
+
+        assert amended.status_code == 200, amended.text
+        assert amended.json()["category_slug"] == "vegetables-fresh-vegetables"
+
+    async def test_saying_it_sits_nowhere_takes_it_out_of_the_tree(
+        self, client: AsyncClient, admin: dict[str, str], tree: None
+    ) -> None:
+        """Explicit `null` clears it, exactly as it clears a density. A food filed in the
+        wrong aisle is worse than one filed in none."""
+        amended = await client.put(f"{REGISTRY}/carrot", json={"category": None}, headers=admin)
+
+        assert amended.status_code == 200, amended.text
+        assert amended.json()["category_slug"] is None
+
+    async def test_a_category_nobody_defined_leaves_it_where_it_was(
+        self, client: AsyncClient, admin: dict[str, str], tree: None
+    ) -> None:
+        """Rather than a 422 or a silent unplacing. The same rule registering follows: an
+        unknown category is not a reason to lose what is already known."""
+        amended = await client.put(
+            f"{REGISTRY}/carrot", json={"category": "sea-vegetables"}, headers=admin
+        )
+
+        assert amended.status_code == 200, amended.text
+        assert amended.json()["category_slug"] == "vegetables-fresh-vegetables"
+
+    async def test_only_an_admin_may_move_a_food(
+        self, client: AsyncClient, cook: dict[str, str], tree: None
+    ) -> None:
+        """The registry is shared: where flour sits changes every cook's shopping list."""
+        refused = await client.put(
+            f"{REGISTRY}/carrot", json={"category": "vegetables"}, headers=cook
+        )
+        assert refused.status_code == 403

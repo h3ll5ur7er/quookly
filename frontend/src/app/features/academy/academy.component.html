@@ -108,16 +108,23 @@
           @if (grouped().length > 1) {
             <h2 class="academy__kind">{{ kindLabel(group.kind) }}</h2>
           }
-          @for (letter of group.letters; track letter.initial) {
-            <h3 class="academy__letter">{{ letter.initial }}</h3>
-            <ul class="academy__list">
-              @for (one of letter.pages; track one.slug) {
-                <li>
-                  <a [routerLink]="['/academy', one.slug]">{{ one.name }}</a>
-                  <span class="academy__summary">{{ one.summary }}</span>
-                </li>
-              }
-            </ul>
+          @for (shelf of group.shelves; track shelf.slug) {
+            <!-- Where the registry puts the food. Only the ingredient section has shelves:
+                 a technique is not a food and has nowhere to sit (X6, ADR-067). -->
+            @if (shelf.name; as where) {
+              <h3 class="academy__shelf">{{ where }}</h3>
+            }
+            @for (letter of shelf.letters; track letter.initial) {
+              <h4 class="academy__letter">{{ letter.initial }}</h4>
+              <ul class="academy__list">
+                @for (one of letter.pages; track one.slug) {
+                  <li>
+                    <a [routerLink]="['/academy', one.slug]">{{ one.name }}</a>
+                    <span class="academy__summary">{{ one.summary }}</span>
+                  </li>
+                }
+              </ul>
+            }
           }
         </section>
       }

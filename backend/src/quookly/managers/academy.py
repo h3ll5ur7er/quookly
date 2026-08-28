@@ -8,6 +8,7 @@ Reading is what this does today. Writing, approving and asking a model for an ex
 follow, in that order, so that the part which can be *wrong* arrives last.
 """
 
+from collections.abc import Sequence
 from dataclasses import replace
 
 from quookly.access import academy, ingredient, media
@@ -60,28 +61,46 @@ async def browse(
             raise IngredientNotRegistered(about)
         return [_summarised(one) for one in await academy.pages_about(found.entry.id, locale)]
 
-    return [
-        PageSummaryView(
-            # The page's own section, not the one that was asked for. Taking it from the
-            # query said "technique" for everything whenever nothing was filtered, which
-            # nothing could notice while the Academy had one section.
-            slug=one.slug,
-            kind=one.kind,
-            name=one.name,
-            summary=one.summary,
-            approved=one.approved,
-        )
-        for one in await academy.browse(locale, kind, approved)
-    ]
+    listed = await academy.browse(locale, kind, approved)
+    # Once for the whole list. Asking inside the comprehension would ask per page, which
+    # on the shipped Academy is fifty round trips to answer one question.
+    sitting = await _where_they_sit(listed, locale)
+    return [_summarised(one, sitting) for one in listed]
 
 
-def _summarised(one: Listing) -> PageSummaryView:
+async def _where_they_sit(pages: Sequence[Listing], locale: str) -> dict[int, str]:
+    """Where the foods these pages are about sit, by ingredient id.
+
+    Asked of the registry rather than stored on the page: where a carrot sits is a fact
+    about the carrot, and a page holding its own copy would be a second answer to drift
+    from the first (ADR-061). One query for the whole list rather than one per page.
+
+    It is what lets the Academy be read as *Ingredients > Vegetables > Carrot* instead of
+    as one flat alphabet of everything anybody has explained (ADR-067).
+    """
+    wanted = sorted({one.ingredient_id for one in pages if one.ingredient_id is not None})
+    if not wanted:
+        return {}
+    return {
+        entry.id: entry.category_slug
+        for entry in (await ingredient.for_ids(wanted, locale)).values()
+        if entry.category_slug is not None
+    }
+
+
+def _summarised(one: Listing, sitting: dict[int, str] | None = None) -> PageSummaryView:
     return PageSummaryView(
+        # The page's own section, not the one that was asked for. Taking it from the query
+        # said "technique" for everything whenever nothing was filtered, which nothing
+        # could notice while the Academy had one section.
         slug=one.slug,
         kind=one.kind,
         name=one.name,
         summary=one.summary,
         approved=one.approved,
+        category_slug=(
+            None if sitting is None or one.ingredient_id is None else sitting.get(one.ingredient_id)
+        ),
     )
 
 

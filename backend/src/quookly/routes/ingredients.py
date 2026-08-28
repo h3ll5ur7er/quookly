@@ -43,6 +43,10 @@ class Correction(BaseModel):
     kind: IngredientKind | None = None
     density: Decimal | None = Field(default=None, ge=0)
     piece_grams: Decimal | None = Field(default=None, ge=0)
+    #: Where the food sits, as a slug into the tree. Omittable and `None`-able like the
+    #: two above, and for the same reason: filed in the wrong aisle is worse than filed in
+    #: none, and a form saving a density must not unplace the food beside it (ADR-067).
+    category: str | None = Field(default=None, max_length=100)
 
 
 class Classification(BaseModel):
@@ -190,7 +194,7 @@ async def get_ingredient(slug: str, cook: CurrentCook) -> RegistryEntryDetailVie
 async def amend_ingredient(
     slug: str, correction: Correction, admin: CurrentAdmin
 ) -> RegistryEntryView:
-    """Correct the facts an import guessed at: kind, density, piece weight.
+    """Correct the facts an import guessed at: kind, density, piece weight, category.
 
     An administrator's, because the registry is shared — a density corrected here changes
     what every cook on this instance is shown, and an allergen would change what they are
@@ -203,6 +207,7 @@ async def amend_ingredient(
             kind=correction.kind,
             density=correction.density if "density" in supplied else UNSET,
             piece_grams=correction.piece_grams if "piece_grams" in supplied else UNSET,
+            category_slug=correction.category if "category" in supplied else UNSET,
         )
     except IngredientNotRegistered as absent:
         raise NOT_FOUND from absent

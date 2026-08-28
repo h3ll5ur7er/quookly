@@ -105,6 +105,11 @@ class Listing:
     summary: str
     approved: bool
     kind: PageKind
+    #: The food this page is about, for a page in the ingredient section. Carried so the
+    #: manager can ask the registry where that food sits without re-reading every page —
+    #: the Academy does not store the answer, because where a carrot sits is a fact about
+    #: the carrot (ADR-061, ADR-067).
+    ingredient_id: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -243,6 +248,11 @@ class PageSummaryView(BaseModel):
     #: Whether anybody here has read it. An unreviewed page is listed and readable; what it
     #: does not do is get matched into anybody's recipe (ADR-060).
     approved: bool = True
+    #: Where the food this page is about sits, as a slug into the registry's tree. Absent
+    #: for a technique, which is not a food and has no aisle — and for a food nobody has
+    #: placed. It is what lets the Academy be read as *Ingredients > Vegetables > Carrot*
+    #: rather than as one flat alphabet (ADR-067).
+    category_slug: str | None = None
 
 
 class PageView(BaseModel):

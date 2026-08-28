@@ -320,6 +320,7 @@ async def browse(
             summary=text.summary,
             approved=row.approved,
             kind=row.kind,
+            ingredient_id=row.ingredient_id,
         )
         for page_id, row in pages.items()
         if (text := texts.get(page_id)) is not None
@@ -356,6 +357,7 @@ async def pages_about(ingredient_id: int, locale: str) -> list[Listing]:
             summary=text.summary,
             approved=row.approved,
             kind=row.kind,
+            ingredient_id=row.ingredient_id,
         )
         for page_id, row in pages.items()
         if (text := texts.get(page_id)) is not None

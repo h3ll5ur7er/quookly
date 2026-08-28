@@ -1282,7 +1282,7 @@
           "ingredients"
         ],
         "summary": "Amend Ingredient",
-        "description": "Correct the facts an import guessed at: kind, density, piece weight.\n\nAn administrator's, because the registry is shared \u2014 a density corrected here changes\nwhat every cook on this instance is shown, and an allergen would change what they are\nwarned about.",
+        "description": "Correct the facts an import guessed at: kind, density, piece weight, category.\n\nAn administrator's, because the registry is shared \u2014 a density corrected here changes\nwhat every cook on this instance is shown, and an allergen would change what they are\nwarned about.",
         "operationId": "amendIngredient",
         "parameters": [
           {
@@ -4117,6 +4117,18 @@
               }
             ],
             "title": "Piece Grams"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
           }
         },
         "type": "object",
@@ -5332,6 +5344,17 @@
             "type": "boolean",
             "title": "Approved",
             "default": true
+          },
+          "category_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Slug"
           }
         },
         "type": "object",

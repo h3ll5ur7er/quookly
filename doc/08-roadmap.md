@@ -526,9 +526,11 @@ throwing away
 Trilingual for free, because the three editions publish it against identical row ids. It unblocked a
 shopping list grouped by aisle and a registry that can be narrowed to one part of the shelf.
 
-What is owed: **a screen to correct it** — `place_in_category` exists and nothing calls it, so an
-ingredient an import invents is placed by nobody. That is the same gap this phase already has for
-per-locale names on those rows, and worth doing with them.
+~~What is owed: a screen to correct it~~ **Built** — the entry screen carries the picker, so an admin
+files what the seed could not. And the Academy's ingredient section is shelved by it, which is the
+hierarchy the visual review asked for. What is still owed is that nothing places an ingredient an
+import invents until a person does — the same gap this phase has for per-locale names on those rows,
+and worth doing with them.
 
 ## Phase 8 — Community and engagement
 

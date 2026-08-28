@@ -164,6 +164,30 @@
             </p>
           </div>
 
+          <!-- Where the food sits. Only where there is a tree to choose from: a select with
+               one option asks a question with no answers. This is the half seeding cannot
+               do — an import invents an entry and nothing places it (ADR-067). -->
+          @if (sections().length > 0) {
+            <div class="field">
+              <label for="category" i18n="@@entryCategory">Where it sits</label>
+              <select id="category" formControlName="category">
+                <option value="" i18n="@@entryNoCategory">Nowhere in particular</option>
+                @for (part of sections(); track part.section.slug) {
+                  <optgroup [label]="part.section.name">
+                    <option [value]="part.section.slug">{{ part.section.name }}</option>
+                    @for (group of part.groups; track group.slug) {
+                      <option [value]="group.slug">{{ group.name }}</option>
+                    }
+                  </optgroup>
+                }
+              </select>
+              <p class="hint" i18n="@@entryCategoryHint">
+                What puts it in an aisle on the shopping list. Leave it nowhere rather than
+                guessing: the wrong aisle is worse than none.
+              </p>
+            </div>
+          }
+
           @if (nothingChanged()) {
             <p class="entry__note" role="status" i18n="@@entryNothingChanged">
               Nothing changed, so nothing was sent.
@@ -189,6 +213,10 @@
               <span i18n="@@entryNoDensity">Not recorded</span>
             }
           </dd>
+          @if (sitting(); as where) {
+            <dt i18n="@@entryCategory2">Where it sits</dt>
+            <dd>{{ where }}</dd>
+          }
         </dl>
       }
     </section>

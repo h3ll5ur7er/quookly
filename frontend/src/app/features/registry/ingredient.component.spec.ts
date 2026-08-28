@@ -72,6 +72,7 @@ describe('IngredientComponent', () => {
     admin = false,
     resembles = [] as unknown[],
     pages = [] as unknown[],
+    categories = [] as unknown[],
   } = {}): Promise<void> {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -98,7 +99,17 @@ describe('IngredientComponent', () => {
     backend.expectOne('/api/v1/registry/creme-fraiche/resembling').flush(resembles);
     // And what has been written about this food, for the same reason (ADR-061).
     backend.expectOne((one) => one.url === '/api/v1/academy').flush(pages);
+    // And the food tree, so an admin can say where this sits (ADR-067). Answered with
+    // nothing unless a test asks for it, so the picker is absent where it is not the
+    // subject — which is also the state an instance with no tree is in.
+    backend.expectOne('/api/v1/registry/categories').flush(categories);
   }
+
+  /** Two nodes of a food tree, for the tests that are about where a food sits. */
+  const TREE = [
+    { slug: 'vegetables', name: 'Vegetables', parent_slug: null },
+    { slug: 'vegetables-fresh', name: 'Fresh vegetables', parent_slug: 'vegetables' },
+  ];
 
   function asked() {
     return backend.expectOne('/api/v1/registry/creme-fraiche');
@@ -226,6 +237,57 @@ describe('IngredientComponent', () => {
       const request = backend.expectOne('/api/v1/registry/creme-fraiche');
       expect(request.request.body).toEqual({ density: null });
       request.flush({ ...CREME, density: null });
+    });
+
+    it('offers the tree, so a food an import invented can be put somewhere', async () => {
+      /* The half seeding cannot do. An import creates an entry for a line that resolved to
+         nothing and nothing places it, so the person correcting that entry is the only one
+         who can (ADR-067). */
+      await arrive({ admin: true, categories: TREE });
+      asked().flush(detail());
+      await fixture.whenStable();
+
+      const options = [...fixture.nativeElement.querySelectorAll('#category option')].map(
+        (one: HTMLOptionElement) => one.value,
+      );
+      expect(options).toEqual(['', 'vegetables', 'vegetables-fresh']);
+    });
+
+    it('sends where it now sits, and nothing else', async () => {
+      await arrive({ admin: true, categories: TREE });
+      asked().flush(detail());
+      await fixture.whenStable();
+
+      set('#category', 'vegetables-fresh');
+      await fixture.whenStable();
+      click('Save corrections');
+      await fixture.whenStable();
+
+      const request = backend.expectOne('/api/v1/registry/creme-fraiche');
+      expect(request.request.body).toEqual({ category: 'vegetables-fresh' });
+      request.flush({ ...CREME, category_slug: 'vegetables-fresh' });
+    });
+
+    it('sends an emptied category as an explicit null', async () => {
+      // Filed in the wrong aisle is worse than filed in none, so clearing is a correction.
+      await arrive({ admin: true, categories: TREE });
+      asked().flush(detail({ ...CREME, category_slug: 'vegetables-fresh' }));
+      await fixture.whenStable();
+
+      set('#category', '');
+      await fixture.whenStable();
+      click('Save corrections');
+      await fixture.whenStable();
+
+      const request = backend.expectOne('/api/v1/registry/creme-fraiche');
+      expect(request.request.body).toEqual({ category: null });
+      request.flush({ ...CREME, category_slug: null });
+    });
+
+    it('leaves the picker out where this instance has no tree', async () => {
+      asked().flush(detail());
+      await fixture.whenStable();
+      expect(fixture.nativeElement.querySelector('#category')).toBeNull();
     });
 
     it('says so when there is nothing to save', async () => {

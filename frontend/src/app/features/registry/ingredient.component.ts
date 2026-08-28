@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   AcademyService,
   Allergen,
+  CategoryView,
   IngredientKind,
   IngredientsService,
   PageSummaryView,
@@ -101,7 +102,36 @@ export class IngredientComponent {
     kind: [IngredientKind.solid],
     density: [''],
     piece_grams: [''],
+    category: [''],
   });
+
+  /**
+   * The food tree, so an admin can say where this sits (ADR-067).
+   *
+   * This is the half seeding cannot do. The published table places the nine hundred it
+   * shipped; an import invents an entry for a line that resolved to nothing, and nothing
+   * places that — so the person correcting or merging it is the only one who can.
+   *
+   * Empty where the instance has no tree, and the picker is then simply absent: a select
+   * with one option in it asks a question with no answers.
+   */
+  protected readonly tree = signal<readonly CategoryView[]>([]);
+
+  /** What this entry's category is called, for a cook who cannot edit it. */
+  protected readonly sitting = computed(() => {
+    const slug = this.entry()?.category_slug;
+    return slug == null ? null : (this.tree().find((one) => one.slug === slug)?.name ?? null);
+  });
+
+  /** The tree as a picker reads it: each section, then the groups inside it. */
+  protected readonly sections = computed(() =>
+    this.tree()
+      .filter((one) => one.parent_slug === null)
+      .map((section) => ({
+        section,
+        groups: this.tree().filter((one) => one.parent_slug === section.slug),
+      })),
+  );
 
   /** Ticked classes. Submitting with none ticked is "I looked, there is nothing in it". */
   protected readonly ticked = signal<ReadonlySet<Allergen>>(new Set());
@@ -192,6 +222,12 @@ export class IngredientComponent {
     // is the way across (ADR-061). Asked of the Academy rather than carried on the entry:
     // the registry's contracts sit underneath the Academy's, and answering it here would
     // make the two import each other.
+    this.service.listFoodCategories().subscribe({
+      // A tree that cannot be read leaves the picker out, not the screen.
+      next: (tree) => this.tree.set(tree),
+      error: () => this.tree.set([]),
+    });
+
     this.academy.browseAcademy(undefined, undefined, this.slug).subscribe({
       next: (found) => this.pages.set(found),
       error: () => this.pages.set([]),
@@ -225,8 +261,12 @@ export class IngredientComponent {
       return;
     }
     const form = this.correction.getRawValue();
-    const change: { kind?: IngredientKind; density?: string | null; piece_grams?: string | null } =
-      {};
+    const change: {
+      kind?: IngredientKind;
+      density?: string | null;
+      piece_grams?: string | null;
+      category?: string | null;
+    } = {};
     if (form.kind !== entry.kind) {
       change.kind = form.kind;
     }
@@ -235,6 +275,11 @@ export class IngredientComponent {
     }
     if (form.piece_grams.trim() !== (entry.piece_grams ?? '')) {
       change.piece_grams = form.piece_grams.trim() || null;
+    }
+    // Emptied is a correction rather than an omission, the same as a density: filed in
+    // the wrong aisle is worse than filed in none.
+    if (form.category !== (entry.category_slug ?? '')) {
+      change.category = form.category || null;
     }
 
     this.saveFailed.set(false);
@@ -378,6 +423,7 @@ export class IngredientComponent {
       kind: entry.kind,
       density: entry.density ?? '',
       piece_grams: entry.piece_grams ?? '',
+      category: entry.category_slug ?? '',
     });
     this.nothingChanged.set(false);
     this.ticked.set(new Set(entry.allergens));

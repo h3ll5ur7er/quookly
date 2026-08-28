@@ -3020,6 +3020,17 @@ is asking about the vegetables. The slug travels on the wire rather than the nam
 holds the tree can name anything it is showing, and a page of fifty entries would otherwise repeat a
 handful of strings fifty times.
 
-**What stays open.** The tree is not editable through the interface yet — `place_in_category` exists
-and no screen calls it. And an ingredient an import invents is placed by nobody, which is the same
-gap Phase 8b has for per-locale names on the same rows.
+**Since built.** The entry screen carries the picker, so an admin files what the seed could not — an
+import invents an entry for a line that resolved to nothing, and nothing places that. `category` on
+`Correction` is omittable *and* `None`-able like the density beside it: saving a corrected kind must
+not unplace the food, and clearing a placement is a real correction because the wrong aisle is worse
+than none. A slug this instance does not know leaves the placement alone rather than clearing it.
+
+The Academy's ingredient section is shelved by it, which is the hierarchy the review asked for:
+*Ingredients > Vegetables > Carrot*. The shelf is **read from the registry, never stored on the
+page** — where a carrot sits is a fact about the carrot, and a page holding its own copy would be a
+second answer to drift from the first ([ADR-061](#adr-061-an-ingredient-page-names-its-entry-and-never-restates-what-the-registry-computes-on)).
+Techniques stay lettered: a technique is not a food and has nowhere to sit.
+
+**What stays open.** Nothing places an ingredient an import invents until a person does, which is
+the same gap Phase 8b has for per-locale names on the same rows.

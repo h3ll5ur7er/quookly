@@ -93,6 +93,63 @@ class TestBrowsing:
         body = (await client.get(ACADEMY, params={"kind": "technique"}, headers=cook)).json()
         assert len(body) == stocked
 
+    async def test_a_page_about_a_food_says_where_that_food_sits(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        """So the Academy can be read as *Ingredients > Vegetables > Carrot* rather than as
+        one flat alphabet of everything anybody has explained.
+
+        Taken from the registry rather than stored on the page: where a carrot sits is a
+        fact about the carrot, and a page that kept its own copy would be a second answer
+        to drift from the first (ADR-061, ADR-067).
+        """
+        from quookly.access import ingredient as registry
+        from quookly.contracts.ingredient import IngredientKind, Origin
+
+        await registry.add_category(slug="vegetables", names={"en-GB": "Vegetables"})
+        await registry.add_category(
+            slug="vegetables-fresh",
+            names={"en-GB": "Fresh vegetables"},
+            parent_slug="vegetables",
+        )
+        await registry.register(
+            slug="carrot",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={"en-GB": ["carrot"]},
+            origin=Origin.SEED,
+            category_slug="vegetables-fresh",
+        )
+        written = await client.post(
+            ACADEMY,
+            json={
+                "slug": "about-carrot",
+                "kind": "ingredient",
+                "about": "carrot",
+                "name": "carrot",
+                "spellings": [],
+                "summary": "Sweet, and better raw than most people think.",
+                "explanation": "Roots. They keep for weeks in the cold and the dark.",
+                "caution": None,
+                "name_matches": True,
+            },
+            headers=cook,
+        )
+        assert written.status_code == 201, written.text
+
+        listed = (await client.get(ACADEMY, headers=cook)).json()
+        page = next(one for one in listed if one["slug"] == "about-carrot")
+        assert page["category_slug"] == "vegetables-fresh"
+
+    async def test_a_page_about_doing_something_sits_nowhere(
+        self, client: AsyncClient, cook: dict[str, str], stocked: int
+    ) -> None:
+        """A technique is not a food and has no aisle. Absent rather than a bucket, which
+        is the same rule the registry follows for a food nobody has placed."""
+        listed = (await client.get(ACADEMY, params={"kind": "technique"}, headers=cook)).json()
+        assert listed
+        assert all(one["category_slug"] is None for one in listed)
+
     async def test_signing_in_is_not_required(self, client: AsyncClient, stocked: int) -> None:
         """Changed deliberately (ADR-063). What `blanch` means is not a household's, and
         keeping it behind the door turned a link to a page into a link to a sign-in form.

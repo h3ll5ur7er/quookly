@@ -67,10 +67,20 @@
   font-size: var(--text-lg);
 }
 
+/* The shelf, between the section and the letters. Where the registry puts the food, so
+   the Academy reads as Ingredients > Vegetables > Carrot (X6, ADR-067). */
+.academy__shelf {
+  margin-block: var(--space-5) 0;
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  font-weight: 700;
+}
+
 /* Sticky, so the letter you are under is on screen while you scroll past it. Under the
    section heading rather than over it: a letter belongs to a section. */
 .academy__letter {
   position: sticky;
+  font-family: var(--font-body);
   top: 0;
   z-index: 1;
   margin-block: var(--space-4) var(--space-2);

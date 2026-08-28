@@ -85,3 +85,60 @@ test('the registry can be narrowed to one part of the shelf', async ({ page }) =
   // on the server rather than in the browser.
   await expect(page.locator('.registry__count')).not.toContainText('896');
 });
+
+test('an admin can file a food where the seed could not', async ({ page }) => {
+  /* The half seeding cannot do. The published table places what it shipped; an import
+     creates an entry for a line that resolved to nothing, and nothing places that — so the
+     person correcting it is the only one who can (ADR-067). */
+  await page.goto('/settings/registry/carrot');
+  await expect(page.locator('#category')).toHaveValue('vegetables-fresh-vegetables');
+
+  await page.locator('#category').selectOption('vegetables-dried-vegetables');
+  // Awaited on the response rather than on the click: the click resolves the moment it is
+  // dispatched, and reloading on top of an in-flight PUT cancels it.
+  const saved = page.waitForResponse(
+    (one) => one.url().endsWith('/registry/carrot') && one.request().method() === 'PUT',
+  );
+  await page.getByRole('button', { name: 'Save corrections' }).click();
+  expect((await saved).status()).toBe(200);
+
+  await page.reload();
+  await expect(page.locator('#category')).toHaveValue('vegetables-dried-vegetables');
+
+  // Put it back, so this file leaves the shared registry as it found it.
+  await page.locator('#category').selectOption('vegetables-fresh-vegetables');
+  const restored = page.waitForResponse(
+    (one) => one.url().endsWith('/registry/carrot') && one.request().method() === 'PUT',
+  );
+  await page.getByRole('button', { name: 'Save corrections' }).click();
+  expect((await restored).status()).toBe(200);
+});
+
+test('the Academy reads as Ingredients > Vegetables > Carrot', async ({ page, request }) => {
+  const written = await request.post('/api/v1/academy', {
+    headers,
+    data: {
+      slug: 'about-carrot',
+      kind: 'ingredient',
+      about: 'carrot',
+      name: 'carrot',
+      spellings: [],
+      summary: 'Sweet, and better raw than most people think.',
+      explanation: 'Roots. They keep for weeks somewhere cold and dark.',
+      caution: null,
+      name_matches: false,
+    },
+  });
+  expect([201, 409], await written.text()).toContain(written.status());
+  // Read, so it leaves the "waiting to be read" list and joins the Academy proper. An
+  // unreviewed page is readable but is not what anybody browsing the shelves sees
+  // (ADR-060).
+  await request.post('/api/v1/academy/about-carrot/approved', { headers });
+
+  await page.goto('/academy');
+  await page.getByRole('button', { name: 'Ingredients' }).click();
+
+  // The shelf the registry puts the carrot on, above the letter it starts with.
+  await expect(page.locator('.academy__shelf', { hasText: 'Fresh vegetables' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'carrot', exact: true })).toBeVisible();
+});

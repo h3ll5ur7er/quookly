@@ -253,10 +253,11 @@ frais*. 120 nodes, 19 sections, all 864 shipped foods placed, nobody translated 
 What it unblocked: the shopping list is in aisles (S2), and the registry can be narrowed to one part
 of the shelf, which is what nine hundred entries needed beyond letters (X6, G2).
 
-**Still not the Academy hierarchy.** The tree describes *foods*, and the Academy is pages — a
-technique page has no category, and an ingredient page's category is the food's rather than the
-page's. Reading the Academy as `Academy > Ingredients > Vegetables > Carrot` is now possible and is
-its own piece of work. Nothing is blocking it any more.
+**And the Academy hierarchy, since built.** The ingredient section is shelved by where the registry
+puts each food — *Ingredients > Vegetables > Carrot*, with letters inside each shelf. Techniques stay
+lettered, because a technique is not a food and has nowhere to sit. The shelf is read from the
+registry rather than stored on the page: a page holding its own copy of where a carrot sits would be
+a second answer to drift from the first.
 
 ## What this review still does not cover
 
