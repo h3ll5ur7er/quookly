@@ -60,3 +60,28 @@
 .nutrition__credit a {
   color: inherit;
 }
+
+/* Two questions, one at a time. The same segmented shape the recipe list uses for its
+   sort, so a cook meets it twice and learns it once. */
+.nutrition__which {
+  display: inline-flex;
+  margin-block-end: var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.nutrition__which button {
+  border: 0;
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  color: var(--on-surface);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nutrition__which--on {
+  background: var(--primary);
+  color: var(--on-primary);
+}

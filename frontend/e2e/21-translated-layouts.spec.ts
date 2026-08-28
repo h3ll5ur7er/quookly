@@ -22,20 +22,6 @@ test.beforeAll(async ({ request }) => {
   headers = { Authorization: `Bearer ${await claim(request)}` };
 });
 
-/**
- * One overflow that is already written down, and is not this file's to fix.
- *
- * The nutrition table's two-column layout is wider than a phone **in English** — 429 px in
- * a 412 px viewport — so it is a plain layout bug rather than a translation one. French
- * makes it worse (447 px), because *RECETTE ENTIÈRE* is longer than *WHOLE RECIPE*, which
- * is the shape of the whole problem: the translation did not cause it, it exposed it.
- *
- * Listed rather than excluded, and rather than deleting the check that found it. Remove
- * these lines when D7 in `doc/12-visual-review.md` is fixed, and this file will hold the
- * table to a phone's width in three languages from then on.
- */
-const KNOWN = ['.nutrition__table', 'thead', 'tr ends at', 'th ends at'];
-
 /** Where a cook actually spends time, plus the two screens with the densest tables. */
 const SCREENS = ['/', '/recipes', '/recipes/1', '/pantry', '/shopping', '/academy', '/settings'];
 
@@ -75,10 +61,7 @@ for (const locale of ['en-GB', 'de-CH', 'fr-CH'] as const) {
           }
           return out.slice(0, 4);
         });
-        for (const one of overflow) {
-          if (KNOWN.some((known) => one.includes(known))) continue;
-          spilling.push(`${path}  ${one}`);
-        }
+        for (const one of overflow) spilling.push(`${path}  ${one}`);
       }
 
       expect(

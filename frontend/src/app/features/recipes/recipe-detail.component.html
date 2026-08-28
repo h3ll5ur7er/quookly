@@ -146,12 +146,6 @@
       </ul>
     </section>
 
-    <!-- After the ingredients and before the method: it follows from the quantities above
-         it, and a cook deciding whether to make something has already read them. -->
-    @if (shown.nutrition; as nutrition) {
-      <app-nutrition [nutrition]="nutrition" />
-    }
-
     <!-- After the method, not before it: adapting a recipe is something a cook decides
          once they have read what it is. -->
     <section class="recipe__vary" aria-labelledby="vary-heading">
@@ -226,6 +220,13 @@
         }
       </ol>
     </section>
+
+    <!-- After the method, not before it. It was the longest block on the page and it sat
+         between the ingredients and the thing the cook came for. Nutrition is reference;
+         the method is the recipe (D3). -->
+    @if (shown.nutrition; as nutrition) {
+      <app-nutrition [nutrition]="nutrition" />
+    }
 
     <!-- --- correcting it, and putting it away ------------------------------------- -->
     <section class="recipe__keeping" aria-labelledby="keeping-heading">
@@ -322,7 +323,7 @@
       } @else {
         <button
           type="button"
-          class="action action--quiet"
+          class="destructive"
           (click)="archiving.set(true)"
           i18n="@@recipeArchive"
         >

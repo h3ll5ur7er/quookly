@@ -164,10 +164,21 @@ button.destructive {
   margin-top: var(--space-5);
 }
 
-/* Quiet, and small. It is the second thing to do with a meal, after opening it. */
+/* Quiet, and small. It is the second thing to do with a meal, after opening it.
+   Inside the card's outline rather than floating under it: it has to sit beside the cell
+   rather than inside it, because an anchor inside an anchor is not a thing a browser can
+   make sense of — but sitting outside made it look attached to nothing (P1).
+
+   `--colour-muted` is not a token this application defines, so the colour here had been
+   doing nothing at all. */
 .week__show {
-  display: inline-block;
-  padding-block: var(--space-2);
-  color: var(--colour-muted);
+  display: block;
+  margin-block-start: calc(var(--space-2) * -1);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border: 1px solid var(--border);
+  border-block-start: 0;
+  border-end-start-radius: var(--radius-md);
+  border-end-end-radius: var(--radius-md);
+  color: var(--on-surface-muted);
   font-size: var(--text-sm);
 }

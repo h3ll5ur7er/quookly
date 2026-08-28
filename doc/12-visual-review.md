@@ -34,7 +34,7 @@ These are worth doing first because each one fixes several screens at once.
 | ~~**X4**~~ **done** | Give recipes a picture. | There is no imagery anywhere in the product. The recipe list is a wall of text where every card is the same shape and weight, and a cook scanning for tonight's dinner is reading rather than looking. `MediaAccess` already exists and the Academy already uses it. | A |
 | **X5** | Decide what a short page does with its space. | Home, Shopping, Pantry, the Academy page and the cooking step all end with 40–60% of the viewport empty. Each currently looks like a page that failed to load. Options: centre the content block, or fill the space with the next useful thing. | C |
 | **X6** | Structure the long lists. | The Academy is 11,000 px tall on a phone and the registry is 19,000 px — both flat, unstyled, ungrouped, unvirtualised. An alphabet index, sticky letter headings, or paging would all help; doing nothing is not an option once the registry has 900 entries, which it does today. | B |
-| **X7** | Style destructive actions as destructive, consistently. | "Delete this plan" is plain red text and looks like a link; "Put it away" is an outlined button; "Put this page away" is a browser-default button. Three treatments for the same kind of action. | A |
+| ~~**X7**~~ **done** | Style destructive actions as destructive, consistently. | "Delete this plan" is plain red text and looks like a link; "Put it away" is an outlined button; "Put this page away" is a browser-default button. Three treatments for the same kind of action. | A |
 | **X8** | Make absence quiet. | Five identical dashed "Nothing planned" rows on the plan, a full-width grey block on the recipe list saying nobody has been recorded. Absence currently takes more space and weight than presence. | C |
 
 ---
@@ -60,12 +60,12 @@ These are worth doing first because each one fixes several screens at once.
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **D1** | Do not print hands-on and total when they are the same number. | "at least 30 min HANDS-ON / at least 30 min TOTAL" reads as a mistake. | C |
+| ~~**D1**~~ **done** | Do not print hands-on and total when they are the same number. | "at least 30 min HANDS-ON / at least 30 min TOTAL" reads as a mistake. | C |
 | **D2** | Make the yield stepper symmetrical. | The `+` is a filled circle and the `−` is bare text. They do the same kind of thing in opposite directions. | C |
-| **D3** | Move nutrition below the method. | It is the longest block on the page and sits between the ingredients and the thing the cook came for. Nutrition is reference; the method is the recipe. | B |
+| ~~**D3**~~ **done** | Move nutrition below the method. | It is the longest block on the page and sits between the ingredients and the thing the cook came for. Nutrition is reference; the method is the recipe. | B |
 | **D4** | The "make a version" input clips its own placeholder. | "Dairy-free, without the eggs" is cut off mid-word — the field is too narrow beside its button on a phone. | D |
 | ~~**D5**~~ **done** | Match the widths of "Correct this recipe" and "Put it away". | They are stacked, both outlined, and different widths, which reads as accidental. | C |
-| **D7** | **The nutrition table is wider than a phone.** | Measured, not eyeballed: `.nutrition__table` ends at **429 px in a 412 px viewport**, so the right-hand column is clipped off-screen and the two figures run together — *"1460 kJ / 347 kcal5840 kJ / 1389 kcal"*. It happens whenever a recipe has both a per-serving and a whole-recipe column. **In English as well**, which I only found by capturing an English control: I had assumed it was translation length and it is not. French is worse (447 px) because *RECETTE ENTIÈRE* is longer, so translation exposes it rather than causing it. `e2e/21-translated-layouts.spec.ts` measures this and carries it as a known exception; delete the exception when this is fixed. | |
+| ~~**D7**~~ **done** | **The nutrition table is wider than a phone.** | Measured, not eyeballed: `.nutrition__table` ends at **429 px in a 412 px viewport**, so the right-hand column is clipped off-screen and the two figures run together — *"1460 kJ / 347 kcal5840 kJ / 1389 kcal"*. It happens whenever a recipe has both a per-serving and a whole-recipe column. **In English as well**, which I only found by capturing an English control: I had assumed it was translation length and it is not. French is worse (447 px) because *RECETTE ENTIÈRE* is longer, so translation exposes it rather than causing it. `e2e/21-translated-layouts.spec.ts` measures this and carries it as a known exception; delete the exception when this is fixed. | |
 | **D6** | "Start cooking now" shall transfer the number of servings instead of always taking the default saved in the recipe. | The cook has just changed the yield and expects that to be reflected in the cooking step. | B |
 ## Cooking mode
 
@@ -73,17 +73,17 @@ The strongest screen in the product. Large type, clear progress, one obvious nex
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **C1** | Close the gap between the instruction and the timer. | On a short step there is a third of a screen of nothing between them. Centring the instruction in the space above the timer would keep both in the same glance. | B |
+| ~~**C1**~~ **done** | Close the gap between the instruction and the timer. | On a short step there is a third of a screen of nothing between them. Centring the instruction in the space above the timer would keep both in the same glance. | B |
 | **C2** | Give the temperature the weight the timer has. | For a baking step, 160 °C matters as much as 40:00 and is a small grey chip beside a very large clock. | B |
 
 ## Plan
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **P1** | Move "Show recipe" inside its meal card, or make the card itself the link. | It currently sits outside and below the card, attached to nothing. | B |
+| ~~**P1**~~ **done** | Move "Show recipe" inside its meal card, or make the card itself the link. | It currently sits outside and below the card, attached to nothing. | B |
 | **P2** | Make an empty day tappable, and say so. | Five dashed rows reading "Nothing planned" are the obvious place to add a meal, and the only way to add one is a button at the bottom of the page. | D |
 | **P3** | Decide whether the shopping list belongs here. | It is embedded at the foot of the plan *and* has its own tab in the navigation. One of the two should win. | D |
-| **P4** | Style "Delete this plan" as destructive (see X7). | | B|
+| ~~**P4**~~ **done, with X7** | Style "Delete this plan" as destructive (see X7). | | B|
 
 ## Pantry
 
@@ -253,3 +253,14 @@ All four gaps from the first pass are closed, and what they turned up is above. 
   entry, Academy write, Academy term chooser.
 - **A native speaker's read.** L4 and L5 are as far as I can usefully go on wording, and your answers
   to both are recorded in those rows.
+
+## Found while fixing
+
+- **`cook.component.scss` is at the style budget ceiling.** The build errors above 8 kB and warns
+  above 4 kB; that file is 8.02 kB, so it has been sitting on the error threshold and any new rule
+  fails the build. C1 was fitted into a rule that already existed rather than raising the budget or
+  shaving bytes off unrelated rules. It is one stylesheet holding the prep list, the step view, the
+  timer area, the finished screen and the offline states — worth splitting, and worth an item of its
+  own next time.
+- **`.week__show` was coloured with `--colour-muted`, which this application does not define.** The
+  declaration had been doing nothing since it was written. Fixed with P1.

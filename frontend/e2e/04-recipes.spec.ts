@@ -115,9 +115,11 @@ test.describe('a recipe', () => {
      * direction that does not make anybody late (ADR-037).
      */
     const timing = page.locator('app-timing').first();
-    await expect(timing.getByText('at least 30 min')).toHaveCount(2);
-    await expect(timing.getByText('hands-on')).toBeVisible();
-    await expect(timing.getByText('total')).toBeVisible();
+    // Once, not twice. Hands-on and total are the same number on a recipe with no waiting
+    // in it, and printing both under two labels reads as a mistake (D1).
+    await expect(timing.getByText('at least 30 min')).toHaveCount(1);
+    await expect(timing.getByText('hands-on, start to finish')).toBeVisible();
+    await expect(timing.getByText('total')).toHaveCount(0);
   });
 
   test('marks nothing on a recipe that never said what its steps ask', async ({ page }) => {
@@ -277,22 +279,29 @@ test.describe('what a recipe contains', () => {
   test('reads like a packet', async ({ page }) => {
     const panel = page.locator('app-nutrition');
     await expect(panel.getByRole('heading', { name: 'Nutrition' })).toBeVisible();
-    await expect(panel.getByText('Per serving')).toBeVisible();
-    await expect(panel.getByText('Whole recipe')).toBeVisible();
+    // The two are a toggle now rather than two columns: two columns of figures plus a
+    // label are wider than a phone (D7). Asked for as buttons, because the table also
+    // carries the chosen one as a column header for a screen reader.
+    await expect(panel.getByRole('button', { name: 'Per serving' })).toBeVisible();
+    await expect(panel.getByRole('button', { name: 'Whole recipe' })).toBeVisible();
     await expect(panel.getByRole('rowheader', { name: 'of which saturates' })).toBeVisible();
   });
 
   test('the figures follow from the quantities', async ({ page }) => {
     /* 225 g of butter at 82.3 g fat per 100 g is 185 g before anything else is added, so
-       the whole tray is over that and one of eight servings is well under it. */
-    const whole = await page
-      .locator('app-nutrition tbody tr')
-      .filter({ hasText: 'Fat' })
-      .first()
-      .locator('td')
-      .last()
-      .textContent();
-    expect(parseFloat(whole!)).toBeGreaterThan(185);
+       the whole tray is over that and one of eight servings is well under it.
+
+       Asked for through the toggle, which is also how a cook asks: the two figures are one
+       chosen column now rather than two side by side (D7). */
+    const fat = () =>
+      page.locator('app-nutrition tbody tr').filter({ hasText: 'Fat' }).first().locator('td');
+
+    const grams = async () => parseFloat((await fat().textContent())!);
+    expect(await grams()).toBeLessThan(185);
+
+    await page.getByRole('button', { name: 'Whole recipe' }).click();
+    // Polled rather than read once: the click and the re-render are not the same tick.
+    await expect.poll(grams).toBeGreaterThan(185);
   });
 
   test('says who measured it', async ({ page }) => {

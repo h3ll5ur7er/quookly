@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { TimingView } from '@api';
 import { span } from './duration';
 
@@ -22,6 +22,19 @@ import { span } from './duration';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TimingComponent {
+  /**
+   * Whether the two readings say the same thing.
+   *
+   * A recipe with no waiting in it has hands-on equal to total, and printing both reads as
+   * a mistake — the same number twice under two different labels (D1).
+   */
+  protected readonly sameBoth = computed(() => {
+    const { hands_on: work, total: clock } = this.timing();
+    // Compared as rendered rather than as seconds: two durations that print the same are
+    // the same to a reader, which is whose problem this is.
+    return work != null && clock != null && this.span(work) === this.span(clock);
+  });
+
   readonly timing = input.required<TimingView>();
 
   /** Set on a list row, where the labels are more words than a scanning eye wants. */

@@ -2,24 +2,53 @@
   <h2 id="nutrition-heading" class="nutrition__title" i18n="@@nutritionHeading">Nutrition</h2>
 
   @if (counted()) {
+    <!-- One column at a time, chosen, rather than two side by side. Two columns of figures
+         plus a label are wider than a phone — 429 px in a 412 px viewport, so the right one
+         was clipped and the two numbers ran together (D7). A cook is asking one of the two
+         questions at a time anyway. -->
+    @if (hasServing()) {
+      <div class="nutrition__which" role="group" aria-labelledby="nutrition-heading">
+        <button
+          type="button"
+          [class.nutrition__which--on]="perServing()"
+          [attr.aria-pressed]="perServing()"
+          (click)="perServing.set(true)"
+          i18n="@@nutritionPerServing"
+        >
+          Per serving
+        </button>
+        <button
+          type="button"
+          [class.nutrition__which--on]="!perServing()"
+          [attr.aria-pressed]="!perServing()"
+          (click)="perServing.set(false)"
+          i18n="@@nutritionPerRecipe"
+        >
+          Whole recipe
+        </button>
+      </div>
+    }
+
     <table class="nutrition__table">
-      <thead>
+      <thead class="visually-hidden">
         <tr>
-          <th scope="col"><span class="visually-hidden" i18n="@@nutritionWhat">Nutrient</span></th>
-          @if (hasServing()) {
-            <th scope="col" i18n="@@nutritionPerServing">Per serving</th>
-          }
-          <th scope="col" i18n="@@nutritionPerRecipe">Whole recipe</th>
+          <th scope="col" i18n="@@nutritionWhat">Nutrient</th>
+          <th scope="col">
+            @if (showingServing()) {
+              <ng-container i18n="@@nutritionPerServing">Per serving</ng-container>
+            } @else {
+              <ng-container i18n="@@nutritionPerRecipe">Whole recipe</ng-container>
+            }
+          </th>
         </tr>
       </thead>
       <tbody>
         @for (row of rows(); track row.nutrient) {
           <tr [class.nutrition__of-which]="row.indented">
             <th scope="row">{{ row.label }}</th>
-            @if (hasServing()) {
-              <td class="numeric">{{ row.perServing }}</td>
-            }
-            <td class="numeric">{{ row.perRecipe }}</td>
+            <td class="numeric">
+              {{ showingServing() ? row.perServing : row.perRecipe }}
+            </td>
           </tr>
         }
       </tbody>

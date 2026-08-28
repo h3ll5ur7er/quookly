@@ -46,12 +46,37 @@ describe('NutritionComponent', () => {
     fixture = TestBed.createComponent(NutritionComponent);
   });
 
-  it('gives a plate and a tray as two columns', () => {
+  it('gives a plate and a tray, one at a time', () => {
+    /* Two columns of figures plus a label are wider than a phone — 429 px in a 412 px
+       viewport, so the right one was clipped and the two numbers ran together (D7). A cook
+       is asking one of the two questions at a time anyway. */
     render(panel());
     expect(text()).toContain('Per serving');
     expect(text()).toContain('Whole recipe');
+
+    // The plate first: it is the number that means something on a recipe making twelve.
     expect(text()).toContain('349 kcal');
+    expect(text()).not.toContain('2792 kcal');
+  });
+
+  it('shows the tray when the tray is asked for', () => {
+    render(panel());
+    const buttons: HTMLButtonElement[] = Array.from(
+      fixture.nativeElement.querySelectorAll('.nutrition__which button'),
+    );
+    buttons.find((one) => one.textContent?.includes('Whole recipe'))!.click();
+    fixture.detectChanges();
+
     expect(text()).toContain('2792 kcal');
+    expect(text()).not.toContain('349 kcal');
+  });
+
+  it('says which of the two is being shown', () => {
+    render(panel());
+    const plate: HTMLButtonElement = fixture.nativeElement.querySelector(
+      '.nutrition__which button',
+    );
+    expect(plate.getAttribute('aria-pressed')).toBe('true');
   });
 
   it('drops the serving column where the recipe does not say how many it feeds', () => {

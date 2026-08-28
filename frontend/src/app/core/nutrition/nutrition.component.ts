@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { Nutrient, NutrientView, NutritionView } from '@api';
 import { ENERGY, NUTRIENTS, OF_WHICH, nutrientLabel } from './labels';
 
@@ -29,6 +29,17 @@ interface Row {
 })
 export class NutritionComponent {
   readonly nutrition = input.required<NutritionView>();
+
+  /**
+   * Which figure is being read: one serving, or the whole recipe.
+   *
+   * Per serving by default, because that is the number a cook is usually asking for — and
+   * the one that means anything on a recipe that makes twelve of something.
+   */
+  protected readonly perServing = signal(true);
+
+  /** The whole-recipe column is the only one there is when a recipe has no serving. */
+  protected readonly showingServing = computed(() => this.hasServing() && this.perServing());
 
   protected readonly hasServing = computed(() => this.nutrition().per_serving !== null);
 

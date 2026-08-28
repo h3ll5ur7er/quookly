@@ -1,17 +1,27 @@
 <!-- Not a list: these are two readings of one thing, and a screen reader announcing
      "list, 2 items" adds structure where there is none. -->
 <p class="timing" [class.timing--compact]="compact()">
-  @if (timing().hands_on; as work) {
+  <!-- One reading where the two are the same number. "at least 30 min hands-on / at least
+       30 min total" reads as a mistake, and it is on every recipe with no waiting in it
+       (D1). -->
+  @if (sameBoth()) {
     <span class="timing__part">
-      <span class="timing__value numeric">{{ span(work) }}</span>
-      <span class="timing__label" i18n="@@timingHandsOn">hands-on</span>
+      <span class="timing__value numeric">{{ span(timing().total!) }}</span>
+      <span class="timing__label" i18n="@@timingAllHandsOn">hands-on, start to finish</span>
     </span>
-  }
-  @if (timing().total; as clock) {
-    <span class="timing__part">
-      <span class="timing__value numeric">{{ span(clock) }}</span>
-      <span class="timing__label" i18n="@@timingTotal">total</span>
-    </span>
+  } @else {
+    @if (timing().hands_on; as work) {
+      <span class="timing__part">
+        <span class="timing__value numeric">{{ span(work) }}</span>
+        <span class="timing__label" i18n="@@timingHandsOn">hands-on</span>
+      </span>
+    }
+    @if (timing().total; as clock) {
+      <span class="timing__part">
+        <span class="timing__value numeric">{{ span(clock) }}</span>
+        <span class="timing__label" i18n="@@timingTotal">total</span>
+      </span>
+    }
   }
 </p>
 
