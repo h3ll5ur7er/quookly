@@ -34,3 +34,14 @@ export function unitsFor(kind: IngredientKind): readonly string[] {
 export function defaultUnitFor(kind: IngredientKind): string {
   return unitsFor(kind)[0];
 }
+
+/**
+ * A stored decimal as it reads.
+ *
+ * The backend keeps densities to four places because the arithmetic needs them, so
+ * "1.3800" is what crosses the wire. Nobody writes a density that way, and a screen that
+ * prints stored precision is showing its schema rather than its answer.
+ */
+export function tidy(value: string): string {
+  return value.includes('.') ? value.replace(/0+$/, '').replace(/\.$/, '') : value;
+}

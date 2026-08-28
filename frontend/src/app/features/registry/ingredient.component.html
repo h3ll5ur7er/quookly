@@ -181,8 +181,10 @@
           <dt i18n="@@entryDensity2">Density</dt>
           <dd>
             @if (it.density) {
-              <span class="numeric">{{ it.density }}</span>
-              <ng-container i18n="@@entryGramsPerMl">g/ml</ng-container>
+              <span class="entry__density">
+                <span class="numeric">{{ tidy(it.density) }}</span>
+                <ng-container i18n="@@entryGramsPerMl">g/ml</ng-container>
+              </span>
             } @else {
               <span i18n="@@entryNoDensity">Not recorded</span>
             }

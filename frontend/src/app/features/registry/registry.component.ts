@@ -4,6 +4,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { DuplicateView, IngredientsService, Origin, RegistryEntryView } from '@api';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
+import { tidy } from '../../core/measure/units';
 import { AuthStore } from '../../core/auth/auth.store';
 import { resemblanceLabel } from '../../core/registry/labels';
 import { kindLabel } from '../../core/measure/kinds';
@@ -56,6 +57,7 @@ export class RegistryComponent {
   protected readonly Origin = Origin;
 
   protected readonly kindLabel = kindLabel;
+  protected readonly tidy = tidy;
   protected readonly resemblanceLabel = resemblanceLabel;
   protected readonly allergenLabel = allergenLabel;
 

@@ -158,3 +158,10 @@
   color: var(--on-surface);
   font-weight: 600;
 }
+
+/* Two elements with a newline between them, and Angular drops whitespace-only text nodes
+   — so "1.38 g/ml" printed as "1.38g/ml". */
+.entry__density {
+  display: inline-flex;
+  gap: 0.35em;
+}

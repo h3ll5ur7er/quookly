@@ -106,7 +106,7 @@
 
                 @if (entry.density) {
                   <span class="registry__density">
-                    <span class="numeric">{{ entry.density }}</span>
+                    <span class="numeric">{{ tidy(entry.density) }}</span>
                     <ng-container i18n="@@registryGramsPerMl">g/ml</ng-container>
                   </span>
                 }

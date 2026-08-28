@@ -32,10 +32,22 @@
 
 /* --- the list --------------------------------------------------------------------------- */
 
+/* A flex row with a gap, not three inline elements with newlines between them: Angular
+   drops whitespace-only text nodes, so "Showing 50 of 896" rendered as "Showing50of896".
+   The same idiom the recipe list's yield line uses, and for the same reason. */
 .registry__count {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em;
+  margin-block-end: var(--space-3);
   color: var(--on-surface-muted);
   font-size: var(--text-sm);
-  margin-block-end: var(--space-3);
+}
+
+/* Same reason: "1.38" and "g/ml" are two elements and the space between them is not one. */
+.registry__density {
+  display: inline-flex;
+  gap: 0.35em;
 }
 
 .registry__list {
@@ -76,9 +88,18 @@
   background: var(--surface);
 }
 
+/* The name leads, but quietly: a red underlined link on every row of nine hundred is a
+   page of underlines. It is still the target, and it says so under the pointer. */
 .registry__name {
   flex: 1 1 10rem;
+  color: var(--on-surface);
   font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--primary);
+    text-decoration: underline;
+  }
 }
 
 .registry__facts {

@@ -13,6 +13,7 @@ import {
 } from '@api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
+import { tidy } from '../../core/measure/units';
 import { AuthStore } from '../../core/auth/auth.store';
 import { resemblanceLabel } from '../../core/registry/labels';
 import { ALLERGENS, allergenLabel } from '../../core/dietary/labels';
@@ -68,6 +69,7 @@ export class IngredientComponent {
   protected readonly kinds = KINDS;
   protected readonly allergens = ALLERGENS;
   protected readonly kindLabel = kindLabel;
+  protected readonly tidy = tidy;
   protected readonly resemblanceLabel = resemblanceLabel;
   protected readonly allergenLabel = allergenLabel;
 
