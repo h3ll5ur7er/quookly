@@ -955,3 +955,58 @@ class TestCategories:
             category_slug="sea-vegetables",
         )
         assert entry.category_id is None
+
+
+class TestNamingAnEntryNobodyTranslated:
+    """What an English cook sees of an entry a German import invented.
+
+    An import creates an entry for a line that resolved to nothing, named in the language
+    of the page it came from and no other (ADR-029). Until somebody names it in the rest,
+    every other reader on the instance falls back — and what they fell back to was the
+    *slug*, which is a database key.
+
+    Showing `creme-fraiche` where `crème fraîche` is on the row is strictly worse than
+    showing the German: one is a word in a language, the other is punctuation and hyphens.
+    """
+
+    async def an_import_invented(self) -> None:
+        await registry.register(
+            slug="kartoffeln",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={GERMAN: ["Kartoffeln"]},
+            origin=Origin.USER,
+        )
+
+    async def test_a_reader_gets_a_name_rather_than_a_key(self) -> None:
+        await self.an_import_invented()
+        page = await registry.browse(ENGLISH)
+        assert [one.name for one in page.entries] == ["Kartoffeln"]
+
+    async def test_the_readers_own_language_still_wins(self) -> None:
+        await self.an_import_invented()
+        await registry.name_in("kartoffeln", ENGLISH, ["potatoes"])
+        page = await registry.browse(ENGLISH)
+        assert [one.name for one in page.entries] == ["potatoes"]
+
+    async def test_the_seeded_language_is_preferred_over_a_third(self) -> None:
+        """The order matters: the reader's, then the one the registry was seeded in, then
+        whatever the entry has. A French name is better than a key and worse than the
+        English every other entry on the instance is named in."""
+        await registry.register(
+            slug="creme-fraiche",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={"fr-CH": ["crème fraîche"], ENGLISH: ["soured cream"]},
+            origin=Origin.USER,
+        )
+        page = await registry.browse(GERMAN)
+        assert [one.name for one in page.entries] == ["soured cream"]
+
+    async def test_one_entry_read_alone_falls_back_the_same_way(self) -> None:
+        """`resolve` and `browse` must not disagree about what a thing is called."""
+        await self.an_import_invented()
+        found = await registry.resolve("Kartoffeln", GERMAN)
+        assert found is not None
+        entries = await registry.for_ids([found.id], ENGLISH)
+        assert entries[found.id].name == "Kartoffeln"

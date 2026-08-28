@@ -586,11 +586,16 @@ construction, and ingredient names resolve per locale through the registry. What
   format 5, with the language a recipe is written in and every language the registry names an
   ingredient in — three sides of one gap, and useless apart: translations that travel with no
   record of the source language cannot be used when they land
-- ~~Per-locale names for ingredients an import created~~ **Half built.** A document now carries every
-  language its registry knew, so a Quookly-to-Quookly import is as readable as a seeded entry. What
-  is still owed is the *other* source: an entry invented from a scraped web page has one name in one
-  language and nothing to derive the others from but a model — the same lazy, stored, per-locale
-  shape a recipe translation has, one layer down
+- ~~Per-locale names for ingredients an import created~~ **Built.** A document carries every language
+  its registry knew, so a Quookly-to-Quookly import is as readable as a seeded entry — and an entry
+  invented from a scraped page is now named in the other languages this build ships, at the moment
+  it is invented. Eagerly, unlike a recipe's prose, because the arithmetic is different: a handful of
+  two-word round trips at a known moment against a model call threaded through five screens.
+
+  A cheaper half of it needed no model at all. An entry named only in German fell back, for every
+  other reader, to the **slug** — so an English cook saw `creme-fraiche` where `crème fraîche` was
+  sitting on the row. The fallback now tries the reader's language, then the one the registry was
+  seeded in, then any name the entry has.
 
 Placed here rather than earlier because it is worth having only once there is a corpus worth
 reading, and because it depends on nothing in Phase 9.

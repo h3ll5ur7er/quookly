@@ -42,7 +42,7 @@ def read_seed_file(locale: str = DEFAULT_SEED_LOCALE) -> dict[str, Any]:
 #: Without these a German recipe resolves nothing: every ingredient becomes a new entry
 #: nobody has classified, and a recipe made of flour, milk and eggs loses its allergens
 #: entirely — the registry knew the answer and was asked the wrong word (FR-10).
-TRANSLATED_LOCALES = ("de-CH", "fr-CH")
+TRANSLATED_LOCALES = tuple(one for one in registry.SHIPPED_LOCALES if one != registry.SOURCE_LOCALE)
 
 
 def read_names_file(locale: str) -> dict[str, list[str]]:

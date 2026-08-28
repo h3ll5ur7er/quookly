@@ -103,3 +103,69 @@ def _asked(original: Translatable, source: str, wanted: str) -> str:
 def _said(value: object) -> str:
     """One field, as text, with any link markup taken back out (ADR-059)."""
     return unlinked(value.strip()) if isinstance(value, str) else ""
+
+
+#: A runaway guard, and deliberately not a test of whether the answer is a *name*.
+#:
+#: There is no such test. The shipped registry's own names run to 103 characters —
+#: "yogurt substitute, soy-based. with fruit or flavour, with sugar, with calcium and
+#: vitamins fortified" is a published row, not an explanation — so any length that would
+#: reject a sentence would reject real food. This only catches an answer that has stopped
+#: being one, and what actually keeps the answer short is the instruction and `max_tokens`.
+LONGEST_NAME = 160
+
+#: Room for a word. A limit on how long a decoding loop may run before it is called one.
+ROOM_TO_NAME = 60
+
+NAME_SHAPE: dict[str, Any] = {
+    "type": "object",
+    "properties": {"name": {"type": "string"}},
+    "required": ["name"],
+}
+
+_NAMING = """You are naming one food in another language.
+
+Answer with the name a cook writes on a shopping list — nothing else. No article, no
+explanation, no alternatives, no notes about regional usage.
+
+If the food has no name in that language, give the name it is known by there, even where
+that is the original word. A borrowed word is a real answer.
+
+Singular or plural: keep whichever the given name uses."""
+
+
+async def name_of(name: str, source: str, wanted: str) -> str:
+    """One food's name in another language.
+
+    A different question from `render`, and it needed asking differently. A recipe is prose
+    and this is a **term**: an answer that reads as a sentence is a model that explained
+    the food rather than naming it, and storing that would put a paragraph where a recipe
+    line expects a word.
+
+    Returns the name unchanged where the two languages are the same — a round trip to be
+    told what a word already is.
+
+    Raises `NothingToTranslate` where the answer is empty or has run away. Refusing is the
+    right failure: an entry keeps the one name it has, and the reader falls back to it
+    rather than to whatever came back.
+
+    Note what is *not* checked: whether the answer is a name rather than a description.
+    That cannot be told by length — the shipped registry has published names of a hundred
+    characters — so the instruction is where it is asked for, and a wrong answer is
+    correctable on the entry screen like any other.
+    """
+    if source == wanted or not name.strip():
+        return name
+
+    answer, _ = await model.complete_structured(
+        f"Name this food in {wanted}. It is written here in {source}.\n\n{name}",
+        NAME_SHAPE,
+        system=_NAMING,
+        max_tokens=ROOM_TO_NAME,
+        temperature=FAITHFUL,
+    )
+
+    said = _said(answer.get("name"))
+    if not said or len(said) > LONGEST_NAME:
+        raise NothingToTranslate(f"the answer was not a name for {name!r}: {said!r}")
+    return said

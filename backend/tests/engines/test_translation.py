@@ -139,3 +139,89 @@ class TestTranslatingIntoTheLanguageItIsAlreadyIn:
 
         monkeypatch.setattr(inference, "complete_structured", never)
         assert await translation.render(ORIGINAL, "de", "de") == ORIGINAL
+
+
+class TestNamingAFood:
+    """Naming one ingredient in another language.
+
+    A different question from translating a recipe, and it needed its own asking. A recipe
+    is prose and this is a **term**: "Kartoffeln" wants to come back as "potatoes", not as
+    a sentence about potatoes, and not with an article the registry would then store as
+    part of the name.
+
+    It is what an entry a German import invented is missing. It arrives named in the
+    language of the page it came from and in no other (ADR-029), so every other reader on
+    the instance sees a word they cannot read — or, before this, the slug.
+    """
+
+    async def test_a_name_comes_back_as_a_name(self, monkeypatch: MonkeyPatch) -> None:
+        asked: list[str] = []
+
+        async def answering(
+            prompt: str, schema: dict[str, Any], system: str | None = None, **rest: Any
+        ) -> tuple[dict[str, Any], Completion]:
+            asked.append(prompt)
+            return {"name": "potatoes"}, Completion(text="{}", model="test")
+
+        monkeypatch.setattr(inference, "complete_structured", answering)
+
+        said = await translation.name_of("Kartoffeln", "de", "en")
+
+        assert said == "potatoes"
+        assert "Kartoffeln" in asked[0]
+
+    async def test_the_same_language_is_not_asked_about(self, monkeypatch: MonkeyPatch) -> None:
+        """A round trip to be told what a word already is."""
+
+        async def refuse(*rest: Any, **more: Any) -> tuple[dict[str, Any], Completion]:
+            raise AssertionError("should not have asked")
+
+        monkeypatch.setattr(inference, "complete_structured", refuse)
+        assert await translation.name_of("Kartoffeln", "de", "de") == "Kartoffeln"
+
+    async def test_an_empty_answer_is_refused(self, monkeypatch: MonkeyPatch) -> None:
+        """Storing a blank name would make the entry nameless in that language, which is
+        worse than having no row at all — the fallback can find another language."""
+
+        async def answering(
+            prompt: str, schema: dict[str, Any], system: str | None = None, **rest: Any
+        ) -> tuple[dict[str, Any], Completion]:
+            return {"name": "   "}, Completion(text="{}", model="test")
+
+        monkeypatch.setattr(inference, "complete_structured", answering)
+
+        with pytest.raises(NothingToTranslate):
+            await translation.name_of("Kartoffeln", "de", "en")
+
+    async def test_an_answer_that_has_run_away_is_refused(self, monkeypatch: MonkeyPatch) -> None:
+        """A guard against a model that did not stop, and deliberately *not* a test of
+        whether the answer is a name: the shipped registry has published names a hundred
+        characters long, so no length can tell one from a description. Asking for a name is
+        the instruction's job, and a wrong one is correctable like any other."""
+
+        async def answering(
+            prompt: str, schema: dict[str, Any], system: str | None = None, **rest: Any
+        ) -> tuple[dict[str, Any], Completion]:
+            return {"name": "potato " * 40}, Completion(text="{}", model="test")
+
+        monkeypatch.setattr(inference, "complete_structured", answering)
+
+        with pytest.raises(NothingToTranslate):
+            await translation.name_of("Kartoffeln", "de", "en")
+
+    async def test_a_long_published_name_is_kept(self, monkeypatch: MonkeyPatch) -> None:
+        """The registry ships one at 103 characters. A guard that rejected it would reject
+        the food this instance already knows about."""
+        published = (
+            "yogurt substitute, soy-based. with fruit or flavour, with sugar, "
+            "with calcium and vitamins fortified"
+        )
+
+        async def answering(
+            prompt: str, schema: dict[str, Any], system: str | None = None, **rest: Any
+        ) -> tuple[dict[str, Any], Completion]:
+            return {"name": published}, Completion(text="{}", model="test")
+
+        monkeypatch.setattr(inference, "complete_structured", answering)
+
+        assert await translation.name_of("Joghurtalternative", "de", "en") == published

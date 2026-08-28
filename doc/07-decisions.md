@@ -2876,6 +2876,21 @@ imported from it. A human translation is somebody's work, and an export that los
 The same line answers ADR-032's question about published recipes when Phase 8 arrives: a person's
 words travel, a machine's are re-derived where they are read.
 
+**4. A food's name is asked for differently from a recipe's prose.**
+
+`TranslationEngine.name_of` is a separate question with a separate instruction, because a recipe is
+prose and a name is a **term**: "Kartoffeln" wants to come back as "potatoes", not as a sentence
+about potatoes. There is deliberately **no check that the answer is a name rather than a
+description** — the shipped registry's own published names run to a hundred characters, so any
+length that would reject a sentence would reject real food. The instruction asks for a name, a
+runaway answer is refused, and a wrong one is correctable on the entry screen like any other.
+
+It runs **eagerly**, at the moment an import invents an entry, where a recipe's prose is translated
+lazily on first read. The difference is arithmetic rather than principle: a recipe eager means every
+recipe times every language, most of it never read; this is a handful of two-word round trips at a
+known moment, and the lazy version would be a model call threaded through the five screens that each
+need a name. It fails quietly — naming is a convenience and the import is not.
+
 **Since built.** A cook may correct a translation, which is what the storage was always shaped for
 and nothing could do: `PUT /recipes/{id}/translations/{locale}` stores one with `by_hand` set, and
 the screen puts the author's own words beside every field — proof-reading a translation without the

@@ -159,13 +159,19 @@ test.describe('a recipe', () => {
   });
 
   test('scales when the yield changes', async ({ page }) => {
+    /* One click, one assertion, six times. Firing all six and asserting once was a race
+       against the server rather than a test of the stepper: `step()` computes from the
+       yield *on screen*, so two clicks landing before the first answer both ask for
+       eleven — and the page settles wherever it settles. It passed alone and failed under
+       load, which is the shape of a race and not of a defect. */
     await expect(page.getByText('300 ml')).toBeVisible();
-    for (let i = 0; i < 6; i++) {
+    const makes = page.getByText('Makes').locator('..');
+
+    for (let wanted = 11; wanted >= 6; wanted -= 1) {
       await page.getByRole('button', { name: 'Fewer' }).click();
+      await expect(makes.getByText(String(wanted), { exact: true })).toBeVisible();
     }
-    await expect(
-      page.getByText('Makes').locator('..').getByText('6', { exact: true }),
-    ).toBeVisible();
+
     await expect(page.getByText('150 ml')).toBeVisible();
   });
 

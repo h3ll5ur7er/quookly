@@ -51,6 +51,14 @@ from quookly.utilities.text import fold, normalise
 # across languages would let `pain` resolve to bread for an English cook.
 SOURCE_LOCALE = "en-GB"
 
+#: Every language this build ships a registry in, source first.
+#:
+#: Here beside `SOURCE_LOCALE` because it is the same fact seen from the other side, and
+#: because two managers need it — seeding, which names the shipped entries, and importing,
+#: which names the ones it invents. A constant in one of them would have made the other
+#: import a manager, which is the call the architecture does not allow.
+SHIPPED_LOCALES = (SOURCE_LOCALE, "de-CH", "fr-CH")
+
 
 def _to_contract(
     row: IngredientRow,
@@ -521,21 +529,32 @@ async def _folded_matches(
 async def name_for(active: AsyncSession, ingredient_id: int, locale: str, fallback: str) -> str:
     """What to call this ingredient in `locale` — the canonical name, not an alias.
 
+    Falls back in three steps: the reader's language, the one the registry was seeded in,
+    then **any name the entry has**. The third step is what an entry a German import
+    invented needs — it is named in German and nothing else, and falling through to the
+    caller's `fallback` meant showing the *slug*. `creme-fraiche` where `crème fraîche`
+    sits on the row is punctuation and hyphens where there was a word (ADR-029).
+
     Shared with `recipe` access, which resolves a line's ingredient the same way.
     """
-    for candidate_locale in (locale, SOURCE_LOCALE):
-        canonical = (
-            await active.exec(
-                select(IngredientNameRow).where(
-                    col(IngredientNameRow.ingredient_id) == ingredient_id,
-                    col(IngredientNameRow.locale) == candidate_locale,
-                    col(IngredientNameRow.is_canonical).is_(True),
-                )
+    canonical = (
+        await active.exec(
+            select(IngredientNameRow)
+            .where(
+                col(IngredientNameRow.ingredient_id) == ingredient_id,
+                col(IngredientNameRow.is_canonical).is_(True),
             )
-        ).first()
-        if canonical is not None:
-            return str(canonical.name)
-    return fallback
+            .order_by(
+                case(
+                    (col(IngredientNameRow.locale) == locale, 0),
+                    (col(IngredientNameRow.locale) == SOURCE_LOCALE, 1),
+                    else_=2,
+                ),
+                col(IngredientNameRow.id),
+            )
+        )
+    ).first()
+    return fallback if canonical is None else str(canonical.name)
 
 
 async def canonical_names_within(
@@ -543,9 +562,11 @@ async def canonical_names_within(
 ) -> dict[int, str]:
     """Canonical names for many ingredients at once, in one query.
 
-    The same fallback as `name_for` — the requested locale, then the locale the registry
-    was seeded in — resolved for a whole recipe rather than a line at a time. An id with
-    no name in either locale is absent, and the caller falls back to its slug.
+    The same fallback as `name_for`, resolved for a whole recipe rather than a line at a
+    time: the requested locale, the one the registry was seeded in, then any name the entry
+    has. An id with no canonical name at all is absent, and the caller falls back to its
+    slug — but an entry a German import invented has one, and showing its slug instead was
+    showing a database key.
     """
     if not ingredient_ids:
         return {}
@@ -553,17 +574,19 @@ async def canonical_names_within(
         await active.exec(
             select(IngredientNameRow).where(
                 col(IngredientNameRow.ingredient_id).in_(ingredient_ids),
-                col(IngredientNameRow.locale).in_([locale, SOURCE_LOCALE]),
                 col(IngredientNameRow.is_canonical).is_(True),
             )
         )
     ).all()
 
+    def preference(row: IngredientNameRow) -> tuple[int, int]:
+        rank = 0 if row.locale == locale else 1 if row.locale == SOURCE_LOCALE else 2
+        return rank, row.id or 0
+
     resolved: dict[int, str] = {}
-    for candidate in (locale, SOURCE_LOCALE):
-        for row in rows:
-            if row.locale == candidate and row.ingredient_id not in resolved:
-                resolved[row.ingredient_id] = row.name
+    for row in sorted(rows, key=preference):
+        if row.ingredient_id not in resolved:
+            resolved[row.ingredient_id] = row.name
     return resolved
 
 
@@ -738,7 +761,21 @@ async def browse(
     """
     local_name = aliased(IngredientNameRow)
     seeded_name = aliased(IngredientNameRow)
-    display = func.coalesce(local_name.name, seeded_name.name, IngredientRow.slug)
+    # The third step of `name_for`'s fallback, expressed in SQL because this one orders by
+    # it: any name the entry has, before giving up and showing the slug. An entry a German
+    # import invented is named in German and nothing else, and a database key is not a
+    # name (ADR-029).
+    any_name = (
+        select(IngredientNameRow.name)
+        .where(
+            col(IngredientNameRow.ingredient_id) == IngredientRow.id,
+            col(IngredientNameRow.is_canonical).is_(True),
+        )
+        .order_by(col(IngredientNameRow.id))
+        .limit(1)
+        .scalar_subquery()
+    )
+    display = func.coalesce(local_name.name, seeded_name.name, any_name, IngredientRow.slug)
     # Names that open with a digit go last. The shipped table names its drinks by strength
     # — "11 vol% wine white", "12 vol% wine red" — and plain alphabetical order puts every
     # one of them in front of the letter A, so the registry's first screen was a wine list

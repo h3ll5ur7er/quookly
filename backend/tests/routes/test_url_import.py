@@ -28,6 +28,7 @@ from quookly.api import app
 from quookly.contracts.errors import ContentRefused, ContentUnreachable, InferenceNotConfigured
 from quookly.contracts.ingredient import Allergen, IngredientKind, Origin
 from quookly.contracts.web import ReadableContent
+from quookly.engines import translation
 from quookly.managers import seed
 from quookly.utilities.configuration import get_settings
 from tests.support import sign_up
@@ -103,15 +104,24 @@ async def larder() -> dict[str, int]:
 _NOT_GIVEN: list[dict[str, Any]] = [RECIPE_BLOCK]
 
 
+#: What a model says when asked to name a food. `None` is an instance with none, which is
+#: the ordinary self-hosted case and must not cost anybody an import.
+_NAMED = {"Bergkäse": "mountain cheese"}
+
+
 def serving(
     monkeypatch: MonkeyPatch,
     *,
     structured: list[dict[str, Any]] = _NOT_GIVEN,
     text: str = "some readable prose",
     language: str | None = None,
+    naming: dict[str, str] | None = _NAMED,
 ) -> None:
     """Answer the fetch with this page. An empty `structured` means a page with no
-    metadata at all, which is the blog case — so it must not fall back to the default."""
+    metadata at all, which is the blog case — so it must not fall back to the default.
+
+    `naming` answers the model when the import names a new entry in this instance's other
+    languages; `None` is an instance without one."""
 
     async def fetched(url: str) -> ReadableContent:
         return ReadableContent(
@@ -119,6 +129,13 @@ def serving(
         )
 
     monkeypatch.setattr(web, "fetch_readable", fetched)
+
+    async def named(name: str, source: str, wanted: str) -> str:
+        if naming is None:
+            raise InferenceNotConfigured("no model here")
+        return naming.get(name, name)
+
+    monkeypatch.setattr(translation, "name_of", named)
 
 
 def failing(monkeypatch: MonkeyPatch, failure: Exception) -> None:
@@ -327,6 +344,63 @@ class TestAPageInAnotherLanguage:
         )
         outcome = (await client.post(IMPORT, json={"url": PAGE}, headers=cook)).json()
         assert outcome["ingredients_added"] == []
+
+    async def test_an_entry_it_invents_is_named_in_the_languages_this_instance_ships(
+        self, client: AsyncClient, cook: dict[str, str], monkeypatch: MonkeyPatch
+    ) -> None:
+        """An import creates an entry for a line that resolved to nothing, named in the
+        language of the page and no other — so every other reader on the instance saw a
+        word they could not read (ADR-029, Phase 8b).
+
+        Named here rather than lazily on read, unlike a recipe's prose: it is a handful of
+        short round trips at a known moment, and the alternative is a model call threaded
+        through five different screens that each need a name.
+        """
+        await seed.stock_registry()
+        serving(
+            monkeypatch,
+            language="de",
+            structured=[
+                {
+                    **RECIPE_BLOCK,
+                    "name": "Rösti",
+                    "recipeYield": "4 Portionen",
+                    "recipeIngredient": ["500 g Bergkäse"],
+                }
+            ],
+        )
+
+        outcome = (await client.post(IMPORT, json={"url": PAGE}, headers=cook)).json()
+        assert outcome["ingredients_added"] == ["Bergkäse"]
+
+        # An English cook on the same instance gets a word, not the German and not a slug.
+        listed = (await client.get("/api/v1/registry?search=mountain", headers=cook)).json()
+        assert [one["name"] for one in listed["entries"]] == ["mountain cheese"]
+
+    async def test_an_instance_with_no_model_keeps_the_one_name_it_has(
+        self, client: AsyncClient, cook: dict[str, str], monkeypatch: MonkeyPatch
+    ) -> None:
+        """Naming is a convenience and the import is not. A model that cannot be reached
+        must not cost a cook the recipe they pasted a link to."""
+        await seed.stock_registry()
+        serving(
+            monkeypatch,
+            language="de",
+            naming=None,
+            structured=[
+                {
+                    **RECIPE_BLOCK,
+                    "name": "Rösti",
+                    "recipeYield": "4 Portionen",
+                    "recipeIngredient": ["500 g Bergkäse"],
+                }
+            ],
+        )
+
+        outcome = await client.post(IMPORT, json={"url": PAGE}, headers=cook)
+
+        assert outcome.status_code == 201, outcome.text
+        assert outcome.json()["ingredients_added"] == ["Bergkäse"]
 
     async def test_the_allergens_survive_the_translation(
         self, client: AsyncClient, cook: dict[str, str], monkeypatch: MonkeyPatch

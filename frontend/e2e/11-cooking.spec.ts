@@ -1,6 +1,6 @@
 import { claim, emptyKitchen, noSessionOpen, signIn } from './support';
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 /**
  * Cooking mode, on a phone, against a real instance.
@@ -97,6 +97,21 @@ async function cooking(page: import('@playwright/test').Page): Promise<void> {
   await page.getByRole('button', { name: 'Cook this now' }).click();
   await expect(page).toHaveURL(/\/cook\/\d+$/);
   await expect(page.getByRole('heading', { name: 'Get everything ready' })).toBeVisible();
+}
+
+/**
+ * Go on one step at a time, waiting for each to land.
+ *
+ * Clicking `Next` five times in a row was a race against the server rather than a walk
+ * through a recipe: the screen computes the next position from the one it is *showing*, so
+ * a click that lands before the previous answer asks for the step it is already on. It
+ * passed alone and failed under load, which is the shape of a race and not of a defect.
+ */
+async function onwards(page: Page, steps: number): Promise<void> {
+  for (let step = 1; step <= steps; step += 1) {
+    await page.getByRole('button', { name: 'Next' }).click();
+    await expect(page.locator('.cook__place')).toContainText(String(step + 1));
+  }
 }
 
 test.describe('getting ready', () => {
@@ -225,9 +240,7 @@ test.describe('a step at a time', () => {
   test('a step a cook can walk away from says so', async ({ page }) => {
     await cooking(page);
     await page.getByRole('button', { name: 'Start cooking' }).click();
-    for (let i = 0; i < 3; i++) {
-      await page.getByRole('button', { name: 'Next' }).click();
-    }
+    await onwards(page, 3);
     await expect(page.locator('.cook__instruction')).toContainText('Chill until firm');
     await expect(page.locator('.cook__asks')).toHaveText('you can walk away');
   });
@@ -369,9 +382,7 @@ test.describe('finishing', () => {
   test('the last step offers to finish rather than to go on', async ({ page }) => {
     await cooking(page);
     await page.getByRole('button', { name: 'Start cooking' }).click();
-    for (let i = 0; i < 5; i++) {
-      await page.getByRole('button', { name: 'Next' }).click();
-    }
+    await onwards(page, 5);
     await expect(page.getByRole('button', { name: 'I am done' })).toBeVisible();
   });
 
@@ -381,9 +392,7 @@ test.describe('finishing', () => {
        checked here is that cooking reached it at all. */
     await cooking(page);
     await page.getByRole('button', { name: 'Start cooking' }).click();
-    for (let i = 0; i < 5; i++) {
-      await page.getByRole('button', { name: 'Next' }).click();
-    }
+    await onwards(page, 5);
     await page.getByRole('button', { name: 'I am done' }).click();
     await expect(page.getByRole('heading', { name: 'That is dinner' })).toBeVisible();
     await page.screenshot({ path: 'e2e/screenshots/cook-done.png', fullPage: true });

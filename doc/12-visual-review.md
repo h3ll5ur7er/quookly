@@ -278,6 +278,13 @@ All four gaps from the first pass are closed, and what they turned up is above. 
 
 ## Found while fixing
 
+- **Two e2e tests were racing the server, not testing the screen.** The yield stepper's clicked
+  *Fewer* six times in a row and asserted once; cooking mode's clicked *Next* five times. Both
+  screens compute the next state from the one they are **showing**, so a click landing before the
+  previous answer asks for the state it is already in — and the page settles wherever it settles.
+  They passed alone and failed under load, which is the shape of a race rather than of a defect.
+  Both now click once and wait once, six and five times.
+
 - **`cook.component.scss` is at the style budget ceiling.** The build errors above 8 kB and warns
   above 4 kB; that file is 8.02 kB, so it has been sitting on the error threshold and any new rule
   fails the build. C1 was fitted into a rule that already existed rather than raising the budget or

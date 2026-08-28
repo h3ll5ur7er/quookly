@@ -20,7 +20,7 @@ from quookly.access import pantry as pantry_access
 from quookly.access import preferences as preference_access
 from quookly.access import recipe as recipe_access
 from quookly.access import translation as translation_access
-from quookly.access.ingredient import SOURCE_LOCALE
+from quookly.access.ingredient import SHIPPED_LOCALES, SOURCE_LOCALE
 from quookly.contracts.discovery import Candidate, SuggestionView
 from quookly.contracts.eater import Eater
 from quookly.contracts.errors import (
@@ -773,7 +773,36 @@ async def _resolve(lines: list[InterpretedLine], locale: str) -> tuple[dict[str,
         )
         resolved[line.ingredient] = created.id
         added.append(line.ingredient)
+        await _name_everywhere(created.slug, line.ingredient, locale)
     return resolved, added
+
+
+async def _name_everywhere(slug: str, name: str, source: str) -> None:
+    """Name a newly invented entry in the other languages this instance ships.
+
+    An import creates an entry for a line that resolved to nothing, named in the language
+    of the page it came from and no other (ADR-029) — so every other reader on the instance
+    saw a word they could not read, and before the fallback was fixed, saw the slug.
+
+    Eagerly, unlike a recipe's prose, and the difference is the arithmetic. A recipe is
+    translated lazily because eager means every recipe times every language, most of it
+    never read. This is a handful of two-word round trips at a known moment, and the lazy
+    version would be a model call threaded through the five screens that each need a name.
+
+    Failing quietly, because naming is a convenience and the import is not: a model that
+    cannot be reached must not cost a cook the recipe they pasted a link to. The entry
+    keeps the one name it has and the reader falls back to it.
+    """
+    for wanted in SHIPPED_LOCALES:
+        if wanted == source:
+            continue
+        try:
+            said = await translation.name_of(name, source.split("-")[0], wanted.split("-")[0])
+        except (InferenceNotConfigured, InferenceUnavailable, NothingToTranslate) as quiet:
+            log.info("not naming %s in %s: %s", slug, wanted, quiet)
+            return
+        if said != name:
+            await registry.name_in(slug, wanted, [said])
 
 
 #: Which of Quookly's locales a page's declared language maps to. A page saying `de` is
