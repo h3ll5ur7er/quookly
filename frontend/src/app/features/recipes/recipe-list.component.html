@@ -1,6 +1,19 @@
 <main class="page recipes">
   <h1 i18n="@@recipesHeading">Recipes</h1>
 
+  <!-- The three things this screen exists to start, above the list rather than below it.
+       They used to sit under every card a cook owns — on a laptop, below a nine-card grid
+       with an empty sidebar beside the top of the page (R4, W4). -->
+  <nav class="recipes__ways" aria-label="Add a recipe" i18n-aria-label="@@recipesWaysLabel">
+    <a class="action" routerLink="/recipes/new" i18n="@@recipesWrite">Write one yourself</a>
+    <a class="action action--quiet" routerLink="/recipes/import" i18n="@@recipesImport">
+      Import from a link
+    </a>
+    <a class="action action--quiet" routerLink="/recipes/invent" i18n="@@recipesInvent">
+      Write me a recipe
+    </a>
+  </nav>
+
   <div class="recipes__find">
     <label class="visually-hidden" for="search" i18n="@@recipesSearchLabel">
       Search your recipes
@@ -143,12 +156,4 @@
       Put away
     </button>
   </div>
-
-  <a class="action" routerLink="/recipes/new" i18n="@@recipesWrite">Write one yourself</a>
-  <a class="action action--quiet" routerLink="/recipes/import" i18n="@@recipesImport"
-    >Import from a link</a
-  >
-  <a class="action action--quiet" routerLink="/recipes/invent" i18n="@@recipesInvent">
-    Write me a recipe
-  </a>
 </main>

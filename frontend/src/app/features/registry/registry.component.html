@@ -131,21 +131,34 @@
             }
 
             <!-- The safety rule, at the last place it can be broken. An empty list means
-                 two different things and only one of them is "safe" (ADR-006). -->
+                 two different things and only one of them is "safe" (ADR-006).
+
+                 Marked rather than merely worded. Both states used to be a grey chip with
+                 a sentence in it, and on a screenful of entries the published table cannot
+                 answer for — spirits, wines — every row read the same, so "not checked"
+                 looked like the only answer the registry ever gives (G5). -->
             @if (!entry.classified) {
               <span class="registry__allergens">
-                <span class="chip chip--unknown" i18n="@@registryUnclassified">
-                  Not checked for allergens
+                <span
+                  class="chip chip--unknown"
+                  title="Nobody has looked, so this is not a list of what it does not contain."
+                  i18n-title="@@registryUnclassifiedWhy"
+                >
+                  <span aria-hidden="true">?</span>
+                  <ng-container i18n="@@registryUnclassified">Not checked</ng-container>
                 </span>
               </span>
             } @else if (entry.allergens.length === 0) {
               <span class="registry__allergens">
-                <span class="chip" i18n="@@registryNoAllergens">No allergens</span>
+                <span class="chip chip--clear">
+                  <span aria-hidden="true">✓</span>
+                  <ng-container i18n="@@registryNoAllergens">None of the fourteen</ng-container>
+                </span>
               </span>
             } @else {
               <span class="registry__allergens">
                 @for (allergen of entry.allergens; track allergen) {
-                  <span class="chip">{{ allergenLabel(allergen) }}</span>
+                  <span class="chip chip--medical">{{ allergenLabel(allergen) }}</span>
                 }
               </span>
             }

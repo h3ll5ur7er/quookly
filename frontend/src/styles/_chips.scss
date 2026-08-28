@@ -45,3 +45,11 @@
   border-inline-start-color: var(--warning);
   color: var(--warning);
 }
+
+/* Somebody looked and found nothing. The opposite fact from `--unknown`, and it has to
+   *look* opposite: the two were a grey chip and a grey chip, and on a screenful of
+   entries the published table cannot answer for they read as one state (G5). */
+.chip--clear {
+  border-inline-start-color: var(--success);
+  color: var(--success);
+}

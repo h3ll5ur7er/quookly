@@ -80,10 +80,13 @@
                   Nobody has classified this yet, so this is not a list of what it does not contain.
                 </span>
               } @else if (food.allergens.length === 0) {
-                <span i18n="@@academyEntryNoAllergens">None of the fourteen.</span>
+                <span class="chip chip--clear">
+                  <span aria-hidden="true">✓</span>
+                  <ng-container i18n="@@academyEntryNoAllergens">None of the fourteen</ng-container>
+                </span>
               } @else {
                 @for (one of food.allergens; track one) {
-                  <span class="chip">{{ allergenLabel(one) }}</span>
+                  <span class="chip chip--medical">{{ allergenLabel(one) }}</span>
                 }
               }
             </dd>

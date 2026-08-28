@@ -134,8 +134,18 @@ describe('RegistryComponent', () => {
     it('is not confused with one that carries none', async () => {
       asked().flush(page([WATER]));
       await fixture.whenStable();
-      expect(text()).toContain('No allergens');
+      expect(text()).toContain('None of the fourteen');
       expect(text()).not.toContain('Not checked');
+    });
+
+    it('marks the two states differently, not just words them differently', async () => {
+      /* Both were a grey chip with a sentence in it. On a screenful of entries the
+         published table cannot answer for — spirits, wines — every row read the same, so
+         "not checked" looked like the only answer the registry ever gives (G5). */
+      asked().flush(page([WATER, CREME]));
+      await fixture.whenStable();
+      expect(fixture.nativeElement.querySelector('.chip--clear')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('.chip--unknown')).not.toBeNull();
     });
 
     it('shows that its density is missing', async () => {

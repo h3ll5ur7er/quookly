@@ -59,6 +59,11 @@ extract-i18n:
 i18n:
     just _nvm "npm run check:i18n"
 
+# A template using a shared class must import the partial that defines it. Angular scopes
+# component styles, so without the import the class silently does nothing.
+shared-styles:
+    just _nvm "npm run check:shared-styles"
+
 # End-to-end, in a real browser, against the backend serving the built application.
 # Builds first: the suite exercises the artefact a self-hoster runs, not the dev server.
 e2e:
@@ -71,6 +76,7 @@ check:
     just typecheck
     just contrast
     just i18n
+    just shared-styles
     just test
 
 generate-openapi-client:

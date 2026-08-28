@@ -1,3 +1,10 @@
+/* The shared classes this template uses. Angular scopes component styles, so a template
+   that says `class="action"` without this gets a browser-default button — which is how the
+   whole Academy and the whole registry came to be unstyled (X1 in doc/12-visual-review.md).
+   `styles/page` is the one that defines `.page`, `.action` and `.notice`. */
+@use '../../../styles/page';
+@use '../../../styles/controls';
+
 .academy__what {
   max-width: 62ch;
   color: var(--on-surface-muted);
