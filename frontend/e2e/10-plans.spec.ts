@@ -89,6 +89,10 @@ test.describe('starting a week', () => {
     await page.locator('#ends_on').fill(SUNDAY);
     await page.getByRole('button', { name: 'Start planning' }).click();
     await expect(page).toHaveURL(/\/plans\/\d+$/);
+    // Folded away: it is what the week came to, not what the plan screen is being asked
+    // (P3). The summary is on the page; the list is one tap under it.
+    await expect(page.getByText('Shopping list')).toBeVisible();
+    await page.getByText('Shopping list').click();
     await expect(page.getByText('Nothing to buy')).toBeVisible();
   });
 

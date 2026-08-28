@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { PlanView, PlansService, ShoppingLineView } from '@api';
+import { PantryService, PlanView, PlansService, ShoppingLineView } from '@api';
 import { period } from '../../core/dates/format';
 
 /**
@@ -30,12 +30,19 @@ export class ShoppingComponent {
   /** How far through the shop a cook is. The useful question there is "am I nearly done". */
   protected readonly got = computed(() => this.lines().filter((line) => line.bought).length);
 
+  protected readonly inTheBasket = computed(() => this.lines().filter((line) => line.bought));
+
+  /** Whether a shop is being unpacked or a list is being emptied. */
+  protected readonly stowing = signal(false);
+  protected readonly stowFailed = signal(false);
+
   protected readonly forWeek = computed(() => {
     const plan = this.plan();
     return plan === null ? '' : period(plan.starts_on, plan.ends_on);
   });
 
   private readonly plans = inject(PlansService);
+  private readonly pantry = inject(PantryService);
 
   constructor() {
     this.plans.currentPlan().subscribe({
@@ -75,5 +82,73 @@ export class ShoppingComponent {
       next: (plan) => this.plan.set(plan),
       error: () => this.plan.set(before),
     });
+  }
+
+  /**
+   * Put what was bought on the shelf (S3).
+   *
+   * One lot per ticked line, with the quantity the line carries rather than one parsed
+   * back out of "200 g" — the server sends both halves for exactly this. Each line is
+   * unticked once its lot exists, so an interrupted unpack leaves the basket
+   * holding the things that are still in a bag rather than a list that lies either way.
+   *
+   * No date. A shopping list does not know when anything goes off, and a use-by invented
+   * here would be a use-by nobody wrote — the lot page is where a cook adds it.
+   */
+  protected stow(): void {
+    this.putAway(true);
+  }
+
+  /** Empty the basket without stocking anything (S4). */
+  protected clearBasket(): void {
+    this.putAway(false);
+  }
+
+  private putAway(toTheShelf: boolean): void {
+    const plan = this.plan();
+    if (plan === null || this.stowing()) {
+      return;
+    }
+    this.stowing.set(true);
+    this.stowFailed.set(false);
+    const queue = [...this.inTheBasket()];
+
+    const next = (): void => {
+      const line = queue.shift();
+      if (line === undefined) {
+        this.stowing.set(false);
+        return;
+      }
+      const untick = (): void =>
+        void this.plans.markBought(plan.id, line.ingredient_id, { bought: false }).subscribe({
+          next: (updated) => {
+            this.plan.set(updated);
+            next();
+          },
+          error: () => {
+            this.stowing.set(false);
+            this.stowFailed.set(true);
+          },
+        });
+
+      if (!toTheShelf) {
+        untick();
+        return;
+      }
+      this.pantry
+        .receiveStock({
+          ingredient_id: line.ingredient_id,
+          magnitude: line.magnitude,
+          unit: line.unit,
+        })
+        .subscribe({
+          next: untick,
+          error: () => {
+            this.stowing.set(false);
+            this.stowFailed.set(true);
+          },
+        });
+    };
+    next();
   }
 }

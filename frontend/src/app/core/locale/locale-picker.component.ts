@@ -22,21 +22,32 @@ import { LOCALES, preferredLocale, storeLocale } from './locale.store';
     </label>
   `,
   styles: `
+    :host {
+      display: block;
+    }
+
+    /* A fixed label column, so two of these stacked line their labels and their selects up
+       with each other. They were two inline rows of different widths with their labels at
+       different x positions, which is what made them read as adrift (Y2). */
     .picker {
-      display: inline-flex;
+      display: grid;
+      grid-template-columns: 4.5rem minmax(0, 1fr);
       align-items: center;
-      gap: var(--space-2);
+      gap: var(--space-3);
       font-size: var(--text-sm);
       color: var(--on-surface-muted);
     }
 
     .picker__select {
+      inline-size: 100%;
       min-height: 44px;
       padding: var(--space-2) var(--space-3);
       border: 1px solid var(--border-strong);
       border-radius: var(--radius-md);
       background: var(--surface-raised);
       color: var(--on-surface);
+      font: inherit;
+      font-size: var(--text-md);
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

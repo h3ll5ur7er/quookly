@@ -31,13 +31,16 @@
 }
 
 /* Language and theme for somebody who has not signed in yet. Set once, before there is an
-   account to keep them in — after that they live in Settings. */
+   account to keep them in — after that they live in Settings.
+
+   Stacked in a column of one width rather than sat side by side: two selects of different
+   widths with their labels at different x positions is what made them read as adrift at
+   the foot of the page (Y2). */
 .shell__aside {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: var(--space-3) var(--space-5);
+  display: grid;
+  gap: var(--space-3);
+  inline-size: min(22rem, 100%);
+  margin-inline: auto;
   padding: var(--space-5) var(--space-4);
   color: var(--on-surface-muted);
 }

@@ -463,6 +463,22 @@ class TestTheWeekBeingCookedNow:
         running = await client.get(f"{PLANS}/current", headers=cook)
         assert [line["quantity"] for line in running.json()["shopping"]] == ["200 g"]
 
+    async def test_a_shopping_line_carries_a_quantity_that_can_be_put_on_a_shelf(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, monkeypatch: MonkeyPatch
+    ) -> None:
+        """ "200 g" is for reading. Putting what was bought into the pantry needs the two
+        halves of it, and re-parsing a rendered string on the client is how a comma and a
+        full stop start meaning different things in different languages (S3)."""
+        monkeypatch.setattr(plan_manager, "_today", lambda: date(2026, 8, 26))
+        recipe_id = await a_recipe(client, cook, flour)
+        plan_id = await a_week(client, cook)
+        await client.put(f"{PLANS}/{plan_id}/slots", json=slot(recipe_id=recipe_id), headers=cook)
+
+        line = (await client.get(f"{PLANS}/current", headers=cook)).json()["shopping"][0]
+
+        assert line["magnitude"] == "200"
+        assert line["unit"] == "g"
+
     async def test_another_cooks_week_is_not_it(
         self, client: AsyncClient, cook: dict[str, str], neighbour: dict[str, str]
     ) -> None:

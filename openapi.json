@@ -6476,6 +6476,14 @@
             "type": "string",
             "title": "Quantity"
           },
+          "magnitude": {
+            "type": "string",
+            "title": "Magnitude"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
           "bought": {
             "type": "boolean",
             "title": "Bought",
@@ -6486,7 +6494,9 @@
         "required": [
           "ingredient_id",
           "name",
-          "quantity"
+          "quantity",
+          "magnitude",
+          "unit"
         ],
         "title": "ShoppingLineView",
         "description": "One thing to buy. Named and rendered as this cook reads quantities."

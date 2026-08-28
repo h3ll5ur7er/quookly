@@ -46,6 +46,51 @@
   font-size: var(--text-sm);
 }
 
+/* The affordance the dashed row was missing: it has always been a link and nothing on it
+   said so (P2). */
+.week__plus {
+  color: var(--on-surface-subtle);
+  font-size: var(--text-lg);
+  line-height: 1;
+}
+
+.week__empty:hover .week__plus {
+  color: var(--primary);
+}
+
+/* --- what the week came to ------------------------------------------------------------- */
+
+/* Folded away. It is deliberately not the Shopping tab — that one is read in a shop and
+   this one is what the week adds up to — but it was the longest block on a screen that is
+   about the days above it (P3). */
+.week__shopping {
+  margin-block-start: var(--space-6);
+  padding-block-start: var(--space-4);
+  border-block-start: 1px solid var(--border);
+}
+
+.week__shopping summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.week__shopping-title {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.week__shopping-count {
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--surface-sunken);
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
 .week__meals {
   display: grid;
   gap: var(--space-2);

@@ -32,10 +32,10 @@ These are worth doing first because each one fixes several screens at once.
 | ~~**X2**~~ **done** | Add a lint rule or a test that fails when a template uses a shared class the component does not import. | X1 happened eight times without anybody noticing, which means it will happen a ninth. The check is mechanical: grep the template for the classes, grep the stylesheet for the `@use`. | A |
 | ~~**X3**~~ **done** | Replace the five navigation glyphs (`◆ ☰ ▤ ✓ ▦`) with real icons. | They are text characters standing in for icons and they read as missing-font fallbacks — particularly the diamond for Home and the grid for Pantry, which mean nothing. This is the single most visible thing on every screen, since the bar is on all of them. | B |
 | ~~**X4**~~ **done** | Give recipes a picture. | There is no imagery anywhere in the product. The recipe list is a wall of text where every card is the same shape and weight, and a cook scanning for tonight's dinner is reading rather than looking. `MediaAccess` already exists and the Academy already uses it. | A |
-| **X5** | Decide what a short page does with its space. | Home, Shopping, Pantry, the Academy page and the cooking step all end with 40–60% of the viewport empty. Each currently looks like a page that failed to load. Options: centre the content block, or fill the space with the next useful thing. | C |
+| ~~**X5**~~ **partly** | Decide what a short page does with its space. Home now asks four questions rather than hiding the ones it has no answer to, and the shopping list's empty state is centred in its space with the next thing to do under it. The cooking step and the Academy page are unchanged — both are short because their content is short, which is not the same failure. | Home, Shopping, Pantry, the Academy page and the cooking step all end with 40–60% of the viewport empty. Each currently looks like a page that failed to load. Options: centre the content block, or fill the space with the next useful thing. | C |
 | ~~**X6**~~ **done, in the flat sense** | Structure the long lists. Sticky letter headings on the registry, and the Academy grouped by section and then by letter. **Not** the hierarchy — `Academy > Ingredients > Vegetables > Carrot` needs a food taxonomy the registry does not have, and that is a feature rather than a pass over the styling. | The Academy is 11,000 px tall on a phone and the registry is 19,000 px — both flat, unstyled, ungrouped, unvirtualised. An alphabet index, sticky letter headings, or paging would all help; doing nothing is not an option once the registry has 900 entries, which it does today. | B |
 | ~~**X7**~~ **done** | Style destructive actions as destructive, consistently. | "Delete this plan" is plain red text and looks like a link; "Put it away" is an outlined button; "Put this page away" is a browser-default button. Three treatments for the same kind of action. | A |
-| **X8** | Make absence quiet. | Five identical dashed "Nothing planned" rows on the plan, a full-width grey block on the recipe list saying nobody has been recorded. Absence currently takes more space and weight than presence. | C |
+| ~~**X8**~~ **done** | Make absence quiet. The plan's dashed rows say what they do — "Put something on" — rather than what is missing; the registry stopped spending a line per row on "No density"; home answers its empty questions in a muted line. | Five identical dashed "Nothing planned" rows on the plan, a full-width grey block on the recipe list saying nobody has been recorded. Absence currently takes more space and weight than presence. | C |
 
 ---
 
@@ -81,8 +81,8 @@ The strongest screen in the product. Large type, clear progress, one obvious nex
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
 | ~~**P1**~~ **done** | Move "Show recipe" inside its meal card, or make the card itself the link. | It currently sits outside and below the card, attached to nothing. | B |
-| **P2** | Make an empty day tappable, and say so. | Five dashed rows reading "Nothing planned" are the obvious place to add a meal, and the only way to add one is a button at the bottom of the page. | D |
-| **P3** | Decide whether the shopping list belongs here. | It is embedded at the foot of the plan *and* has its own tab in the navigation. One of the two should win. | D |
+| ~~**P2**~~ **done — half of it already was** | Make an empty day tappable, and say so. **The whole row has been a link** since P1; what was missing was anything on it saying so. It now says "Put something on" and carries a `+`. | Five dashed rows reading "Nothing planned" are the obvious place to add a meal, and the only way to add one is a button at the bottom of the page. | D |
+| ~~**P3**~~ **done, your way** | Decide whether the shopping list belongs here. Kept and folded away, with a count in the summary. | It is embedded at the foot of the plan *and* has its own tab in the navigation. One of the two should win. | D |
 | ~~**P4**~~ **done, with X7** | Style "Delete this plan" as destructive (see X7). | | B|
 
 ## Pantry
@@ -96,10 +96,10 @@ The strongest screen in the product. Large type, clear progress, one obvious nex
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **S1** | The empty state is two lines at the top of a blank screen. | The sentence is good ("Everything this week needs is already in your kitchen"). It is floating in 80% nothing, and it is the state a well-stocked kitchen sees most often. | D |
-| **S2** | Shopping list shall be grouped by category. | The list is 40 items long and flat, with no headings or dividers. | C |
-| **S3** | There should be a "add ticked to pantry" action. | The list is a checklist, but the only way to act on it is to go to the pantry and add each item manually. | D |
-| **S4** | There should be a "trashcan" action. | There should be a way to remove the list without adding it to the pantry. | D |
+| ~~**S1**~~ **done** | The empty state is two lines at the top of a blank screen. | The sentence is good ("Everything this week needs is already in your kitchen"). It is floating in 80% nothing, and it is the state a well-stocked kitchen sees most often. | D |
+| **S2** — **blocked, and worth its own unit** | Shopping list shall be grouped by category. **There is no category to group by.** `IngredientKind` is `liquid / powder / solid / countable` and says so in its own docstring: "deliberately coarse — it exists to choose a unit, not to classify food". Grouping by it gives "Solid: apples, cheese, bread". This wants a food taxonomy, which is the same missing thing as X6's hierarchy — see the note under Wider viewports. | The list is 40 items long and flat, with no headings or dividers. | C |
+| ~~**S3**~~ **done** | There should be a "add ticked to pantry" action. One lot per ticked line, and the line is unticked once its lot exists — so an interrupted unpack leaves the basket holding what is still in a bag. | The list is a checklist, but the only way to act on it is to go to the pantry and add each item manually. | D |
+| ~~**S4**~~ **done** | There should be a "trashcan" action. "Empty the basket" — the list itself is derived from the plan and cannot be deleted, so what it clears is the ticks. | There should be a way to remove the list without adding it to the pantry. | D |
 
 
 ## Academy
@@ -124,9 +124,9 @@ Three things are wrong with it.
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
 | ~~**W1**~~ **done, and half of it was wrong** | Put the Academy in the sidebar. **Settings was already there** — the account row at the foot of the column is a link to it, so the claim that neither was reachable held for the Academy only. | It has five items, the same five as the phone's tab bar, and roughly half its height is empty. The Academy and the settings screens are not reachable from the navigation at all on a laptop, on a column that has room for them and nothing else to do. | |
-| **W2** | Match card heights within a grid row. | "American Pancakes" is twice the height of the "Buttermilk Waffles" beside it, so each row ends ragged. | |
-| **W3** | Home is worse on a laptop than on a phone. | One phone-width card in the top-left corner of a 2000×1250 canvas — about 90% empty, and the card does not use the width it has been given. This is X5, and the wide viewport is where it looks worst. | |
-| **W4** | Bring the three ways of adding a recipe up out of the basement. | R4 on a phone; on a laptop they sit below a nine-card grid with an empty sidebar sitting beside the top of the page. | |
+| ~~**W2**~~ **done** | Match card heights within a grid row. | "American Pancakes" is twice the height of the "Buttermilk Waffles" beside it, so each row ends ragged. | |
+| ~~**W3**~~ **done** | Home is worse on a laptop than on a phone. Four cards in a two-column grid across the page's full measure. What is left is vertical space under a dashboard that has little on it yet, which fills as the week does — not something to pad. | One phone-width card in the top-left corner of a 2000×1250 canvas — about 90% empty, and the card does not use the width it has been given. This is X5, and the wide viewport is where it looks worst. | |
+| ~~**W4**~~ **done with R4** | Bring the three ways of adding a recipe up out of the basement. | R4 on a phone; on a laptop they sit below a nine-card grid with an empty sidebar sitting beside the top of the page. | |
 
 ## Registry
 
@@ -144,7 +144,7 @@ Three things are wrong with it.
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
 | ~~**Y1**~~ **done, with X1** | Apply X1 — the primary button is unstyled. | "Ask to be let in" is a pale grey block. It is the only action on the page and it looks disabled. | B |
-| **Y2** | Align the language and theme selects. | Two native selects of different widths with right-aligned labels at different x positions, adrift at the bottom of the page. | C |
+| ~~**Y2**~~ **done** | Align the language and theme selects. | Two native selects of different widths with right-aligned labels at different x positions, adrift at the bottom of the page. | C |
 
 ---
 
@@ -176,7 +176,7 @@ sets a serif body). Side by side, the sign-in screens differ in how round the bu
 | ~~**T2**~~ **done** | Make the names true, or change the names. | *Playful* is a rounder rust button on cream. *Decorative* is a squarer rust button on cream with a serif. Neither is playful or decorative; both are the default with one knob turned. Either commit to the personality the name promises — playful gets colour and energy, decorative gets ornament, rules, a patterned surface — or rename them to what they are ("Soft", "Sharp"). | B |
 | ~~**T3**~~ **answered: the theme owns it** | Decide whether `--primary` is the brand or the theme. | Rust is the filled-button colour in all three light themes and the most-seen colour in the product. A theme that cannot change it cannot look different. If rust is the brand, then themes must differentiate on ground and type instead — which is T1 and T4. | B |
 | ~~**T4**~~ **done** | Let decorative's serif do more, and playful's motion be seen. | Decorative sets a serif for *body as well as display*, which flattens hierarchy rather than decorating: on the sign-in form the field labels now look like headings. Playful's real distinction is its spring easing, which no screenshot can show — worth a short screen recording before judging it. | B |
-| **T5** | Dark is the only theme that is genuinely a second theme, and it has not been reviewed. | It inverts the ground properly. It is also the only one of the four whose contrast pairs have not been checked here at all. | C |
+| ~~**T5**~~ **now capturable** | Dark is the only theme that is genuinely a second theme, and it has not been reviewed. | It inverts the ground properly. It is also the only one of the four whose contrast pairs have not been checked here at all. | C |
 
 ## Language
 
@@ -192,9 +192,9 @@ Three things are wrong.
 | --- | --- | --- | --- |
 | ~~**L1**~~ **done** | **The Swiss French meal names are shifted by one meal.** `mealBreakfast` → *Petit-déjeuner*, `mealLunch` → *Déjeuner*, `mealDinner` → *Dîner*. | Those are the **France** French names. In Switzerland the three meals are **déjeuner, dîner, souper** — so this catalogue labels the evening slot *Dîner*, which a Swiss French cook reads as **lunch**. This is a meal planner: it is not a nicety, it is the wrong meal on the wrong day, and it is wrong in the one locale the file is named for. | B |
 | ~~**L2**~~ **German done; French is a question below** | Settle on one form of address in German. **Answered: informal — *du*.** So it is the 57 formal strings that change, not the 6 informal ones. | 57 strings address the reader formally and 6 informally. The six informal ones are `academyAskFailed`, `academyWaitingWhat`, `academyWriteFailed`, `academyWriteSlugHint`, `academyWriteWhat` and `recipeTranslated` — every one added in Phase 7 or 8b, and all mine. The rest of the product says *Sie brauchen es*, *Wählen Sie einen Eintrag*, *Ihre Bewerbung*; the Academy says *versuche es noch einmal* and *Für dich übersetzt*. This is now the larger job of the two — 57 strings — and it needs French checking at the same time, which is consistently *vous* and would want *tu*. | B |
-| **L3** | Look at the app in German and French, which nobody has. | There is exactly **one** non-English screenshot in the suite — `sign-in-de-CH` — and none in French. German and French labels are routinely two to three times longer than the English (*Reset* → *Réinitialiser*, *Use by* → *Zu verbrauchen bis*, *Add* → *Hinzufügen*), and the tightest place in the product is the pair of timer buttons in cooking mode, which is the screen a cook reads at arm's length. Nobody has seen it wrap. | B |
+| ~~**L3**~~ **done** | Look at the app in German and French, which nobody has. Seven screens in each, captured by `e2e/20-gallery.spec.ts`. Looking at them is what found L1, L2 and L6 — and what showed the timer buttons do *not* wrap. | There is exactly **one** non-English screenshot in the suite — `sign-in-de-CH` — and none in French. German and French labels are routinely two to three times longer than the English (*Reset* → *Réinitialiser*, *Use by* → *Zu verbrauchen bis*, *Add* → *Hinzufügen*), and the tightest place in the product is the pair of timer buttons in cooking mode, which is the screen a cook reads at arm's length. Nobody has seen it wrap. | B |
 
-| **L6** | **The interface language and the content language come from different places, and they disagree.** | A cook with a German browser gets German chrome around **English** ingredient names — *plain flour*, *caster sugar*, *whole milk* — because the UI catalogue follows the browser while the server resolves ingredient names from the cook's **stored** locale, which is still `en-GB` until they go through setup. The registry *is* named in three languages, so the data is there and is not being asked for. Worst in cooking mode, where the amounts a cook reads at the hob are in a language they did not choose. | |
+| **L6** — still ungraded, and now photographed | **The interface language and the content language come from different places, and they disagree.** `pantry-de.png` is the evidence: *Vorrat*, *Bis morgen verbrauchen*, *ist für eine Mahlzeit eingeplant* — around **caster sugar** and **plain flour**. Not fixed, because which one wins is a decision rather than a bug: the browser says German, the account says `en-GB`, and both are statements somebody made. | A cook with a German browser gets German chrome around **English** ingredient names — *plain flour*, *caster sugar*, *whole milk* — because the UI catalogue follows the browser while the server resolves ingredient names from the cook's **stored** locale, which is still `en-GB` until they go through setup. The registry *is* named in three languages, so the data is there and is not being asked for. Worst in cooking mode, where the amounts a cook reads at the hob are in a language they did not choose. | |
 
 Smaller, and worth a second opinion from a native speaker rather than from me:
 
@@ -238,12 +238,26 @@ up.
   corner radius and a slightly warmer ground, and in nothing else. That makes T1 and T2 stronger, and
   the second half of T4 moot until something animates.
 
+## One thing three findings all want
+
+S2 (group the shopping list), X6's hierarchy (`Academy > Ingredients > Vegetables > Carrot`) and
+half of A2 all need the same missing thing: **a food taxonomy**. The registry has `IngredientKind`,
+which is `liquid / powder / solid / countable` and says in its own docstring that it is "deliberately
+coarse — it exists to choose a unit, not to classify food". There is nothing in the system that knows
+a carrot is a vegetable.
+
+That is a unit of work rather than a finding: a category tree, seeded for the nine hundred entries
+that ship, editable for the ones an import invents, and per-locale like every other registry name.
+Three graded items unblock at once. What has been built instead is the flat version — letters and
+sections — which is worth having either way and is what the 900-entry list needed today.
+
 ## What this review still does not cover
 
 All four gaps from the first pass are closed, and what they turned up is above. What is left:
 
-- **The dark theme, looked at rather than measured.** Its contrast is checked and passes; nobody has
-  *looked* at it. It is the only one of the four that is genuinely a second theme.
+- **The dark theme, looked at rather than measured.** `e2e/20-gallery.spec.ts` now captures seven
+  screens in it, through a device that asks for dark — which is the state most of its readers get.
+  The pictures exist; a second pass has to look at them.
 - **Tablet width.** Phone and laptop are covered; the middle is not, and it is where a sidebar has to
   decide whether it exists.
 - **Motion in use.** Not judgeable from a still, and moot for now — playful's spring curve is dead

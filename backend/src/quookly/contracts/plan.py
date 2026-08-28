@@ -116,6 +116,12 @@ class ShoppingLineView(BaseModel):
     ingredient_id: int
     name: str
     quantity: str
+    #: The same amount, in the two halves a shelf is stocked with. `quantity` is for
+    #: reading; this is for acting on, so that putting what was bought into the pantry
+    #: does not mean parsing a rendered string back apart — which is where a comma and a
+    #: full stop start meaning different things in different languages (S3).
+    magnitude: str
+    unit: str
     # Whether it is already in the basket. A tick made at a different quantity does not
     # count, so this is false again the moment the plan asks for more (ADR-048).
     bought: bool = False

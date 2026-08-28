@@ -142,6 +142,44 @@ for (const [locale, tag] of [
   });
 }
 
+/**
+ * The dark theme, on the screens a cook lives in.
+ *
+ * It is the only one of the four that is genuinely a second theme — it inverts the ground
+ * rather than tinting it — and the only one whose appearance nobody had ever looked at.
+ * Its contrast was checked and passed; a passing check is not a screen anybody has seen
+ * (T5). Signed in through a device that asks for dark, so this is the state most of its
+ * readers will actually get.
+ */
+test('the screens a cook lives in, in the dark', async ({ browser }) => {
+  const context = await browser.newContext({ ...test.info().project.use, colorScheme: 'dark' });
+  try {
+    const page = await context.newPage();
+    await page.goto('/sign-in');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await page.getByLabel('Email').fill('chef@example.com');
+    await page.getByLabel('Password').fill('a-sufficiently-long-password');
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page).toHaveURL(/\/$/);
+
+    for (const [path, name] of [
+      ['/', 'home'],
+      ['/recipes', 'recipes'],
+      ['/recipes/1', 'recipe'],
+      ['/pantry', 'pantry'],
+      ['/plans', 'plans'],
+      ['/academy', 'academy'],
+      ['/settings/registry', 'registry'],
+    ] as const) {
+      await page.goto(path);
+      await page.waitForLoadState('networkidle');
+      await page.screenshot({ path: `e2e/screenshots/${name}-dark.png`, fullPage: true });
+    }
+  } finally {
+    await context.close();
+  }
+});
+
 /*
  * Cooking mode in German and French was captured here once and reviewed — the prediction
  * that the timer buttons would wrap was wrong, and `cook-step-de.png` and `cook-step-fr.png`

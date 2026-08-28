@@ -14,7 +14,7 @@ Reading never writes. A plan is presented from the claims that exist, so a GET c
 change what a cook has reserved.
 """
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import UTC, date, datetime
 from decimal import Decimal
 
@@ -28,6 +28,8 @@ from quookly.access import recipe as recipe_access
 from quookly.access import shopping as shopping_access
 from quookly.contracts.eater import Eater
 from quookly.contracts.events import MealCooked
+from quookly.contracts.ingredient import Ingredient
+from quookly.contracts.measure import Quantity
 from quookly.contracts.plan import (
     Meal,
     MealPlan,
@@ -39,7 +41,8 @@ from quookly.contracts.plan import (
     SlotView,
 )
 from quookly.contracts.planning import PlannedMeal, PlanRequirements, SizedMeal
-from quookly.contracts.provisioning import Covered
+from quookly.contracts.preferences import UnitPreferences
+from quookly.contracts.provisioning import Covered, Shortfall
 from quookly.contracts.recipe import Recipe
 from quookly.contracts.suitability import VerdictView
 from quookly.engines import measure, planning, replenishment, suitability
@@ -164,6 +167,35 @@ def _judge(recipe: Recipe, eaters: Sequence[Eater]) -> VerdictView | None:
     return VerdictView.of(suitability.evaluate(suitability.facts_for(recipe.lines), list(eaters)))
 
 
+def _to_buy(
+    line: Shortfall,
+    names: Mapping[int, Ingredient],
+    preferences: UnitPreferences,
+    basket: Mapping[int, Quantity],
+) -> ShoppingLineView:
+    """One line of the shopping list, said twice.
+
+    `quantity` is for reading in a shop; `magnitude` and `unit` are the same amount in the
+    two halves a shelf is stocked with, so that putting what was bought into the pantry
+    does not mean taking a rendered string back apart on the client (S3).
+    """
+    known = names.get(line.ingredient_id)
+    shown = (
+        line.quantity
+        if known is None
+        else measure.render(line.quantity, known.kind, known.density, preferences)
+    )
+    viewed = measure.viewed(shown)
+    return ShoppingLineView(
+        ingredient_id=line.ingredient_id,
+        name=str(line.ingredient_id) if known is None else known.name,
+        quantity=viewed.display,
+        magnitude=viewed.magnitude,
+        unit=viewed.unit,
+        bought=basket.get(line.ingredient_id) == line.quantity,
+    )
+
+
 async def _view(plan: MealPlan, locale: str) -> PlanView:
     meals, recipes, people = await _meals_of(plan, locale)
     by_slot: dict[int, PlannedMeal] = {meal.plan_slot_id: meal for meal in meals}
@@ -178,26 +210,7 @@ async def _view(plan: MealPlan, locale: str) -> PlanView:
     # What is already in the basket. Compared by quantity as well as by ingredient: a tick
     # for 500 g does not answer a list that has since come to ask for 800 g.
     basket = await shopping_access.ticked(plan.id)
-    shopping = [
-        ShoppingLineView(
-            ingredient_id=line.ingredient_id,
-            name=names[line.ingredient_id].name
-            if line.ingredient_id in names
-            else str(line.ingredient_id),
-            quantity=str(
-                measure.render(
-                    line.quantity,
-                    names[line.ingredient_id].kind,
-                    names[line.ingredient_id].density,
-                    preferences,
-                )
-                if line.ingredient_id in names
-                else line.quantity
-            ),
-            bought=basket.get(line.ingredient_id) == line.quantity,
-        )
-        for line in missing
-    ]
+    shopping = [_to_buy(line, names, preferences, basket) for line in missing]
 
     slots = []
     for slot in plan.slots:

@@ -19,9 +19,17 @@
     </p>
     <a class="action" routerLink="/plans" i18n="@@shoppingPlanAWeek">Plan a week</a>
   } @else if (lines().length === 0) {
-    <p class="shopping__empty" i18n="@@shoppingNothing">
-      Nothing to buy. Everything this week needs is already in your kitchen.
-    </p>
+    <!-- The state a well-stocked kitchen sees most often, and it was two lines at the top
+         of a blank screen. Centred in the space it has, with the thing a cook does next
+         under it (S1, X5). -->
+    <div class="shopping__nothing">
+      <p class="shopping__empty" i18n="@@shoppingNothing">
+        Nothing to buy. Everything this week needs is already in your kitchen.
+      </p>
+      <a class="action action--quiet" routerLink="/plans" i18n="@@shoppingSeeWeek">
+        See the week
+      </a>
+    </div>
   } @else {
     <!-- `&ngsp;` rather than plain spaces: Angular strips those, and a screen reader would
          then read this as "1of2in the basket". -->
@@ -51,6 +59,36 @@
         </li>
       }
     </ul>
+    <!-- What happens when the shopping is done. The list was a checklist whose only
+         ending was going to the pantry and typing every line in again (S3, S4). -->
+    @if (inTheBasket().length > 0) {
+      <div class="shopping__done">
+        <button
+          type="button"
+          class="shopping__stow action"
+          [disabled]="stowing()"
+          (click)="stow()"
+          i18n="@@shoppingStow"
+        >
+          Put the basket in the pantry
+        </button>
+        <button
+          type="button"
+          class="shopping__clear destructive"
+          [disabled]="stowing()"
+          (click)="clearBasket()"
+          i18n="@@shoppingClear"
+        >
+          Empty the basket
+        </button>
+      </div>
+      @if (stowFailed()) {
+        <p class="notice notice--danger" role="alert" i18n="@@shoppingStowFailed">
+          Some of that did not go through. What is still ticked is what is still to put away.
+        </p>
+      }
+    }
+
     <a class="shopping__where" routerLink="/plans" i18n="@@shoppingFromWeek">
       From the week you planned
     </a>

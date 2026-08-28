@@ -161,4 +161,62 @@ describe('ShoppingComponent', () => {
       expect(text()).toContain('1 of 2');
     });
   });
+
+  describe('when the shopping is done', () => {
+    /* A shopping list is a checklist, and the only thing a cook could do with a ticked
+       line was go to the pantry and type it in again (S3). Putting it away and starting
+       over are the two things that happen at the end of a shop (S4). */
+    const BOUGHT = [
+      {
+        ingredient_id: 4,
+        name: 'plain flour',
+        quantity: '200 g',
+        magnitude: '200',
+        unit: 'g',
+        bought: true,
+      },
+      {
+        ingredient_id: 5,
+        name: 'butter',
+        quantity: '250 g',
+        magnitude: '250',
+        unit: 'g',
+        bought: false,
+      },
+    ];
+
+    it('offers nothing to put away until something is in the basket', async () => {
+      await showing(plan([{ ...BOUGHT[1] }]));
+      expect(fixture.nativeElement.querySelector('.shopping__stow')).toBeNull();
+    });
+
+    it('puts what was ticked on the shelf, one lot each', async () => {
+      await showing(plan(BOUGHT));
+      fixture.nativeElement.querySelector('.shopping__stow').click();
+      await settle();
+
+      const added = backend.expectOne('/api/v1/pantry');
+      expect(added.request.body).toEqual({ ingredient_id: 4, magnitude: '200', unit: 'g' });
+      added.flush({ id: 1 });
+      await settle();
+
+      // And the line it came from is no longer in the basket: it is in the kitchen.
+      const cleared = backend.expectOne('/api/v1/plans/3/shopping/4');
+      expect(cleared.request.body).toEqual({ bought: false });
+      cleared.flush(plan([{ ...BOUGHT[0], bought: false }, BOUGHT[1]]));
+      await settle();
+    });
+
+    it('takes everything back out of the basket without stocking anything', async () => {
+      await showing(plan(BOUGHT));
+      fixture.nativeElement.querySelector('.shopping__clear').click();
+      await settle();
+
+      backend.expectNone('/api/v1/pantry');
+      const cleared = backend.expectOne('/api/v1/plans/3/shopping/4');
+      expect(cleared.request.body).toEqual({ bought: false });
+      cleared.flush(plan([{ ...BOUGHT[0], bought: false }, BOUGHT[1]]));
+      await settle();
+    });
+  });
 });

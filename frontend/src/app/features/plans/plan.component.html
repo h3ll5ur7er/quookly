@@ -19,7 +19,10 @@
               [queryParams]="{ on: day.on }"
             >
               <span class="week__date">{{ weekday(day.on) }}</span>
-              <span class="week__nothing" i18n="@@planNothingOn">Nothing planned</span>
+              <!-- Says what it does, rather than what is absent. The whole row was already
+                   the way to fill the day and nothing on it said so (P2, X8). -->
+              <span class="week__nothing" i18n="@@planPutSomethingOn">Put something on</span>
+              <span class="week__plus" aria-hidden="true">+</span>
             </a>
           } @else {
             <p class="week__date">{{ weekday(day.on) }}</p>
@@ -66,9 +69,16 @@
       }
     </ol>
 
-    <!-- The payoff, and the thing that leaves the house with the cook. -->
-    <section class="shopping" aria-labelledby="shopping-heading">
-      <h2 id="shopping-heading" i18n="@@planShopping">Shopping list</h2>
+    <!-- Deliberately separate from the Shopping tab: that one is read in a shop, this one
+         is what the week came to. Folded away, because it is the answer to a question the
+         plan screen is not being asked yet (P3). -->
+    <details class="week__shopping">
+      <summary>
+        <h2 class="week__shopping-title" i18n="@@planShopping">Shopping list</h2>
+        @if (week.shopping.length > 0) {
+          <span class="week__shopping-count numeric">{{ week.shopping.length }}</span>
+        }
+      </summary>
       @if (week.shopping.length === 0) {
         <p class="shopping__empty" i18n="@@planNothingToBuy">
           Nothing to buy. Everything this week needs is already in your kitchen, and Quookly is
@@ -84,7 +94,7 @@
           }
         </ul>
       }
-    </section>
+    </details>
 
     @if (failed()) {
       <p class="notice notice--danger" role="alert" i18n="@@planFailed">

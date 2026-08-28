@@ -81,3 +81,35 @@
   color: var(--on-surface-muted);
   font-size: var(--text-sm);
 }
+
+/* An answer, not a gap. The empty list is what a well-stocked kitchen sees most often, and
+   two lines at the top of a blank screen read as a page that failed to load (S1, X5). */
+.shopping__nothing {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--space-4);
+  min-block-size: 50vh;
+  text-align: center;
+}
+
+.shopping__nothing .shopping__empty {
+  max-width: 32ch;
+}
+
+.shopping__nothing .action {
+  margin: 0;
+}
+
+/* What happens when the shopping is done. Stowing is the action; emptying the basket is
+   the one that throws work away, so it is quiet and never what a thumb lands on. */
+.shopping__done {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-block-start: var(--space-5);
+}
+
+.shopping__stow {
+  margin: 0;
+}

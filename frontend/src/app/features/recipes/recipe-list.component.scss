@@ -22,8 +22,13 @@
   list-style: none;
 }
 
+/* Fills its cell, so a row of cards ends level. A long summary beside a short one made
+   one card twice the height of its neighbour and every row end ragged (W2). The content
+   stays at the top: stretching the *text* to fill would be worse than the gap. */
 .recipes__link {
   display: grid;
+  align-content: start;
+  block-size: 100%;
   gap: var(--space-1);
   padding: var(--space-4);
   border: 1px solid var(--border);

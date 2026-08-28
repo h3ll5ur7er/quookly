@@ -182,11 +182,27 @@ test.describe('putting the shopping away', () => {
 
 test.describe('what wants using', () => {
   test('names the packet going off, not the ingredient in general', async ({ page }) => {
+    /* The urgency belongs to a packet: 500 g of this bag is going off, not the 1 kg the
+       cupboard holds. It used to be said in a strip above the shelf, which repeated the
+       lot immediately below it word for word — so it is said on the lot itself now, with
+       a band down its edge and the shelf ordered by what wants eating first (N1, N2). */
     await page.goto('/pantry');
-    const soon = page.locator('[aria-labelledby="usingSoon"]');
-    await expect(soon).toBeVisible();
-    await expect(soon.getByText('500 g')).toBeVisible();
-    await expect(soon.getByText('1 kg')).toHaveCount(0);
+    const pressing = page.locator('.pantry__lot--now, .pantry__lot--past').first();
+    await expect(pressing).toBeVisible();
+    await expect(pressing.getByText('500 g')).toBeVisible();
+    await expect(pressing.getByText('1 kg')).toHaveCount(0);
+  });
+
+  test('puts what wants eating at the top, and can be put back in the alphabet', async ({
+    page,
+  }) => {
+    await page.goto('/pantry');
+    const first = page.locator('.pantry__entry').first();
+    await expect(first.locator('.pantry__lot--now, .pantry__lot--past')).toHaveCount(1);
+
+    await page.getByRole('button', { name: 'A–Z' }).click();
+    const names = await page.locator('.pantry__name span:first-child').allInnerTexts();
+    expect(names).toEqual([...names].sort());
   });
 
   test('says how soon in words rather than in a count of days', async ({ page }) => {
