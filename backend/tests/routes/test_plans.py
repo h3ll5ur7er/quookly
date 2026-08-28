@@ -463,6 +463,47 @@ class TestTheWeekBeingCookedNow:
         running = await client.get(f"{PLANS}/current", headers=cook)
         assert [line["quantity"] for line in running.json()["shopping"]] == ["200 g"]
 
+    async def test_a_shopping_line_says_which_aisle_it_is_in(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, monkeypatch: MonkeyPatch
+    ) -> None:
+        """A forty-item list with no headings is read line by line; a cook in a shop walks
+        aisles. The category is the registry's, so the list and the registry cannot come to
+        disagree about where flour is (S2, ADR-067)."""
+        monkeypatch.setattr(plan_manager, "_today", lambda: date(2026, 8, 26))
+        await registry.add_category(
+            slug="cereal-products",
+            names={"en-GB": "Cereal products, pulses and potatoes"},
+        )
+        await registry.add_category(
+            slug="cereal-products-flour-and-starch",
+            names={"en-GB": "Flour and starch"},
+            parent_slug="cereal-products",
+        )
+        await registry.place_in_category("plain-flour", "cereal-products-flour-and-starch")
+
+        recipe_id = await a_recipe(client, cook, flour)
+        plan_id = await a_week(client, cook)
+        await client.put(f"{PLANS}/{plan_id}/slots", json=slot(recipe_id=recipe_id), headers=cook)
+
+        line = (await client.get(f"{PLANS}/current", headers=cook)).json()["shopping"][0]
+
+        assert line["category_slug"] == "cereal-products-flour-and-starch"
+
+    async def test_a_line_for_something_nobody_placed_says_nothing_about_where_it_is(
+        self, client: AsyncClient, cook: dict[str, str], flour: int, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Rather than a bucket called "other", which is a claim about the food. A screen
+        that wants a heading for these can write one; the server inventing it cannot be
+        told apart from a real answer."""
+        monkeypatch.setattr(plan_manager, "_today", lambda: date(2026, 8, 26))
+        recipe_id = await a_recipe(client, cook, flour)
+        plan_id = await a_week(client, cook)
+        await client.put(f"{PLANS}/{plan_id}/slots", json=slot(recipe_id=recipe_id), headers=cook)
+
+        line = (await client.get(f"{PLANS}/current", headers=cook)).json()["shopping"][0]
+
+        assert line["category_slug"] is None
+
     async def test_a_shopping_line_carries_a_quantity_that_can_be_put_on_a_shelf(
         self, client: AsyncClient, cook: dict[str, str], flour: int, monkeypatch: MonkeyPatch
     ) -> None:

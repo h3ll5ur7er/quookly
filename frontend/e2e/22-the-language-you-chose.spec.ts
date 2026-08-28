@@ -21,6 +21,14 @@ test.beforeAll(async ({ request }) => {
   headers = { Authorization: `Bearer ${await claim(request)}` };
 });
 
+test.afterAll(async ({ request }) => {
+  /* Put the shared account back in English. The suite runs one worker against one
+     database, so a file that leaves the account in German hands every file after it a
+     German screen — which, now that the account decides the language, is exactly what it
+     should do and exactly what nobody after this asked for. */
+  await request.put('/api/v1/setup/locale', { headers, data: { locale: 'en-GB' } });
+});
+
 /** An English browser, always. That is the whole point of the test. */
 const ENGLISH_DEVICE = { locale: 'en-GB' } as const;
 

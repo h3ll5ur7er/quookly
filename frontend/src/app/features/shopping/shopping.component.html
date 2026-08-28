@@ -42,23 +42,53 @@
     </p>
 
     <!-- Big, plain lines. This is read at arm's length in a shop, one-handed, so the whole
-         row is the target rather than a checkbox somebody has to hit. -->
-    <ul class="shopping__list">
-      @for (line of lines(); track line.ingredient_id) {
-        <li>
-          <label class="shopping__line" [class.shopping__line--got]="line.bought">
-            <input
-              type="checkbox"
-              class="shopping__tick"
-              [checked]="line.bought"
-              (change)="mark(line, !line.bought)"
-            />
-            <span class="shopping__amount numeric">{{ line.quantity }}</span>
-            <span class="shopping__name">{{ line.name }}</span>
-          </label>
-        </li>
+         row is the target rather than a checkbox somebody has to hit.
+
+         In aisles where the registry knows where things are, because forty items in a
+         flat list is read line by line and a cook in a shop walks aisles (S2). Flat where
+         it does not — a heading is a convenience, the list is the thing being held. -->
+    @if (aisles(); as byAisle) {
+      @if (byAisle.length === 0) {
+        <ul class="shopping__list">
+          @for (line of lines(); track line.ingredient_id) {
+            <li>
+              <label class="shopping__line" [class.shopping__line--got]="line.bought">
+                <input
+                  type="checkbox"
+                  class="shopping__tick"
+                  [checked]="line.bought"
+                  (change)="mark(line, !line.bought)"
+                />
+                <span class="shopping__amount numeric">{{ line.quantity }}</span>
+                <span class="shopping__name">{{ line.name }}</span>
+              </label>
+            </li>
+          }
+        </ul>
+      } @else {
+        @for (aisle of byAisle; track aisle.slug) {
+          <section class="shopping__group">
+            <h2 class="shopping__aisle">{{ aisle.name }}</h2>
+            <ul class="shopping__list">
+              @for (line of aisle.lines; track line.ingredient_id) {
+                <li>
+                  <label class="shopping__line" [class.shopping__line--got]="line.bought">
+                    <input
+                      type="checkbox"
+                      class="shopping__tick"
+                      [checked]="line.bought"
+                      (change)="mark(line, !line.bought)"
+                    />
+                    <span class="shopping__amount numeric">{{ line.quantity }}</span>
+                    <span class="shopping__name">{{ line.name }}</span>
+                  </label>
+                </li>
+              }
+            </ul>
+          </section>
+        }
       }
-    </ul>
+    }
     <!-- What happens when the shopping is done. The list was a checklist whose only
          ending was going to the pantry and typing every line in again (S3, S4). -->
     @if (inTheBasket().length > 0) {

@@ -154,7 +154,14 @@ export class IngredientComponent {
         debounceTime(SETTLE),
         distinctUntilChanged(),
         switchMap((term) =>
-          this.service.listRegistry(term.trim() || undefined, undefined, undefined, 0, CANDIDATES),
+          this.service.listRegistry(
+            term.trim() || undefined,
+            undefined,
+            undefined,
+            undefined,
+            0,
+            CANDIDATES,
+          ),
         ),
         takeUntilDestroyed(),
       )

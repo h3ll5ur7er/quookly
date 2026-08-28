@@ -192,6 +192,9 @@ def _to_buy(
         quantity=viewed.display,
         magnitude=viewed.magnitude,
         unit=viewed.unit,
+        # The registry's answer, not a second one. A list that decided for itself where
+        # flour goes would come to disagree with the screen a cook corrects it on.
+        category_slug=None if known is None else known.category_slug,
         bought=basket.get(line.ingredient_id) == line.quantity,
     )
 

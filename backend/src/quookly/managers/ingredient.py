@@ -15,6 +15,7 @@ from quookly.contracts.errors import NameAlreadyMeans
 from quookly.contracts.ingredient import (
     UNSET,
     Allergen,
+    CategoryView,
     DuplicateView,
     Ingredient,
     IngredientKind,
@@ -44,12 +45,26 @@ async def search(term: str, cook_id: int, locale: str | None = None) -> list[Ing
     ]
 
 
+async def categories(cook_id: int) -> list[CategoryView]:
+    """The food tree, named as this cook reads it (ADR-067).
+
+    Whole rather than paged. Twenty sections and a hundred groups is a list a screen holds,
+    and a client that has it can put headings on anything it is showing — a shopping list,
+    the registry, the Academy — without asking again for each.
+    """
+    found = await registry.categories(await cook_access.locale_for(cook_id))
+    return [
+        CategoryView(slug=one.slug, name=one.name, parent_slug=one.parent_slug) for one in found
+    ]
+
+
 async def browse(
     cook_id: int,
     *,
     term: str | None = None,
     origin: Origin | None = None,
     approved: bool | None = None,
+    category: str | None = None,
     offset: int = 0,
     limit: int = 50,
 ) -> RegistryPageView:
@@ -68,6 +83,7 @@ async def browse(
         term=term,
         origin=origin,
         approved=approved,
+        category=category,
         offset=offset,
         limit=limit,
     )
@@ -102,6 +118,7 @@ def _viewed(entry: Ingredient) -> RegistryEntryView:
         allergens=sorted(entry.allergens, key=lambda allergen: allergen.value),
         classified=entry.classified,
         approved=entry.approved,
+        category_slug=entry.category_slug,
     )
 
 

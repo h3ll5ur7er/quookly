@@ -115,6 +115,75 @@ class TestStockingTheRegistry:
         assert flour.origin is Origin.USER
 
 
+class TestWhereTheSeededFoodSits:
+    """The hand-written starter set is placed too, and that is the half that matters.
+
+    The nine hundred generic foods carry a category out of the published table. The
+    twenty-nine in the starter set do not — they are hand-written, and they are the ones a
+    starter *recipe* actually names. Without this, the shopping list a fresh instance draws
+    puts every line under "anything else", and the tree looks built and does nothing
+    (ADR-067).
+
+    The placement comes from the same hand-written mapping the nutrition figures do: it
+    already says which published row answers for "plain flour", and that row says where the
+    table puts it.
+    """
+
+    async def test_a_starter_ingredient_knows_where_it_sits(self) -> None:
+        await seed.stock_food_categories()
+        await seed.stock_registry()
+        await seed.place_seeded_foods()
+
+        flour = await registry.resolve("plain flour", ENGLISH)
+        assert flour is not None
+        assert flour.category_slug == "cereal-products-pulses-and-potatoes-flour-and-starch"
+
+    async def test_the_tree_names_it_in_every_shipped_language(self) -> None:
+        await seed.stock_food_categories()
+
+        english = {one.slug: one.name for one in await registry.categories(ENGLISH)}
+        german = {one.slug: one.name for one in await registry.categories("de-CH")}
+
+        assert english["vegetables"] == "Vegetables"
+        assert german["vegetables"] == "Gemüse"
+
+    async def test_placing_twice_places_once(self) -> None:
+        """Every start-up runs this."""
+        await seed.stock_food_categories()
+        await seed.stock_registry()
+        await seed.place_seeded_foods()
+        await seed.place_seeded_foods()
+
+        flour = await registry.resolve("plain flour", ENGLISH)
+        assert flour is not None
+        assert flour.category_slug == "cereal-products-pulses-and-potatoes-flour-and-starch"
+
+    async def test_an_ingredient_the_mapping_says_nothing_about_stays_unplaced(self) -> None:
+        """Baking powder is in the starter set and in no published row we map. Absent
+        rather than guessed: a bucket is a claim about the food."""
+        await seed.stock_food_categories()
+        await seed.stock_registry()
+        await seed.place_seeded_foods()
+
+        raising = await registry.resolve("baking powder", ENGLISH)
+        assert raising is not None
+        assert raising.category_slug is None
+
+    async def test_a_cooks_own_placement_is_not_overwritten(self) -> None:
+        """The same rule as everything else seeded: an upgrade may refresh what it shipped
+        and may not touch somebody's work (ADR-016)."""
+        await seed.stock_food_categories()
+        await seed.stock_registry()
+        await registry.add_category(slug="my-shelf", names={ENGLISH: "The top shelf"})
+        await registry.place_in_category("plain-flour", "my-shelf")
+
+        await seed.place_seeded_foods()
+
+        flour = await registry.resolve("plain flour", ENGLISH)
+        assert flour is not None
+        assert flour.category_slug == "my-shelf"
+
+
 class TestStarterRecipes:
     async def test_the_first_cook_is_given_something_to_look_at(self, cook_id: int) -> None:
         await seed.stock_registry()

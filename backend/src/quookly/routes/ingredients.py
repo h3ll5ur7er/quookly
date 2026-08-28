@@ -13,6 +13,7 @@ from quookly.contracts.errors import (
 from quookly.contracts.ingredient import (
     UNSET,
     Allergen,
+    CategoryView,
     DuplicateView,
     IngredientKind,
     IngredientView,
@@ -99,6 +100,11 @@ async def list_registry(
     approved: bool | None = Query(
         default=None, description="Narrow to what has been reviewed, or to what awaits it."
     ),
+    category: str | None = Query(
+        default=None,
+        max_length=100,
+        description="Narrow to one node of the food tree. A section takes the groups in it.",
+    ),
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
 ) -> RegistryPageView:
@@ -113,9 +119,23 @@ async def list_registry(
         term=search,
         origin=origin,
         approved=approved,
+        category=category,
         offset=offset,
         limit=limit,
     )
+
+
+@router.get("/registry/categories", response_model=list[CategoryView])
+async def list_food_categories(cook: CurrentCook) -> list[CategoryView]:
+    """Where food sits: the tree, named in this cook's language (ADR-067).
+
+    Before `/registry/{slug}`, because they share a shape and the first match wins.
+
+    Whole rather than paged. A client that holds the tree can put headings on a shopping
+    list, on nine hundred registry rows and on the Academy without asking again for each,
+    and twenty sections with a hundred groups under them is a list a screen holds.
+    """
+    return await ingredient_manager.categories(cook.cook_id)
 
 
 @router.post("/registry/{slug}/approved", response_model=RegistryEntryView)

@@ -1,7 +1,22 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { PantryService, PlanView, PlansService, ShoppingLineView } from '@api';
+import {
+  CategoryView,
+  IngredientsService,
+  PantryService,
+  PlanView,
+  PlansService,
+  ShoppingLineView,
+} from '@api';
 import { period } from '../../core/dates/format';
+import { preferredLocale } from '../../core/locale/locale.store';
+
+/** One aisle of the shop, and what is to be bought in it. */
+interface Aisle {
+  readonly slug: string;
+  readonly name: string;
+  readonly lines: ShoppingLineView[];
+}
 
 /**
  * What is still to buy (UC-4.4).
@@ -27,6 +42,49 @@ export class ShoppingComponent {
 
   protected readonly lines = computed(() => this.plan()?.shopping ?? []);
 
+  /**
+   * The food tree, for the headings.
+   *
+   * Asked for alongside the list rather than after it: the two are independent, and a
+   * cook standing in a shop should not wait for headings to read what to buy. An empty
+   * answer — or a failed one — leaves a flat list, which is what this screen was.
+   */
+  private readonly tree = signal<readonly CategoryView[]>([]);
+
+  /**
+   * The list, in aisles (S2, ADR-067).
+   *
+   * Grouped by the leaf the registry places each food in, ordered by that leaf's name, so
+   * a cook reading it in German gets German headings in German alphabetical order. What
+   * nobody has placed goes last under a heading this screen writes — the server does not
+   * invent one, because an invented category cannot be told apart from a known one.
+   */
+  protected readonly aisles = computed<readonly Aisle[]>(() => {
+    const named = new Map(this.tree().map((one) => [one.slug, one.name]));
+    if (named.size === 0) {
+      return [];
+    }
+    const grouped = new Map<string, ShoppingLineView[]>();
+    for (const line of this.lines()) {
+      const slug = line.category_slug ?? '';
+      grouped.set(slug, [...(grouped.get(slug) ?? []), line]);
+    }
+
+    const collator = new Intl.Collator(preferredLocale());
+    const placed = [...grouped]
+      .filter(([slug]) => named.has(slug))
+      .map(([slug, lines]) => ({ slug, name: named.get(slug)!, lines }))
+      .sort((a, b) => collator.compare(a.name, b.name));
+
+    const loose = [...grouped].filter(([slug]) => !named.has(slug)).flatMap(([, lines]) => lines);
+    return loose.length === 0
+      ? placed
+      : [
+          ...placed,
+          { slug: '', name: $localize`:@@shoppingElsewhere:Anything else`, lines: loose },
+        ];
+  });
+
   /** How far through the shop a cook is. The useful question there is "am I nearly done". */
   protected readonly got = computed(() => this.lines().filter((line) => line.bought).length);
 
@@ -43,6 +101,7 @@ export class ShoppingComponent {
 
   private readonly plans = inject(PlansService);
   private readonly pantry = inject(PantryService);
+  private readonly registry = inject(IngredientsService);
 
   constructor() {
     this.plans.currentPlan().subscribe({
@@ -56,6 +115,13 @@ export class ShoppingComponent {
         this.failed.set(true);
         this.loaded.set(true);
       },
+    });
+
+    this.registry.listFoodCategories().subscribe({
+      next: (tree) => this.tree.set(tree),
+      // A heading is a convenience. The list is the thing a cook is holding, and it is
+      // still a list without them.
+      error: () => this.tree.set([]),
     });
   }
 

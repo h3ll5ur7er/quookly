@@ -113,3 +113,25 @@
 .shopping__stow {
   margin: 0;
 }
+
+/* The aisle a cook is standing in. Sticky, so the heading stays on screen while they walk
+   down the list under it — the same treatment the registry's letters get, and for the
+   same reason (S2). */
+.shopping__aisle {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-block: var(--space-5) var(--space-1);
+  padding-block: var(--space-1);
+  background: var(--surface);
+  color: var(--on-surface-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.shopping__group:first-of-type .shopping__aisle {
+  margin-block-start: 0;
+}

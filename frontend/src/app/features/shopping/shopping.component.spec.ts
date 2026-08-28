@@ -33,6 +33,10 @@ describe('ShoppingComponent', () => {
 
   async function showing(answer: object | null = plan()): Promise<void> {
     backend.expectOne('/api/v1/plans/current').flush(answer);
+    // The food tree, for the aisle headings. Asked for alongside the list rather than
+    // after it: the two are independent, and a list that waited for its headings would
+    // be a list a cook in a shop waited for (S2).
+    backend.expectOne('/api/v1/registry/categories').flush([]);
     await settle();
   }
 
@@ -83,6 +87,7 @@ describe('ShoppingComponent', () => {
       backend
         .expectOne('/api/v1/plans/current')
         .flush({}, { status: 500, statusText: 'Server Error' });
+      backend.expectOne('/api/v1/registry/categories').flush([]);
       await settle();
       expect(text()).toContain('Could not load your list');
     });
@@ -159,6 +164,108 @@ describe('ShoppingComponent', () => {
         ]),
       );
       expect(text()).toContain('1 of 2');
+    });
+  });
+
+  describe('by aisle', () => {
+    /* Forty items in a flat list is read line by line; a cook in a shop walks aisles. The
+       categories are the registry's, so the list and the registry cannot come to disagree
+       about where flour is (S2, ADR-067). */
+    const LINES = [
+      {
+        ingredient_id: 4,
+        name: 'plain flour',
+        quantity: '200 g',
+        magnitude: '200',
+        unit: 'g',
+        bought: false,
+        category_slug: 'cereals-flour',
+      },
+      {
+        ingredient_id: 5,
+        name: 'carrot',
+        quantity: '3',
+        magnitude: '3',
+        unit: '',
+        bought: false,
+        category_slug: 'vegetables-fresh',
+      },
+      {
+        ingredient_id: 6,
+        name: 'polenta',
+        quantity: '500 g',
+        magnitude: '500',
+        unit: 'g',
+        bought: false,
+        category_slug: 'cereals-flour',
+      },
+      {
+        ingredient_id: 7,
+        name: 'yuzu',
+        quantity: '2',
+        magnitude: '2',
+        unit: '',
+        bought: false,
+        category_slug: null,
+      },
+    ];
+
+    const TREE = [
+      { slug: 'vegetables', name: 'Vegetables', parent_slug: null },
+      { slug: 'vegetables-fresh', name: 'Fresh vegetables', parent_slug: 'vegetables' },
+      { slug: 'cereals', name: 'Cereal products', parent_slug: null },
+      { slug: 'cereals-flour', name: 'Flour and starch', parent_slug: 'cereals' },
+    ];
+
+    async function shopping(): Promise<void> {
+      backend.expectOne('/api/v1/plans/current').flush(plan(LINES));
+      backend.expectOne('/api/v1/registry/categories').flush(TREE);
+      await settle();
+    }
+
+    function headings(): string[] {
+      return [...fixture.nativeElement.querySelectorAll('.shopping__aisle')].map((node: Element) =>
+        node.textContent!.trim(),
+      );
+    }
+
+    it('puts the list into aisles, named as the cook reads them', async () => {
+      await shopping();
+      expect(headings()).toEqual(['Flour and starch', 'Fresh vegetables', 'Anything else']);
+    });
+
+    it('keeps what belongs together together', async () => {
+      await shopping();
+      const first = fixture.nativeElement.querySelectorAll('.shopping__group')[0];
+      expect(
+        [...first.querySelectorAll('.shopping__name')].map((n: Element) => n.textContent),
+      ).toEqual(['plain flour', 'polenta']);
+    });
+
+    it('names the leftovers rather than pretending they are somewhere', async () => {
+      /* "Anything else" is the screen's word for the unplaced, not the server's. A server
+         that invented a category could not be told apart from one that knew (ADR-067). */
+      await shopping();
+      const last = [...fixture.nativeElement.querySelectorAll('.shopping__group')].at(-1);
+      expect(last.textContent).toContain('yuzu');
+    });
+
+    it('is still a list when nothing has been placed', async () => {
+      backend.expectOne('/api/v1/plans/current').flush(plan());
+      backend.expectOne('/api/v1/registry/categories').flush([]);
+      await settle();
+      expect(headings()).toEqual([]);
+      expect(text()).toContain('plain flour');
+    });
+
+    it('shops on even where the tree cannot be read', async () => {
+      // A heading is a convenience; the list is the thing a cook is holding.
+      backend.expectOne('/api/v1/plans/current').flush(plan(LINES));
+      backend
+        .expectOne('/api/v1/registry/categories')
+        .flush({}, { status: 500, statusText: 'Server Error' });
+      await settle();
+      expect(text()).toContain('plain flour');
     });
   });
 

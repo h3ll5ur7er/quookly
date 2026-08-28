@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { DuplicateView, IngredientsService, Origin, RegistryEntryView } from '@api';
+import { CategoryView, DuplicateView, IngredientsService, Origin, RegistryEntryView } from '@api';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { tidy } from '../../core/measure/units';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -77,6 +77,26 @@ export class RegistryComponent {
   protected readonly more = computed(() => (this.entries() ?? []).length < this.total());
 
   /**
+   * Which part of the food tree is being looked at (ADR-067).
+   *
+   * Narrowed on the server rather than in the page, unlike the letters below: the list is
+   * paged, so filtering what has been loaded would hide entries rather than find them.
+   * Asking for a section takes everything in the groups under it.
+   */
+  protected readonly category = signal<string | null>(null);
+  protected readonly tree = signal<readonly CategoryView[]>([]);
+
+  /** The tree as a picker reads it: each section, then the groups inside it. */
+  protected readonly sections = computed(() =>
+    this.tree()
+      .filter((one) => one.parent_slug === null)
+      .map((section) => ({
+        section,
+        groups: this.tree().filter((one) => one.parent_slug === section.slug),
+      })),
+  );
+
+  /**
    * What has been loaded, under the letter each entry begins with.
    *
    * Nine hundred entries in one flat column is nineteen thousand pixels of list with
@@ -109,6 +129,13 @@ export class RegistryComponent {
   constructor() {
     this.load();
 
+    this.service.listFoodCategories().subscribe({
+      // A tree that cannot be read leaves the picker out rather than the registry. The
+      // list is what this screen is for.
+      next: (tree) => this.tree.set(tree),
+      error: () => this.tree.set([]),
+    });
+
     // Settled before asking: a box that fires on every keystroke asks the server about
     // "b", "bu" and "but" to answer a question about butter.
     this.search.valueChanges
@@ -126,6 +153,13 @@ export class RegistryComponent {
   protected narrowTo(origin: Origin | null): void {
     this.origin.set(origin);
     this.approved.set(null);
+    this.load();
+  }
+
+  /** Look at one part of the tree, or at all of it. */
+  protected showCategory(event: Event): void {
+    const chosen = (event.target as HTMLSelectElement).value;
+    this.category.set(chosen || null);
     this.load();
   }
 
@@ -166,6 +200,7 @@ export class RegistryComponent {
         term || undefined,
         this.origin() ?? undefined,
         this.approved() ?? undefined,
+        this.category() ?? undefined,
         from,
         PAGE,
       )

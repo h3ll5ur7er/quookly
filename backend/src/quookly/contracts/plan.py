@@ -122,6 +122,10 @@ class ShoppingLineView(BaseModel):
     #: full stop start meaning different things in different languages (S3).
     magnitude: str
     unit: str
+    #: Which aisle, as a slug into the registry's food tree. A forty-item list with no
+    #: headings is read line by line; a cook in a shop walks aisles. Absent where nobody
+    #: has placed the food — a bucket called "other" would be a claim about it (ADR-067).
+    category_slug: str | None = None
     # Whether it is already in the basket. A tick made at a different quantity does not
     # count, so this is false again the moment the plan asks for more (ADR-048).
     bought: bool = False

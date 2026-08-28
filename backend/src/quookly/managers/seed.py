@@ -79,13 +79,48 @@ async def name_ingredients() -> int:
 GENERIC_FOODS = SEED_DIRECTORY / "generic-foods.json"
 
 
+def _generic_document() -> dict[str, Any]:
+    if not GENERIC_FOODS.exists():
+        return {}
+    document: dict[str, Any] = json.loads(GENERIC_FOODS.read_text(encoding="utf-8"))
+    return document
+
+
 def read_generic_foods() -> list[dict[str, Any]]:
     """The generic foods this build ships, or none if the file was not included."""
-    if not GENERIC_FOODS.exists():
-        return []
-    document: dict[str, Any] = json.loads(GENERIC_FOODS.read_text(encoding="utf-8"))
-    entries: list[dict[str, Any]] = document.get("ingredients", [])
+    entries: list[dict[str, Any]] = _generic_document().get("ingredients", [])
     return entries
+
+
+def read_food_categories() -> list[dict[str, Any]]:
+    """The category tree this build ships: where each of those foods sits.
+
+    Trilingual and free. The Swiss database publishes the same categories in all three
+    editions against identical row ids, so a German cook reads *Gemüse/Gemüse frisch*
+    without anybody translating anything (FR-10, ADR-067).
+    """
+    categories: list[dict[str, Any]] = _generic_document().get("categories", [])
+    return categories
+
+
+async def stock_food_categories() -> int:
+    """Record the category tree. Returns how many nodes it holds.
+
+    Before the foods, because a food points at a category and a pointer needs something to
+    point at. Repeatable like everything else here: a node already recorded keeps its
+    parent and gains any name it did not have (ADR-016).
+    """
+    categories = read_food_categories()
+    if not categories:
+        return 0
+    for node in categories:
+        await registry.add_category(
+            slug=node["slug"],
+            names=node["names"],
+            parent_slug=node["parent"],
+        )
+    log.info("recorded %s food categories", len(categories))
+    return len(categories)
 
 
 async def stock_generic_foods() -> int:
@@ -102,6 +137,10 @@ async def stock_generic_foods() -> int:
     entries = read_generic_foods()
     if not entries:
         return 0
+    # The tree first: an entry points at a category, and a pointer needs something to
+    # point at. Cheap to repeat, and it is what makes a category added in a later build
+    # reach an instance that has already been seeded.
+    await stock_food_categories()
 
     added = await registry.register_many(
         [
@@ -115,6 +154,7 @@ async def stock_generic_foods() -> int:
                     if entry["allergens"] is None
                     else frozenset(Allergen(one) for one in entry["allergens"])
                 ),
+                category_slug=entry.get("category"),
             )
             for entry in entries
         ],
@@ -154,6 +194,50 @@ async def stock_registry(locale: str = DEFAULT_SEED_LOCALE) -> int:
         log.info("stocked the registry with %s ingredients", added, extra={"added": added})
     await name_ingredients()
     return added
+
+
+#: Where the Swiss table puts the ingredients this application maps by hand — the starter
+#: set, which is what a starter *recipe* actually names. Derived by `seed/swiss.py` from
+#: the same mapping the nutrition figures come from.
+PLACEMENTS = SEED_DIRECTORY / "placements.json"
+
+
+def read_placements() -> list[dict[str, Any]]:
+    """Where the hand-mapped ingredients sit, or none if the file was not included."""
+    if not PLACEMENTS.exists():
+        return []
+    document: dict[str, Any] = json.loads(PLACEMENTS.read_text(encoding="utf-8"))
+    placements: list[dict[str, Any]] = document.get("placements", [])
+    return placements
+
+
+async def place_seeded_foods() -> int:
+    """Put the hand-written starter set in the tree. Returns how many were placed.
+
+    The nine hundred generic foods carry a category out of the published table; the
+    twenty-nine in the starter set do not, because they are hand-written — and they are the
+    ones a recipe names. Without this the shopping list on a fresh instance puts every line
+    under "anything else" and the tree looks built while doing nothing (ADR-067).
+
+    Never over a placement that is already there. Every start-up runs this, and an upgrade
+    refreshing what it shipped must not move an ingredient somebody filed themselves
+    (ADR-016) — which is also what makes running it twice cost nothing.
+    """
+    placements = read_placements()
+    if not placements:
+        return 0
+
+    unplaced = await registry.unplaced([one["slug"] for one in placements])
+    placed = 0
+    for one in placements:
+        if one["slug"] not in unplaced:
+            continue
+        await registry.place_in_category(one["slug"], one["category"])
+        placed += 1
+
+    if placed:
+        log.info("placed %s seeded foods", placed, extra={"placed": placed})
+    return placed
 
 
 #: The composition tables shipped with the application, in the order they are installed.

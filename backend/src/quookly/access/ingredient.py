@@ -15,6 +15,8 @@ from quookly.access.models import (
     AcademyPageRow,
     EaterConstraintRow,
     IngredientAllergenRow,
+    IngredientCategoryNameRow,
+    IngredientCategoryRow,
     IngredientLineRow,
     IngredientNameRow,
     IngredientRow,
@@ -32,6 +34,7 @@ from quookly.contracts.errors import (
 from quookly.contracts.ingredient import (
     UNSET,
     Allergen,
+    Category,
     Ingredient,
     IngredientKind,
     Origin,
@@ -50,7 +53,10 @@ SOURCE_LOCALE = "en-GB"
 
 
 def _to_contract(
-    row: IngredientRow, name: str, allergens: frozenset[Allergen] = frozenset()
+    row: IngredientRow,
+    name: str,
+    allergens: frozenset[Allergen] = frozenset(),
+    category_slug: str | None = None,
 ) -> Ingredient:
     assert row.id is not None, "a persisted ingredient always has an id"
     return Ingredient(
@@ -64,7 +70,144 @@ def _to_contract(
         classified=row.allergens_classified,
         approved=row.approved,
         piece_grams=row.piece_grams,
+        category_id=row.category_id,
+        category_slug=category_slug,
     )
+
+
+async def _sitting(active: AsyncSession, row: IngredientRow) -> str | None:
+    """The slug of the category one entry is in, if it is in one.
+
+    A helper rather than a lookup at each call site, because there are seven of them and a
+    field that some paths fill and others leave empty is a field nobody can trust.
+    """
+    if row.category_id is None:
+        return None
+    found = await active.get(IngredientCategoryRow, row.category_id)
+    return None if found is None else found.slug
+
+
+async def _all_sitting(active: AsyncSession, rows: Sequence[IngredientRow]) -> dict[int, str]:
+    """Where each of many entries sits, in one query. Absent means uncategorised."""
+    placed = {row.category_id for row in rows if row.category_id is not None}
+    if not placed:
+        return {}
+    return {
+        one.id: one.slug
+        for one in (
+            await active.exec(
+                select(IngredientCategoryRow).where(col(IngredientCategoryRow.id).in_(placed))
+            )
+        ).all()
+        if one.id is not None
+    }
+
+
+async def _category_id(active: AsyncSession, slug: str | None) -> int | None:
+    """The id of a category by slug, or nothing.
+
+    A slug this instance has never heard of resolves to nothing rather than raising. An
+    entry naming an unknown category is still an entry, and losing the food would be a
+    worse answer than losing where it sits.
+    """
+    if slug is None:
+        return None
+    row = (
+        await active.exec(
+            select(IngredientCategoryRow).where(col(IngredientCategoryRow.slug) == slug)
+        )
+    ).first()
+    return None if row is None else row.id
+
+
+async def add_category(
+    *, slug: str, names: dict[str, str], parent_slug: str | None = None
+) -> Category:
+    """Record a category, or find the one already there.
+
+    Repeatable, because seeding runs on every start-up — the same contract as registering
+    an ingredient (ADR-016). An existing category keeps its parent and gains any name it
+    did not have, so a build that adds a language teaches the tree that language without
+    rewriting it.
+    """
+    async with session() as active:
+        row = (
+            await active.exec(
+                select(IngredientCategoryRow).where(col(IngredientCategoryRow.slug) == slug)
+            )
+        ).first()
+        if row is None:
+            row = IngredientCategoryRow(
+                slug=slug, parent_id=await _category_id(active, parent_slug)
+            )
+            active.add(row)
+            await active.flush()
+        assert row.id is not None
+
+        known = {
+            one.locale
+            for one in (
+                await active.exec(
+                    select(IngredientCategoryNameRow).where(
+                        col(IngredientCategoryNameRow.category_id) == row.id
+                    )
+                )
+            ).all()
+        }
+        for locale, name in names.items():
+            if locale not in known:
+                active.add(IngredientCategoryNameRow(category_id=row.id, locale=locale, name=name))
+        await active.commit()
+        await active.refresh(row)
+        return Category(
+            id=row.id,
+            slug=row.slug,
+            name=names.get(SOURCE_LOCALE, next(iter(names.values()), row.slug)),
+            parent_slug=parent_slug,
+        )
+
+
+async def categories(locale: str) -> list[Category]:
+    """The whole tree, named as this reader reads it.
+
+    Whole rather than paged: twenty sections and a hundred groups is a list a screen holds,
+    and a client that has it can group anything it is showing without asking again.
+
+    Named in the reader's locale where it has been, falling back to the language the
+    registry was seeded in — the same fallback an ingredient's name uses, and for the same
+    reason: a heading in the wrong language beats a heading that is a slug.
+    """
+    async with session() as active:
+        rows = (
+            await active.exec(select(IngredientCategoryRow).order_by(col(IngredientCategoryRow.id)))
+        ).all()
+        named = (
+            await active.exec(
+                select(IngredientCategoryNameRow).where(
+                    col(IngredientCategoryNameRow.locale).in_([locale, SOURCE_LOCALE])
+                )
+            )
+        ).all()
+
+    by_id = {row.id: row for row in rows}
+    wanted: dict[int, str] = {}
+    for one in named:
+        if one.locale == locale or one.category_id not in wanted:
+            wanted[one.category_id] = one.name
+
+    found: list[Category] = []
+    for row in rows:
+        assert row.id is not None
+        parent = by_id.get(row.parent_id) if row.parent_id is not None else None
+        found.append(
+            Category(
+                id=row.id,
+                slug=row.slug,
+                name=wanted.get(row.id, row.slug),
+                parent_slug=None if parent is None else parent.slug,
+            )
+        )
+    return found
 
 
 async def register(
@@ -75,11 +218,16 @@ async def register(
     names: dict[str, list[str]],
     origin: Origin = Origin.USER,
     allergens: frozenset[Allergen] | None = None,
+    category_slug: str | None = None,
 ) -> Ingredient:
     """Add an entry. The first name given for a locale is that locale's canonical one.
 
     `allergens=None` means nobody has classified it — which is not the same as an empty
     set, and is the default because adding an ingredient is not classifying it.
+
+    `category_slug` names where the food sits. One this instance has never heard of leaves
+    the entry uncategorised rather than refusing it: losing the food is a worse answer than
+    losing where it sits.
     """
     row = IngredientRow(
         slug=slug,
@@ -93,6 +241,7 @@ async def register(
         approved=origin is Origin.SEED,
     )
     async with session() as active:
+        row.category_id = await _category_id(active, category_slug)
         active.add(row)
         try:
             await active.flush()
@@ -120,7 +269,12 @@ async def register(
             raise IngredientAlreadyRegistered(slug) from exc
         await active.refresh(row)
         canonical = names.get(SOURCE_LOCALE, next(iter(names.values())))[0]
-        return _to_contract(row, canonical, allergens or frozenset())
+        return _to_contract(
+            row,
+            canonical,
+            allergens or frozenset(),
+            category_slug if row.category_id is not None else None,
+        )
 
 
 async def name_in(slug: str, locale: str, spellings: list[str]) -> int:
@@ -191,6 +345,9 @@ class NewEntry:
     density: Decimal | None
     names: dict[str, list[str]]
     allergens: frozenset[Allergen] | None = None
+    #: Where the food sits. A slug this instance has never heard of leaves the entry
+    #: uncategorised, exactly as in `register`.
+    category_slug: str | None = None
 
 
 async def register_many(entries: Sequence[NewEntry], origin: Origin = Origin.SEED) -> int:
@@ -224,6 +381,11 @@ async def register_many(entries: Sequence[NewEntry], origin: Origin = Origin.SEE
             (row.locale, row.normalised)
             for row in (await active.exec(select(IngredientNameRow))).all()
         }
+        # The whole tree once, rather than a lookup per entry: nine hundred entries is
+        # nine hundred queries, which is what `register_many` exists to avoid.
+        sections = {
+            row.slug: row.id for row in (await active.exec(select(IngredientCategoryRow))).all()
+        }
 
         rows: list[tuple[IngredientRow, NewEntry]] = []
         for entry in entries:
@@ -241,6 +403,7 @@ async def register_many(entries: Sequence[NewEntry], origin: Origin = Origin.SEE
                 # fresh instance opened with 864 of its 893 seeded entries queued for a
                 # review nobody owed them (ADR-051).
                 approved=origin is Origin.SEED,
+                category_id=sections.get(entry.category_slug) if entry.category_slug else None,
             )
             active.add(row)
             rows.append((row, entry))
@@ -313,7 +476,12 @@ async def resolve(name: str, locale: str) -> Ingredient | None:
                 )
             )
         ).all()
-        return _to_contract(row, display, frozenset(entry.allergen for entry in carried))
+        return _to_contract(
+            row,
+            display,
+            frozenset(entry.allergen for entry in carried),
+            await _sitting(active, row),
+        )
 
 
 async def _folded_matches(
@@ -417,9 +585,15 @@ async def for_ids(ingredient_ids: list[int], locale: str) -> dict[int, Ingredien
         ).all()
         names = await canonical_names_within(active, ingredient_ids, locale)
         carried = await allergens_within(active, ingredient_ids)
+        # Where each of them sits, in one query. The shopping list reads this to put a
+        # forty-item list into aisles (ADR-067).
+        sitting = await _all_sitting(active, rows)
     return {
         row.id: _to_contract(
-            row, names.get(row.id, row.slug), carried.get(row.id, (frozenset(), False))[0]
+            row,
+            names.get(row.id, row.slug),
+            carried.get(row.id, (frozenset(), False))[0],
+            sitting.get(row.category_id) if row.category_id is not None else None,
         )
         for row in rows
         if row.id is not None
@@ -437,6 +611,27 @@ async def densities_for(ingredient_ids: list[int]) -> dict[int, Decimal | None]:
             )
         ).all()
     return {row.id: row.density for row in rows if row.id is not None}
+
+
+async def unplaced(slugs: list[str]) -> set[str]:
+    """Which of these entries exist and sit in no category yet.
+
+    Asked as one question rather than one per slug, and it is what makes seeding both
+    repeatable and safe: an entry somebody filed themselves is not in the answer, so a
+    later build cannot move it (ADR-016, ADR-067).
+    """
+    if not slugs:
+        return set()
+    async with session() as active:
+        rows = (
+            await active.exec(
+                select(IngredientRow).where(
+                    col(IngredientRow.slug).in_(slugs),
+                    col(IngredientRow.category_id).is_(None),
+                )
+            )
+        ).all()
+    return {row.slug for row in rows}
 
 
 async def slugs_present(slugs: list[str]) -> set[str]:
@@ -502,7 +697,7 @@ async def search(term: str, locale: str, limit: int = 20) -> list[Ingredient]:
             if row is None or row.id is None:
                 continue
             display = await name_for(active, row.id, locale, match.name)
-            found[row.id] = _to_contract(row, display)
+            found[row.id] = _to_contract(row, display, category_slug=await _sitting(active, row))
 
     return sorted(found.values(), key=lambda entry: entry.name)[:limit]
 
@@ -513,6 +708,7 @@ async def browse(
     term: str | None = None,
     origin: Origin | None = None,
     approved: bool | None = None,
+    category: str | None = None,
     offset: int = 0,
     limit: int = 50,
 ) -> RegistryPage:
@@ -529,6 +725,9 @@ async def browse(
     page boundary landing between them would show one of them twice and the other never.
     The digit rule is not decoration either — the shipped table names its drinks by
     strength, so the registry's first screen was a wine list (G3).
+
+    `category` narrows to one node of the food tree, and to a section takes everything in
+    the groups under it (ADR-067).
 
     `term` matches any spelling, canonical or alias, in the reader's locale or the one the
     registry was seeded in — the same reach as `search`, so a name that resolves an import
@@ -549,6 +748,23 @@ async def browse(
     narrowing: list[ColumnElement[bool]] = []
     if origin is not None:
         narrowing.append(col(IngredientRow.origin) == origin)
+    if category is not None:
+        # A section takes the groups under it. No food sits *on* a section — every leaf of
+        # the published tree is a group — so narrowing to one and getting nothing back is
+        # not the answer a cook asking about "Vegetables" wants.
+        wanted_ids = (
+            select(IngredientCategoryRow.id)
+            .where(
+                (col(IngredientCategoryRow.slug) == category)
+                | col(IngredientCategoryRow.parent_id).in_(
+                    select(IngredientCategoryRow.id).where(
+                        col(IngredientCategoryRow.slug) == category
+                    )
+                )
+            )
+            .scalar_subquery()
+        )
+        narrowing.append(col(IngredientRow.category_id).in_(wanted_ids))
     if approved is not None:
         narrowing.append(col(IngredientRow.approved).is_(approved))
     wanted = normalise(term) if term else ""
@@ -594,10 +810,19 @@ async def browse(
 
         found = [(row, str(name)) for row, name in rows if row.id is not None]
         allergens = await allergens_within(active, [row.id for row, _ in found if row.id])
+        # Where each of them sits, in one query rather than one per row. The slug rather
+        # than the name: a client that has the tree can name it, and a screen grouping
+        # nine hundred entries needs the key to group on, not a hundred repeated strings.
+        sitting = await _all_sitting(active, [row for row, _ in found])
 
     return RegistryPage(
         entries=[
-            _to_contract(row, name, allergens.get(row.id, (frozenset(), False))[0])
+            _to_contract(
+                row,
+                name,
+                allergens.get(row.id, (frozenset(), False))[0],
+                sitting.get(row.category_id) if row.category_id is not None else None,
+            )
             for row, name in found
             if row.id is not None
         ],
@@ -622,7 +847,12 @@ async def _restated(active: AsyncSession, row: IngredientRow, slug: str) -> Ingr
     assert row.id is not None, "a persisted ingredient always has an id"
     carried = await allergens_within(active, [row.id])
     allergens, _ = carried.get(row.id, (frozenset(), False))
-    return _to_contract(row, await name_for(active, row.id, SOURCE_LOCALE, slug), allergens)
+    return _to_contract(
+        row,
+        await name_for(active, row.id, SOURCE_LOCALE, slug),
+        allergens,
+        await _sitting(active, row),
+    )
 
 
 async def named(locale: str) -> list[Named]:
@@ -685,8 +915,9 @@ async def detail(slug: str) -> RegistryEntryDetail | None:
             names.setdefault(spelling.locale, []).append(spelling.name)
 
         display = await name_for(active, row.id, SOURCE_LOCALE, slug)
+        sitting = await _sitting(active, row)
 
-    return RegistryEntryDetail(entry=_to_contract(row, display, allergens), names=names)
+    return RegistryEntryDetail(entry=_to_contract(row, display, allergens, sitting), names=names)
 
 
 async def rename(slug: str, locale: str, name: str) -> Ingredient:
@@ -1000,6 +1231,29 @@ async def approve(slug: str) -> Ingredient:
             raise IngredientNotRegistered(slug)
 
         row.approved = True
+        active.add(row)
+        await active.commit()
+        await active.refresh(row)
+
+        return await _restated(active, row, slug)
+
+
+async def place_in_category(slug: str, category_slug: str | None) -> Ingredient:
+    """Say where a food sits, or stop saying.
+
+    Correctable, which is the point of a tree over two columns: the published table places
+    the nine hundred it shipped, and everything a household adds after that is placed by a
+    person (ADR-067). A category this instance has never heard of clears the placement
+    rather than raising — the same rule `register` follows, for the same reason.
+    """
+    async with session() as active:
+        row = (
+            await active.exec(select(IngredientRow).where(col(IngredientRow.slug) == slug))
+        ).first()
+        if row is None or row.id is None:
+            raise IngredientNotRegistered(slug)
+
+        row.category_id = await _category_id(active, category_slug)
         active.add(row)
         await active.commit()
         await active.refresh(row)

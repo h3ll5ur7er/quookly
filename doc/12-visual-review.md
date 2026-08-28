@@ -97,7 +97,7 @@ The strongest screen in the product. Large type, clear progress, one obvious nex
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
 | ~~**S1**~~ **done** | The empty state is two lines at the top of a blank screen. | The sentence is good ("Everything this week needs is already in your kitchen"). It is floating in 80% nothing, and it is the state a well-stocked kitchen sees most often. | D |
-| **S2** — **blocked, and worth its own unit** | Shopping list shall be grouped by category. **There is no category to group by.** `IngredientKind` is `liquid / powder / solid / countable` and says so in its own docstring: "deliberately coarse — it exists to choose a unit, not to classify food". Grouping by it gives "Solid: apples, cheese, bread". This wants a food taxonomy, which is the same missing thing as X6's hierarchy — see the note under Wider viewports. | The list is 40 items long and flat, with no headings or dividers. | C |
+| ~~**S2**~~ **done** | Shopping list shall be grouped by category. The blocker is gone: the food tree now exists, taken from the column the Swiss table always carried ([ADR-067](07-decisions.md#adr-067-where-a-food-sits-is-a-tree-taken-from-the-table-it-was-already-in)). The list is in aisles with sticky headings, named in the cook's language, and what nobody has placed goes last under a heading the *screen* writes — the server does not invent one. |
 | ~~**S3**~~ **done** | There should be a "add ticked to pantry" action. One lot per ticked line, and the line is unticked once its lot exists — so an interrupted unpack leaves the basket holding what is still in a bag. | The list is a checklist, but the only way to act on it is to go to the pantry and add each item manually. | D |
 | ~~**S4**~~ **done** | There should be a "trashcan" action. "Empty the basket" — the list itself is derived from the plan and cannot be deleted, so what it clears is the ticks. | There should be a way to remove the list without adding it to the pantry. | D |
 
@@ -238,18 +238,25 @@ up.
   corner radius and a slightly warmer ground, and in nothing else. That makes T1 and T2 stronger, and
   the second half of T4 moot until something animates.
 
-## One thing three findings all want
+## The one thing three findings wanted — built
 
-S2 (group the shopping list), X6's hierarchy (`Academy > Ingredients > Vegetables > Carrot`) and
-half of A2 all need the same missing thing: **a food taxonomy**. The registry has `IngredientKind`,
-which is `liquid / powder / solid / countable` and says in its own docstring that it is "deliberately
-coarse — it exists to choose a unit, not to classify food". There is nothing in the system that knows
-a carrot is a vegetable.
+S2, X6's hierarchy and half of A2 all needed the same missing thing: **something that knows a carrot
+is a vegetable**. `IngredientKind` is `liquid / powder / solid / countable` and says in its own
+docstring that it exists to choose a unit, not to classify food.
 
-That is a unit of work rather than a finding: a category tree, seeded for the nine hundred entries
-that ship, editable for the ones an import invents, and per-locale like every other registry name.
-Three graded items unblock at once. What has been built instead is the flat version — letters and
-sections — which is worth having either way and is what the 900-entry list needed today.
+**It was in the reference table the whole time.** Every row of the Swiss Food Composition Database
+names a category hierarchically — *Vegetables/Fresh vegetables* — and the three published editions
+carry it against identical row ids, so it arrives translated: *Gemüse/Gemüse frisch*, *Légumes/Légumes
+frais*. 120 nodes, 19 sections, all 864 shipped foods placed, nobody translated a word
+([ADR-067](07-decisions.md#adr-067-where-a-food-sits-is-a-tree-taken-from-the-table-it-was-already-in)).
+
+What it unblocked: the shopping list is in aisles (S2), and the registry can be narrowed to one part
+of the shelf, which is what nine hundred entries needed beyond letters (X6, G2).
+
+**Still not the Academy hierarchy.** The tree describes *foods*, and the Academy is pages — a
+technique page has no category, and an ingredient page's category is the food's rather than the
+page's. Reading the Academy as `Academy > Ingredients > Vegetables > Carrot` is now possible and is
+its own piece of work. Nothing is blocking it any more.
 
 ## What this review still does not cover
 

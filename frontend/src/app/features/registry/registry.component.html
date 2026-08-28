@@ -60,6 +60,30 @@
         From imports
       </button>
     </div>
+    <!-- Which part of the tree. On the server rather than in the page, because the list is
+         paged: filtering what has been loaded would hide entries rather than find them
+         (X6, ADR-067). -->
+    @if (sections().length > 0) {
+      <label class="visually-hidden" for="registry-category" i18n="@@registryCategoryLabel">
+        Show one part of the shelf
+      </label>
+      <select
+        id="registry-category"
+        class="registry__category"
+        [value]="category() ?? ''"
+        (change)="showCategory($event)"
+      >
+        <option value="" i18n="@@registryEveryCategory">Everything</option>
+        @for (part of sections(); track part.section.slug) {
+          <optgroup [label]="part.section.name">
+            <option [value]="part.section.slug">{{ part.section.name }}</option>
+            @for (group of part.groups; track group.slug) {
+              <option [value]="group.slug">{{ group.name }}</option>
+            }
+          </optgroup>
+        }
+      </select>
+    }
   </div>
 
   @if (failed()) {

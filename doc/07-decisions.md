@@ -2967,3 +2967,59 @@ a language recorded — which is what makes ingredient names, recipe translation
 agree with the furniture around them. `<html lang>` follows the resolved locale, which it never did:
 `index.html` shipped `lang="en"` and nothing changed it, so a German page told a screen reader to
 pronounce German as English.
+
+---
+
+## ADR-067 Where a food sits is a tree, taken from the table it was already in
+
+**Status:** Accepted.
+
+**Context.** Three graded findings in `doc/12-visual-review.md` were all waiting on the same missing
+thing. S2 asked for the shopping list to be grouped by category. X6's margin note asked for the
+Academy to read as *Academy > Ingredients > Vegetables > Carrot*. A2 asked for the registry's nine
+hundred entries to be structured. None of them could be built, because nothing in the system knew a
+carrot is a vegetable.
+
+`IngredientKind` looked like the answer and is not. It is `liquid / powder / solid / countable` and
+its own docstring says why: "deliberately coarse — it exists to choose a unit, not to classify food".
+Grouping a shopping list by it produces *"Solid: apples, cheese, bread"*.
+
+**Decision.** Take the taxonomy from the Swiss Food Composition Database, which this registry was
+already built from and which has carried it all along. Every published row names a category
+hierarchically — *Vegetables/Fresh vegetables* — and the three editions publish it against identical
+row ids, so **it arrives translated**: *Gemüse/Gemüse frisch*, *Légumes/Légumes frais*. 120 nodes,
+19 sections, every one of the 864 shipped foods placed, and nobody translated a word.
+
+Four things make it a taxonomy rather than a column:
+
+1. **A tree, in two tables.** `ingredient_category` with a self-referential parent, and
+   `ingredient_category_name` per locale — the same shape `IngredientNameRow` has, for the same
+   reason. Two columns on the ingredient would have been smaller and could not be extended: a
+   household that stocks something the Swiss never listed must be able to add a category rather than
+   a migration. Nothing says two levels; two levels is what this source publishes.
+2. **One category per food, the first the table gives.** Forty-seven rows name two — apple juice is a
+   fruit juice *and* a non-alcoholic beverage — and a shopping list that puts one thing in two aisles
+   is a list with a thing on it twice.
+3. **Absent is absent.** Nullable, null for every entry that exists today and for everything a cook
+   adds. Not a bucket called "other": a bucket is a claim about the food, and "nobody has said" is
+   not one. A screen that wants a heading for the unplaced can write one; a server that invents one
+   cannot be told apart from a real answer — the same argument as ADR-006's unclassified.
+4. **Correctable.** `place_in_category` moves an entry, and a category slug this instance has never
+   heard of leaves the food where it was rather than refusing it. Losing the food is a worse answer
+   than losing where it sits.
+
+**A parsing detail worth recording.** The path separator is not reliable below the first level:
+*Savoury snacks/Chips/Crisps* and *Sweets/Cookies/Biscuits* are British and American names for one
+group, not a third level. So the first slash separates the section from the group and everything
+after it is the group's name verbatim. Splitting on every slash invents two categories that do not
+exist.
+
+**Consequences.** Narrowing the registry to a *section* takes the groups under it, because no food
+sits on a section — every leaf of the published tree is a group, and a cook asking about "Vegetables"
+is asking about the vegetables. The slug travels on the wire rather than the name: a client that
+holds the tree can name anything it is showing, and a page of fifty entries would otherwise repeat a
+handful of strings fifty times.
+
+**What stays open.** The tree is not editable through the interface yet — `place_in_category` exists
+and no screen calls it. And an ingredient an import invents is placed by nobody, which is the same
+gap Phase 8b has for per-locale names on the same rows.

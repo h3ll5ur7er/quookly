@@ -1050,6 +1050,25 @@
             "description": "Narrow to what has been reviewed, or to what awaits it."
           },
           {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Narrow to one node of the food tree. A section takes the groups in it.",
+              "title": "Category"
+            },
+            "description": "Narrow to one node of the food tree. A section takes the groups in it."
+          },
+          {
             "name": "offset",
             "in": "query",
             "required": false,
@@ -1090,6 +1109,32 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/registry/categories": {
+      "get": {
+        "tags": [
+          "ingredients"
+        ],
+        "summary": "List Food Categories",
+        "description": "Where food sits: the tree, named in this cook's language (ADR-067).\n\nBefore `/registry/{slug}`, because they share a shape and the first match wins.\n\nWhole rather than paged. A client that holds the tree can put headings on a shopping\nlist, on nine hundred registry rows and on the Academy without asking again for each,\nand twenty sections with a hundred groups under them is a list a screen holds.",
+        "operationId": "listFoodCategories",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryView"
+                  },
+                  "type": "array",
+                  "title": "Response Listfoodcategories"
                 }
               }
             }
@@ -3842,6 +3887,37 @@
         "title": "BoughtInput",
         "description": "Whether one line of the shopping list is in the basket (UC-4.4)."
       },
+      "CategoryView": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "parent_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Slug"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "parent_slug"
+        ],
+        "title": "CategoryView",
+        "description": "One node of the food tree, named as this cook reads it."
+      },
       "ClaimantView": {
         "properties": {
           "slug": {
@@ -6169,6 +6245,17 @@
           "approved": {
             "type": "boolean",
             "title": "Approved"
+          },
+          "category_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Slug"
           }
         },
         "type": "object",
@@ -6483,6 +6570,17 @@
           "unit": {
             "type": "string",
             "title": "Unit"
+          },
+          "category_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Slug"
           },
           "bought": {
             "type": "boolean",

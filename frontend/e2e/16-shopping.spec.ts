@@ -120,6 +120,20 @@ test('says how far through the shop the cook is', async ({ page }) => {
   await expect(page.locator('.shopping__progress')).toContainText('1');
 });
 
+test('reads as a walk through a shop, not as forty lines', async ({ page }) => {
+  /* The aisles come from the registry's food tree, which is taken from the same published
+     table the registry itself is (ADR-067). This is the test that says the *seeding*
+     reached the hand-written starter set — the entries a recipe actually names. Without
+     that half, every line would sit under "anything else" and the headings would be
+     technically present and useless (S2). */
+  await page.goto('/shopping');
+  await expect(page.locator('.shopping__line').first()).toBeVisible();
+
+  const aisles = await page.locator('.shopping__aisle').allInnerTexts();
+  expect(aisles.length).toBeGreaterThan(0);
+  expect(aisles).not.toEqual(['Anything else']);
+});
+
 test('has no accessibility violations', async ({ page }) => {
   await page.goto('/shopping');
   await expect(page.locator('.shopping__line').first()).toBeVisible();

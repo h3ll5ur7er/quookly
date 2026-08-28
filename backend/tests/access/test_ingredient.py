@@ -869,3 +869,89 @@ class TestSearchingWithoutAccents:
                 origin=Origin.SEED,
             )
         assert len(await registry.search("creme", ENGLISH, limit=2)) == 2
+
+
+class TestCategories:
+    """Where a food sits, as a tree rather than as a word on a row.
+
+    The Swiss table already carries this and Quookly was throwing it away: every row names
+    a category, hierarchically, in all three published languages — *Vegetables/Fresh
+    vegetables*, *Gemüse/Frischgemüse*, *Légumes/Légumes frais*. `IngredientKind` cannot
+    stand in for it: it is `liquid / powder / solid / countable` and exists to choose a
+    unit, not to classify food.
+
+    A tree rather than two columns because it has to be extendable by hand — a household
+    that stocks something the Swiss never listed adds a category, not a schema change.
+    """
+
+    async def a_tree(self) -> tuple[int, int]:
+        top = await registry.add_category(
+            slug="vegetables", names={ENGLISH: "Vegetables", GERMAN: "Gemüse"}
+        )
+        leaf = await registry.add_category(
+            slug="vegetables-fresh",
+            names={ENGLISH: "Fresh vegetables", GERMAN: "Frischgemüse"},
+            parent_slug="vegetables",
+        )
+        return top.id, leaf.id
+
+    async def test_a_category_is_named_in_every_language_it_was_published_in(self) -> None:
+        await self.a_tree()
+
+        english = await registry.categories(ENGLISH)
+        german = await registry.categories(GERMAN)
+
+        assert [one.name for one in english] == ["Vegetables", "Fresh vegetables"]
+        assert [one.name for one in german] == ["Gemüse", "Frischgemüse"]
+
+    async def test_a_leaf_knows_what_it_hangs_from(self) -> None:
+        await self.a_tree()
+        found = {one.slug: one for one in await registry.categories(ENGLISH)}
+        assert found["vegetables"].parent_slug is None
+        assert found["vegetables-fresh"].parent_slug == "vegetables"
+
+    async def test_naming_it_twice_names_it_once(self) -> None:
+        """Seeding runs on every start-up. A second run must find the category rather than
+        make a second one, exactly as registering an ingredient does (ADR-016)."""
+        first, _ = await self.a_tree()
+        again = await registry.add_category(
+            slug="vegetables", names={ENGLISH: "Vegetables", GERMAN: "Gemüse"}
+        )
+        assert again.id == first
+        assert len(await registry.categories(ENGLISH)) == 2
+
+    async def test_a_food_can_be_put_in_one(self) -> None:
+        _, leaf = await self.a_tree()
+        entry = await registry.register(
+            slug="carrot",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["carrot"]},
+            origin=Origin.SEED,
+            category_slug="vegetables-fresh",
+        )
+        assert entry.category_id == leaf
+
+        page = await registry.browse(ENGLISH)
+        assert [one.category_slug for one in page.entries] == ["vegetables-fresh"]
+
+    async def test_a_food_in_no_category_is_a_food_in_no_category(self) -> None:
+        """Most of a cook's own entries, and every entry that exists today. Absent rather
+        than a bucket called "other": a bucket is a claim about the food."""
+        await register_butter()
+        page = await registry.browse(ENGLISH)
+        assert [one.category_slug for one in page.entries] == [None]
+
+    async def test_a_category_nobody_defined_leaves_the_food_uncategorised(self) -> None:
+        """Rather than failing the registration. An entry naming a category this instance
+        has never heard of is still an entry, and losing the food would be worse than
+        losing where it sits."""
+        entry = await registry.register(
+            slug="samphire",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["samphire"]},
+            origin=Origin.SEED,
+            category_slug="sea-vegetables",
+        )
+        assert entry.category_id is None

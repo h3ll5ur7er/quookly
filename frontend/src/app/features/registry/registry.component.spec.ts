@@ -65,6 +65,11 @@ describe('RegistryComponent', () => {
     return backend.expectOne((request) => request.url === '/api/v1/registry');
   }
 
+  /** The food tree, which the screen asks for alongside the list. */
+  function tree(nodes: object[] = []) {
+    backend.expectOne('/api/v1/registry/categories').flush(nodes);
+  }
+
   /** Driven through the screen rather than the class: the buttons are part of the answer. */
   function click(label: string): void {
     const buttons: HTMLButtonElement[] = Array.from(
@@ -92,6 +97,10 @@ describe('RegistryComponent', () => {
     fixture = TestBed.createComponent(RegistryComponent);
     backend = TestBed.inject(HttpTestingController);
     await fixture.whenStable();
+    // The screen asks for the food tree alongside the list. Answered with nothing here so
+    // that every test which is not about the tree sees the screen it always was; the ones
+    // that are about it answer again with `tree(...)` (ADR-067).
+    tree();
   });
 
   afterEach(() => backend.verify());
@@ -321,6 +330,7 @@ describe('RegistryComponent', () => {
       fixture = TestBed.createComponent(RegistryComponent);
       backend = TestBed.inject(HttpTestingController);
       await fixture.whenStable();
+      tree();
     });
 
     it('offers to approve what needs a look', async () => {

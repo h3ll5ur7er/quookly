@@ -805,3 +805,98 @@ class TestWhatMergingWouldRecover:
         )
         survivor = (await client.get(f"{REGISTRY}/brown-sugar", headers=admin)).json()
         assert survivor["has_nutrition"] is True
+
+
+class TestWhereAFoodSits:
+    """The category tree, which the published table always carried and Quookly threw away.
+
+    It is what three separate findings were waiting on: a shopping list grouped by aisle,
+    a registry of nine hundred entries with sections in it, and an Academy that can be
+    read as *Ingredients > Vegetables > Carrot* rather than as one flat alphabet.
+
+    `IngredientKind` could not stand in for it. That is `liquid / powder / solid /
+    countable` and exists to choose a unit; grouping a shopping list by it gives
+    "Solid: apples, cheese, bread".
+    """
+
+    @pytest.fixture
+    async def tree(self) -> None:
+        await registry.add_category(
+            slug="vegetables",
+            names={ENGLISH: "Vegetables", GERMAN: "Gemüse"},
+        )
+        await registry.add_category(
+            slug="vegetables-fresh-vegetables",
+            names={ENGLISH: "Fresh vegetables", GERMAN: "Gemüse frisch"},
+            parent_slug="vegetables",
+        )
+        await registry.register(
+            slug="carrot",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["carrot"], GERMAN: ["Rüebli"]},
+            origin=Origin.SEED,
+            category_slug="vegetables-fresh-vegetables",
+        )
+
+    async def test_the_tree_can_be_read(
+        self, client: AsyncClient, cook: dict[str, str], tree: None
+    ) -> None:
+        answered = await client.get("/api/v1/registry/categories", headers=cook)
+
+        assert answered.status_code == 200, answered.text
+        assert answered.json() == [
+            {"slug": "vegetables", "name": "Vegetables", "parent_slug": None},
+            {
+                "slug": "vegetables-fresh-vegetables",
+                "name": "Fresh vegetables",
+                "parent_slug": "vegetables",
+            },
+        ]
+
+    async def test_the_tree_is_named_in_the_cooks_language(
+        self, client: AsyncClient, cook: dict[str, str], tree: None
+    ) -> None:
+        """Free, and the reason the tree is worth taking from the published table at all:
+        the three editions carry the same categories against identical row ids, so nobody
+        translates anything (FR-10)."""
+        await client.put("/api/v1/setup/locale", json={"locale": GERMAN}, headers=cook)
+
+        answered = await client.get("/api/v1/registry/categories", headers=cook)
+
+        assert [one["name"] for one in answered.json()] == ["Gemüse", "Gemüse frisch"]
+
+    async def test_an_entry_says_where_it_sits(
+        self, client: AsyncClient, cook: dict[str, str], tree: None
+    ) -> None:
+        listed = await client.get(REGISTRY, headers=cook)
+        assert by_slug(listed.json())["carrot"]["category_slug"] == "vegetables-fresh-vegetables"
+
+    async def test_an_entry_nobody_placed_says_so(
+        self, client: AsyncClient, cook: dict[str, str], stocked: None
+    ) -> None:
+        """Every entry a cook adds, and every entry that predates the tree. Absent rather
+        than a bucket called "other", which would be a claim about the food."""
+        listed = await client.get(REGISTRY, headers=cook)
+        assert by_slug(listed.json())["water"]["category_slug"] is None
+
+    async def test_the_registry_can_be_narrowed_to_one_category(
+        self, client: AsyncClient, cook: dict[str, str], tree: None, stocked: None
+    ) -> None:
+        """Which is what makes nine hundred entries navigable rather than merely lettered."""
+        listed = await client.get(
+            REGISTRY, params={"category": "vegetables-fresh-vegetables"}, headers=cook
+        )
+        assert [one["slug"] for one in listed.json()["entries"]] == ["carrot"]
+        assert listed.json()["total"] == 1
+
+    async def test_a_section_takes_the_groups_under_it(
+        self, client: AsyncClient, cook: dict[str, str], tree: None, stocked: None
+    ) -> None:
+        """Asking for "Vegetables" means the vegetables, not the empty set. A cook filtering
+        by a section is asking about the food in it, and no food sits on a section."""
+        listed = await client.get(REGISTRY, params={"category": "vegetables"}, headers=cook)
+        assert [one["slug"] for one in listed.json()["entries"]] == ["carrot"]
+
+    async def test_signing_in_is_required_to_read_the_tree(self, client: AsyncClient) -> None:
+        assert (await client.get("/api/v1/registry/categories")).status_code == 401

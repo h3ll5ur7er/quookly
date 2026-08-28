@@ -47,6 +47,41 @@ class CookRow(SQLModel, table=True):
     locale: str | None = Field(default=None)
 
 
+class IngredientCategoryRow(SQLModel, table=True):
+    """Where a food sits: a shop's aisle, and a heading in a list of nine hundred.
+
+    A tree rather than two columns, because it has to be extendable by hand — a household
+    that stocks something the published table never listed adds a category, not a schema
+    change. Two levels is what the Swiss database publishes; nothing here says two.
+
+    Not `IngredientKind`. That is `liquid / powder / solid / countable` and exists to
+    choose a unit, which is why grouping a shopping list by it produced "Solid: apples,
+    cheese, bread".
+    """
+
+    __tablename__ = "ingredient_category"
+
+    id: int | None = Field(default=None, primary_key=True)
+    slug: str = Field(unique=True, index=True)
+    parent_id: int | None = Field(default=None, foreign_key="ingredient_category.id", index=True)
+
+
+class IngredientCategoryNameRow(SQLModel, table=True):
+    """What a category is called, in one locale.
+
+    One row per locale, unlike an ingredient's names: a category is a heading rather than
+    something a cook types, so there is nothing for a second spelling to resolve.
+    """
+
+    __tablename__ = "ingredient_category_name"
+    __table_args__ = (UniqueConstraint("category_id", "locale", name="uq_category_name"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    category_id: int = Field(foreign_key="ingredient_category.id", index=True)
+    locale: str = Field(index=True)
+    name: str
+
+
 class IngredientRow(SQLModel, table=True):
     """A registry entry. Identity is the slug; names live in `IngredientNameRow`."""
 
@@ -70,6 +105,10 @@ class IngredientRow(SQLModel, table=True):
     # Absent rather than assumed: eggs come in four sizes, and no table Quookly reads
     # publishes a portion weight.
     piece_grams: Decimal | None = Field(default=None, max_digits=8, decimal_places=2)
+    # Where this food sits. Nullable, and null for everything a cook adds themselves:
+    # absent rather than a bucket called "other", because a bucket is a claim about the
+    # food and "nobody has said" is not one.
+    category_id: int | None = Field(default=None, foreign_key="ingredient_category.id", index=True)
 
 
 class NutrientProfileRow(SQLModel, table=True):

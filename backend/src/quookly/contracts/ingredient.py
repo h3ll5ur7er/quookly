@@ -87,6 +87,32 @@ class Ingredient:
     #: cannot be counted towards its nutrition. Absent rather than assumed: eggs come in
     #: four sizes and inventing one puts a number on a label that nobody measured.
     piece_grams: Decimal | None = None
+    #: Where this food sits — an aisle in a shop, a heading in a list of nine hundred.
+    #: Absent for everything a cook adds themselves, and for every entry that predates
+    #: the taxonomy. Absent rather than a bucket called "other": a bucket is a claim
+    #: about the food, and "nobody has said" is not one.
+    category_id: int | None = None
+    category_slug: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class Category:
+    """Where a food sits, named in one locale.
+
+    A tree: `parent_slug` is absent for a section and names one for a group inside it. The
+    Swiss table publishes two levels — *Vegetables/Fresh vegetables* — and nothing here
+    says two, because a household that stocks something it never listed should be able to
+    add a category rather than a migration.
+
+    Deliberately not `IngredientKind`, which is `liquid / powder / solid / countable` and
+    exists to choose a unit. Grouping a shopping list by that produced "Solid: apples,
+    cheese, bread", which is where this came from.
+    """
+
+    id: int
+    slug: str
+    name: str
+    parent_slug: str | None = None
 
 
 class Unset(Enum):
@@ -167,6 +193,24 @@ class RegistryEntryView(BaseModel):
     classified: bool
     #: Whether anybody has reviewed the entry itself (ADR-051).
     approved: bool
+    #: Where this food sits, as a slug into the tree `GET /registry/categories` returns.
+    #: Absent for everything a cook adds themselves. The slug rather than the name: a
+    #: client that has the tree can name it, and a page of fifty entries would otherwise
+    #: repeat a handful of strings fifty times.
+    category_slug: str | None = None
+
+
+class CategoryView(BaseModel):
+    """One node of the food tree, named as this cook reads it."""
+
+    model_config = ConfigDict(frozen=True)
+
+    slug: str
+    name: str
+    #: Absent for a section, and the section's slug for a group inside it. Flat on the
+    #: wire rather than nested: a client that wants a tree builds one, and a client that
+    #: wants to look a slug up should not have to walk one.
+    parent_slug: str | None
 
 
 class RegistryPageView(BaseModel):

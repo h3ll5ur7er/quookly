@@ -16,6 +16,7 @@ from .access.database import dispose_engine
 from .contracts.events import MealCooked
 from .managers import pantry
 from .managers.seed import (
+    place_seeded_foods,
     stock_academy,
     stock_generic_foods,
     stock_nutrition,
@@ -87,6 +88,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # starter recipes have ingredients to point at, and a cook being let in needs it. This
     # is the instance's reference data, and it is nobody's dependency.
     await stock_generic_foods()
+    # After both registries, because it places what they added. The generic foods arrive
+    # already in the tree; the hand-written starter set is the half a recipe actually
+    # names, and without this a fresh instance's shopping list has every line under
+    # "anything else" (ADR-067).
+    await place_seeded_foods()
     await stock_nutrition()
     # Reference material rather than anybody's dependency, like the generic foods:
     # every screen works without it, and a cook meeting an unfamiliar word does not.

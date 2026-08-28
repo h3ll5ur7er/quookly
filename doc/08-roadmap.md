@@ -518,6 +518,18 @@ Placed here rather than in Phase 6b because none of it blocks a first release: t
 already conservative in the direction that matters — an unclassified allergen never claims a recipe
 is safe.
 
+### Where food sits
+
+**Built.** A category tree, taken from the column the Swiss workbooks always carried and Quookly was
+throwing away
+([ADR-067](07-decisions.md#adr-067-where-a-food-sits-is-a-tree-taken-from-the-table-it-was-already-in)).
+Trilingual for free, because the three editions publish it against identical row ids. It unblocked a
+shopping list grouped by aisle and a registry that can be narrowed to one part of the shelf.
+
+What is owed: **a screen to correct it** — `place_in_category` exists and nothing calls it, so an
+ingredient an import invents is placed by nobody. That is the same gap this phase already has for
+per-locale names on those rows, and worth doing with them.
+
 ## Phase 8 — Community and engagement
 
 **Goal:** recipes circulate.

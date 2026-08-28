@@ -30,6 +30,20 @@
 /* `styles/segmented`, the same shape the recipe list and the Academy use. The chosen one
    is carried by fill as well as by `aria-pressed`. */
 
+/* Which part of the shelf. A native select: twenty sections with a hundred groups under
+   them is exactly what `optgroup` is for, and a bespoke tree control on a phone is worse
+   than the one the platform already draws. */
+.registry__category {
+  min-height: 48px;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--on-surface);
+  font: inherit;
+  font-size: var(--text-sm);
+}
+
 /* --- the list --------------------------------------------------------------------------- */
 
 /* A flex row with a gap, not three inline elements with newlines between them: Angular
