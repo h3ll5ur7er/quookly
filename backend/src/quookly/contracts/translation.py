@@ -54,3 +54,37 @@ class TranslationView(BaseModel):
     #: that is no longer there is not stale — it is a wrong instruction, so it is not
     #: shown (ADR-064).
     current: bool
+
+
+class TranslatableView(BaseModel):
+    """The words of a recipe in one language, as a client reads or writes them."""
+
+    model_config = ConfigDict(frozen=True)
+
+    title: str
+    summary: str | None = None
+    steps: list[str] = []
+
+
+class TranslationDraftView(BaseModel):
+    """A translation as the screen that corrects it reads it.
+
+    Carries the recipe's own words beside the translation, because correcting one without
+    the original in front of you is proof-reading a language you cannot check against.
+
+    `current` says whether the two still agree. A correction of words that have moved is
+    kept and not shown (ADR-064), and this screen is the only place it can be seen at all
+    — so it has to say plainly that this is what it is.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    locale: str
+    by_hand: bool
+    current: bool
+    title: str
+    summary: str | None
+    steps: list[str]
+    #: The author's words, to correct against.
+    source: TranslatableView
+    source_language: str

@@ -27,6 +27,8 @@ from quookly.contracts.errors import (
     InferenceNotConfigured,
     InferenceUnavailable,
     NothingToTranslate,
+    SameLanguage,
+    TranslationDoesNotFit,
     UnsuitableForTheTable,
     UnsupportedDocument,
     YieldUnknown,
@@ -65,7 +67,12 @@ from quookly.contracts.recipe import (
     VariantInput,
 )
 from quookly.contracts.suitability import JudgedLine, Outcome, VerdictView
-from quookly.contracts.translation import HeldTranslation, Translatable
+from quookly.contracts.translation import (
+    HeldTranslation,
+    Translatable,
+    TranslatableView,
+    TranslationDraftView,
+)
 from quookly.contracts.web import ReadableContent
 from quookly.engines import (
     exchange,
@@ -477,8 +484,12 @@ async def _judge(recipe: Recipe, cook_id: int) -> VerdictView | None:
     return VerdictView.of(suitability.evaluate(suitability.facts_for(recipe.lines), household))
 
 
-async def _read_in(recipe: Recipe, locale: str) -> tuple[Recipe, bool]:
+async def _read_in(recipe: Recipe, locale: str) -> tuple[Recipe, bool, bool]:
     """The same recipe with its prose in the reader's language, where one is wanted.
+
+    Returns the recipe, whether it was translated, and whether a person wrote that
+    translation — three facts rather than two, because "a machine wrote this" printed over
+    a cook's own correction is as wrong as the other way round (ADR-064).
 
     Returns it untouched where the recipe is already in that language, where nobody knows
     what language it is in, or where this instance has no model — the last of which is
@@ -490,15 +501,17 @@ async def _read_in(recipe: Recipe, locale: str) -> tuple[Recipe, bool]:
     """
     wanted = locale.split("-")[0]
     if recipe.language is None or recipe.language == wanted:
-        return recipe, False
+        return recipe, False, False
 
-    original = Translatable(
-        title=recipe.title,
-        summary=recipe.summary,
-        steps=[step.instruction for step in recipe.steps],
-    )
+    original = _prose_of(recipe)
     held = await translation_access.held(recipe.id, wanted, of=original)
     if held is None:
+        if await translation_access.correction(recipe.id, wanted) is not None:
+            # Somebody wrote this translation and the recipe has moved under it. Kept, and
+            # not shown: the reader sees the author's own language, which is honest and is
+            # what an instance with no model shows anyway. Deriving a fresh one here is
+            # exactly the silent overwrite ADR-064 forbids.
+            return recipe, False, False
         try:
             said = await translation.render(original, recipe.language, wanted)
         except (InferenceNotConfigured, InferenceUnavailable, NothingToTranslate):
@@ -508,7 +521,7 @@ async def _read_in(recipe: Recipe, locale: str) -> tuple[Recipe, bool]:
             log.info(
                 "no translation of recipe %s into %s; showing it as written", recipe.id, wanted
             )
-            return recipe, False
+            return recipe, False, False
         await translation_access.keep(recipe.id, wanted, said, of=original)
         held = HeldTranslation(words=said, by_hand=False)
 
@@ -523,6 +536,7 @@ async def _read_in(recipe: Recipe, locale: str) -> tuple[Recipe, bool]:
             ],
         ),
         True,
+        held.by_hand,
     )
 
 
@@ -537,7 +551,7 @@ async def _present(
     # The prose in the reader's language, where that is not the language it was written
     # in. Everything else on this page is already language-neutral: quantities are columns
     # rendered per cook and ingredient names resolve through the registry (ADR-032).
-    recipe, translated = await _read_in(recipe, locale)
+    recipe, translated, by_hand = await _read_in(recipe, locale)
     factor = Decimal(1) if servings is None else servings / recipe.yield_quantity.magnitude
     scaled_yield = measure.scale(recipe.yield_quantity, factor)
 
@@ -564,6 +578,7 @@ async def _present(
         provenance=recipe.provenance,
         language=recipe.language,
         translated=translated,
+        translated_by_hand=by_hand,
         picture=(
             None
             if recipe.picture is None
@@ -1007,4 +1022,91 @@ async def import_from_url(url: str, cook_id: int, locale: str | None = None) -> 
         read_from=read.source,
         source_url=content.url,
         ingredients_added=added,
+    )
+
+
+async def translation_of(recipe_id: int, locale: str, cook_id: int) -> TranslationDraftView | None:
+    """The translation of one recipe into one language, for the screen that corrects it.
+
+    The recipe's own words travel with it. Correcting a translation without the original
+    in front of you is proof-reading a language you cannot check against.
+
+    Absent where there is nothing to correct — no recipe, not this cook's, or the recipe is
+    already in that language, which makes a "translation" of it an edit.
+    """
+    recipe = await _theirs(recipe_id, cook_id)
+    if recipe is None:
+        return None
+    wanted = locale.split("-")[0]
+    if recipe.language is None or recipe.language == wanted:
+        return None
+
+    original = _prose_of(recipe)
+    held = await translation_access.held(recipe.id, wanted, of=original)
+    written = held or await translation_access.correction(recipe.id, wanted)
+    if written is None:
+        return None
+
+    return TranslationDraftView(
+        locale=wanted,
+        by_hand=written.by_hand,
+        current=await translation_access.matches(recipe.id, wanted, of=original),
+        title=written.words.title,
+        summary=written.words.summary,
+        steps=list(written.words.steps),
+        source=TranslatableView(
+            title=original.title, summary=original.summary, steps=list(original.steps)
+        ),
+        source_language=recipe.language,
+    )
+
+
+async def correct_translation(
+    recipe_id: int, locale: str, words: Translatable, cook_id: int
+) -> TranslationDraftView | None:
+    """Record a translation somebody here wrote, replacing whatever was held.
+
+    Fingerprinted against the recipe as it stands now, so a correction is a statement
+    about *these* words — and a later edit stops it being shown rather than quietly
+    letting it describe sentences that are not there (ADR-064).
+
+    Raises `TranslationDoesNotFit` where the step count differs. The pairing is by
+    position: a translation one step short puts step three's words on step two, which is a
+    wrong instruction rather than a badly worded one.
+    """
+    recipe = await _theirs(recipe_id, cook_id)
+    if recipe is None:
+        return None
+    wanted = locale.split("-")[0]
+    if recipe.language is not None and recipe.language == wanted:
+        raise SameLanguage(wanted)
+
+    original = _prose_of(recipe)
+    if len(words.steps) != len(original.steps):
+        raise TranslationDoesNotFit(len(original.steps), len(words.steps))
+
+    await translation_access.keep(recipe.id, wanted, words, of=original, by_hand=True)
+    return await translation_of(recipe_id, locale, cook_id)
+
+
+async def _theirs(recipe_id: int, cook_id: int) -> Recipe | None:
+    """This cook's recipe, in the author's own words.
+
+    Fetched rather than presented, which is the point: `present` runs `_read_in` and would
+    hand back the translation, so the screen would be proof-reading a machine against
+    itself. What `fetch` returns is always the prose as written — the locale it takes only
+    chooses ingredient names, and those are not part of a translation at all (ADR-032).
+
+    Somebody else's reads as absent rather than forbidden, the same as everywhere else.
+    """
+    recipe = await recipe_access.fetch(recipe_id, SOURCE_LOCALE)
+    return None if recipe is None or recipe.cook_id != cook_id else recipe
+
+
+def _prose_of(recipe: Recipe) -> Translatable:
+    """A recipe's words, as a translation sees them. Prose only (ADR-032)."""
+    return Translatable(
+        title=recipe.title,
+        summary=recipe.summary,
+        steps=[step.instruction for step in recipe.steps],
     )

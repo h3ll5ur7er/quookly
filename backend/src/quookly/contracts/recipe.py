@@ -339,6 +339,11 @@ class PresentedRecipe(BaseModel):
     #: reader knows. False where the reader is reading the original, *and* where no
     #: translation could be made and the original is being shown instead.
     translated: bool = False
+    #: And by whom. A machine's words and a person's are both translations and only one of
+    #: them is somebody's work — saying "a machine wrote this" over a correction a cook
+    #: made is as wrong as the other way round (ADR-064). Meaningless where `translated`
+    #: is false.
+    translated_by_hand: bool = False
     # The recipe this one is a version of, where it is a version of one. A cook looking at
     # a dairy-free shortbread should be one tap from the shortbread.
     derived_from: int | None = None

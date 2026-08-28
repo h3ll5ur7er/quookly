@@ -33,9 +33,28 @@
            failure ADR-056 exists to prevent one layer up — and here the author may be
            somebody the reader knows (ADR-032). -->
       @if (shown.translated) {
-        <p class="recipe__translated" i18n="@@recipeTranslated">
-          Translated for you. The cook wrote it in another language, and these are a machine's words
-          rather than theirs.
+        <p class="recipe__translated">
+          @if (shown.translated_by_hand) {
+            <span i18n="@@recipeTranslatedByHand">
+              Translated for you. The cook wrote it in another language, and somebody here wrote
+              these words.
+            </span>
+          } @else {
+            <span i18n="@@recipeTranslated">
+              Translated for you. The cook wrote it in another language, and these are a machine's
+              words rather than theirs.
+            </span>
+          }
+          <!-- Only to the cook whose recipe it is. A translation is prose about their
+               words, and correcting it is theirs to do (ADR-064). -->
+          @if (mine()) {
+            <a
+              [routerLink]="['/recipes', shown.id, 'translations', reading()]"
+              i18n="@@recipeCorrectTranslation"
+            >
+              Correct it
+            </a>
+          }
         </p>
       }
       @if (shown.summary) {

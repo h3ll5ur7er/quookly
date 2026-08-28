@@ -17,7 +17,9 @@ from quookly.contracts.errors import (
     InferenceUnavailable,
     IngredientNotRegistered,
     NotARecipe,
+    SameLanguage,
     StructuredOutputUnusable,
+    TranslationDoesNotFit,
     UnknownUnit,
     UnreadableImage,
     UnsuitableForTheTable,
@@ -34,6 +36,11 @@ from quookly.contracts.recipe import (
     RecipeSummaryView,
     UrlImport,
     VariantInput,
+)
+from quookly.contracts.translation import (
+    Translatable,
+    TranslatableView,
+    TranslationDraftView,
 )
 from quookly.managers import recipe as recipe_manager
 from quookly.routes.dependencies import CurrentCook
@@ -311,6 +318,53 @@ async def get_recipe(
     if presented is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such recipe.")
     return presented
+
+
+@router.get("/recipes/{recipe_id}/translations/{locale}", response_model=TranslationDraftView)
+async def get_translation(recipe_id: int, locale: str, cook: CurrentCook) -> TranslationDraftView:
+    """The translation of one recipe into one language, for correcting (ADR-064).
+
+    Carries the author's own words beside it. Correcting a translation without the
+    original in front of you is proof-reading a language you cannot check against — and
+    `current` says whether the two still agree, because a correction of sentences that
+    have moved is kept and not shown, and this is the only screen it can be seen on.
+    """
+    found = await recipe_manager.translation_of(recipe_id, locale, cook.cook_id)
+    if found is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such recipe.")
+    return found
+
+
+@router.put("/recipes/{recipe_id}/translations/{locale}", response_model=TranslationDraftView)
+async def correct_translation(
+    recipe_id: int, locale: str, submitted: TranslatableView, cook: CurrentCook
+) -> TranslationDraftView:
+    """Record a translation somebody here wrote (UC-2.7, ADR-064).
+
+    The cook whose recipe it is. A translation is prose about *their* words, and the
+    registry-style "anybody may correct shared reference data" argument does not apply: a
+    recipe is one household's.
+    """
+    try:
+        corrected = await recipe_manager.correct_translation(
+            recipe_id,
+            locale,
+            Translatable(
+                title=submitted.title,
+                summary=submitted.summary,
+                steps=list(submitted.steps),
+            ),
+            cook.cook_id,
+        )
+    except TranslationDoesNotFit as mismatch:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(mismatch)
+        ) from mismatch
+    except SameLanguage as same:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(same)) from same
+    if corrected is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such recipe.")
+    return corrected
 
 
 @router.put("/recipes/{recipe_id}", response_model=PresentedRecipe)

@@ -203,3 +203,67 @@ class TestWhatSurvivesAChange:
     ) -> None:
         await stored.keep(recipe_id, "en", ENGLISH_PROSE, of=GERMAN_PROSE)
         assert await stored.written_by_hand(recipe_id) == []
+
+
+class TestWhatAModelMayNotDo:
+    """The half of ADR-064 that had nothing to trigger it yet.
+
+    Nothing could write a `by_hand` translation before there was a screen to correct one
+    on, so `keep` replacing whatever it found was harmless. It stops being harmless the
+    moment a cook can correct a translation: the recipe is edited, the fingerprint stops
+    matching, the next read derives a fresh machine translation — and deletes the
+    correction on its way past.
+    """
+
+    async def test_a_model_may_not_replace_a_correction(self, recipe_id: int) -> None:
+        await stored.keep(recipe_id, "en", ENGLISH_PROSE, of=GERMAN_PROSE, by_hand=True)
+        moved = Translatable(title="Schokoladentorte", steps=GERMAN_PROSE.steps)
+
+        await stored.keep(
+            recipe_id,
+            "en",
+            Translatable(title="Chocolate gateau", steps=ENGLISH_PROSE.steps),
+            of=moved,
+        )
+
+        # The correction is still there, and still not shown for the moved words.
+        assert await stored.written_by_hand(recipe_id) == ["en"]
+        assert await stored.held(recipe_id, "en", of=moved) is None
+        assert (await stored.correction(recipe_id, "en")) is not None
+
+    async def test_a_person_may_replace_their_own_correction(self, recipe_id: int) -> None:
+        """Correcting twice is correcting, not overwriting somebody else's work."""
+        await stored.keep(recipe_id, "en", ENGLISH_PROSE, of=GERMAN_PROSE, by_hand=True)
+        again = Translatable(title="Chocolate gateau", steps=ENGLISH_PROSE.steps)
+
+        await stored.keep(recipe_id, "en", again, of=GERMAN_PROSE, by_hand=True)
+
+        held = await stored.held(recipe_id, "en", of=GERMAN_PROSE)
+        assert held is not None and held.words.title == "Chocolate gateau"
+
+    async def test_a_person_may_replace_a_models_words(self, recipe_id: int) -> None:
+        """Which is what correcting one *is*."""
+        await stored.keep(recipe_id, "en", ENGLISH_PROSE, of=GERMAN_PROSE)
+        corrected = Translatable(title="Chocolate cake, properly", steps=ENGLISH_PROSE.steps)
+
+        await stored.keep(recipe_id, "en", corrected, of=GERMAN_PROSE, by_hand=True)
+
+        held = await stored.held(recipe_id, "en", of=GERMAN_PROSE)
+        assert held is not None and held.by_hand
+        assert held.words.title == "Chocolate cake, properly"
+
+    async def test_a_correction_can_be_read_back_even_when_it_is_not_current(
+        self, recipe_id: int
+    ) -> None:
+        """What the screen offering to bring it up to date has to show: the words somebody
+        wrote, beside the recipe as it now stands."""
+        await stored.keep(recipe_id, "en", ENGLISH_PROSE, of=GERMAN_PROSE, by_hand=True)
+        moved = Translatable(title="Schokoladentorte", steps=GERMAN_PROSE.steps)
+
+        found = await stored.correction(recipe_id, "en")
+
+        assert found is not None
+        assert found.words.title == "Chocolate cake"
+        # And it knows it no longer describes the recipe.
+        assert not await stored.matches(recipe_id, "en", of=moved)
+        assert await stored.matches(recipe_id, "en", of=GERMAN_PROSE)

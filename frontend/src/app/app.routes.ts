@@ -69,6 +69,16 @@ export const routes: Routes = [
       import('./features/recipes/recipe-form.component').then((m) => m.RecipeFormComponent),
   },
   {
+    // Before `:id`-shaped routes it shares a prefix with, and after `edit` for the same
+    // reason: the first match wins.
+    path: 'recipes/:id/translations/:locale',
+    canActivate: [requireSignedIn],
+    loadComponent: () =>
+      import('./features/recipes/translate-recipe.component').then(
+        (m) => m.TranslateRecipeComponent,
+      ),
+  },
+  {
     path: 'recipes/:id/edit',
     canActivate: [requireSignedIn],
     loadComponent: () =>

@@ -41,6 +41,13 @@ async def keep(
 
     Replacing rather than adding: a recipe has one translation per language, and keeping
     the previous one would be keeping a translation of words that have moved on.
+
+    **Except over somebody's work.** A machine translation never replaces one a person
+    wrote, whether or not it still matches the recipe: a model silently overwriting a
+    correction is worse than no correction at all (ADR-064). A person may replace either —
+    correcting twice is correcting, and correcting a model's words is what the screen is
+    for. Enforced here rather than at the caller because there is exactly one rule and
+    every write path has to obey it.
     """
     async with session() as active:
         held = (
@@ -51,6 +58,8 @@ async def keep(
                 )
             )
         ).first()
+        if held is not None and held.by_hand and not by_hand:
+            return
         if held is not None and held.id is not None:
             await active.exec(
                 delete(RecipeTranslationStepRow).where(
@@ -117,6 +126,62 @@ async def held(recipe_id: int, locale: str, *, of: Translatable) -> HeldTranslat
         ),
         by_hand=row.by_hand,
     )
+
+
+async def correction(recipe_id: int, locale: str) -> HeldTranslation | None:
+    """The translation somebody here wrote, whether or not it still fits the recipe.
+
+    Deliberately not `held`, which answers "may this be shown" and is the only thing a
+    *reader* should ever use. This answers "what did somebody write", which is a different
+    question with a different audience: the screen that offers to bring a correction back
+    up to date has to show the words beside the recipe as it now stands (ADR-064).
+    """
+    async with session() as active:
+        row = (
+            await active.exec(
+                select(RecipeTranslationRow).where(
+                    col(RecipeTranslationRow.recipe_id) == recipe_id,
+                    col(RecipeTranslationRow.locale) == locale,
+                    col(RecipeTranslationRow.by_hand).is_(True),
+                )
+            )
+        ).first()
+        if row is None or row.id is None:
+            return None
+        steps = (
+            await active.exec(
+                select(RecipeTranslationStepRow)
+                .where(col(RecipeTranslationStepRow.translation_id) == row.id)
+                .order_by(col(RecipeTranslationStepRow.position))
+            )
+        ).all()
+
+    return HeldTranslation(
+        words=Translatable(
+            title=row.title, summary=row.summary, steps=[one.instruction for one in steps]
+        ),
+        by_hand=True,
+    )
+
+
+async def matches(recipe_id: int, locale: str, *, of: Translatable) -> bool:
+    """Whether what is stored for this language still describes these words.
+
+    The same comparison `held` makes, asked on its own — a screen showing a correction has
+    to say whether it is current, and reading the words is a different question from being
+    allowed to show them.
+    """
+    wanted = fingerprint(of)
+    async with session() as active:
+        row = (
+            await active.exec(
+                select(RecipeTranslationRow).where(
+                    col(RecipeTranslationRow.recipe_id) == recipe_id,
+                    col(RecipeTranslationRow.locale) == locale,
+                )
+            )
+        ).first()
+    return row is not None and row.source_fingerprint == wanted
 
 
 async def written_by_hand(recipe_id: int) -> list[str]:

@@ -1,0 +1,84 @@
+<main class="page translate">
+  <a class="translate__back" [routerLink]="['/recipes', recipeId]" i18n="@@translateBack">
+    Back to the recipe
+  </a>
+
+  @if (missing()) {
+    <h1 i18n="@@translateNothingHeading">Nothing to correct</h1>
+    <p class="translate__lede" i18n="@@translateNothing">
+      This recipe is not being read in another language, so there is no translation to correct.
+    </p>
+  } @else if (draft(); as it) {
+    <h1 i18n="@@translateHeading">Correct the translation</h1>
+
+    <!-- Whose words these are. Both are translations and only one is somebody's work, so
+         saying "a machine wrote this" over a cook's own correction would be as wrong as
+         the other way round (ADR-064). -->
+    @if (!it.by_hand) {
+      <p class="translate__lede" i18n="@@translateMachine">
+        A machine wrote this from the recipe. Correct anything it got wrong — once you do, it stays
+        yours and is never written over.
+      </p>
+    } @else {
+      <p class="translate__lede" i18n="@@translateYours">
+        Somebody here wrote this. It stays as written: nothing derives over it.
+      </p>
+    }
+
+    <!-- Kept, and deliberately not shown to a reader. This screen is the only place these
+         words exist at all, so it has to say so rather than look live. -->
+    @if (!it.current) {
+      <p class="notice notice--info" role="status" i18n="@@translateStale">
+        The recipe has changed since this was written, so readers are seeing it in its own language
+        instead. Bring this up to date and it will be shown again.
+      </p>
+    }
+
+    @if (saveFailed()) {
+      <p class="notice notice--danger" role="alert" i18n="@@translateSaveFailed">
+        Could not save that. Nothing was changed — please try again.
+      </p>
+    }
+    @if (saved()) {
+      <p class="translate__note" role="status" i18n="@@translateSaved">Saved.</p>
+    }
+
+    <form [formGroup]="words" (ngSubmit)="save()">
+      <div class="field">
+        <label for="title" i18n="@@translateTitle">Title</label>
+        <!-- The author's words beside the field, not above the form: proof-reading a
+             language without the original in front of you is guessing at it. -->
+        <p class="translate__source">{{ it.source.title }}</p>
+        <input id="title" type="text" formControlName="title" />
+      </div>
+
+      @if (it.source.summary) {
+        <div class="field">
+          <label for="summary" i18n="@@translateSummary">In one line</label>
+          <p class="translate__source">{{ it.source.summary }}</p>
+          <input id="summary" type="text" formControlName="summary" />
+        </div>
+      }
+
+      <fieldset formArrayName="steps">
+        <legend i18n="@@translateSteps">The method</legend>
+        <!-- Paired by position, which is how a stored translation is paired back to the
+             recipe. A step added or removed is why one with the wrong count is refused. -->
+        @for (step of steps.controls; track $index) {
+          <div class="field">
+            <label [attr.for]="'step-' + $index" class="translate__number">
+              <span i18n="@@translateStepNumber">Step</span>
+              <span class="numeric">{{ $index + 1 }}</span>
+            </label>
+            <p class="translate__source">{{ sourceSteps()[$index] }}</p>
+            <input [id]="'step-' + $index" type="text" [formControlName]="$index" />
+          </div>
+        }
+      </fieldset>
+
+      <button type="submit" class="action" i18n="@@translateSave">Save the translation</button>
+    </form>
+  } @else {
+    <p i18n="@@translateLoading">Loading…</p>
+  }
+</main>

@@ -819,6 +819,118 @@
         }
       }
     },
+    "/api/v1/recipes/{recipe_id}/translations/{locale}": {
+      "get": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Get Translation",
+        "description": "The translation of one recipe into one language, for correcting (ADR-064).\n\nCarries the author's own words beside it. Correcting a translation without the\noriginal in front of you is proof-reading a language you cannot check against \u2014 and\n`current` says whether the two still agree, because a correction of sentences that\nhave moved is kept and not shown, and this is the only screen it can be seen on.",
+        "operationId": "getTranslation",
+        "parameters": [
+          {
+            "name": "recipe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Recipe Id"
+            }
+          },
+          {
+            "name": "locale",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Locale"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationDraftView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Correct Translation",
+        "description": "Record a translation somebody here wrote (UC-2.7, ADR-064).\n\nThe cook whose recipe it is. A translation is prose about *their* words, and the\nregistry-style \"anybody may correct shared reference data\" argument does not apply: a\nrecipe is one household's.",
+        "operationId": "correctTranslation",
+        "parameters": [
+          {
+            "name": "recipe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Recipe Id"
+            }
+          },
+          {
+            "name": "locale",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Locale"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranslatableView"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationDraftView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/recipes/{recipe_id}/archived": {
       "post": {
         "tags": [
@@ -5756,6 +5868,11 @@
             "title": "Translated",
             "default": false
           },
+          "translated_by_hand": {
+            "type": "boolean",
+            "title": "Translated By Hand",
+            "default": false
+          },
           "derived_from": {
             "anyOf": [
               {
@@ -7113,6 +7230,97 @@
         },
         "type": "object",
         "title": "TimingView"
+      },
+      "TranslatableView": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "steps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Steps",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "TranslatableView",
+        "description": "The words of a recipe in one language, as a client reads or writes them."
+      },
+      "TranslationDraftView": {
+        "properties": {
+          "locale": {
+            "type": "string",
+            "title": "Locale"
+          },
+          "by_hand": {
+            "type": "boolean",
+            "title": "By Hand"
+          },
+          "current": {
+            "type": "boolean",
+            "title": "Current"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "steps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Steps"
+          },
+          "source": {
+            "$ref": "#/components/schemas/TranslatableView"
+          },
+          "source_language": {
+            "type": "string",
+            "title": "Source Language"
+          }
+        },
+        "type": "object",
+        "required": [
+          "locale",
+          "by_hand",
+          "current",
+          "title",
+          "summary",
+          "steps",
+          "source",
+          "source_language"
+        ],
+        "title": "TranslationDraftView",
+        "description": "A translation as the screen that corrects it reads it.\n\nCarries the recipe's own words beside the translation, because correcting one without\nthe original in front of you is proof-reading a language you cannot check against.\n\n`current` says whether the two still agree. A correction of words that have moved is\nkept and not shown (ADR-064), and this screen is the only place it can be seen at all\n\u2014 so it has to say plainly that this is what it is."
       },
       "UnitChoice": {
         "properties": {

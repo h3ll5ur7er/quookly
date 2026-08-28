@@ -576,9 +576,12 @@ construction, and ingredient names resolve per locale through the registry. What
   produced, shown as the author's own words, is the failure
   [ADR-056](07-decisions.md#adr-056-a-generated-explanation-is-marked-unreviewed-and-never-an-input-to-a-judgement)
   exists to prevent one layer up, and here the author may be somebody the reader knows.
-- **A cook may correct a translation**, and a correction is never silently re-derived
-  ([ADR-064](07-decisions.md#adr-064-a-translation-records-what-it-translated-and-a-persons-words-are-not-re-derived)
-  decides this; the storage already records `by_hand` and the screens are owed)
+- ~~**A cook may correct a translation**, and a correction is never silently re-derived~~ **Built**
+  — the screen puts the author's own words beside every field, and two things the decision implied
+  turned out not to be in the code: `keep` let a model replace a person's translation, and a stale
+  correction was being re-derived rather than the recipe being shown in its own language. Both are
+  closed, and `translated_by_hand` says whose words a reader is looking at
+  ([ADR-064](07-decisions.md#adr-064-a-translation-records-what-it-translated-and-a-persons-words-are-not-re-derived))
 - **The interchange format carries a person's translations and not a machine's** — decided, not yet
   built
 - Per-locale names for ingredients an import created, so a foreign import is as readable as a

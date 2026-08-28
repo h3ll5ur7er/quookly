@@ -20,6 +20,7 @@ import { NutritionComponent } from '../../core/nutrition/nutrition.component';
 import { minutes } from '../../core/time/duration';
 import { attentionNote } from '../../core/time/labels';
 import { TimingComponent } from '../../core/time/timing.component';
+import { preferredLocale } from '../../core/locale/locale.store';
 
 @Component({
   selector: 'app-recipe-detail',
@@ -76,6 +77,15 @@ export class RecipeDetailComponent {
    * `true` because it is what the template is asking.
    */
   protected readonly mine = computed(() => this.recipe() !== null);
+
+  /**
+   * The language this page is being read in, for the link that corrects its translation.
+   *
+   * A bare code, the way a recipe records the language it was written in — the server
+   * takes either and stores the bare one, and sending what the reader is actually reading
+   * is what makes the link land on the translation they are looking at.
+   */
+  protected readonly reading = computed(() => preferredLocale().split('-')[0]);
   protected readonly wontStart = signal(false);
   protected readonly varyFailed = signal<string | null>(null);
   protected readonly refused = signal<VerdictView | null>(null);

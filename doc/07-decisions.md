@@ -2876,6 +2876,21 @@ imported from it. A human translation is somebody's work, and an export that los
 The same line answers ADR-032's question about published recipes when Phase 8 arrives: a person's
 words travel, a machine's are re-derived where they are read.
 
+**Since built.** A cook may correct a translation, which is what the storage was always shaped for
+and nothing could do: `PUT /recipes/{id}/translations/{locale}` stores one with `by_hand` set, and
+the screen puts the author's own words beside every field — proof-reading a translation without the
+original in front of you is guessing at it.
+
+Two consequences the decision implied and the code did not yet do. **A model may not replace a
+person's translation**, enforced in `TranslationAccess.keep` rather than at a call site, because
+there is one rule and every write path has to obey it. And where a person's translation has gone
+stale, the reader is shown the recipe's **own language** rather than a fresh machine one — deriving
+there is exactly the silent overwrite this ADR forbids, and the correction stays readable on the one
+screen that exists to bring it up to date.
+
+`PresentedRecipe` gained `translated_by_hand` at the same time. Saying "a machine wrote this" over a
+cook's own correction is as wrong as the other way round.
+
 **What stays open.** The interchange format still does not carry the registry's **per-locale
 ingredient names**, which is the same gap one layer down and is a Phase 8b unit of its own rather
 than a decision.

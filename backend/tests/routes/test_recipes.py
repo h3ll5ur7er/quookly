@@ -971,6 +971,185 @@ class TestReadingARecipeInYourOwnLanguage:
         assert found.status_code == 200
         assert found.json()["title"] == "Schokoladenkuchen"
 
+    async def test_a_cook_can_correct_a_translation(
+        self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
+    ) -> None:
+        """The second half of ADR-064, which had storage and no screen. A model's German
+        is a starting point; the cook who wrote the recipe knows what it says."""
+        headers, recipe_id = await self.written(client, pantry)
+        await self.reading_english(client, headers)
+        await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+
+        corrected = await client.put(
+            f"/api/v1/recipes/{recipe_id}/translations/en",
+            json={
+                "title": "Chocolate cake, properly",
+                "summary": "A simple cake.",
+                "steps": ["Beat the butter and sugar until pale.", "Bake at 180 C."],
+            },
+            headers=headers,
+        )
+
+        assert corrected.status_code == 200, corrected.text
+        found = await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        assert found.json()["title"] == "Chocolate cake, properly"
+
+    async def test_a_correction_is_not_re_derived(
+        self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
+    ) -> None:
+        """A model asked again would overwrite somebody's work, which is the thing ADR-064
+        exists to stop."""
+        headers, recipe_id = await self.written(client, pantry)
+        await self.reading_english(client, headers)
+        await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        await client.put(
+            f"/api/v1/recipes/{recipe_id}/translations/en",
+            json={
+                "title": "Chocolate cake, properly",
+                "summary": None,
+                "steps": ["Beat the butter and sugar until pale.", "Bake at 180 C."],
+            },
+            headers=headers,
+        )
+
+        asked = len(answering)
+        await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        assert len(answering) == asked
+
+    async def test_a_correction_of_words_that_moved_shows_the_original_instead(
+        self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
+    ) -> None:
+        """Kept, and stopped being shown. The reader sees the recipe's own language, which
+        is honest and is what an instance with no model shows anyway — rather than a fresh
+        machine translation quietly replacing somebody's work (ADR-064)."""
+        headers, recipe_id = await self.written(client, pantry)
+        await self.reading_english(client, headers)
+        await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        await client.put(
+            f"/api/v1/recipes/{recipe_id}/translations/en",
+            json={
+                "title": "Chocolate cake, properly",
+                "summary": None,
+                "steps": ["Beat the butter and sugar until pale.", "Bake at 180 C."],
+            },
+            headers=headers,
+        )
+
+        await client.put(
+            f"/api/v1/recipes/{recipe_id}",
+            json={
+                **self.german(pantry),
+                "steps": [
+                    {"instruction": "Butter und Zucker schaumig schlagen."},
+                    {"instruction": "Bei 180 C backen."},
+                ],
+            },
+            headers=headers,
+        )
+
+        asked = len(answering)
+        found = await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+
+        assert found.json()["title"] == "Schokoladenkuchen"
+        assert found.json()["translated"] is False
+        assert len(answering) == asked
+
+    async def test_the_correction_can_be_read_back_to_be_brought_up_to_date(
+        self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
+    ) -> None:
+        """What the screen offering to fix it needs: the words somebody wrote, the recipe
+        as it now stands, and whether the two still agree."""
+        headers, recipe_id = await self.written(client, pantry)
+        await self.reading_english(client, headers)
+        await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        await client.put(
+            f"/api/v1/recipes/{recipe_id}/translations/en",
+            json={
+                "title": "Chocolate cake, properly",
+                "summary": None,
+                "steps": ["Beat the butter and sugar until pale.", "Bake at 180 C."],
+            },
+            headers=headers,
+        )
+
+        draft = await client.get(f"/api/v1/recipes/{recipe_id}/translations/en", headers=headers)
+
+        assert draft.status_code == 200, draft.text
+        body = draft.json()
+        assert body["by_hand"] is True
+        assert body["current"] is True
+        assert body["title"] == "Chocolate cake, properly"
+        # And the author's own words beside it, to correct against.
+        assert body["source"]["title"] == "Schokoladenkuchen"
+        assert body["source_language"] == "de"
+
+    async def test_a_translation_with_the_wrong_number_of_steps_is_refused(
+        self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
+    ) -> None:
+        """The pairing is by position, so a translation with a step missing would put step
+        three's words on step two — which is a wrong instruction, not a bad one."""
+        headers, recipe_id = await self.written(client, pantry)
+        await self.reading_english(client, headers)
+
+        refused = await client.put(
+            f"/api/v1/recipes/{recipe_id}/translations/en",
+            json={"title": "Chocolate cake", "summary": None, "steps": ["Only one step."]},
+            headers=headers,
+        )
+        assert refused.status_code == 422
+
+    async def test_only_the_cook_whose_recipe_it_is_may_correct_it(
+        self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
+    ) -> None:
+        headers, recipe_id = await self.written(client, pantry)
+        neighbour = await sign_up(client, "neighbour@example.com")
+
+        refused = await client.put(
+            f"/api/v1/recipes/{recipe_id}/translations/en",
+            json={"title": "Mine now", "summary": None, "steps": ["One.", "Two."]},
+            headers=neighbour,
+        )
+        assert refused.status_code == 404
+
+    async def test_a_recipe_cannot_be_corrected_into_its_own_language(
+        self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
+    ) -> None:
+        """Those are the author's words. A "translation" into the language the recipe is
+        already in is an edit, and the edit screen is where edits happen."""
+        headers, recipe_id = await self.written(client, pantry)
+
+        refused = await client.put(
+            f"/api/v1/recipes/{recipe_id}/translations/de",
+            json={"title": "Anders", "summary": None, "steps": ["Eins.", "Zwei."]},
+            headers=headers,
+        )
+        assert refused.status_code == 409
+
+    async def test_a_correction_is_not_reported_as_a_machines_words(
+        self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
+    ) -> None:
+        """Both are translations and only one is somebody's work. Printing "a machine wrote
+        this" over a cook's own correction is as wrong as the other way round (ADR-064)."""
+        headers, recipe_id = await self.written(client, pantry)
+        await self.reading_english(client, headers)
+        machine = await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        assert machine.json()["translated"] is True
+        assert machine.json()["translated_by_hand"] is False
+
+        await client.put(
+            f"/api/v1/recipes/{recipe_id}/translations/en",
+            json={
+                "title": "Chocolate cake, properly",
+                "summary": None,
+                "steps": ["Beat the butter and sugar until pale.", "Bake at 180 C."],
+            },
+            headers=headers,
+        )
+
+        corrected = await client.get(f"/api/v1/recipes/{recipe_id}", headers=headers)
+        assert corrected.json()["translated"] is True
+        assert corrected.json()["translated_by_hand"] is True
+
     async def test_the_reader_is_told_it_is_a_translation(
         self, client: AsyncClient, pantry: dict[str, int], answering: list[str]
     ) -> None:

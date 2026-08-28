@@ -242,3 +242,30 @@ class UnsuitableForTheTable(QuooklyError):
     def __init__(self, verdict: object) -> None:
         super().__init__("the recipe that came back is not suitable for this household")
         self.verdict = verdict
+
+
+class TranslationDoesNotFit(QuooklyError):
+    """A translation with a different number of steps from the recipe.
+
+    Refused rather than repaired. A stored translation is paired to the recipe **by
+    position**, so one step short puts step three's words on step two — a wrong
+    instruction rather than a badly worded one, and a cook can be burned by one (ADR-064).
+    """
+
+    def __init__(self, wanted: int, given: int) -> None:
+        super().__init__(f"the recipe has {wanted} steps and the translation has {given}")
+        self.wanted = wanted
+        self.given = given
+
+
+class SameLanguage(QuooklyError):
+    """A translation into the language the recipe is already written in.
+
+    Those are the author's own words. Storing a "translation" over them would give the
+    recipe two sets of prose in one language and no way to say which is the original — and
+    changing what a recipe says is what the edit screen is for (ADR-032).
+    """
+
+    def __init__(self, locale: str) -> None:
+        super().__init__(f"the recipe is already written in {locale}")
+        self.locale = locale

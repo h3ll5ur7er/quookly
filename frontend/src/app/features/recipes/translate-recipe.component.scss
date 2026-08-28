@@ -1,0 +1,40 @@
+@use '../../../styles/page';
+@use '../../../styles/form';
+@use '../../../styles/controls';
+
+.translate__back {
+  display: inline-block;
+  margin-block-end: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.translate__lede {
+  max-width: 62ch;
+  color: var(--on-surface-muted);
+}
+
+.translate__note {
+  color: var(--success);
+  font-size: var(--text-sm);
+}
+
+/* The author's words, above the field that translates them. Quiet and unselectable-looking
+   on purpose: it is the thing being translated, not a second thing to edit. */
+.translate__source {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-inline-start: 3px solid var(--border);
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+}
+
+.translate__number {
+  display: flex;
+  gap: 0.35em;
+}
+
+fieldset {
+  margin-block-start: var(--space-5);
+  padding: 0;
+  border: none;
+}
