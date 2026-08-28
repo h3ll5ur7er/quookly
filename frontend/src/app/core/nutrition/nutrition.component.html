@@ -7,10 +7,10 @@
          was clipped and the two numbers ran together (D7). A cook is asking one of the two
          questions at a time anyway. -->
     @if (hasServing()) {
-      <div class="nutrition__which" role="group" aria-labelledby="nutrition-heading">
+      <div class="nutrition__which segmented" role="group" aria-labelledby="nutrition-heading">
         <button
           type="button"
-          [class.nutrition__which--on]="perServing()"
+          [class.segmented__on]="perServing()"
           [attr.aria-pressed]="perServing()"
           (click)="perServing.set(true)"
           i18n="@@nutritionPerServing"
@@ -19,7 +19,7 @@
         </button>
         <button
           type="button"
-          [class.nutrition__which--on]="!perServing()"
+          [class.segmented__on]="!perServing()"
           [attr.aria-pressed]="!perServing()"
           (click)="perServing.set(false)"
           i18n="@@nutritionPerRecipe"

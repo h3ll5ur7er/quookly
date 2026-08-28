@@ -227,6 +227,28 @@ class TestBrowsing:
             "water",
         ]
 
+    async def test_a_name_that_opens_with_a_number_sorts_after_the_words(self) -> None:
+        """The shipped table names its drinks by strength — "11 vol% wine white", "12 vol%
+        wine red" — and plain alphabetical order puts every one of them before the letter
+        A. The registry's first screen was a wine list (G3)."""
+        await self.a_small_registry()
+        await registry.register(
+            slug="wine-white-11",
+            kind=IngredientKind.LIQUID,
+            density=None,
+            names={ENGLISH: ["11 vol% wine white"]},
+            origin=Origin.SEED,
+        )
+
+        page = await registry.browse(ENGLISH)
+
+        assert [entry.slug for entry in page.entries] == [
+            "creme-fraiche",
+            "unsalted-butter",
+            "water",
+            "wine-white-11",
+        ]
+
     async def test_the_total_counts_the_registry_not_the_page(self) -> None:
         """Nine hundred entries do not fit on a screen; the count is what says so."""
         await self.a_small_registry()

@@ -1,0 +1,48 @@
+/* Two or three exclusive choices, shown at once.
+ *
+ * Four screens had grown their own: the recipe list's ordering and its have/put-away pair,
+ * the nutrition panel's plate-or-tray, and the Academy's sections. Three were the same
+ * fifteen lines and the fourth was three filled red buttons in a row, because a bare
+ * `button` is the screen's action and this is not an action (A3).
+ *
+ * The selection is its own rounded shape inset in a sunken track, rather than a fill
+ * clipped by the container's `overflow: hidden` — which gave the selected half a rounded
+ * outer edge and a hard inner one, and read as unfinished (R2).
+ *
+ * `.segmented button` outranks `_controls.scss`'s bare `button`, so importing both in
+ * either order gives the same answer.
+ */
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface-sunken);
+}
+
+.segmented button {
+  min-height: 44px;
+  padding-inline: var(--space-4);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--on-surface-muted);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: transparent;
+    color: var(--on-surface);
+  }
+}
+
+/* Where you are, said by ground and weight rather than by hue alone. */
+.segmented button.segmented__on,
+.segmented button.segmented__on:hover {
+  background: var(--primary);
+  color: var(--on-primary);
+}

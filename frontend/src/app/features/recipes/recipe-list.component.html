@@ -31,11 +31,16 @@
          in mind wants the alphabet, and a list that quietly reorders itself around the
          spinach is one they cannot learn the shape of. -->
     @if (!asking()) {
-      <div class="recipes__order" role="group" i18n-aria-label="@@recipesOrder" aria-label="Order">
+      <div
+        class="recipes__order segmented"
+        role="group"
+        i18n-aria-label="@@recipesOrder"
+        aria-label="Order"
+      >
         <button
           type="button"
           class="recipes__order-choice"
-          [class.recipes__order-choice--on]="order() === 'name'"
+          [class.segmented__on]="order() === 'name'"
           [attr.aria-pressed]="order() === 'name'"
           (click)="orderBy('name')"
           i18n="@@recipesByName"
@@ -45,7 +50,7 @@
         <button
           type="button"
           class="recipes__order-choice"
-          [class.recipes__order-choice--on]="order() === 'worth'"
+          [class.segmented__on]="order() === 'worth'"
           [attr.aria-pressed]="order() === 'worth'"
           (click)="orderBy('worth')"
           i18n="@@recipesByWorth"
@@ -146,7 +151,7 @@
     <button
       type="button"
       class="recipes__order-choice"
-      [class.recipes__order-choice--on]="!showingArchived()"
+      [class.segmented__on]="!showingArchived()"
       [attr.aria-pressed]="!showingArchived()"
       (click)="showArchived(false)"
       i18n="@@recipesCurrent"
@@ -156,7 +161,7 @@
     <button
       type="button"
       class="recipes__order-choice"
-      [class.recipes__order-choice--on]="showingArchived()"
+      [class.segmented__on]="showingArchived()"
       [attr.aria-pressed]="showingArchived()"
       (click)="showArchived(true)"
       i18n="@@recipesArchived"

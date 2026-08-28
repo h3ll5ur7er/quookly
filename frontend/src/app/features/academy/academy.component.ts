@@ -6,6 +6,45 @@ import { AcademyService, PageKind, PageSummaryView } from '@api';
 import { AuthStore } from '../../core/auth/auth.store';
 import { preferredLocale } from '../../core/locale/locale.store';
 
+/** One section of the Academy, split into the letters its entries start with. */
+interface PageGroup {
+  readonly kind: PageKind;
+  readonly letters: readonly LetterGroup[];
+}
+
+interface LetterGroup {
+  readonly initial: string;
+  readonly pages: readonly PageSummaryView[];
+}
+
+/**
+ * Entries under the letter they begin with.
+ *
+ * The letter is taken from the name as the reader's language writes it, uppercased and
+ * with its accents folded away — *échalote* belongs under E, not under a heading of its
+ * own that only ever holds one word.
+ */
+function byLetter(pages: readonly PageSummaryView[], collator: Intl.Collator): LetterGroup[] {
+  const under = new Map<string, PageSummaryView[]>();
+  for (const page of [...pages].sort((a, b) => collator.compare(a.name, b.name))) {
+    const initial =
+      page.name
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .charAt(0)
+        .toUpperCase() || '—';
+    under.set(initial, [...(under.get(initial) ?? []), page]);
+  }
+  return [...under].map(([initial, found]) => ({ initial, pages: found }));
+}
+
+/** What a section is called, where the list is showing more than one of them. */
+function kindLabel(kind: PageKind): string {
+  return kind === PageKind.technique
+    ? $localize`:@@academySectionDoing:Things you do`
+    : $localize`:@@academySectionFoods:Ingredients`;
+}
+
 @Component({
   selector: 'app-academy',
   imports: [ReactiveFormsModule, RouterLink],
@@ -53,6 +92,31 @@ export class AcademyComponent {
 
   /** What the Academy answers with today: everything a reader can rely on. */
   protected readonly settled = computed(() => this.shown().filter((one) => one.approved));
+
+  /**
+   * The settled pages, by section and then by first letter.
+   *
+   * Fifty entries in one flat alphabetical column is a column nobody navigates, and it
+   * grows with every page anybody writes. Grouping by kind says the other thing the list
+   * did not: a technique and an ingredient are different sorts of entry, and the section
+   * buttons above only made sense once the list showed the division they filter (A2, X6).
+   *
+   * Sorted by the reader's language rather than by code point, so *Ähren* files under A.
+   */
+  protected readonly grouped = computed<PageGroup[]>(() => {
+    const collator = new Intl.Collator(preferredLocale());
+    const byKind = new Map<PageKind, PageSummaryView[]>();
+    for (const page of this.settled()) {
+      byKind.set(page.kind, [...(byKind.get(page.kind) ?? []), page]);
+    }
+    // Techniques first, in the order the section buttons offer them.
+    const order = [PageKind.technique, PageKind.ingredient];
+    return order
+      .filter((kind) => byKind.has(kind))
+      .map((kind) => ({ kind, letters: byLetter(byKind.get(kind) ?? [], collator) }));
+  });
+
+  protected readonly kindLabel = kindLabel;
 
   /** Whichever section is being read, or all of them. */
   private readonly shown = computed(() => {

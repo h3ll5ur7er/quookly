@@ -2,6 +2,7 @@
 @use '../../../styles/breakpoints' as *;
 @use '../../../styles/page';
 @use '../../../styles/badges';
+@use '../../../styles/segmented';
 
 /* A grid once there is room for one. A collection is the thing that should take the width
    of a screen — capping *prose* keeps it readable, capping a list of cards just leaves a
@@ -99,43 +100,8 @@
 }
 
 /* Two words, not two icons. The choice is between two orderings and a magnifying glass
-   beside a saucepan would be a puzzle.
-
-   A segmented control, not a pill with a square-edged fill in it. The container was
-   fully rounded with `overflow: hidden`, so the selected half had a rounded outer edge
-   and a hard inner one — which reads as unfinished rather than as deliberate (R2). The
-   selection is its own rounded shape, inset in a sunken track. */
-.recipes__order {
-  display: flex;
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-full);
-  background: var(--surface-sunken);
-}
-
-.recipes__order-choice {
-  min-height: 44px;
-  padding-inline: var(--space-4);
-  border: none;
-  border-radius: var(--radius-full);
-  background: transparent;
-  color: var(--on-surface-muted);
-  font-family: var(--font-body);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.recipes__order-choice--on {
-  background: var(--primary);
-  color: var(--on-primary);
-}
-
-.recipes__order-choice:hover:not(.recipes__order-choice--on) {
-  color: var(--on-surface);
-}
+   beside a saucepan would be a puzzle. The shape is `styles/segmented`, which this screen
+   uses twice — here and for what a cook has against what they have put away. */
 
 /* --- why a recipe is here -------------------------------------------------------------- */
 
@@ -189,11 +155,7 @@
 
 /* What a cook has, and what they put away: two questions, one at a time. */
 .recipes__keeping {
-  display: flex;
-  gap: var(--space-1);
   margin-block: var(--space-4) var(--space-3);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
 }
 
 /* Wraps on a phone and sits in a row wherever there is width. The three are one group:

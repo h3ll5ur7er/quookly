@@ -148,10 +148,24 @@ describe('RegistryComponent', () => {
       expect(fixture.nativeElement.querySelector('.chip--unknown')).not.toBeNull();
     });
 
-    it('shows that its density is missing', async () => {
+    it('does not spend a line of the row saying what is not known', async () => {
+      /* "No density" was on eight rows out of ten, in the same weight as the name, in a
+         list where most of what was written was what was absent. It is still on the
+         entry's own page, where it is worth reading (G4, X8). */
       asked().flush(page([CREME]));
       await fixture.whenStable();
-      expect(text()).toContain('No density');
+      expect(text()).not.toContain('No density');
+    });
+
+    it('files each entry under the letter it begins with', async () => {
+      // Nine hundred entries in one flat column is nothing to navigate by (G2, X6).
+      asked().flush(page([CREME, WATER]));
+      await fixture.whenStable();
+      const letters = [...fixture.nativeElement.querySelectorAll('.registry__letter')].map(
+        (node: Element) => node.textContent!.trim(),
+      );
+      // Crème fraîche files under C, not under a heading of its own.
+      expect(letters).toEqual(['C', 'W']);
     });
 
     it('is marked as something an import invented', async () => {

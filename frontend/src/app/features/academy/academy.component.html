@@ -21,38 +21,55 @@
     </button>
   </div>
 
-  <nav class="academy__sections" aria-label="Sections" i18n-aria-label="@@academySectionsLabel">
-    <button
-      type="button"
-      [class.academy__section--on]="section() === null"
-      (click)="section.set(null)"
-      i18n="@@academySectionAll"
+  <!-- One row: which part of the Academy, and the way to add to it. Three bare buttons are
+       three of the screen's action in a row, which is what a filled button means (A3). -->
+  <div class="academy__filter">
+    <nav
+      class="academy__sections segmented"
+      aria-label="Sections"
+      i18n-aria-label="@@academySectionsLabel"
     >
-      Everything
-    </button>
-    <button
-      type="button"
-      [class.academy__section--on]="section() === kinds.technique"
-      (click)="section.set(kinds.technique)"
-      i18n="@@academySectionDoing"
-    >
-      Things you do
-    </button>
-    <button
-      type="button"
-      [class.academy__section--on]="section() === kinds.ingredient"
-      (click)="section.set(kinds.ingredient)"
-      i18n="@@academySectionFoods"
-    >
-      Ingredients
-    </button>
-  </nav>
+      <button
+        type="button"
+        [class.segmented__on]="section() === null"
+        [attr.aria-pressed]="section() === null"
+        (click)="section.set(null)"
+        i18n="@@academySectionAll"
+      >
+        Everything
+      </button>
+      <button
+        type="button"
+        [class.segmented__on]="section() === kinds.technique"
+        [attr.aria-pressed]="section() === kinds.technique"
+        (click)="section.set(kinds.technique)"
+        i18n="@@academySectionDoing"
+      >
+        Things you do
+      </button>
+      <button
+        type="button"
+        [class.segmented__on]="section() === kinds.ingredient"
+        [attr.aria-pressed]="section() === kinds.ingredient"
+        (click)="section.set(kinds.ingredient)"
+        i18n="@@academySectionFoods"
+      >
+        Ingredients
+      </button>
+    </nav>
 
-  @if (isSignedIn()) {
-    <a class="action action--quiet" routerLink="/academy/new" i18n="@@academyWriteOne">
-      Write a page
-    </a>
-  }
+    <!-- The only way anybody contributes, and it was a plain underlined link above a list
+         of fifty (A4). -->
+    @if (isSignedIn()) {
+      <a
+        class="action action--quiet academy__write"
+        routerLink="/academy/new"
+        i18n="@@academyWriteOne"
+      >
+        Write a page
+      </a>
+    }
+  </div>
 
   @if (failed()) {
     <p class="notice notice--danger" role="alert" i18n="@@academyListFailed">
@@ -82,14 +99,28 @@
         </section>
       }
 
-      <ul class="academy__list">
-        @for (one of settled(); track one.slug) {
-          <li>
-            <a [routerLink]="['/academy', one.slug]">{{ one.name }}</a>
-            <span class="academy__summary">{{ one.summary }}</span>
-          </li>
-        }
-      </ul>
+      <!-- Grouped and lettered, because fifty entries in one flat alphabetical column is a
+           column nobody navigates — and because a technique and an ingredient are not the
+           same kind of thing, which the list said nothing about (A2, X6). The headings
+           stick, so the letter you are under is on screen while you scroll past it. -->
+      @for (group of grouped(); track group.kind) {
+        <section class="academy__group">
+          @if (grouped().length > 1) {
+            <h2 class="academy__kind">{{ kindLabel(group.kind) }}</h2>
+          }
+          @for (letter of group.letters; track letter.initial) {
+            <h3 class="academy__letter">{{ letter.initial }}</h3>
+            <ul class="academy__list">
+              @for (one of letter.pages; track one.slug) {
+                <li>
+                  <a [routerLink]="['/academy', one.slug]">{{ one.name }}</a>
+                  <span class="academy__summary">{{ one.summary }}</span>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      }
     }
   } @else {
     <p i18n="@@academyListLoading">Loading…</p>

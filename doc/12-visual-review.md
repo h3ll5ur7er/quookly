@@ -33,7 +33,7 @@ These are worth doing first because each one fixes several screens at once.
 | ~~**X3**~~ **done** | Replace the five navigation glyphs (`◆ ☰ ▤ ✓ ▦`) with real icons. | They are text characters standing in for icons and they read as missing-font fallbacks — particularly the diamond for Home and the grid for Pantry, which mean nothing. This is the single most visible thing on every screen, since the bar is on all of them. | B |
 | ~~**X4**~~ **done** | Give recipes a picture. | There is no imagery anywhere in the product. The recipe list is a wall of text where every card is the same shape and weight, and a cook scanning for tonight's dinner is reading rather than looking. `MediaAccess` already exists and the Academy already uses it. | A |
 | **X5** | Decide what a short page does with its space. | Home, Shopping, Pantry, the Academy page and the cooking step all end with 40–60% of the viewport empty. Each currently looks like a page that failed to load. Options: centre the content block, or fill the space with the next useful thing. | C |
-| **X6** | Structure the long lists. | The Academy is 11,000 px tall on a phone and the registry is 19,000 px — both flat, unstyled, ungrouped, unvirtualised. An alphabet index, sticky letter headings, or paging would all help; doing nothing is not an option once the registry has 900 entries, which it does today. | B |
+| ~~**X6**~~ **done, in the flat sense** | Structure the long lists. Sticky letter headings on the registry, and the Academy grouped by section and then by letter. **Not** the hierarchy — `Academy > Ingredients > Vegetables > Carrot` needs a food taxonomy the registry does not have, and that is a feature rather than a pass over the styling. | The Academy is 11,000 px tall on a phone and the registry is 19,000 px — both flat, unstyled, ungrouped, unvirtualised. An alphabet index, sticky letter headings, or paging would all help; doing nothing is not an option once the registry has 900 entries, which it does today. | B |
 | ~~**X7**~~ **done** | Style destructive actions as destructive, consistently. | "Delete this plan" is plain red text and looks like a link; "Put it away" is an outlined button; "Put this page away" is a browser-default button. Three treatments for the same kind of action. | A |
 | **X8** | Make absence quiet. | Five identical dashed "Nothing planned" rows on the plan, a full-width grey block on the recipe list saying nobody has been recorded. Absence currently takes more space and weight than presence. | C |
 
@@ -89,8 +89,8 @@ The strongest screen in the product. Large type, clear progress, one obvious nex
 
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
-| **N1** | Stop showing the same lot twice. | "USE THESE SOON" repeats, word for word, the lot displayed immediately below it — including the "Use within 2 days" flag. On a shelf with one thing on it, the screen says everything twice. | D |
-| **N2** | Grade the urgency visually. | "Use within 2 days" and "use within 20 days" differ only in the words. A colour ramp or a bar would let the shelf be scanned rather than read. | B |
+| ~~**N1**~~ **done** | Stop showing the same lot twice. The strip is gone; the shelf sorts by what wants eating instead, which is the same answer without a second copy of it — and one fewer request, since every lot already carries the server's verdict on its own date. | "USE THESE SOON" repeats, word for word, the lot displayed immediately below it — including the "Use within 2 days" flag. On a shelf with one thing on it, the screen says everything twice. | D |
+| ~~**N2**~~ **done, with the sort you asked for** | Grade the urgency visually. Four bands down the leading edge of a packet, and "Use first / A–Z" on the shelf. | "Use within 2 days" and "use within 20 days" differ only in the words. A colour ramp or a bar would let the shelf be scanned rather than read. | B |
 
 ## Shopping
 
@@ -110,9 +110,9 @@ styles, so the section is effectively unstyled.
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
 | ~~**A1**~~ **done, with X1** | Apply X1 first, then look again. | Text currently starts at x=0 with no page padding, buttons are browser-default grey rectangles with square corners, and the "Take care" caution — the one piece of safety copy on the page — renders as plain bold text instead of a warning notice. | A  |
-| **A2** | Structure the list (see X6). | Fifty entries, flat, alphabetical, each a link plus a grey line. Nothing distinguishes a technique from an ingredient, which matters now that both sections exist. | B |
-| **A3** | Give the lookup and the section filter room and a selected state. | The three section buttons are unstyled and crowded against the search field; nothing shows which is active. | B |
-| **A4** | Style "Write a page" as an action. | It is a plain underlined link above the list, and it is the only way to contribute. | B |
+| ~~**A2**~~ **done** | Structure the list (see X6). | Fifty entries, flat, alphabetical, each a link plus a grey line. Nothing distinguishes a technique from an ingredient, which matters now that both sections exist. | B |
+| ~~**A3**~~ **done, and it had got worse** | Give the lookup and the section filter room and a selected state. Since X1 added `@use controls`, the three bare buttons had become three *filled red* buttons in a row — three of the screen's action. They are a segmented control now. The lookup row had no rules at all. | The three section buttons are unstyled and crowded against the search field; nothing shows which is active. | B |
+| ~~**A4**~~ **done** | Style "Write a page" as an action. | It is a plain underlined link above the list, and it is the only way to contribute. | B |
 | ~~**A5**~~ **done, with X1** | Style the spelling chips. | "Also written blanched blanches blanching" is a run of grey words, not the chips the recipe screen uses for the same idea. | B |
 
 ## Wider viewports
@@ -133,9 +133,9 @@ Three things are wrong with it.
 | id | Proposal | Why | Grade |
 | --- | --- | --- | --- |
 | ~~**G1**~~ **done, with X1** | Apply X1. | No page padding; the filter bar bleeds to both screen edges with no rounding; the search field is a plain full-bleed box. | A |
-| **G2** | Structure 900 entries (see X6). | 19,000 px of flat rows, three cramped lines each, with a "Show more" at the bottom. | B |
-| **G3** | Reconsider the default sort. | The first screen is entirely "11 vol% wine white", "12 vol% wine red", "12.5 vol% wine white" — an alphabetical sort putting numeric-prefixed entries first means the registry's first impression is a wine list. | D |
-| **G4** | Tighten the row. | Name, then "Solid · No density", then "Not checked for allergens" — three lines per entry, all the same weight, most of it saying what is *absent*. | B |
+| ~~**G2**~~ **done** | Structure 900 entries (see X6). | 19,000 px of flat rows, three cramped lines each, with a "Show more" at the bottom. | B |
+| ~~**G3**~~ **done** | Reconsider the default sort. A name opening with a digit now sorts after the ones opening with a letter — server-side, since the list is paged. | The first screen is entirely "11 vol% wine white", "12 vol% wine red", "12.5 vol% wine white" — an alphabetical sort putting numeric-prefixed entries first means the registry's first impression is a wine list. | D |
+| ~~**G4**~~ **done** | Tighten the row. | Name, then "Solid · No density", then "Not checked for allergens" — three lines per entry, all the same weight, most of it saying what is *absent*. | B |
 | ~~**G5**~~ **done** | We imported the swiss food table, that contains allergens. For each item in the registry that has no allergens, it says "Not checked for allergens". This is confusing. | The states of "not checked" and "no allergens" has to be clearly distinguished. | A |
 
 
@@ -283,6 +283,10 @@ All four gaps from the first pass are closed, and what they turned up is above. 
   classes on it. It now reads the partials themselves, which is how it found these plus `.hint` and
   `.error` unstyled on sign-in, apply and bootstrap. A hand-written list of what to check is a list
   that goes stale.
+- **Five screens had each grown their own segmented control.** The recipe list's ordering and its
+  have/put-away pair, the nutrition panel's plate-or-tray, the Academy's sections and the registry's
+  filter. Three were the same fifteen lines with the same R2 flaw in them; one was three filled red
+  buttons. `styles/_segmented.scss` now holds the shape, and the check above enforces the import.
 - **The contrast checker was not checking links.** `--primary` is a link as well as a button
   fill, and only the button pair was listed — so playful passed `just frontend contrast` and
   failed axe on every link it drew, at 4.47:1. Two pairs added; the check went from 92 to 100.

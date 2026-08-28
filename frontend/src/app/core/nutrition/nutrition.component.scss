@@ -1,4 +1,5 @@
 @use '../../../styles/a11y';
+@use '../../../styles/segmented';
 .nutrition {
   margin-top: var(--space-6);
 }
@@ -61,38 +62,5 @@
   color: inherit;
 }
 
-/* Two questions, one at a time. The same segmented shape the recipe list uses for its
-   sort, so a cook meets it twice and learns it once — including the fix: the container
-   was fully rounded with `overflow: hidden`, so the selected half had a rounded outer
-   edge and a hard inner one, which reads as unfinished rather than deliberate (R2). The
-   selection is its own rounded shape, inset in a sunken track. */
-.nutrition__which {
-  display: inline-flex;
-  gap: 2px;
-  margin-block-end: var(--space-3);
-  padding: 2px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-full);
-  background: var(--surface-sunken);
-}
-
-.nutrition__which button {
-  border: 0;
-  border-radius: var(--radius-full);
-  padding: var(--space-2) var(--space-4);
-  background: transparent;
-  color: var(--on-surface-muted);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.nutrition__which button:hover {
-  color: var(--on-surface);
-}
-
-.nutrition__which--on,
-.nutrition__which--on:hover {
-  background: var(--primary);
-  color: var(--on-primary);
-}
+/* Two questions, one at a time. The shape is `styles/segmented`, the same one the recipe
+   list uses for its ordering, so a cook meets it twice and learns it once. */

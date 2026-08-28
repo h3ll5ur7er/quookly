@@ -42,10 +42,21 @@ describe('PantryComponent', () => {
     return fixture.nativeElement.textContent;
   }
 
-  async function answer(shelf: object[], pressing: object[] = []): Promise<void> {
+  async function answer(shelf: object[]): Promise<void> {
     backend.expectOne('/api/v1/pantry').flush(shelf);
-    backend.expectOne('/api/v1/pantry/using-soon').flush(pressing);
     await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
+  function names(): string[] {
+    return [...fixture.nativeElement.querySelectorAll('.pantry__name span:first-child')].map(
+      (node: Element) => node.textContent!.trim(),
+    );
+  }
+
+  function click(label: string): void {
+    const buttons: HTMLButtonElement[] = [...fixture.nativeElement.querySelectorAll('button')];
+    buttons.find((one) => one.textContent?.includes(label))!.click();
     fixture.detectChanges();
   }
 
@@ -68,9 +79,12 @@ describe('PantryComponent', () => {
 
   afterEach(() => backend.verify());
 
-  it('asks for the shelf and for what is pressing', () => {
+  it('asks for the shelf, and for the shelf only', () => {
+    /* It used to ask for "what is pressing" as well and print it above the same lots it
+       was about, so a shelf with one thing on it said everything twice (N1). What is
+       pressing is a property of the lots the shelf already carries. */
     backend.expectOne('/api/v1/pantry').flush([]);
-    backend.expectOne('/api/v1/pantry/using-soon').flush([]);
+    backend.expectNone('/api/v1/pantry/using-soon');
   });
 
   it('names what the cook has, and how much of it', async () => {
@@ -94,34 +108,77 @@ describe('PantryComponent', () => {
   });
 
   it('says how soon something wants using, in words rather than in a count', async () => {
-    await answer(
-      [],
-      [
-        entry({
-          freshness: 'soon',
-          lots: [lot({ expires_on: '2026-09-03', days_remaining: 1, freshness: 'soon' })],
-        }),
-      ],
-    );
+    await answer([
+      entry({
+        freshness: 'soon',
+        lots: [lot({ expires_on: '2026-09-03', days_remaining: 1, freshness: 'soon' })],
+      }),
+    ]);
     expect(text()).toContain('tomorrow');
   });
 
   it('leads with what is past its date rather than hiding it', async () => {
-    await answer(
-      [],
-      [
-        entry({
-          freshness: 'past',
-          lots: [lot({ expires_on: '2026-08-19', days_remaining: -2, freshness: 'past' })],
-        }),
-      ],
-    );
+    await answer([
+      entry({
+        freshness: 'past',
+        lots: [lot({ expires_on: '2026-08-19', days_remaining: -2, freshness: 'past' })],
+      }),
+    ]);
     expect(text()).toContain('2 days ago');
+  });
+
+  it('puts what wants eating first, which is what this screen is for', async () => {
+    await answer([
+      entry({ ingredient_id: 1, name: 'plain flour' }),
+      entry({
+        ingredient_id: 2,
+        name: 'soured cream',
+        freshness: 'soon',
+        lots: [lot({ id: 2, days_remaining: 2, expires_on: '2026-08-30', freshness: 'soon' })],
+      }),
+      entry({
+        ingredient_id: 3,
+        name: 'chard',
+        freshness: 'past',
+        lots: [lot({ id: 3, days_remaining: -1, expires_on: '2026-08-27', freshness: 'past' })],
+      }),
+    ]);
+    expect(names()).toEqual(['chard', 'soured cream', 'plain flour']);
+  });
+
+  it('goes back to the alphabet for a cook looking for something', async () => {
+    await answer([
+      entry({ ingredient_id: 1, name: 'plain flour' }),
+      entry({
+        ingredient_id: 3,
+        name: 'chard',
+        freshness: 'past',
+        lots: [lot({ id: 3, days_remaining: -1, expires_on: '2026-08-27', freshness: 'past' })],
+      }),
+    ]);
+    click('A–Z');
+    expect(names()).toEqual(['chard', 'plain flour']);
+  });
+
+  it('grades how pressing a packet is, rather than only wording it', async () => {
+    // "Use within 2 days" and "use within 20 days" differed in nothing but the words (N2).
+    await answer([
+      entry({
+        lots: [
+          lot({ id: 1, days_remaining: 2, expires_on: '2026-08-30', freshness: 'soon' }),
+          lot({ id: 2, days_remaining: 20, expires_on: '2026-09-17', freshness: 'soon' }),
+        ],
+      }),
+    ]);
+    const bands = [...fixture.nativeElement.querySelectorAll('.pantry__lot')].map((node: Element) =>
+      [...node.classList].find((one) => one.startsWith('pantry__lot--')),
+    );
+    expect(bands).toEqual(['pantry__lot--now', 'pantry__lot--later']);
   });
 
   it('says nothing about urgency when nothing is urgent', async () => {
     await answer([entry()]);
-    expect(fixture.nativeElement.querySelector('[aria-labelledby="usingSoon"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.pantry__urgency')).toBeNull();
   });
 
   it('shows no total where the lots have no honest sum, rather than inventing one', async () => {
@@ -143,7 +200,6 @@ describe('PantryComponent', () => {
 
   it('reports a failure rather than claiming the pantry is empty', async () => {
     backend.expectOne('/api/v1/pantry').flush({}, { status: 500, statusText: 'Server Error' });
-    backend.expectOne('/api/v1/pantry/using-soon').flush([]);
     await fixture.whenStable();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="alert"]')).not.toBeNull();

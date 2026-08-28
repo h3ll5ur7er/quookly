@@ -15,6 +15,12 @@ const PAGE = 50;
 /** Long enough that a phone keyboard is not searched at, short enough to feel immediate. */
 const SETTLE = 200;
 
+/** One run of entries beginning with the same letter, in the order the server sent them. */
+interface Letter {
+  readonly initial: string;
+  readonly entries: RegistryEntryView[];
+}
+
 @Component({
   selector: 'app-registry',
   imports: [ReactiveFormsModule, RouterLink],
@@ -67,6 +73,36 @@ export class RegistryComponent {
   protected readonly sweepFailed = signal(false);
 
   protected readonly more = computed(() => (this.entries() ?? []).length < this.total());
+
+  /**
+   * What has been loaded, under the letter each entry begins with.
+   *
+   * Nine hundred entries in one flat column is nineteen thousand pixels of list with
+   * nothing to navigate by (G2, X6). Grouped over what is loaded rather than asked of the
+   * server, because the server already returns them in order and "Show more" appends to
+   * the end — so the letters extend rather than being re-drawn.
+   *
+   * The initial has its accents folded away, so *échalote* files under E rather than under
+   * a heading that only ever holds one word.
+   */
+  protected readonly lettered = computed<readonly Letter[]>(() => {
+    const under: Letter[] = [];
+    for (const entry of this.entries() ?? []) {
+      const initial =
+        entry.name
+          .normalize('NFD')
+          .replace(/\p{Diacritic}/gu, '')
+          .charAt(0)
+          .toUpperCase() || '—';
+      const last = under.at(-1);
+      if (last !== undefined && last.initial === initial) {
+        last.entries.push(entry);
+      } else {
+        under.push({ initial, entries: [entry] });
+      }
+    }
+    return under;
+  });
 
   constructor() {
     this.load();

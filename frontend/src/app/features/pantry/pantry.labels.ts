@@ -1,4 +1,4 @@
-import { Freshness, StockLotView, WasteReason } from '@api';
+import { Freshness, PantryEntry, StockLotView, WasteReason } from '@api';
 import { day } from '../../core/dates/format';
 
 export { day };
@@ -35,6 +35,40 @@ export function urgency(lot: StockLotView): string | null {
     return $localize`:@@pantryDueTomorrow:Use by tomorrow`;
   }
   return $localize`:@@pantryDueInDays:Use within ${days}:count: days`;
+}
+
+/**
+ * How pressing a packet is, in four steps rather than in two.
+ *
+ * "Use within 2 days" and "use within 20 days" were the same grey line with different
+ * words in it, so a shelf could not be scanned — only read (N2). The words still say it;
+ * this is what lets the eye find them first.
+ */
+export function band(lot: StockLotView): 'past' | 'now' | 'soon' | 'later' {
+  const days = lot.days_remaining;
+  if (lot.freshness === Freshness.past) {
+    return 'past';
+  }
+  if (days === null) {
+    return 'later';
+  }
+  if (days <= 2) {
+    return 'now';
+  }
+  return days <= 7 ? 'soon' : 'later';
+}
+
+/**
+ * The nearest date any of an entry's packets carries, in days.
+ *
+ * Null where none of them is dated. An entry is as pressing as its most pressing packet:
+ * half a kilo of flour with no date does not make the open bag beside it less urgent.
+ */
+export function soonest(entry: PantryEntry): number | null {
+  const dated = entry.lots
+    .map((lot) => lot.days_remaining)
+    .filter((days): days is number => days !== null);
+  return dated.length === 0 ? null : Math.min(...dated);
 }
 
 /** Commonest first: most of what gets binned went off or ran out of date. */

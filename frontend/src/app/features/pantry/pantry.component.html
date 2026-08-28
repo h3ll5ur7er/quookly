@@ -1,29 +1,33 @@
 <main class="page">
   <h1 i18n="@@pantryHeading">Pantry</h1>
 
-  <!-- Above the shelf, because it is the reason to open this screen at all: food gets
-       thrown away by being forgotten, not by being unavailable. -->
-  @if (pressing().length > 0) {
-    <section class="pantry__soon" aria-labelledby="usingSoon">
-      <h2 id="usingSoon" i18n="@@pantryUsingSoon">Use these soon</h2>
-      <ul class="pantry__soonList">
-        @for (entry of pressing(); track entry.ingredient_id) {
-          @for (lot of entry.lots; track lot.id) {
-            <li>
-              <a
-                class="pantry__soonRow pantry__soonRow--{{ lot.freshness }}"
-                [routerLink]="['/pantry/lots', lot.id]"
-              >
-                <span class="pantry__soonName">{{ entry.name }}</span>
-                <span class="numeric">{{ lot.quantity }}</span>
-                <span class="pantry__urgency">{{ urgency(lot) }}</span>
-              </a>
-            </li>
-          }
-        }
-      </ul>
-    </section>
-  }
+  <!-- Which question the shelf is answering. "What wants eating" is why this screen
+       exists, so it is the default; "where is the flour" is one tap away (N1, N2). -->
+  <div
+    class="pantry__order segmented"
+    role="group"
+    i18n-aria-label="@@pantryOrder"
+    aria-label="Order"
+  >
+    <button
+      type="button"
+      [class.segmented__on]="order() === 'urgency'"
+      [attr.aria-pressed]="order() === 'urgency'"
+      (click)="orderBy('urgency')"
+      i18n="@@pantryByUrgency"
+    >
+      Use first
+    </button>
+    <button
+      type="button"
+      [class.segmented__on]="order() === 'name'"
+      [attr.aria-pressed]="order() === 'name'"
+      (click)="orderBy('name')"
+      i18n="@@pantryByName"
+    >
+      A–Z
+    </button>
+  </div>
 
   @if (failed()) {
     <p class="notice notice--danger" role="alert" i18n="@@pantryFailed">
@@ -37,7 +41,7 @@
       </p>
     } @else {
       <ul class="pantry__list">
-        @for (entry of entries; track entry.ingredient_id) {
+        @for (entry of shown(); track entry.ingredient_id) {
           <li class="pantry__entry">
             <p class="pantry__name">
               <span>{{ entry.name }}</span>
@@ -57,7 +61,13 @@
             <ul class="pantry__lots">
               @for (lot of entry.lots; track lot.id) {
                 <li>
-                  <a class="pantry__lot" [routerLink]="['/pantry/lots', lot.id]">
+                  <!-- Banded as well as worded, so a shelf can be scanned rather than
+                       read: a packet due in two days and one due in twenty were the same
+                       grey line with different words in it (N2). -->
+                  <a
+                    class="pantry__lot pantry__lot--{{ band(lot) }}"
+                    [routerLink]="['/pantry/lots', lot.id]"
+                  >
                     <span class="numeric">{{ lot.quantity }}</span>
                     @if (lot.expires_on !== null) {
                       <span class="pantry__date">{{ day(lot.expires_on) }}</span>

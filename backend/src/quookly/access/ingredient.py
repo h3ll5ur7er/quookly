@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 
-from sqlalchemy import ColumnElement, func
+from sqlalchemy import ColumnElement, case, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import aliased
 from sqlmodel import col, delete, select
@@ -523,10 +523,12 @@ async def browse(
     has to be complete, ordered and countable. The registry is the largest list in the
     app and the only one a cook currently cannot look at.
 
-    Ordering is by display name with the id as a tiebreak. The tiebreak is not
-    decoration: two entries sharing a name would otherwise be ordered differently on each
-    query, and a page boundary landing between them would show one of them twice and the
-    other never.
+    Ordering is by display name with the id as a tiebreak, and names that open with a
+    digit come after the ones that open with a letter. The tiebreak is not decoration: two
+    entries sharing a name would otherwise be ordered differently on each query, and a
+    page boundary landing between them would show one of them twice and the other never.
+    The digit rule is not decoration either — the shipped table names its drinks by
+    strength, so the registry's first screen was a wine list (G3).
 
     `term` matches any spelling, canonical or alias, in the reader's locale or the one the
     registry was seeded in — the same reach as `search`, so a name that resolves an import
@@ -538,6 +540,11 @@ async def browse(
     local_name = aliased(IngredientNameRow)
     seeded_name = aliased(IngredientNameRow)
     display = func.coalesce(local_name.name, seeded_name.name, IngredientRow.slug)
+    # Names that open with a digit go last. The shipped table names its drinks by strength
+    # — "11 vol% wine white", "12 vol% wine red" — and plain alphabetical order puts every
+    # one of them in front of the letter A, so the registry's first screen was a wine list
+    # (G3). Not a filter: they are real entries and they are still in the list.
+    numbered = case((func.substr(display, 1, 1).between("0", "9"), 1), else_=0)
 
     narrowing: list[ColumnElement[bool]] = []
     if origin is not None:
@@ -579,7 +586,7 @@ async def browse(
                     & col(seeded_name.is_canonical).is_(True),
                 )
                 .where(*narrowing)
-                .order_by(display, col(IngredientRow.id))
+                .order_by(numbered, display, col(IngredientRow.id))
                 .offset(offset)
                 .limit(limit)
             )

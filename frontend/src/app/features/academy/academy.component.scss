@@ -4,11 +4,83 @@
    `styles/page` is the one that defines `.page`, `.action` and `.notice`. */
 @use '../../../styles/page';
 @use '../../../styles/controls';
+@use '../../../styles/segmented';
 
 .academy__what {
   max-width: 62ch;
   color: var(--on-surface-muted);
   margin-block-end: var(--space-5);
+}
+
+/* A label, a field and a button on one row, which is what it looked like it was meant to
+   be and was not: the div had no rules at all, so the three stacked and the field ran the
+   width of the screen (A3). */
+.academy__lookup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-block-end: var(--space-4);
+}
+
+.academy__lookup label {
+  color: var(--on-surface-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.academy__lookup input {
+  flex: 1 1 12rem;
+  min-height: 48px;
+  padding-inline: var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
+  color: var(--on-surface);
+  font: inherit;
+}
+
+.academy__lookup .action {
+  margin: 0;
+  inline-size: auto;
+}
+
+/* Which part of the Academy, and the way to add to it, on one row. */
+.academy__filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-block-end: var(--space-5);
+}
+
+/* Sized to its words rather than to the width of the screen: it sits beside the sections
+   rather than under them, and a full-width outline button reads as the page's action. */
+.academy__write {
+  margin: 0;
+  inline-size: auto;
+}
+
+/* The section, where more than one is showing. */
+.academy__kind {
+  margin-block: var(--space-6) 0;
+  font-size: var(--text-lg);
+}
+
+/* Sticky, so the letter you are under is on screen while you scroll past it. Under the
+   section heading rather than over it: a letter belongs to a section. */
+.academy__letter {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-block: var(--space-4) var(--space-2);
+  padding-block: var(--space-1);
+  background: var(--surface);
+  color: var(--on-surface-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
 .academy__list {

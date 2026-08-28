@@ -20,7 +20,7 @@
     />
 
     <div
-      class="registry__narrow"
+      class="registry__narrow segmented"
       role="group"
       i18n-aria-label="@@registryNarrowLabel"
       aria-label="Show"
@@ -28,7 +28,7 @@
       <button
         type="button"
         class="registry__choice"
-        [class.registry__choice--on]="origin() === null && approved() === null"
+        [class.segmented__on]="origin() === null && approved() === null"
         [attr.aria-pressed]="origin() === null && approved() === null"
         (click)="narrowTo(null)"
         i18n="@@registryAll"
@@ -40,7 +40,7 @@
       <button
         type="button"
         class="registry__choice"
-        [class.registry__choice--on]="approved() === false"
+        [class.segmented__on]="approved() === false"
         [attr.aria-pressed]="approved() === false"
         (click)="showQueue()"
         i18n="@@registryNeedsReview"
@@ -52,7 +52,7 @@
       <button
         type="button"
         class="registry__choice"
-        [class.registry__choice--on]="origin() === Origin.user"
+        [class.segmented__on]="origin() === Origin.user"
         [attr.aria-pressed]="origin() === Origin.user"
         (click)="narrowTo(Origin.user)"
         i18n="@@registryFromImports"
@@ -84,87 +84,94 @@
         <span class="numeric">{{ total() }}</span>
       </p>
 
-      <ul class="registry__list">
-        @for (entry of found; track entry.id) {
-          <li class="registry__entry">
-            <a class="registry__name" [routerLink]="['/settings/registry', entry.slug]">
-              {{ entry.name }}
-            </a>
+      <!-- Lettered, and the letters stick. Nine hundred entries in one flat column is
+           nineteen thousand pixels of list with nothing to navigate by (G2, X6). The
+           grouping is over what has been loaded, so "Show more" extends it rather than
+           re-drawing it. -->
+      @for (letter of lettered(); track letter.initial) {
+        <h2 class="registry__letter">{{ letter.initial }}</h2>
+        <ul class="registry__list">
+          @for (entry of letter.entries; track entry.id) {
+            <li class="registry__entry">
+              <a class="registry__name" [routerLink]="['/settings/registry', entry.slug]">
+                {{ entry.name }}
+              </a>
 
-            <span class="registry__facts">
-              <span class="registry__kind">{{ kindLabel(entry.kind) }}</span>
+              <!-- What is *known*, on the same line as the name. It was three stacked
+                   lines of equal weight, most of them saying what was missing — and
+                   "No density" on eight rows out of ten is a column of absence. It is
+                   still on the entry's own page, where it is worth reading (G4, X8). -->
+              <span class="registry__facts">
+                <span class="registry__kind">{{ kindLabel(entry.kind) }}</span>
 
-              @if (entry.density) {
-                <span class="registry__density">
-                  <span class="numeric">{{ entry.density }}</span>
-                  <ng-container i18n="@@registryGramsPerMl">g/ml</ng-container>
+                @if (entry.density) {
+                  <span class="registry__density">
+                    <span class="numeric">{{ entry.density }}</span>
+                    <ng-container i18n="@@registryGramsPerMl">g/ml</ng-container>
+                  </span>
+                }
+
+                @if (entry.origin === Origin.user) {
+                  <span class="registry__origin" i18n="@@registryInvented">Added by an import</span>
+                }
+              </span>
+
+              <!-- Whether anybody has looked at the *entry*. Deliberately not the same
+                   statement as the allergen chip below, which is about what is inside the
+                   ingredient — more than half the shipped registry is unchecked and needs
+                   no review at all (ADR-051). -->
+              @if (!entry.approved) {
+                <span class="registry__review">
+                  <span class="chip chip--unknown" i18n="@@registryNeedsLook">Needs a look</span>
+                  @if (isAdmin()) {
+                    <button
+                      type="button"
+                      class="registry__approve"
+                      (click)="approve(entry)"
+                      i18n="@@registryApprove"
+                    >
+                      Approve
+                    </button>
+                  }
+                </span>
+              }
+
+              <!-- The safety rule, at the last place it can be broken. An empty list means
+                   two different things and only one of them is "safe" (ADR-006).
+
+                   Marked rather than merely worded. Both states used to be a grey chip with
+                   a sentence in it, and on a screenful of entries the published table cannot
+                   answer for — spirits, wines — every row read the same, so "not checked"
+                   looked like the only answer the registry ever gives (G5). -->
+              @if (!entry.classified) {
+                <span class="registry__allergens">
+                  <span
+                    class="chip chip--unknown"
+                    title="Nobody has looked, so this is not a list of what it does not contain."
+                    i18n-title="@@registryUnclassifiedWhy"
+                  >
+                    <span aria-hidden="true">?</span>
+                    <ng-container i18n="@@registryUnclassified">Not checked</ng-container>
+                  </span>
+                </span>
+              } @else if (entry.allergens.length === 0) {
+                <span class="registry__allergens">
+                  <span class="chip chip--clear">
+                    <span aria-hidden="true">✓</span>
+                    <ng-container i18n="@@registryNoAllergens">None of the fourteen</ng-container>
+                  </span>
                 </span>
               } @else {
-                <!-- Absent rather than assumed. Without it a scraped cup cannot become a
-                     weight, so it is worth showing as missing rather than as blank. -->
-                <span class="registry__gap" i18n="@@registryNoDensity">No density</span>
-              }
-
-              @if (entry.origin === Origin.user) {
-                <span class="registry__origin" i18n="@@registryInvented">Added by an import</span>
-              }
-            </span>
-
-            <!-- Whether anybody has looked at the *entry*. Deliberately not the same
-                 statement as the allergen chip below, which is about what is inside the
-                 ingredient — more than half the shipped registry is unchecked and needs
-                 no review at all (ADR-051). -->
-            @if (!entry.approved) {
-              <span class="registry__review">
-                <span class="chip chip--unknown" i18n="@@registryNeedsLook">Needs a look</span>
-                @if (isAdmin()) {
-                  <button
-                    type="button"
-                    class="registry__approve"
-                    (click)="approve(entry)"
-                    i18n="@@registryApprove"
-                  >
-                    Approve
-                  </button>
-                }
-              </span>
-            }
-
-            <!-- The safety rule, at the last place it can be broken. An empty list means
-                 two different things and only one of them is "safe" (ADR-006).
-
-                 Marked rather than merely worded. Both states used to be a grey chip with
-                 a sentence in it, and on a screenful of entries the published table cannot
-                 answer for — spirits, wines — every row read the same, so "not checked"
-                 looked like the only answer the registry ever gives (G5). -->
-            @if (!entry.classified) {
-              <span class="registry__allergens">
-                <span
-                  class="chip chip--unknown"
-                  title="Nobody has looked, so this is not a list of what it does not contain."
-                  i18n-title="@@registryUnclassifiedWhy"
-                >
-                  <span aria-hidden="true">?</span>
-                  <ng-container i18n="@@registryUnclassified">Not checked</ng-container>
+                <span class="registry__allergens">
+                  @for (allergen of entry.allergens; track allergen) {
+                    <span class="chip chip--medical">{{ allergenLabel(allergen) }}</span>
+                  }
                 </span>
-              </span>
-            } @else if (entry.allergens.length === 0) {
-              <span class="registry__allergens">
-                <span class="chip chip--clear">
-                  <span aria-hidden="true">✓</span>
-                  <ng-container i18n="@@registryNoAllergens">None of the fourteen</ng-container>
-                </span>
-              </span>
-            } @else {
-              <span class="registry__allergens">
-                @for (allergen of entry.allergens; track allergen) {
-                  <span class="chip chip--medical">{{ allergenLabel(allergen) }}</span>
-                }
-              </span>
-            }
-          </li>
-        }
-      </ul>
+              }
+            </li>
+          }
+        </ul>
+      }
 
       @if (more()) {
         <button

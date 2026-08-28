@@ -84,6 +84,46 @@ describe('AcademyComponent', () => {
     expect(text()).not.toContain('blanch');
   });
 
+  it('files entries under a letter, and under the kind of thing they are', async () => {
+    /* Fifty entries in one flat alphabetical column is a column nobody navigates, and a
+       technique and an ingredient are not the same kind of entry — which the flat list
+       said nothing about (A2, X6). */
+    await arrive([
+      { slug: 'blanch', kind: 'technique', name: 'blanch', summary: '', approved: true },
+      { slug: 'sear', kind: 'technique', name: 'sear', summary: '', approved: true },
+      { slug: 'echalote', kind: 'ingredient', name: 'échalote', summary: '', approved: true },
+    ]);
+
+    const kinds = [...fixture.nativeElement.querySelectorAll('.academy__kind')].map(
+      (node: Element) => node.textContent!.trim(),
+    );
+    expect(kinds).toEqual(['Things you do', 'Ingredients']);
+
+    const letters = [...fixture.nativeElement.querySelectorAll('.academy__letter')].map(
+      (node: Element) => node.textContent!.trim(),
+    );
+    // É files under E. A heading of its own would hold one word and mean nothing.
+    expect(letters).toEqual(['B', 'S', 'E']);
+  });
+
+  it('does not name a section when only one is showing', async () => {
+    await arrive();
+    click('Things you do');
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.academy__kind')).toBeNull();
+  });
+
+  it('says which section is being read', async () => {
+    // Three bare buttons in a row are three of the screen's action, and none of them said
+    // which one was on (A3).
+    await arrive();
+    const everything: HTMLButtonElement = Array.from<HTMLButtonElement>(
+      fixture.nativeElement.querySelectorAll('.academy__sections button'),
+    )[0];
+    expect(everything.getAttribute('aria-pressed')).toBe('true');
+    expect(everything.classList).toContain('segmented__on');
+  });
+
   it('takes a word straight to what claims it', async () => {
     await arrive();
     // After `arrive`, not before: it resets the testing module, so a spy taken earlier is

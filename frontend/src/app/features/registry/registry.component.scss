@@ -5,6 +5,7 @@
 @use '../../../styles/page';
 @use '../../../styles/controls';
 @use '../../../styles/chips';
+@use '../../../styles/segmented';
 @use '../../../styles/a11y';
 
 .registry__what {
@@ -26,36 +27,8 @@
   width: 100%;
 }
 
-.registry__narrow {
-  display: flex;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-
-/* Same shape as the recipe list's ordering group: a thumb-sized target, and the chosen
-   one carried by fill as well as by `aria-pressed`. */
-.registry__choice {
-  flex: 1;
-  min-height: 48px;
-  padding-inline: var(--space-4);
-  border: none;
-  background: var(--surface-raised);
-  color: var(--on-surface-muted);
-  font-family: var(--font-body);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.registry__choice--on {
-  background: var(--primary);
-  color: var(--on-primary);
-}
-
-.registry__choice:hover:not(.registry__choice--on) {
-  background: var(--surface-sunken);
-}
+/* `styles/segmented`, the same shape the recipe list and the Academy use. The chosen one
+   is carried by fill as well as by `aria-pressed`. */
 
 /* --- the list --------------------------------------------------------------------------- */
 
@@ -74,17 +47,37 @@
   gap: var(--space-3);
 }
 
+/* Sticky, so the letter a cook is under stays on screen while they scroll past it. */
+.registry__letter {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-block: var(--space-5) var(--space-2);
+  padding-block: var(--space-1);
+  background: var(--surface);
+  color: var(--on-surface-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+/* One row rather than three stacked lines of the same weight. The name is what a cook is
+   looking for and everything else is what is known about it, so the name leads and the
+   rest sits beside it and wraps under it when there is no room (G4). */
 .registry__entry {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-4);
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface);
 }
 
 .registry__name {
+  flex: 1 1 10rem;
   font-weight: 600;
 }
 
