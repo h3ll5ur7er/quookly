@@ -163,7 +163,8 @@ Root recipes fan out to all three projects:
 | `just typecheck` | mypy (backend, cli) + ngc (frontend, templates included) |
 | `just format` | ruff format + prettier |
 | `just test` | pytest + vitest |
-| `just check` | format, lint, typecheck, contrast, translations, and test across all three |
+| `just check` | documentation, format, lint, typecheck, contrast, translations, shared styles, and test across all three |
+| `just docs` | links resolve, citations point at something, and `04-architecture.md` names every service on disk |
 | `just backend test -- -m live` | the tests that need a real inference provider (see below) |
 | `just build` | install, codegen, lint, typecheck, test, frontend build |
 | `just clean` | Remove caches and build output |

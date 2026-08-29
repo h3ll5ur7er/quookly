@@ -2690,7 +2690,7 @@ is a person deciding, and this decision is about what attaches itself *without* 
 
 **Status:** Accepted — the ingredient section promised by
 [ADR-057](#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques), constrained by
-[ADR-006](#adr-006-suitability-and-allergen-conclusions-are-computed-from-structured-ingredients).
+[ADR-006](#adr-006-allergen-determination-is-structural).
 
 **Context.** The Academy's second section is about ingredients rather than techniques: what saffron
 is, why there are four kinds of flour, what to do with a bunch of coriander stalks. That is prose,
@@ -2739,7 +2739,7 @@ the correct shape of that work.
 ## ADR-062 A model may explain a technique, and may not write about a food
 
 **Status:** Accepted — the last unit of the Academy, constrained by
-[ADR-006](#adr-006-suitability-and-allergen-conclusions-are-computed-from-structured-ingredients),
+[ADR-006](#adr-006-allergen-determination-is-structural),
 [ADR-056](#adr-056-a-generated-explanation-is-marked-unreviewed-and-never-an-input-to-a-judgement) and
 [ADR-061](#adr-061-an-ingredient-page-names-its-entry-and-never-restates-what-the-registry-computes-on).
 

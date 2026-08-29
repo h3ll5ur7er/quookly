@@ -339,7 +339,7 @@ async def get_translation(recipe_id: int, locale: str, cook: CurrentCook) -> Tra
 async def correct_translation(
     recipe_id: int, locale: str, submitted: TranslatableView, cook: CurrentCook
 ) -> TranslationDraftView:
-    """Record a translation somebody here wrote (UC-2.7, ADR-064).
+    """Record a translation somebody here wrote (UC-2.8, ADR-064).
 
     The cook whose recipe it is. A translation is prose about *their* words, and the
     registry-style "anybody may correct shared reference data" argument does not apply: a

@@ -35,7 +35,13 @@ format:
     @just cli format
     @just frontend format
 
+# Links resolve, citations point at something, and the architecture doc names every
+# service on disk. Documentation drift is a defect here, and this is what says so.
+docs:
+    @python3 tools/check-docs.py
+
 check:
+    @just docs
     @just backend check
     @just cli check
     @just frontend check

@@ -528,6 +528,37 @@ classified, and the recipe loses the gluten the registry knew about — while lo
 recipe that had been judged and found clear. See
 [ADR-031](07-decisions.md#adr-031-an-imported-recipe-is-resolved-in-the-pages-own-language).
 
+### A recipe's prose in another language
+
+A recipe is **stored in the language it was written in and read in yours**
+([ADR-032](07-decisions.md#adr-032-recipes-are-stored-in-their-own-language-and-read-in-yours)). What
+is translated is prose only — the title, the summary and each step. Quantities, durations and
+temperatures are columns rendered per cook, and ingredient names resolve through the registry per
+locale, so a translation *cannot* change what a recipe asks for. No verdict is affected, because no
+verdict has ever consulted prose.
+
+A stored translation carries three things beyond its words.
+
+**Which language**, and **who wrote it** — a machine or a person. Both are translations and only one
+is somebody's work, so the reader is told which they are looking at, and a model never replaces a
+person's ([ADR-064](07-decisions.md#adr-064-a-translation-records-what-it-translated-and-a-persons-words-are-not-re-derived)).
+
+**A fingerprint of the words it translated.** Not a `stale` flag: a flag has to be set by every write
+path, and the one somebody forgets shows a cook instructions for a step that was rewritten. A
+translation whose fingerprint no longer matches the recipe **is not used** — invalidation by
+construction, so editing a recipe needs to know nothing about translations. A machine's is then
+derived again; a person's is kept and stopped being shown, and the reader sees the recipe's own
+language, which is honest and is what an instance with no model shows anyway.
+
+Steps are paired back to the recipe **by position**, which is why a translation with a different
+number of steps is refused rather than repaired: one step short puts step three's words on step two,
+and that is a wrong instruction rather than a badly worded one.
+
+A recipe also records **the language it is written in**, as a bare code — `de`, not `de-CH`. Read
+from the page on import, taken from the cook's own language for anything written here, and **absent
+where nobody knows**. Absent is a real answer, and guessing at it would be inventing the one fact
+this exists to stop inventing.
+
 ### Units that quietly disagree
 
 A US cup is 236.6 ml; a metric cup is 250 ml. A US tablespoon is 14.8 ml; a metric one is 15 ml. US
@@ -588,15 +619,40 @@ accumulated paused duration; the client computes what is left and ticks the disp
 "seven minutes remaining" would be wrong the moment anything paused, disconnected, or resumed
 elsewhere — and a reduction that quietly loses four minutes is worse than no timer.
 
-A session's relationship to a plan slot is optional. Cooking something on a whim is the common case
-and must not require a plan to exist first; when a session *does* come from a slot, completing it
-consumes that slot's reservation.
+~~A session's relationship to a plan slot is optional.~~ **It is not, and the change was the point.**
+Cooking something on a whim is still the common case and still must not require a cook to plan
+first — but what happens instead of a nullable slot is that the meal is *put on the plan* and then
+cooked by the path that already exists
+([ADR-042](07-decisions.md#adr-042-a-cooking-session-executes-a-planned-meal)). A meal
+that is not on the plan holds no stock, so a session that finished would consume nothing: the
+optional relationship was a session that could not do the one thing sessions are for.
 
 ### Academy entry and technique
 
-A **technique** is referenced by steps; an **Academy entry** documents one, or documents a term,
-tip, or module. Entries are contributed by Cooks, which is what connects the Academy to engagement
-(V11) — contribution is an activity that earns recognition.
+An **Academy page** explains one thing a cook might not know. It carries a **kind** rather than being
+a technique, because the volatility was never "techniques": `curdle` is not something you do,
+`al dente` is a doneness, and a food deserves a page of its own
+([ADR-057](07-decisions.md#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques)).
+
+A page is found by **the words a step already uses** rather than by tagging: each page carries its
+spellings per locale, and a step is matched against them
+([ADR-055](07-decisions.md#adr-055-a-step-finds-its-techniques-by-the-words-it-already-uses)).
+Several pages may claim one term, and the answer is the set rather than a pick
+([ADR-058](07-decisions.md#adr-058-ambiguity-is-shown-where-a-person-resolves-it-and-refused-where-something-computes-on-it)).
+
+Two facts about a page are deliberately separate: **who wrote it** — a person here or a model — and
+**whether anybody has read it**. An unreviewed page is readable and does not attach itself to
+anybody's recipe
+([ADR-060](07-decisions.md#adr-060-an-unreviewed-page-can-be-read-but-cannot-attach-itself-to-somebody-elses-recipe)),
+and nothing a model wrote is ever an input to a judgement
+([ADR-056](07-decisions.md#adr-056-a-generated-explanation-is-marked-unreviewed-and-never-an-input-to-a-judgement)).
+
+A page about a **food** names a registry entry and shows that entry's facts by *reading* them rather
+than holding a copy, so correcting the registry corrects every page about it
+([ADR-061](07-decisions.md#adr-061-an-ingredient-page-names-its-entry-and-never-restates-what-the-registry-computes-on)).
+
+Pages are contributed by Cooks, which is what connects the Academy to engagement (V11) —
+contribution is an activity that earns recognition.
 
 ## Seeded content
 

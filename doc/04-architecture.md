@@ -47,7 +47,7 @@ flowchart TB
 
   subgraph MG["Managers"]
     RM["RecipeManager"]
-    PLM["PlanningManager"]
+    PLM["PlanManager"]
     PNM["PantryManager"]
     CKM["CookingManager"]
     EGM["EngagementManager"]
@@ -78,10 +78,10 @@ flowchart TB
     COM["CommunityAccess"]
     ACA["AcademyAccess"]
     MOD["ModelAccess"]
-    WEB["WebContentAccess"]
+    WEB["WebAccess"]
     MED["MediaAccess"]
-    IDX["SearchIndexAccess"]
-    SES["CookingSessionAccess"]
+    IDX["SearchAccess"]
+    SES["CookingAccess"]
   end
 
   subgraph RS["Resources"]
@@ -221,11 +221,23 @@ anticipates this: `just backend clean` removes `.import_linter_cache`.
 
 ## Managers
 
-Six managers. The count is deliberate: the Method warns that a manager per entity is functional
-decomposition wearing a costume, and each manager here corresponds to a family of use cases that
-sequences independently of the others. `CookingManager` was added after the original four; the test
-it had to pass, and the reasoning, are in
+**Six managers sequence use cases**, and the count is deliberate: the Method warns that a manager per
+entity is functional decomposition wearing a costume, and each of these corresponds to a family of
+use cases that sequences independently of the others. `CookingManager` was added after the original
+four; the test it had to pass, and the reasoning, are in
 [ADR-002](07-decisions.md#adr-002-four-managers-not-one-per-entity).
+
+Seven further modules sit in `managers/` and are **not** managers in that sense — they orchestrate
+nothing and sequence nobody. They are there because the call rules put a caller of resource access
+that is not an engine somewhere, and this is where. Naming them here rather than leaving the count
+wrong: `eater`, `ingredient`, `instance`, `media`, `onboarding`, `preferences`, `seed`. Each is a
+thin pass-through that resolves a locale or a permission and hands on. If one of them grows a
+sequence it becomes a manager and earns a section below; until then, calling seven pass-throughs
+"managers" would make ADR-002's count meaningless.
+
+By the naming convention that is `EaterManager`, `IngredientManager`, `InstanceManager`,
+`MediaManager`, `OnboardingManager`, `PreferencesManager` and `SeedManager` — written out here so
+that looking any of them up lands somewhere rather than nowhere.
 
 ### RecipeManager
 
@@ -243,7 +255,7 @@ Discovery lives here rather than in a manager of its own because finding a recip
 independently of recipes themselves — the volatility that *does* vary independently is ranking
 policy, and that is `RankingEngine`.
 
-### PlanningManager
+### PlanManager
 
 **Volatility:** sequencing of V7.
 **Use cases:** UC-4.1–UC-4.4
@@ -261,7 +273,7 @@ reservations wholesale, and reading one never writes
 **Use cases:** UC-4.5, UC-5.*
 **Sequences:** receive stock → reserve against plans → consume on cooking → expire → record waste.
 
-Separate from `PlanningManager` because stock is true independently of whether anyone is planning:
+Separate from `PlanManager` because stock is true independently of whether anyone is planning:
 a cook adjusts the pantry constantly outside any plan, and expiry advances whether or not the app
 is opened.
 
@@ -335,6 +347,9 @@ what allows scoring rules to change without touching a single line in recipe or 
 | `ScoringEngine` | V11 | Applies point and badge rules to activity. |
 | `ExecutionEngine` | V15 | Turns a recipe into an execution plan: mise-en-place groups, the lines each step names, work to be done the day before, and how long the whole thing takes. **Built** ([ADR-037](07-decisions.md#adr-037-how-long-a-recipe-takes-is-two-numbers-both-derived), [ADR-040](07-decisions.md#adr-040-a-steps-ingredients-are-read-out-of-its-words-not-tagged), [ADR-041](07-decisions.md#adr-041-work-done-the-day-before-is-lifted-out-only-from-the-front)). Timer specifications and technique links arrive with cooking mode. It returns **positions, not content** — an engine handing back indices cannot scale anything, so V4 stays in one place by construction. |
 | `OnboardingEngine` | V16 | Given a profile's current state, reports what is missing and what comes next. |
+| `ExchangeEngine` | V1 | The interchange format, in and out: one shape serves export and import, so every round trip exercises the promise that a self-hoster is not trapped. Reads five format versions and writes the newest ([ADR-012](07-decisions.md#adr-012-export-format-is-the-import-format)). **Built.** |
+| `ExplanationEngine` | V18 | Composes what to ask for an Academy page and constrains the answer. Knows what to ask, never whether the answer is *true* — which is why what it produces is marked unreviewed and is never an input to a judgement ([ADR-056](07-decisions.md#adr-056-a-generated-explanation-is-marked-unreviewed-and-never-an-input-to-a-judgement)). **Built.** |
+| `TranslationEngine` | V17 | A recipe's prose in another language, and a food's name in another language — two questions, asked differently, because a recipe is prose and a name is a term. Prose only: quantities are columns and ingredient names resolve through the registry, so a translation cannot change what a recipe asks for ([ADR-064](07-decisions.md#adr-064-a-translation-records-what-it-translated-and-a-persons-words-are-not-re-derived)). **Built.** |
 
 Every engine is **stateless**. Beyond that they divide into two kinds, and the distinction is
 load-bearing:
@@ -346,9 +361,13 @@ what makes `SuitabilityEngine` testable to the standard its safety role demands:
 database, no network, just inputs and a verdict. A rule engine that grows a resource-access call has
 stopped being a rule engine, and the safety argument goes with it.
 
-**Capability engines** — `InterpretationEngine`, `GenerationEngine`, `RankingEngine` — mediate an
-external capability and call Resource Access directly, which the call rules permit. Each owns
-exactly one: the model, the model, the index. They hold no state either; they simply cannot do their
+**Rule engines** also include `ExchangeEngine`, which is a pure function from recipes to a document
+and back.
+
+**Capability engines** — `InterpretationEngine`, `GenerationEngine`, `RankingEngine`,
+`ExplanationEngine`, `TranslationEngine` — mediate an external capability and call Resource Access
+directly, which the call rules permit. Each owns exactly one: the model, the model, the index, the
+model, the model. They hold no state either; they simply cannot do their
 job without reaching the thing they mediate.
 
 `GenerationEngine` and `ModelAccess` are the split described in
@@ -370,16 +389,22 @@ Each service exposes atomic business verbs. Illustrative, not exhaustive:
 | `CommunityAccess` | Database | `follow`, `rate`, `comment`, `award`, `leaderboard` |
 | `AcademyAccess` | Database | `store_many`, `browse`, `detail`, `claimants_of`, `vocabulary`, `amend`, `approve` **built** — Phase 7. The same verbs the ingredient registry ended up with, because a *page* has a slug, a canonical name and its spellings per locale, a provenance and a review state, and the same things go wrong with it. `claimants_of` rather than `resolve_term`: several pages may claim one term and the answer is the set ([ADR-057](07-decisions.md#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques), [ADR-058](07-decisions.md#adr-058-ambiguity-is-shown-where-a-person-resolves-it-and-refused-where-something-computes-on-it)) |
 | `ModelAccess` | Inference backend | `complete`, `complete_structured`, `describe`, `reachable` ([ADR-026](07-decisions.md#adr-026-one-openai-shaped-wire-format-not-a-provider-plugin-system)) |
-| `WebContentAccess` | External websites | `fetch_readable` — prose and embedded metadata, neither preferred ([ADR-027](07-decisions.md#adr-027-an-instance-will-not-fetch-its-own-network), [ADR-028](07-decisions.md#adr-028-structured-metadata-is-fetched-not-preferred)) |
+| `WebAccess` | External websites | `fetch_readable` — prose and embedded metadata, neither preferred ([ADR-027](07-decisions.md#adr-027-an-instance-will-not-fetch-its-own-network), [ADR-028](07-decisions.md#adr-028-structured-metadata-is-fetched-not-preferred)) |
 | `MediaAccess` | Media store | `store_image`, `fetch_image`, `delete_image` **built** — pulled forward into Phase 7 by Academy pictures ([ADR-057](07-decisions.md#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques)); it was Phase 8 while the only caller was a photographed recipe |
-| `SearchIndexAccess` | Index | `index_recipe`, `query`, `remove`, `reindex` — **Built** over SQLite FTS5. The index is derived, so it is rebuilt at start-up rather than migrated, and recipes are indexed where they are stored so no path can forget ([ADR-046](07-decisions.md#adr-046-a-suggestion-earns-its-place-by-saving-something)) |
-| `CookingSessionAccess` | Database | `open_session`, `fetch`, `open_for_slot`, `open_for_cook`, `advance_step`, `record_timer`, `close_session` — **Built** ([ADR-013](07-decisions.md#adr-013-cooking-sessions-are-server-side-state-timers-store-instants)) |
+| `SearchAccess` | Index | `index_recipe`, `query`, `remove`, `reindex` — **Built** over SQLite FTS5. The index is derived, so it is rebuilt at start-up rather than migrated, and recipes are indexed where they are stored so no path can forget ([ADR-046](07-decisions.md#adr-046-a-suggestion-earns-its-place-by-saving-something)) |
+| `CookingAccess` | Database | `open_session`, `fetch`, `open_for_slot`, `open_for_cook`, `advance_step`, `record_timer`, `close_session` — **Built** ([ADR-013](07-decisions.md#adr-013-cooking-sessions-are-server-side-state-timers-store-instants)) |
+| `TranslationAccess` | Database | `keep`, `held`, `correction`, `matches`, `corrections_for`, `written_by_hand` — **Built.** `held` answers *may this be shown*, `correction` answers *what did somebody write*: different questions with different audiences, and only the first is a reader's. A machine's translation never replaces a person's, and the rule lives here because every write path has to obey it ([ADR-064](07-decisions.md#adr-064-a-translation-records-what-it-translated-and-a-persons-words-are-not-re-derived)) |
+| `CookAccess` | Database | `create`, `fetch`, `by_email`, `locale_for`, `choose_locale`, `approve`, `decline` — **Built**. `locale_for` carries the fallback so that no caller has to reason about a cook who has not chosen ([ADR-066](07-decisions.md#adr-066-the-language-is-the-accounts-and-the-browser-answers-only-for-strangers)) |
+| `PreferencesAccess` | Database | `for_cook`, `choose_unit` — **Built** |
+| `ShoppingAccess` | Database | `tick`, `ticked`, `forget` — **Built**. What is already in the basket, compared by quantity as well as by ingredient ([ADR-048](07-decisions.md#adr-048-a-ticked-shopping-line-remembers-what-it-was-ticked-at)) |
+| `SetupAccess` | Database | `state_of`, `declare` — **Built** |
+| `DatabaseAccess` | Database | The engine and session factory every other row above uses. Not a business verb in sight, which is why it is here and not in the catalogue proper |
 
 `ModelAccess` is where V3 dies. One implementation per provider behind one interface; the choice is
 configuration. No service above this layer may name a provider, and none may assume streaming,
 tool-calling, or a context window size.
 
-`WebContentAccess` returns readable content, not HTML. Interpreting that content is V2 and belongs
+`WebAccess` returns readable content, not HTML. Interpreting that content is V2 and belongs
 to the engine — otherwise scraping quirks would leak into business logic.
 
 ## Utilities
@@ -399,7 +424,7 @@ survivable, and it earns its place in exactly the cases where a naive design wou
 
 - A recipe is published → engagement awards points.
 - A meal is cooked → pantry consumes reserved stock; engagement awards points. **Built**, minus the
-  points: `PlanningManager` publishes `MealCooked` and `PantryManager` listens.
+  points: `PlanManager` publishes `MealCooked` and `PantryManager` listens.
 - Stock nears expiry → discovery surfaces recipes that would use it.
 
 Without the bus, `RecipeManager` would call `EngagementManager`, and scoring would become a
@@ -426,12 +451,12 @@ flowchart TB
 
   subgraph S2["Kitchen subsystem"]
     direction TB
-    PLM2["PlanningManager"] --> PE2["PlanningEngine"]
+    PLM2["PlanManager"] --> PE2["PlanningEngine"]
     PLM2 --> RE2["ReplenishmentEngine"]
     PNM2["PantryManager"] --> PAN2["PantryAccess"]
     PLM2 --> PLA2["PlanAccess"]
     CKM2["CookingManager"] --> EXE2["ExecutionEngine"]
-    CKM2 --> SES2["CookingSessionAccess"]
+    CKM2 --> SES2["CookingAccess"]
   end
 
   subgraph S3["Community subsystem"]

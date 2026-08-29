@@ -369,7 +369,7 @@ languages, with the spellings a step is actually written with.
    reads the page, because the page is the thing written for a reader, while `SuitabilityEngine`
    reads the registry. A paragraph saying *"contains no gluten"* would be believed by the person and
    ignored by the machine, which is the direction
-   [ADR-006](07-decisions.md#adr-006-suitability-and-allergen-conclusions-are-computed-from-structured-ingredients)
+   [ADR-006](07-decisions.md#adr-006-allergen-determination-is-structural)
    exists to prevent. So the page reads them, and inherits the registry's own distinction:
    **unclassified is shown as unclassified**, never as an empty list
    ([ADR-061](07-decisions.md#adr-061-an-ingredient-page-names-its-entry-and-never-restates-what-the-registry-computes-on)).
@@ -547,7 +547,7 @@ whose absence costs the product least.
 
 **Goal:** a recipe written in one language is read in another, without losing the original.
 
-**Status: proposed**, see [ADR-032](07-decisions.md#adr-032-proposed-recipes-are-stored-in-their-own-language-and-read-in-yours)
+**Status: proposed**, see [ADR-032](07-decisions.md#adr-032-recipes-are-stored-in-their-own-language-and-read-in-yours)
 and [V17](03-volatility-analysis.md#v17-content-translation).
 
 Most of it already exists. Quantities, durations and temperatures are language-neutral by

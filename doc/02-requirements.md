@@ -1,10 +1,10 @@
 # Requirements
 
-**Status: Built through [Phase 6b](08-roadmap.md#phase-6b--one-product-not-five-screens) — every
-use case below is satisfied today except UC-1.6 (a recipe from a photograph, waiting on a vision
-model), UC-2.5 and UC-9.5 (looking a technique up, waiting on the Academy), UC-3.2 (filters, partly
-— time and dietary suitability work; tag, cuisine and difficulty are not yet fields on a recipe),
-UC-7.1–7.5 (community, Phase 8), and UC-8.1 and UC-8.3 (self-hosting operations, Phase 9).**
+**Status: Built through [Phase 8b](08-roadmap.md#phase-8b--reading-a-recipe-in-your-own-language) —
+every use case below is satisfied today except UC-1.6 (a recipe from a photograph, waiting on a
+vision model), UC-3.2 (filters, partly — time and dietary suitability work; tag, cuisine and
+difficulty are not yet fields on a recipe), UC-7.1–7.5 (community, Phase 8), and UC-8.1 and UC-8.3
+(self-hosting operations, Phase 9).**
 
 Requirements are recorded here as *what the system must do*. They are deliberately not a
 decomposition of the system — see [Volatility analysis](03-volatility-analysis.md) for why the
@@ -53,6 +53,8 @@ UC-1.3 is the founding use case: the product exists because this is currently pa
 | UC-2.4 | See whether a recipe is suitable for a named set of eaters, and why not |
 | UC-2.5 | Look up an unfamiliar technique or term from within a recipe |
 | UC-2.6 | See how long a recipe takes, separating hands-on work from waiting ([ADR-037](07-decisions.md#adr-037-how-long-a-recipe-takes-is-two-numbers-both-derived)) |
+| UC-2.7 | Read a recipe somebody wrote in another language, and be told whose words those are ([ADR-032](07-decisions.md#adr-032-recipes-are-stored-in-their-own-language-and-read-in-yours)) |
+| UC-2.8 | Correct the translation of a recipe you wrote ([ADR-064](07-decisions.md#adr-064-a-translation-records-what-it-translated-and-a-persons-words-are-not-re-derived)) |
 
 ### UC-3 Find a recipe
 
@@ -62,6 +64,7 @@ UC-1.3 is the founding use case: the product exists because this is currently pa
 | UC-3.2 | Filter by tag, cuisine, time, difficulty, dietary suitability |
 | UC-3.3 | Find recipes cookable from current pantry stock |
 | UC-3.4 | Find recipes that consume stock nearing expiry |
+| UC-3.5 | Browse the registry by where a food sits, and the Academy by the same ([ADR-067](07-decisions.md#adr-067-where-a-food-sits-is-a-tree-taken-from-the-table-it-was-already-in)) |
 
 ### UC-4 Plan meals
 
@@ -174,6 +177,11 @@ UC-8.4 is **Built** — `/api/v1/status` exists and the CLI can query it.
 | FR-21 | The interface ships light, dark, playful and decorative themes. Selection follows the system preference until the cook chooses, and the choice is remembered. |
 | FR-22 | Themes are sets of design-token values, so an instance can add one without rebuilding the application. |
 | FR-23 | A recipe reports hands-on time and total elapsed time separately, derived from its steps. Where any step's duration is unknown, both are reported as lower bounds and marked as such. |
+| FR-24 | The language a cook reads in is the one on their account. The browser's is the fallback for somebody with no account, and nothing else — a household shares a device, and a cook must not have to reconfigure an operating system that is not theirs ([ADR-066](07-decisions.md#adr-066-the-language-is-the-accounts-and-the-browser-answers-only-for-strangers)). |
+| FR-25 | A recipe records the language its prose is written in, where that is known. Absent is a real answer and is never guessed at. |
+| FR-26 | A translation is shown only while it still describes the recipe. One a person wrote is kept when the recipe moves under it and is not re-derived; one a machine wrote is. The reader is always told which of the two they are looking at ([ADR-064](07-decisions.md#adr-064-a-translation-records-what-it-translated-and-a-persons-words-are-not-re-derived)). |
+| FR-27 | Every registry entry may sit in a category, and categories form a tree that an instance can extend without a migration. Absent is a real answer: nothing is filed by guessing ([ADR-067](07-decisions.md#adr-067-where-a-food-sits-is-a-tree-taken-from-the-table-it-was-already-in)). |
+| FR-28 | An export carries the language a recipe is written in, the translations a *person* wrote, and every language the registry names an ingredient in. A machine's translation is not exported: the receiving instance derives its own ([ADR-012](07-decisions.md#adr-012-export-format-is-the-import-format)). |
 
 FR-11 matters more than it looks: it is the guarantee that self-hosters are not trapped, and it
 makes the import path (UC-1.2) and the export path the same contract.

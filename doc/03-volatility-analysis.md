@@ -279,7 +279,7 @@ permanently once any user exists (FR-16).
 ### V17 Content translation
 
 **Status: not built.** Recorded because Phase 3 made it unavoidable — see
-[ADR-032](07-decisions.md#adr-032-proposed-recipes-are-stored-in-their-own-language-and-read-in-yours).
+[ADR-032](07-decisions.md#adr-032-recipes-are-stored-in-their-own-language-and-read-in-yours).
 
 **Question:** how does a recipe written in one language get read in another?
 **Varies:** which languages, whether a machine or a person does it, which model, whether a
