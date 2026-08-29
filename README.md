@@ -132,6 +132,31 @@ docker compose exec ollama ollama pull llama3.1:8b
 
 Or point `QUOOKLY_INFERENCE_BASE_URL` at anything OpenAI-compatible you already run.
 
+### With an assistant plugged into it
+
+Quookly speaks [MCP](https://modelcontextprotocol.io), so an agent can look at your pantry,
+find something that needs no shopping trip, and write a recipe from what is about to go off.
+It is mounted in the instance itself at `/mcp` — one process, one database, one event bus.
+
+Authentication is the API's: an agent is a cook holding a token, and it sees what that cook
+sees. Point a host that speaks HTTP straight at it:
+
+```json
+{"mcpServers": {"quookly": {
+  "url": "http://your-instance:8000/mcp",
+  "headers": {"Authorization": "Bearer <your token>"}
+}}}
+```
+
+For a host that speaks only stdio, the CLI carries a bridge — a relay, with no logic in it:
+
+```bash
+BASE_URL=http://your-instance:8000 QUOOKLY_TOKEN=<your token> python -m quookly_cli mcp
+```
+
+Recipes an agent writes are stored as generated, unapproved and private. They are yours to
+read and approve, and nothing leaves the instance because nothing here ever does.
+
 ### Backing it up
 
 Two things live in the volume, not one: the database, and a directory of pictures beside

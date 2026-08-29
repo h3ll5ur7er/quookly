@@ -22,6 +22,7 @@ from mcp.client.streamable_http import streamable_http_client
 from pytest import MonkeyPatch
 from sqlmodel import SQLModel
 
+from quookly.access import academy
 from quookly.access import ingredient as registry
 from quookly.access.database import dispose_engine, get_engine
 from quookly.api import app
@@ -274,3 +275,123 @@ class TestWritingOneDown:
         assert "milk" in said
 
         assert (await client.get("/api/v1/recipes", headers=cook)).json() == []
+
+
+class TestWhatCanBeReadRatherThanCalled:
+    """Academy pages as MCP resources.
+
+    A tool call is a question asked and answered; a resource is a thing with an address
+    that a host can hold on to and hand to a model as context. An Academy page is the
+    second: it is prose written to be read by somebody who does not know a word, it does
+    not change between one question and the next, and its address is its slug.
+
+    Tools stay too — `what_does_this_word_mean` answers "which page is this word", which is
+    a question and not an address (ADR-058).
+    """
+
+    @pytest.fixture
+    async def explained(self) -> None:
+        from quookly.contracts.academy import NewPage, PageKind, Wording
+
+        await academy.store_many(
+            [
+                NewPage(
+                    slug="blanch",
+                    kind=PageKind.TECHNIQUE,
+                    wordings={
+                        "en-GB": Wording(
+                            name="blanch",
+                            spellings=["blanched"],
+                            summary="Into boiling water, briefly.",
+                            explanation="Boil, then stop it cooking in iced water.",
+                        )
+                    },
+                )
+            ],
+            # Seeded pages arrive read: nobody signs off what the instance shipped.
+            origin=Origin.SEED,
+        )
+
+    async def test_a_page_has_an_address(self, cook: dict[str, str], explained: None) -> None:
+        """A template rather than one resource per page. Which pages exist is a question —
+        `what_words_does_this_kitchen_explain` answers it — and a client that pulled five
+        hundred Academy pages into its resource list would be holding a book to look up a
+        word."""
+        async with talking(cook) as (read, write), ClientSession(read, write) as session:
+            await session.initialize()
+            listed = await session.list_resource_templates()
+
+        assert "quookly://academy/{slug}" in {one.uri_template for one in listed.resource_templates}
+
+    async def test_a_page_reads_as_prose(self, cook: dict[str, str], explained: None) -> None:
+        """Prose rather than a JSON blob. What a resource is for is being read."""
+        async with talking(cook) as (read, write), ClientSession(read, write) as session:
+            await session.initialize()
+            page = await session.read_resource("quookly://academy/blanch")
+
+        said = "".join(getattr(one, "text", "") for one in page.contents)
+        assert "Into boiling water" in said
+        assert "iced water" in said
+
+    async def test_a_page_nobody_has_read_is_not_published(
+        self, cook: dict[str, str], explained: None
+    ) -> None:
+        """The same rule the Academy itself follows. A resource is fetched by the *host*
+        and carries no token, so what is behind this address is what a stranger may
+        already read — and an unreviewed page is not that (ADR-060, ADR-063)."""
+        from quookly.contracts.academy import NewPage, PageKind, Wording
+
+        await academy.store_many(
+            [
+                NewPage(
+                    slug="spatchcock",
+                    kind=PageKind.TECHNIQUE,
+                    wordings={
+                        "en-GB": Wording(
+                            name="spatchcock",
+                            spellings=[],
+                            summary="Flatten a bird.",
+                            explanation="Cut out the backbone.",
+                        )
+                    },
+                )
+            ],
+            # A cook's page, which nobody here has read yet.
+            origin=Origin.USER,
+        )
+
+        async with talking(cook) as (read, write), ClientSession(read, write) as session:
+            await session.initialize()
+            with pytest.raises(Exception, match="published"):
+                await session.read_resource("quookly://academy/spatchcock")
+
+
+class TestWhatAnAgentIsAskedToDo:
+    """Prompts: the questions worth having a name for.
+
+    Not instructions to the model about safety — those belong in the server's own
+    instructions, where they apply to every call rather than to the one somebody chose a
+    prompt for.
+    """
+
+    async def test_the_prompts_are_listed(self, cook: dict[str, str], stocked: None) -> None:
+        async with talking(cook) as (read, write), ClientSession(read, write) as session:
+            await session.initialize()
+            listed = await session.list_prompts()
+
+        assert "whats_for_dinner" in {one.name for one in listed.prompts}
+
+    async def test_dinner_asks_the_kitchen_before_it_asks_the_model(
+        self, cook: dict[str, str], stocked: None
+    ) -> None:
+        """A prompt that only said "suggest dinner" would be a prompt with no kitchen in
+        it. This one tells the model where to look first, which is the whole difference
+        between an assistant and a search engine with opinions."""
+        async with talking(cook) as (read, write), ClientSession(read, write) as session:
+            await session.initialize()
+            asked = await session.get_prompt("whats_for_dinner", {"occasion": "a game on"})
+
+        said = " ".join(getattr(one.content, "text", "") for one in asked.messages)
+        assert "a game on" in said
+        assert "what_needs_using_soon" in said
+        assert "what_could_i_cook" in said

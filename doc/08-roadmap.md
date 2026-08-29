@@ -556,12 +556,25 @@ property of it:
 - ~~Mounted in the application rather than reaching it over HTTP~~ **Built** — one process, one
   database, one event bus.
 
-What is owed: **resources and prompts.** Recipes and Academy pages are addressable and cacheable and
-would be better as MCP resources than as tool calls; a "plan a week" prompt is the kind of thing a
-host surfaces well. Neither is needed for the scenario above, which is why neither is here yet.
+- ~~Resources and prompts~~ **Built.** Academy pages are addressable as `quookly://academy/{slug}`,
+  which is what they always were — a page about `blanch` has a stable name, and a host that can
+  cache one should not have to call a tool to re-read it. Unpublished pages are refused through the
+  resource the same way they are refused through the API, because addressability is not visibility
+  ([ADR-063](07-decisions.md#adr-063-the-academy-is-readable-without-an-account-and-only-what-somebody-here-has-read-is)). Two prompts:
+  `whats_for_dinner`, which is the scenario above with a slot for the occasion, and
+  `write_me_something`.
+- ~~A stdio bridge~~ **Built**, at `quookly-cli mcp`, for hosts that speak only stdio. **It is a
+  relay and must stay one.** What crosses is JSON-RPC, unread: the moment it interprets a message it
+  becomes a second client with its own idea of what the surface is, which is the thing
+  [ADR-068](07-decisions.md#adr-068-the-mcp-server-is-a-client-in-this-process-not-a-client-of-this-api)
+  exists to prevent. Its tests assert that a message arrives on the far side byte-for-byte.
 
-And **a stdio bridge**, for hosts that speak only stdio. A bridge with no logic in it, which is a
-different thing from a second client.
+What driving it against a real instance found, which no fixture would have:
+[ADR-069](07-decisions.md#adr-069-a-search-result-is-ordered-by-how-directly-it-answers-not-alphabetically).
+`find_a_food("olive oil")` answered `baked pizza dough`, and `find_a_food("salt")` did not return
+salt at all. A registry search ordered alphabetically is not ordered by relevance, and the picker a
+cook types into had the bug first and had it longer — the agent surface only made it obvious,
+because an agent takes the first answer and a person scrolls.
 
 ## Phase 8 — Community and engagement
 

@@ -6,7 +6,7 @@ further and throws away accents, which is useful for finding a name and dangerou
 storing one — `pêche` and `pèche` are different words that fold to the same string.
 """
 
-from quookly.utilities.text import fold, normalise
+from quookly.utilities.text import affinity, fold, normalise
 
 
 class TestNormalising:
@@ -47,3 +47,46 @@ class TestFolding:
         and `pèche` is fishing, and they fold together. A caller that finds two entries
         this way has to refuse rather than pick one."""
         assert fold("pêche") == fold("pèche")
+
+
+class TestAffinity:
+    """How directly a name answers what somebody typed (ADR-069)."""
+
+    def test_the_word_itself_beats_a_name_that_merely_contains_it(self) -> None:
+        assert affinity("salt", "salt") > affinity("salt", "fine salt")
+
+    def test_a_name_that_starts_with_the_word_beats_one_that_buries_it(self) -> None:
+        assert affinity("tomato", "tomato paste") > affinity("tomato", "canned peeled tomato")
+
+    def test_a_whole_word_beats_the_middle_of_a_longer_one(self) -> None:
+        """`salt` in `sea salt flakes` is the word; in `basalt` it is a coincidence. Both
+        names are the same length, so nothing but the tier separates them."""
+        assert affinity("salt", "sea salt flakes") > affinity("salt", "unsalted basalt")
+
+    def test_between_two_equally_direct_names_the_shorter_one_wins(self) -> None:
+        """Nothing separates them but length, and the shorter name is the plainer food:
+        `tomato juice` before `drained in oil dried tomato`."""
+        assert affinity("tomato", "tomato juice") > affinity("tomato", "tomato paste sun dried")
+
+    def test_accents_do_not_change_how_direct_a_match_is(self) -> None:
+        """Whichever side wrote the accent, and whether either did."""
+        plain = affinity("creme fraiche", "creme fraiche")
+        assert affinity("creme fraiche", "crème fraîche") == plain
+        assert affinity("crème fraîche", "creme fraiche") == plain
+
+    def test_length_cannot_promote_a_name_into_a_better_tier(self) -> None:
+        """A short coincidence stays below a long real match: `basalt` is not salt, however
+        much shorter it is than `coarse rock salt for grinding`."""
+        assert affinity("salt", "basalt") < affinity("salt", "coarse rock salt for grinding")
+
+    def test_a_name_that_does_not_match_at_all_scores_nothing(self) -> None:
+        assert affinity("salt", "flour") == 0
+
+    def test_a_word_that_merely_begins_with_the_letters_is_not_a_direct_match(self) -> None:
+        """`saltimbocca` starts with `salt` and has nothing to do with salt. Starting with
+        the *word* is what earns the tier; starting with the letters is a coincidence, and
+        a coincidence must not outrank a name that contains the actual word."""
+        assert affinity("salt", "saltimbocca") < affinity("salt", "sea salt flakes")
+
+    def test_starting_with_the_word_still_wins_when_more_follows(self) -> None:
+        assert affinity("tomato", "tomato paste") > affinity("tomato", "sun dried tomato")

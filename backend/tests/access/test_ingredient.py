@@ -1010,3 +1010,61 @@ class TestNamingAnEntryNobodyTranslated:
         assert found is not None
         entries = await registry.for_ids([found.id], ENGLISH)
         assert entries[found.id].name == "Kartoffeln"
+
+
+class TestSearchOrder:
+    """Which of the matches a cook is shown first, and whether they are shown at all.
+
+    Found by driving the MCP surface against a real instance: an agent asking for `salt`
+    was handed `baked with skin potatoe` and `cooked couscous`, and never salt. Ordering
+    alphabetically meant the answer to a common word sank below the cap — 55 shipped names
+    contain `salt`, the entry that *is* salt sat 28th, and the limit is 20 (ADR-069).
+    """
+
+    async def _register(self, slug: str, name: str) -> None:
+        await registry.register(
+            slug=slug,
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: [name]},
+            origin=Origin.SEED,
+        )
+
+    async def test_the_entry_that_is_the_word_comes_first(self) -> None:
+        for slug, name in (
+            ("brown-bread", "brown bread with iodized salt"),
+            ("couscous", "cooked couscous with salt"),
+            ("salt", "salt"),
+            ("fine-salt", "fine salt"),
+        ):
+            await self._register(slug, name)
+
+        found = await registry.search("salt", ENGLISH)
+        assert [entry.slug for entry in found][:2] == ["salt", "fine-salt"]
+
+    async def test_the_answer_survives_a_limit_that_alphabetical_order_pushed_it_past(
+        self,
+    ) -> None:
+        """The bug itself. Every decoy sorts before `salt`, and there are more of them than
+        the caller asked for, so alphabetical order returned no salt at all."""
+        for index in range(6):
+            await self._register(f"decoy-{index}", f"aaa{index} dish cooked in salt water")
+        await self._register("salt", "salt")
+
+        found = await registry.search("salt", ENGLISH, limit=3)
+        assert "salt" in [entry.slug for entry in found]
+
+    async def test_an_entry_found_through_an_alias_is_still_ranked_by_the_alias(self) -> None:
+        """Its shown name need not contain the term at all — the match was on another of
+        its names, and scoring only what is displayed would score it zero."""
+        await registry.register(
+            slug="pizza-dough",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={ENGLISH: ["baked pizza dough", "baked pizza dough with olive oil"]},
+            origin=Origin.SEED,
+        )
+        await self._register("olive-oil", "olive oil")
+
+        found = await registry.search("olive oil", ENGLISH)
+        assert [entry.slug for entry in found] == ["olive-oil", "pizza-dough"]

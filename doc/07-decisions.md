@@ -3134,3 +3134,62 @@ having it, which is the same as any other part of the API.
 
 The layer contract gains a client, and every rule that applies to `routes` applies here: no manager
 may be called by two, no engine may be reached around a manager, and the ORM stays where it is.
+
+## ADR-069 A search result is ordered by how directly it answers, not alphabetically
+
+**Status:** Accepted.
+
+**Context.** `IngredientAccess.search` returns the registry entries whose name contains a term, for
+somebody to pick one from. It over-fetched, deduplicated by entry, sorted the survivors
+alphabetically and cut the list to the caller's limit.
+
+Alphabetical order is not an ordering of *relevance*, and the shipped registry is the case that
+proves it. Its names come from the Swiss nutrition table, which names foods as a nutritionist does:
+`brown bread (with iodized salt)`, `canned in tomatosauce sardine`, `baked pizza dough with olive
+oil`. Fifty-five of them contain the word `salt`.
+
+So a cook typing `salt` got `baked with skin potatoe`, `boiled leafy vegetables` and `cooked
+couscous`. The entry that *is* salt sorted twenty-eighth, the limit is twenty, and it was **not in
+the results at all**. The same term that a recipe line resolves against perfectly could not be found
+by the person typing it.
+
+This was found by driving the MCP surface ([ADR-068](#adr-068-the-mcp-server-is-a-client-in-this-process-not-a-client-of-this-api))
+against a real instance rather than a fixture — `find_a_food("olive oil")` answered `baked pizza
+dough`. It is not an agent problem. The picker a cook types into had it first and had it longer; the
+agent surface only made it visible, because an agent takes the first answer and a person scrolls.
+
+**Decision.** Order by **how directly the name answers the term**, alphabetically within a tier.
+`utilities.text.affinity` scores it: the word itself, then a name starting with the word, then a
+name carrying it as a whole word, then anything else containing the letters. Shorter wins inside a
+tier, capped so length can never promote a name past a better match.
+
+Three details carry most of the value:
+
+- **The database query orders by name length before the cap applies.** Ranking after truncation
+  cannot recover an answer that truncation already dropped, and a name that *is* the term is the
+  shortest name that can contain it.
+- **An entry is scored against every one of its names that matched, not the one shown.** An entry
+  found through an alias was still found, and its display name in the reader's locale may not
+  contain the term at all. This is also why searching `salt` answers `fine salt` first and that is
+  correct: `salt` is one of that entry's names, and `fine salt` is what en-GB calls it.
+- **The top tiers require a word, not a run of letters.** `saltimbocca` begins with `salt` and
+  `basalt` ends with it, and neither is salt. Without the word boundary, any word beginning with
+  the term outranks every name that actually contains it — which is not a hypothetical: with a
+  bare prefix test, `pan fried in rapeseed oil holl saltimbocca` came second for `salt`.
+
+**Why a utility and not a rule engine.** The layer that applies it is resource access, and access
+may not call an engine ([ADR-008](#adr-008-enforce-the-call-rules-with-import-linter)). It belongs there
+on its merits too: it is mechanics — where a word sits in a string — and it knows nothing about
+food. It is the same argument that put `normalise` and `fold` beside it, and it is why
+[the matching engine](#adr-029-an-ingredient-the-registry-does-not-know-is-recorded-and-reported) is not the home for this: that
+engine answers *is this the same thing*, which has no definite answer. *How well does this name
+answer this word* does.
+
+**Consequences.** Every caller of `search` improves at once — the ingredient picker, the "avoid an
+ingredient" field, the import screen's chooser and the agent's `find_a_food`.
+
+Two neighbours are deliberately untouched. `resolve` is exact, refuses ambiguity, and answers a
+different question. And `browse` — the registry screen — stays ordered by name, because it is
+complete, paged and counted: paging through every match loses nothing, and an administrator looking
+for what an import invented wants a stable order rather than a helpful one. The bug this fixes is
+specific to a *truncated* list, which is what `search` returns and `browse` does not.

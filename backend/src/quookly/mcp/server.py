@@ -12,7 +12,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Annotated, Any
 
 from mcp.server.mcpserver import Context, MCPServer
-from mcp.server.mcpserver.exceptions import ToolError
+from mcp.server.mcpserver.exceptions import ResourceError, ToolError
 from pydantic import Field
 
 from quookly.contracts.errors import (
@@ -249,7 +249,10 @@ def _shelved(entry: Any) -> dict[str, Any]:
         "reusing the entry that already exists is what keeps the pantry, the shopping list "
         "and the allergen warnings joined up. Several answers means several foods, not one "
         "with several names — pick the one you mean, and if none of them is it, say so "
-        "rather than picking the nearest."
+        "rather than picking the nearest.\n\n"
+        "Closest match first. The name shown is what this kitchen calls the entry, which "
+        "is not always the name you searched for: `salt` answers `fine salt`, because "
+        "`salt` is one of that entry's names."
     ),
 )
 async def find_a_food(
@@ -482,3 +485,119 @@ async def what_is_still_to_buy(context: Context[Any, Any]) -> list[dict[str, Any
         {"name": line.name, "quantity": line.quantity, "in_the_basket": line.bought}
         for line in plan.shopping
     ]
+
+
+# --- what can be read rather than called ---------------------------------------------------
+#
+# A tool call is a question asked and answered; a resource is a thing with an address that
+# a host can hold on to and hand to a model as context. An Academy page is the second: it
+# is prose written for somebody who does not know a word, it does not change between one
+# question and the next, and its address is its slug.
+#
+# `what_does_this_word_mean` stays a tool, because "which page is this word" is a question
+# and not an address — and several pages may answer it (ADR-058).
+
+
+@kitchen.resource(
+    "quookly://academy/{slug}",
+    description=(
+        "One page of this kitchen's Academy: what a cooking word means, in the cook's language."
+    ),
+    mime_type="text/markdown",
+)
+async def academy_page(slug: str) -> str:
+    """One page, as prose.
+
+    Read for the instance rather than for a signed-in cook. A resource is fetched by the
+    *host* and has no request of its own to carry a token, and what is behind this is what
+    a stranger may already read: an approved page, which is a published thing (ADR-063).
+    """
+    from quookly.contracts.academy import Reader
+
+    page = await academy_manager.read(slug, Reader(cook_id=None, locale=None))
+    if page is None or not page.approved:
+        raise ResourceError(f"No page called {slug!r} has been published here.")
+
+    written = [f"# {page.name}", "", page.summary, "", page.explanation]
+    if page.caution:
+        written += ["", f"**Take care.** {page.caution}"]
+    if page.spellings:
+        written += ["", f"*Also written:* {', '.join(page.spellings)}"]
+    return "\n".join(written)
+
+
+# --- the questions worth having a name for -------------------------------------------------
+
+
+@kitchen.prompt(
+    description=(
+        "Work out what to cook tonight from what this kitchen actually has, rather than "
+        "from what a recipe site would suggest."
+    ),
+)
+def whats_for_dinner(
+    occasion: Annotated[
+        str,
+        Field(
+            default="",
+            description="Anything that shapes it: who is coming, how long there is, a mood.",
+        ),
+    ] = "",
+) -> str:
+    """The question this whole surface exists to answer, with the kitchen in it.
+
+    A prompt that only said "suggest dinner" would be a prompt with no kitchen in it —
+    the model would answer from what it knows about food rather than from what is on
+    these shelves, which is the difference between an assistant and a search engine with
+    opinions.
+
+    It says *where to look*, not what to conclude. Deciding is the cook's, and the safety
+    rules are in the server's own instructions, where they apply to every call rather than
+    to the ones somebody happened to start from here.
+    """
+    asked = f"Tonight: {occasion}.\n\n" if occasion.strip() else ""
+    return (
+        f"{asked}"
+        "Find something to cook from this kitchen, in this order.\n\n"
+        "1. Call `what_needs_using_soon`. Food that is about to go off is the strongest "
+        "reason to cook one thing rather than another, and it is the food that otherwise "
+        "gets thrown away.\n"
+        "2. Call `what_could_i_cook`. Each answer says why it is there and how much is "
+        "still to buy — `still_to_buy: 0` means everything is already here, which is "
+        "usually what decides it on a weeknight.\n"
+        "3. Read the one or two that fit with `read_a_recipe` before recommending them, so "
+        "what you say about the method is what the method says.\n\n"
+        "Then suggest one, in a sentence, and say what makes it the right one — what it "
+        "uses up, or that nothing needs buying. If nothing fits, say so and offer to write "
+        "something new around what needs using."
+    )
+
+
+@kitchen.prompt(
+    description="Write a new recipe around what this kitchen has, without inventing foods.",
+)
+def write_me_something(
+    around: Annotated[
+        str, Field(description="What it should be: a dish, a cuisine, a thing to use up.")
+    ],
+) -> str:
+    """Writing one down, with the vocabulary step made explicit.
+
+    The looking-up is not politeness. A line takes an `ingredient_id`, so a model that has
+    not searched cannot write the recipe at all — and being told that before it starts is
+    the difference between one round trip and several.
+    """
+    return (
+        f"Write a recipe for this kitchen: {around}.\n\n"
+        "1. Call `what_needs_using_soon` and `what_is_in_the_pantry` first, and build it "
+        "around what is there.\n"
+        "2. Call `find_a_food` for every single ingredient and keep the `ingredient_id`. "
+        "A recipe line takes an id and cannot take a name, so this is not optional — and "
+        "reusing the entry that already exists is what keeps the pantry, the shopping "
+        "list and the allergen warnings working.\n"
+        "3. Call `what_words_does_this_kitchen_explain` and prefer those words in the "
+        "method, so a cook can look them up while reading it.\n"
+        "4. Call `write_a_recipe`.\n\n"
+        "If it is refused because somebody here cannot eat it, say what the reason was and "
+        "offer a change — do not argue with the verdict, and do not work one out yourself."
+    )

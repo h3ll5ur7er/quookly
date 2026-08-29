@@ -311,3 +311,53 @@ By default an instance refuses to fetch a URL that resolves to a private address
 ([ADR-027](07-decisions.md#adr-027-an-instance-will-not-fetch-its-own-network)): without that, a
 pasted link is a way to make the server read your router's admin page. If your recipes genuinely
 live on your own network, set `QUOOKLY_ALLOW_PRIVATE_FETCH=true`.
+
+## Connecting an assistant
+
+The instance speaks [MCP](https://modelcontextprotocol.io) at `/mcp`, mounted in the backend
+itself rather than run beside it
+([ADR-068](07-decisions.md#adr-068-the-mcp-server-is-a-client-in-this-process-not-a-client-of-this-api)).
+Nothing to install and nothing to configure: if the API is up, this is up.
+
+**Authentication is the API's.** The same bearer token, and one token is one cook — an agent sees
+what the cook whose token it holds sees, and nothing else. Issue it the way you issue any other:
+
+```bash
+QUOOKLY_TOKEN=<your token> just cli run status get-status
+```
+
+A host that speaks HTTP is pointed straight at the instance:
+
+```json
+{"mcpServers": {"quookly": {
+  "url": "http://your-instance:8000/mcp",
+  "headers": {"Authorization": "Bearer <your token>"}
+}}}
+```
+
+A host that speaks only **stdio** — several desktop ones do — needs a relay, because the instance
+is on a box in a cupboard and the agent is not. The CLI carries one:
+
+```bash
+BASE_URL=http://your-instance:8000 QUOOKLY_TOKEN=<your token> python -m quookly_cli mcp
+```
+
+It has no logic in it. What crosses is JSON-RPC, unread.
+
+### What it can do, and what it cannot
+
+It can see the pantry and what is about to go off, read and search recipes, look up a food in the
+registry, read the Academy, plan a meal, and write a recipe into the kitchen.
+
+Two limits are structural rather than configured:
+
+- **It cannot invent an ingredient.** A recipe line takes an `ingredient_id` and never has taken a
+  name, so an agent writing a recipe has to find the food in the registry first. The cleanup an
+  import leaves behind is not something this had to solve; it is something it cannot cause.
+- **It cannot tell anyone a dish is safe.** Allergen and suitability conclusions are computed from
+  the structured ingredients of the recipe, never from a model's prose
+  ([ADR-006](07-decisions.md#adr-006-allergen-determination-is-structural)),
+  and a recipe an agent writes is judged by the same engine as one you typed.
+
+Recipes an agent writes are stored **generated, unapproved and private**. They are yours to read,
+correct and approve. Nothing leaves the instance, because nothing here ever does.

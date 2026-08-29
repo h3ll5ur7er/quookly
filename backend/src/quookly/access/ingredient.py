@@ -44,7 +44,7 @@ from quookly.contracts.ingredient import (
 )
 from quookly.contracts.matching import Named
 from quookly.contracts.nutrition import NutrientProfile, NutritionSource
-from quookly.utilities.text import fold, normalise
+from quookly.utilities.text import affinity, fold, normalise
 
 # The registry is seeded in English, so a Swiss instance must still resolve a seeded name
 # until a translation for it exists. The fallback is to this one locale only: matching
@@ -705,6 +705,12 @@ async def search(term: str, locale: str, limit: int = 20) -> list[Ingredient]:
                         col(IngredientNameRow.normalised).contains(wanted),
                         col(IngredientNameRow.locale).in_([locale, SOURCE_LOCALE]),
                     )
+                    # Shortest first, so the pool cannot drop the answer. A name that *is*
+                    # the term is the shortest name that can contain it, so ordering this
+                    # way puts the exact match in the pool before the cap applies. Without
+                    # it the pool was whatever the rows happened to be stored in, and
+                    # `salt` genuinely did not return salt: 55 names contain it.
+                    .order_by(func.length(col(IngredientNameRow.normalised)))
                     .limit(limit * 4)
                 )
             ).all()
@@ -713,7 +719,13 @@ async def search(term: str, locale: str, limit: int = 20) -> list[Ingredient]:
             matches.extend(await _folded_containing(active, wanted, locale, matches))
 
         found: dict[int, Ingredient] = {}
+        closeness: dict[int, int] = {}
         for match in matches:
+            # Scored against every name that matched, not only the one shown. An entry
+            # found through an alias was still found, and its display name in the reader's
+            # locale may not contain the term at all.
+            scored = affinity(wanted, match.name)
+            closeness[match.ingredient_id] = max(closeness.get(match.ingredient_id, 0), scored)
             if match.ingredient_id in found:
                 continue
             row = await active.get(IngredientRow, match.ingredient_id)
@@ -722,7 +734,11 @@ async def search(term: str, locale: str, limit: int = 20) -> list[Ingredient]:
             display = await name_for(active, row.id, locale, match.name)
             found[row.id] = _to_contract(row, display, category_slug=await _sitting(active, row))
 
-    return sorted(found.values(), key=lambda entry: entry.name)[:limit]
+    # Closest first, alphabetical within a tier. Alphabetical alone buried the answer:
+    # a cook typing `tomato` got `canned in tomatosauce sardine` before the tomato.
+    return sorted(found.values(), key=lambda entry: (-closeness.get(entry.id or 0, 0), entry.name))[
+        :limit
+    ]
 
 
 async def browse(
