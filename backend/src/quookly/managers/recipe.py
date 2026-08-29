@@ -950,6 +950,42 @@ async def generate(
     return await _present(stored, await preference_access.for_cook(cook_id), None, cook_id)
 
 
+async def accept_written(
+    submitted: RecipeInput, cook_id: int, locale: str | None = None
+) -> PresentedRecipe:
+    """Keep a recipe something else wrote, and only if the table can eat it (ADR-068).
+
+    The same ending as `generate` with a different beginning. There, this instance's model
+    composes and `_resolve` matches the names it used against the registry; here the words
+    arrive already written and the lines already name registry entries, because a
+    `RecipeInput` line takes an id and has never taken a name. Nothing is resolved, because
+    nothing was ever unresolved.
+
+    Kept as `GENERATED` rather than `AUTHORED`: a cook looking at their own collection
+    should be able to tell what they wrote from what wrote for them, and the distinction is
+    the reason `Provenance` exists.
+
+    **The safety rule is the one `generate` has**, and it is here rather than shared because
+    it must be impossible to add a third way in that forgets it: the verdict is computed by
+    `SuitabilityEngine` from the entries the *registry* holds for those ids, and an
+    unsuitable recipe is refused with its reasons rather than stored with a warning. What
+    the writer believed about the food does not enter into it (ADR-006, ADR-047).
+    """
+    reading = locale or await cook_access.locale_for(cook_id)
+    household = await eater_access.list_for_cook(cook_id)
+    draft = _drafted(submitted, Provenance.GENERATED, await _writing_in(cook_id))
+
+    if household:
+        verdict = suitability.evaluate(
+            suitability.facts_for(await _lines_as_registered(draft, reading)), household
+        )
+        if verdict.outcome is not Outcome.SUITABLE:
+            raise UnsuitableForTheTable(VerdictView.of(verdict))
+
+    stored = await recipe_access.store(draft, cook_id)
+    return await _present(stored, await preference_access.for_cook(cook_id), None, cook_id)
+
+
 def _as_a_cookbook_prints_it(recipe: Recipe) -> tuple[list[str], list[str]]:
     """A stored recipe's lines and steps as words, for handing to a model.
 

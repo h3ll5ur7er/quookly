@@ -98,6 +98,14 @@ def check_anchors(failures: list[str]) -> int:
             checked += 1
             if fragment not in anchors[target]:
                 failures.append(f"{name}: link to {target}#{fragment} — no such heading")
+
+        # Same-page links, which are most of them: `07-decisions.md` is one long file of
+        # decisions citing each other, and a rename breaks those first. Missing this was
+        # how the checker passed a page whose own cross-references were broken.
+        for fragment in re.findall(r"\]\(#([\w-]+)\)", text):
+            checked += 1
+            if fragment not in anchors[name]:
+                failures.append(f"{name}: link to #{fragment} — no such heading in this page")
     return checked
 
 

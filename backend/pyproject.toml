@@ -10,6 +10,7 @@ dependencies = [
     "fastapi[all]>=0.136.1",
     "httpx>=0.28.1",
     "lxml>=6.1.2",
+    "mcp>=2.1.1",
     "pillow>=12.3.0",
     "pwdlib[argon2]>=0.3.1",
     "pydantic-settings>=2.14.1",
@@ -119,7 +120,9 @@ include_external_packages = true
 name = "Calls flow downward through the layers"
 type = "layers"
 containers = ["quookly"]
-layers = ["routes", "managers", "engines", "access"]
+# `mcp` and `routes` are both Clients and sit at the same level: one serves an agent,
+# the other a browser, and neither may be called by the other (ADR-068).
+layers = ["routes | mcp", "managers", "engines", "access"]
 exhaustive = true
 exhaustive_ignores = ["api", "utilities", "contracts"]
 
@@ -129,6 +132,7 @@ type = "forbidden"
 source_modules = ["quookly.utilities"]
 forbidden_modules = [
     "quookly.routes",
+    "quookly.mcp",
     "quookly.managers",
     "quookly.engines",
     "quookly.access",
@@ -140,6 +144,7 @@ type = "forbidden"
 source_modules = ["quookly.contracts"]
 forbidden_modules = [
     "quookly.routes",
+    "quookly.mcp",
     "quookly.managers",
     "quookly.engines",
     "quookly.access",

@@ -11,6 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.routing import APIRoute
 
+from quookly.mcp import AgentSurface
+
 from .access import search
 from .access.database import dispose_engine
 from .contracts.events import MealCooked
@@ -78,6 +80,12 @@ def wire_subscriptions() -> None:
     events.subscribe(MealCooked, pantry.on_meal_cooked)
 
 
+#: What is mounted at `/mcp` (ADR-068). Stable, because a mount is; the surface behind it
+#: is built by the lifespan, because a transport's session manager may be run once and an
+#: application that could only be started once would be a strange thing to ship.
+_agents = AgentSurface()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     configure_logging()
@@ -100,7 +108,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Derived, so it is rebuilt rather than migrated: a change to what is indexed then
     # costs nothing to roll out and cannot be half-applied.
     await search.reindex()
-    yield
+    # The MCP transport keeps per-session state and wants a lifespan of its own. Run inside
+    # this one rather than beside it: there is one process, and that is the whole point of
+    # serving an agent from here rather than from a second client (ADR-068).
+    async with _agents.running():
+        yield
     await dispose_engine()
 
 
@@ -143,6 +155,11 @@ async def correlate_and_log(
     response.headers[REQUEST_ID_HEADER] = request_id
     return response
 
+
+# Quookly as tools an agent can use, at `/mcp`, over the Streamable HTTP transport. A
+# Client like the routers below and at the same layer: its tools call managers, and it
+# authenticates with the same bearer token they do (ADR-068).
+app.mount("/mcp", _agents)
 
 app.include_router(status_router, prefix=API_PREFIX, tags=["status"])
 app.include_router(accounts_router, prefix=API_PREFIX, tags=["accounts"])

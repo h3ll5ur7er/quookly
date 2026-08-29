@@ -2633,7 +2633,7 @@ the server last described it, so a mid-session edit does not move under the cook
 
 **Status:** Accepted — the moderation half of
 [ADR-057](#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques), and a narrowing of
-[ADR-055](#adr-055-fuzziness-lives-in-the-vocabulary-not-in-the-match).
+[ADR-055](#adr-055-a-step-finds-its-techniques-by-the-words-it-already-uses).
 
 **Context.** The Academy has to be writable by the people who use it, or it is a fixed set of fifty
 pages that nobody can extend. But a page is not like a registry entry: an entry is a row somebody
@@ -2648,7 +2648,7 @@ from anything that says who wrote it or whether anybody has read it.
 
 The failure is not mainly abuse. It is an honest page claiming an ordinary word: one page for *fold*
 in the laundry sense, and every recipe on the instance grows a link that leads somewhere useless.
-[ADR-055](#adr-055-fuzziness-lives-in-the-vocabulary-not-in-the-match) already put the judgement
+[ADR-055](#adr-055-a-step-finds-its-techniques-by-the-words-it-already-uses) already put the judgement
 about which spellings are worth matching **in the vocabulary**, and that is exactly the lever.
 
 **Decision.** Approval gates term-claiming, not readability.
@@ -2664,7 +2664,7 @@ this* — and it now has a consequence beyond a label, which is what makes it wo
 **Who may do what.**
 
 - Any signed-in cook may write a page. There is no separate contributor role, for the reason
-  [ADR-049](#adr-049-an-instance-has-a-door-and-somebody-holds-the-key) gives about roles in general:
+  [ADR-049](#adr-049-an-account-is-applied-for-and-an-administrator-answers) gives about roles in general:
   this instance's door is already the membership decision.
 - The **author** may rewrite their own page while it is unreviewed. Amending is otherwise an
   administrator's, because a correction changes what every cook on the instance reads — but a draft
@@ -2988,7 +2988,7 @@ Three rules make that true rather than merely stated:
 
 1. **Signing in settles the language from the account.** Where the account names one, it is adopted
    and the page loaded again — catalogues are fixed for the life of the application
-   ([ADR-025](#adr-025-the-interface-is-translated-at-build-time-and-the-catalogues-ship-with-it)),
+   ([ADR-025](#adr-025-runtime-locale-localize-catalogues-one-artefact)),
    so adopting means reloading. A language this build ships no catalogue for is left alone: it is
    still a choice somebody made, and overwriting it with the language of whichever device they are
    standing at is how a preference quietly disappears.
@@ -3079,3 +3079,58 @@ Techniques stay lettered: a technique is not a food and has nowhere to sit.
 
 **What stays open.** Nothing places an ingredient an import invents until a person does, which is
 the same gap Phase 8b has for per-locale names on the same rows.
+
+---
+
+## ADR-068 The MCP server is a client in this process, not a client of this API
+
+**Status:** Accepted.
+
+**Context.** An agent should be able to cook with this instance: look at the pantry, find something
+that needs no shopping trip, and write a recipe from what is about to go off. MCP is how an agent is
+given tools, so Quookly wants an MCP server.
+
+The obvious place to put one is beside the CLI. The CLI already reaches the instance over HTTP with
+the generated client, and an MCP server launched over stdio is exactly a CLI invocation. That was
+the first proposal, and the objection to it was the right one: **it is a network hop to reach code
+running on the same machine.**
+
+The hop is not the real problem, though — it is a symptom. Three things make a separate process the
+wrong shape:
+
+- **One process opens the database.** Persistence is SQLite ([ADR-009](#adr-009-sqlite-only-to-begin-with), [ADR-018](#adr-018-sqlmodel-as-the-orm)),
+  migrations run in the entrypoint before the application starts, and two processes on one file is a
+  schema race and a lock contention story nobody asked for.
+- **The event bus is in this process and awaited** ([ADR-039](#adr-039-events-are-published-in-this-process-and-awaited)).
+  A second process publishing `MealCooked` would find no subscribers: cooking a meal there would
+  consume no stock, silently.
+- **The search index is derived and rebuilt at start-up.** Two processes rebuilding it is two
+  answers to one question.
+
+**Decision.** The MCP server is **mounted in the backend process**, at `/mcp`, over the Streamable
+HTTP transport. Its tools call managers directly — the same call a route makes, from the same layer.
+
+`quookly.mcp` is a **Client**, a peer of `quookly.routes`, and the layer contract says so: the
+`layers` list names it, and `exhaustive = true` means a new top-level package cannot quietly appear
+without a decision about where it sits.
+
+There is no hop, because there is no second process. What the agent talks to over the network is the
+instance — which it has to, because the agent runs where the person is and the instance runs where
+the instance is. That boundary is real and unavoidable; the one inside the box was not.
+
+**Why HTTP rather than stdio.** A stdio server runs on the machine the agent runs on. A self-hosted
+Quookly runs on a box in a cupboard. There is no shared filesystem between them, so stdio would have
+needed a proxy back over the network — the hop again, with a process in front of it. Streamable HTTP
+is the transport that matches where the two things actually are. A host that speaks only stdio can
+be given a thin bridge, and a bridge with no logic in it is a different thing from a second client.
+
+**Authentication is the API's.** The same bearer token, read from the same header, verified by the
+same `Security` utility. An agent is a cook holding a token, and one token is one cook: a household
+instance where the agent sees what its cook sees.
+
+**Consequences.** The MCP surface is versioned and deployed with the backend, which is right — it is
+a view of the same use cases. It cannot be run against a *remote* instance without the instance
+having it, which is the same as any other part of the API.
+
+The layer contract gains a client, and every rule that applies to `routes` applies here: no manager
+may be called by two, no engine may be reached around a manager, and the ORM stays where it is.

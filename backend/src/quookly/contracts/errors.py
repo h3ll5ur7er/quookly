@@ -4,6 +4,14 @@ An access service raises these rather than letting a storage-specific exception 
 A caller should never have to catch an `IntegrityError` to learn that an email was taken.
 """
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover
+    # Typed rather than left as `object`: every caller of this reaches for `.findings`,
+    # and one of them was reaching for it through a cast. Behind TYPE_CHECKING because a
+    # verdict is a suitability contract and errors are imported by everything.
+    from quookly.contracts.suitability import VerdictView
+
 
 class QuooklyError(Exception):
     """Base class for errors the application raises deliberately."""
@@ -239,7 +247,7 @@ class UnsuitableForTheTable(QuooklyError):
     Carries the verdict, because "no" without a reason is not an answer.
     """
 
-    def __init__(self, verdict: object) -> None:
+    def __init__(self, verdict: "VerdictView") -> None:
         super().__init__("the recipe that came back is not suitable for this household")
         self.verdict = verdict
 

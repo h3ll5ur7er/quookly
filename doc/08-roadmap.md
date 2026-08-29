@@ -532,6 +532,37 @@ hierarchy the visual review asked for. What is still owed is that nothing places
 import invents until a person does — the same gap this phase has for per-locale names on those rows,
 and worth doing with them.
 
+## Phase 8c — An agent in the kitchen
+
+**Goal:** a cook can ask an assistant what to make tonight, and it answers from *this*
+kitchen — this pantry, these recipes, this registry.
+
+**Status: built**, and the shape of it is
+[ADR-068](07-decisions.md#adr-068-the-mcp-server-is-a-client-in-this-process-not-a-client-of-this-api).
+
+The scenario it exists for: somebody is coming over, there is a game on, and the agent finds a
+focaccia that needs no shopping trip — then, asked for a twist, looks at what is about to go off and
+writes a bruschetta around the tomatoes.
+
+Most of that was already here. `GET /recipes/suggestions` ranks by what would be saved and says why;
+`GET /pantry/using-soon` is the second half of the sentence. What is new is the surface and one
+property of it:
+
+- ~~Tools for what to cook, what is on the shelf, what a word means, and what a food is~~ **Built.**
+- ~~An agent can write a recipe into the kitchen~~ **Built** — and it cannot invent an ingredient
+  while doing it, because a recipe line takes an `ingredient_id` and never has taken a name. The
+  cleanup an import leaves behind is not something this had to solve; it is something it cannot
+  cause.
+- ~~Mounted in the application rather than reaching it over HTTP~~ **Built** — one process, one
+  database, one event bus.
+
+What is owed: **resources and prompts.** Recipes and Academy pages are addressable and cacheable and
+would be better as MCP resources than as tool calls; a "plan a week" prompt is the kind of thing a
+host surfaces well. Neither is needed for the scenario above, which is why neither is here yet.
+
+And **a stdio bridge**, for hosts that speak only stdio. A bridge with no logic in it, which is a
+different thing from a second client.
+
 ## Phase 8 — Community and engagement
 
 **Goal:** recipes circulate.
