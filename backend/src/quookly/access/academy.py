@@ -9,7 +9,7 @@ here several pages may claim a term and the page names the others at the top, be
 nothing computes on a page and a person resolves it by clicking (ADR-058).
 """
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 
 from sqlmodel import col, select
@@ -22,6 +22,7 @@ from quookly.access.models import (
     AcademyPictureRow,
     AcademyTermRow,
     AcademyTextRow,
+    IngredientRow,
 )
 from quookly.contracts.academy import (
     Claimant,
@@ -41,7 +42,10 @@ from quookly.contracts.errors import (
 )
 from quookly.contracts.ingredient import Origin
 from quookly.contracts.matching import Named
+from quookly.utilities.diagnostics import get_logger
 from quookly.utilities.text import fold, normalise
+
+log = get_logger("academy")
 
 #: The language pages are seeded in, and the fallback for one written in no other. The
 #: same reach `IngredientAccess` gives a name: a page a cook cannot read might as well not
@@ -49,7 +53,11 @@ from quookly.utilities.text import fold, normalise
 SOURCE_LOCALE = "en-GB"
 
 
-async def store_many(pages: Sequence[NewPage], origin: Origin = Origin.USER) -> int:
+async def store_many(
+    pages: Sequence[NewPage],
+    origin: Origin = Origin.USER,
+    about: Mapping[str, str] | None = None,
+) -> int:
     """Add the pages this instance does not have. Returns how many were new.
 
     Skips a slug already here rather than raising, because start-up runs this every boot
@@ -58,10 +66,23 @@ async def store_many(pages: Sequence[NewPage], origin: Origin = Origin.USER) -> 
 
     A seeded page arrives **approved**: nobody signs off what the instance chose to ship.
     Anything else arrives unreviewed, and a generated one says so separately (ADR-056).
+
+    `about` maps a page's slug to the *registry* slug it is about, for the ingredient
+    section (ADR-061). Resolved here because this is the layer that can: a caller holding
+    a seed file has slugs, not row ids.
+
+    A page whose section wants an entry and whose entry is not there yet is **skipped**,
+    not refused — unlike `write`, which raises. The difference is who is being told. A
+    person writing a page can be shown an error and fix it; this path runs on every boot,
+    where refusing would mean the registry seed and the Academy seed have to succeed in
+    that order or the instance does not start. Skipping self-heals on the next boot, and
+    a typo in a shipped seed file is caught by the tests over that file rather than by a
+    self-hoster whose instance will not come up.
     """
     if not pages:
         return 0
 
+    named = about or {}
     async with session() as active:
         held = {
             row.slug
@@ -79,11 +100,21 @@ async def store_many(pages: Sequence[NewPage], origin: Origin = Origin.USER) -> 
             if page.slug in held:
                 continue
             held.add(page.slug)
+            entry = await _entry_id_of(active, named.get(page.slug))
+            if page.kind is PageKind.INGREDIENT and entry is None:
+                log.warning(
+                    "skipping academy page %s: no registry entry named %s",
+                    page.slug,
+                    named.get(page.slug),
+                    extra={"page": page.slug, "about": named.get(page.slug)},
+                )
+                continue
             row = AcademyPageRow(
                 slug=page.slug,
                 kind=page.kind,
                 origin=origin,
                 approved=origin is Origin.SEED,
+                ingredient_id=entry,
             )
             active.add(row)
             await active.flush()
@@ -666,3 +697,15 @@ async def remove_picture(slug: str, picture_id: int) -> bool:
         await active.delete(held)
         await active.commit()
     return True
+
+
+async def _entry_id_of(active: AsyncSession, slug: str | None) -> int | None:
+    """The registry row a seed page's `about` slug names, or None where it names nothing.
+
+    By slug rather than by name: a slug is stable and a name is not, and a seed file that
+    referred to entries by name would break the day somebody renamed one.
+    """
+    if slug is None:
+        return None
+    row = (await active.exec(select(IngredientRow).where(col(IngredientRow.slug) == slug))).first()
+    return None if row is None else row.id

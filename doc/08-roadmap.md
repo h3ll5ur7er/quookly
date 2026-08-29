@@ -1,7 +1,7 @@
 # Roadmap
 
-**Status: Phases 0 through 6b are complete and released. Phase 7 is next; Phases 8, 8b and 9
-follow.**
+**Status: Phases 0 through 8c are complete. Phase 9 is next, and Phase 8 — community — is last
+on purpose.**
 
 Ordered by architectural risk rather than by visible surface. Each phase ends with something that
 works end to end and is covered by `just check`.
@@ -591,7 +591,7 @@ whose absence costs the product least.
 
 **Goal:** a recipe written in one language is read in another, without losing the original.
 
-**Status: proposed**, see [ADR-032](07-decisions.md#adr-032-recipes-are-stored-in-their-own-language-and-read-in-yours)
+**Status: built**, see [ADR-032](07-decisions.md#adr-032-recipes-are-stored-in-their-own-language-and-read-in-yours)
 and [V17](03-volatility-analysis.md#v17-content-translation).
 
 Most of it already exists. Quantities, durations and temperatures are language-neutral by
@@ -663,10 +663,22 @@ reading, and because it depends on nothing in Phase 9.
   self-hoster's box is as likely to be a Raspberry Pi as an x86 server.
 - ~~An example `.env`~~ **Built** — every setting, including what an instance can and cannot do
   without a model, and why the signing key has no default.
-- Backup, restore, and upgrade paths (UC-8.1). **Two things to copy, not one**: pictures live in a
-  directory beside the database rather than inside it
-  ([ADR-057](07-decisions.md#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques)),
-  so a backup that takes only the `.db` file restores an instance whose pages have holes in them
+- ~~Backup and restore (UC-8.1)~~ **Built** — `quookly-cli data take-backup` and `restore`
+  ([ADR-071](07-decisions.md#adr-071-a-backup-is-a-snapshot-taken-where-the-data-is-and-the-recipe-export-is-not-one)).
+  Two things travel, because pictures live beside the database rather than inside it, and the
+  database is **snapshotted rather than copied** — `tar` of a live SQLite file is a backup that looks
+  fine until the day it is needed. Safe against a serving instance; restore refuses a directory that
+  still holds data unless forced.
+
+  This corrected a documentation defect worth naming: the installation guide called the recipe export
+  "a complete, portable copy" and "also a valid backup". It carries recipes. Accounts, eaters and
+  their allergy constraints, the pantry, meal plans, cooking history, the Academy, and every
+  photograph are not in it.
+- ~~The CLI runs where the data is~~ **Built** — it is installed into the image, which is what makes
+  an operator command against an instance's own data possible at all. The rest of the CLI work below
+  depends on this.
+- **Upgrade paths** (UC-8.1). Migrations run in the entrypoint, so an upgrade is a new image and a
+  restart; what is owed is saying so, and saying what to do when a migration fails
 - Bulk import and export via CLI (UC-8.3)
 
 ### The CLI, deliberately later

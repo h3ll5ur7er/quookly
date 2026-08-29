@@ -62,6 +62,48 @@ async def stocked() -> int:
     return await stock_academy()
 
 
+class TestTheShippedFoodPages:
+    """The Academy's second section as an instance receives it (ADR-057).
+
+    Distinct from `TestTheIngredientSection` below, which is about a cook writing one.
+    This is about what a self-hoster gets before anybody has written anything.
+
+    Every part of it existed — the kind, the access layer's refusal of a page that names
+    no entry, the write-page screen's food picker — and no instance had a single page in
+    it, because the seed loader read one file and that file was the techniques.
+    """
+
+    async def test_the_shipped_food_pages_are_installed(self, client: AsyncClient) -> None:
+        from quookly.managers.seed import stock_generic_foods, stock_registry
+
+        await stock_registry()
+        await stock_generic_foods()
+        await stock_academy()
+
+        listed = (await client.get(f"{ACADEMY}?kind=ingredient")).json()
+        assert len(listed) >= 10
+
+    async def test_each_one_shows_the_facts_of_the_food_it_names(
+        self, client: AsyncClient, cook: dict[str, str]
+    ) -> None:
+        """The point of the section. A page about a food that names no food is a page that
+        cannot show a density, an allergen or a nutrition figure (ADR-061)."""
+        from quookly.managers.seed import stock_generic_foods, stock_registry
+
+        await stock_registry()
+        await stock_generic_foods()
+        await stock_academy()
+
+        page = (await client.get(f"{ACADEMY}/plain-flour", headers=cook)).json()
+        assert page["kind"] == "ingredient"
+        assert page["entry"]["slug"] == "flour"
+
+    async def test_a_food_page_whose_entry_is_missing_is_skipped_not_fatal(self) -> None:
+        """Stocking the Academy against a registry that is not there yet must not stop an
+        instance from starting. It runs on every boot, so the page arrives on the next one."""
+        assert await stock_academy() >= 45
+
+
 class TestWhatShips:
     async def test_the_seeded_pages_are_installed(self, stocked: int) -> None:
         assert stocked >= 45
@@ -953,6 +995,53 @@ class TestAskingForAnExplanation:
 
         found = await client.get(f"{ACADEMY}/terms/spatchcocking", headers=cook)
         assert len(found.json()) == 1
+
+    async def test_a_word_the_registry_knows_is_filed_as_a_food(
+        self, client: AsyncClient, cook: dict[str, str], monkeypatch: MonkeyPatch
+    ) -> None:
+        """The Academy has two sections, and a food asked about is a food (ADR-057).
+
+        Filing it as a technique put every generated page in one section and left the
+        ingredient section of a shipped instance permanently empty — and a page about a
+        food that names no food cannot show that food's facts (ADR-061)."""
+        from quookly.access import ingredient as registry
+        from quookly.access import model as inference
+        from quookly.contracts.inference import Completion
+        from quookly.contracts.ingredient import IngredientKind, Origin
+
+        async def answering(
+            prompt: str, schema: dict[str, Any], system: str | None = None, **rest: Any
+        ) -> tuple[dict[str, Any], Completion]:
+            return {
+                "name": "plain flour",
+                "spellings": ["flour"],
+                "summary": "Wheat flour with no raising agent in it.",
+                "explanation": "Milled from wheat, and the backbone of most doughs.",
+                "caution": "",
+            }, Completion(text="{}", model="test")
+
+        monkeypatch.setattr(inference, "complete_structured", answering)
+        await registry.register(
+            slug="plain-flour",
+            kind=IngredientKind.SOLID,
+            density=None,
+            names={"en-GB": ["plain flour"]},
+            origin=Origin.SEED,
+        )
+
+        made = await client.post(self.ASKED, json={"term": "plain flour"}, headers=cook)
+
+        assert made.status_code == 201
+        assert made.json()["kind"] == "ingredient"
+        assert made.json()["entry"]["slug"] == "plain-flour"
+
+    async def test_a_word_the_registry_does_not_know_is_still_a_technique(
+        self, client: AsyncClient, cook: dict[str, str], answering: None
+    ) -> None:
+        """`spatchcock` is not a food, and nothing in the registry says otherwise."""
+        made = await client.post(self.ASKED, json={"term": "spatchcock"}, headers=cook)
+        assert made.json()["kind"] == "technique"
+        assert made.json()["entry"] is None
 
     async def test_a_term_somebody_has_explained_is_refused(
         self, client: AsyncClient, cook: dict[str, str], answering: None, stocked: int

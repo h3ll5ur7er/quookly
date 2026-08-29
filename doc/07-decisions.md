@@ -3193,3 +3193,99 @@ different question. And `browse` — the registry screen — stays ordered by na
 complete, paged and counted: paging through every match loses nothing, and an administrator looking
 for what an import invented wants a stable order rather than a helpful one. The bug this fixes is
 specific to a *truncated* list, which is what `search` returns and `browse` does not.
+
+## ADR-070 The Academy ships food pages, and a word the registry knows is filed as a food
+
+**Status:** Accepted. Completes [ADR-057](#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques),
+which said the Academy is *sections* of pages so that the second section would not be a migration.
+
+**Context.** It was not a migration. It was also not there. Every part of the ingredient section
+existed and had existed since ADR-057 was taken — `PageKind.INGREDIENT`, the access layer's refusal
+of a food page that names no entry, `pages_about`, the registry facts read rather than stored
+([ADR-061](#adr-061-an-ingredient-page-names-its-entry-and-never-restates-what-the-registry-computes-on)), the food picker on
+the write-page screen, the shelving of the section by the food tree
+([ADR-067](#adr-067-where-a-food-sits-is-a-tree-taken-from-the-table-it-was-already-in)) — and a shipped
+instance's Academy contained fifty techniques and not one food.
+
+Two separate reasons, and each alone was enough:
+
+- **The seed loader read one file.** `read_academy_pages` opened `techniques.json`, took the section
+  from it, and returned. There was no second file to open.
+- **`explain` hardcoded `PageKind.TECHNIQUE`.** Ask this instance to explain a word and the page it
+  wrote was a technique, whatever the word was. So even an instance where cooks used the feature for
+  a year would have no food pages, and a page about a food that names no food cannot show that
+  food's facts at all.
+
+**Decision.** One seed file per section, and the loader reads them all. `seed/foods.json` ships ten
+staples in three languages, each naming a registry entry by slug in `about`.
+
+And `explain` asks the registry what the word is. `resolve`, not `search`: it is exact and refuses
+an ambiguous name, which is the conservative direction. A near-match filed as a page *about* the
+wrong entry would show one food's allergens under another food's name; a food left in the technique
+section is only a page in the wrong list.
+
+**Why the bulk path skips where `write` raises.** `store_many` runs on every boot. Refusing a food
+page whose registry entry is not there yet would make the order of the seed steps load-bearing and
+turn a half-seeded registry into an instance that does not start. It skips and logs instead, and
+arrives on the next boot. `write` still raises, because a person writing a page can be shown the
+error and fix it. The invariant is the same in both — an ingredient row always names an entry; what
+differs is who is being told, which is the same reasoning that made `store_many` skip a slug it
+already has rather than raise.
+
+A typo in a shipped seed file is caught by `tests/seed/test_foods.py`, which checks every `about`
+against the slugs the registry seed actually installs — at build time, rather than by a self-hoster
+whose instance will not come up.
+
+**Consequences.** Ten pages is a beginning, not a corpus. The registry has nine hundred entries and
+almost none of them will ever be written by hand; what fills the section is cooks asking, which is
+now possible. The French wordings await the same native-speaker review the rest of `fr-CH` does.
+
+## ADR-071 A backup is a snapshot taken where the data is, and the recipe export is not one
+
+**Status:** Accepted. Satisfies UC-8.1.
+
+**Context.** The installation guide said, of the recipe export, that it was "a complete, portable
+copy" and "also a valid backup" that "can be restored into a fresh instance."
+
+It is not. The export carries recipes, the registry entries they use, and hand-written
+translations. It does not carry accounts, the people a cook cooks for or their allergy constraints,
+the pantry, meal plans, cooking sessions, unit preferences, waste records, the Academy pages
+anybody here wrote, or a single photograph. Somebody who followed that sentence would restore their
+recipes and lose everything else, and would find out at the worst possible moment.
+
+The other half was the `tar` in the README: `tar czf` of a live data volume. SQLite writes in
+pages, so copying the file while the instance is serving takes some pages from before a transaction
+and some from after. In WAL mode it is worse — committed data lives in the `-wal` file until
+somebody checkpoints it, so a copy of `quookly.db` alone silently omits transactions the
+application already told a cook were saved. Both produce a file that looks like a perfectly good
+database until the day somebody needs it.
+
+**Decision.** Two things, stated separately because they were conflated:
+
+- **The recipe export is an export.** It is the portable format, it is what somebody leaving takes
+  with them ([ADR-012](#adr-012-export-format-is-the-import-format)), and the documentation now says
+  plainly what is not in it.
+- **A backup is `quookly-cli data take-backup`.** It asks SQLite for a consistent snapshot with
+  `VACUUM INTO` rather than copying bytes, and it carries the pictures beside the database, because
+  there have always been two things to copy and one of them is not in the database.
+
+**Where it runs.** In the container, not on a laptop. Everything else the CLI does goes over HTTP to
+an instance; this reads a directory, so it has to run where the directory is — which is why the CLI
+is now installed into the image. That is also what the rest of the Phase 9 CLI work needs: collecting
+orphaned pictures and sweeping for duplicate ingredients are the same shape, a job against an
+instance's own data, run by the machine's scheduler rather than by one inside the application.
+
+**Why the tool and not the instruction.** A line of `tar` in a manual cannot be tested, and this one
+was wrong in a way nobody would notice. The command is tested, including the property that matters:
+a database whose committed data is outside the `.db` file still restores. That test fails against a
+file copy, which is the point of having it.
+
+**Restore refuses by default.** A data directory that already holds a database is refused unless
+`--force` is passed, because restoring over a serving instance is how somebody loses the data they
+still had. The asymmetry is deliberate: taking a backup is safe and needs no ceremony, and putting
+one back is not.
+
+**Consequences.** A backup is now one command and is correct against a running instance. The image
+carries the CLI, which costs a few megabytes and is what makes every other operator command
+possible. What is still owed is the other direction of confidence: a restore nobody has performed is
+a hypothesis, and the installation guide says so rather than pretending otherwise.

@@ -1,0 +1,356 @@
+{
+  "quookly": 1,
+  "section": "ingredient",
+  "note": "Hand-written pages for the Academy's ingredient section. Each is about one registry entry, named by slug in `about` — the page shows that entry's facts by reading them rather than by holding a copy (ADR-061), so nothing here repeats an allergen or a density. What is written here is what a table cannot say: what the food does in a dish, and what goes wrong. French awaits a native speaker's review.",
+  "written": "2026-08-29",
+  "pages": [
+    {
+      "slug": "plain-flour",
+      "about": "flour",
+      "locales": {
+        "en-GB": {
+          "name": "flour",
+          "spellings": [
+            "plain flour",
+            "white flour"
+          ],
+          "summary": "Milled wheat with nothing added to make it rise.",
+          "explanation": "The backbone of bread, pasta and pastry. What matters is the protein: a strong flour builds the gluten a loaf needs, a soft one keeps a cake tender. Weigh it rather than scooping — a packed cup can hold half again as much as a loose one, which is why a cake comes out dry.",
+          "caution": "Contains gluten."
+        },
+        "de-CH": {
+          "name": "Mehl",
+          "spellings": [
+            "Weissmehl",
+            "Ruchmehl"
+          ],
+          "summary": "Gemahlener Weizen, ohne Triebmittel.",
+          "explanation": "Die Grundlage von Brot, Teigwaren und Gebäck. Entscheidend ist der Proteingehalt: ein starkes Mehl baut das Gluten, das ein Brot braucht, ein weiches hält einen Kuchen zart. Abwägen statt schöpfen — fest eingefülltes Mehl wiegt die Hälfte mehr, und genau daher kommt der trockene Kuchen.",
+          "caution": "Enthält Gluten."
+        },
+        "fr-CH": {
+          "name": "farine",
+          "spellings": [
+            "farine blanche"
+          ],
+          "summary": "Blé moulu, sans agent levant.",
+          "explanation": "La base du pain, des pâtes et de la pâtisserie. Ce qui compte, c'est la teneur en protéines : une farine forte développe le gluten dont un pain a besoin, une farine faible garde un gâteau tendre. Pesez-la plutôt que de la puiser — tassée, elle pèse moitié plus, et c'est de là que vient le gâteau sec.",
+          "caution": "Contient du gluten."
+        }
+      }
+    },
+    {
+      "slug": "olive-oil",
+      "about": "olive-oil",
+      "locales": {
+        "en-GB": {
+          "name": "olive oil",
+          "spellings": [
+            "extra virgin olive oil",
+            "extra virgin"
+          ],
+          "summary": "Oil pressed from olives, and a flavour in its own right.",
+          "explanation": "Extra virgin is the first pressing and tastes of it — grassy, peppery, sometimes bitter. Keep it for dressings and for pouring over a finished dish, where you can taste it. It smokes lower than a refined oil, so for hard frying reach for something else. Store it dark and cool; light is what turns it stale.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "Olivenöl",
+          "spellings": [
+            "natives Olivenöl extra"
+          ],
+          "summary": "Aus Oliven gepresstes Öl, und ein Aroma für sich.",
+          "explanation": "Natives Olivenöl extra ist die erste Pressung und schmeckt danach — grasig, pfeffrig, manchmal bitter. Dafür aufheben, wo man es schmeckt: Salatsaucen und über das fertige Gericht. Es raucht früher als ein raffiniertes Öl, zum scharfen Braten also etwas anderes nehmen. Dunkel und kühl lagern; Licht macht es ranzig.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "huile d'olive",
+          "spellings": [
+            "huile d'olive vierge extra"
+          ],
+          "summary": "Huile pressée à partir d'olives, et un goût à part entière.",
+          "explanation": "La vierge extra est la première pression et s'y goûte — herbacée, poivrée, parfois amère. Gardez-la pour les vinaigrettes et pour arroser un plat terminé, là où on la goûte. Elle fume plus bas qu'une huile raffinée : pour saisir, prenez autre chose. Conservez-la à l'abri de la lumière, qui est ce qui la rancit.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "salt",
+      "about": "fine-salt",
+      "locales": {
+        "en-GB": {
+          "name": "salt",
+          "spellings": [
+            "table salt",
+            "fine salt"
+          ],
+          "summary": "The one seasoning that changes everything else on the plate.",
+          "explanation": "Salt does not only make food salty; it makes food taste more of itself, and it draws water out of what it sits on. Salt pasta water until it tastes of the sea. Salt meat ahead of time, not at the pan. Season in layers and taste as you go — salt goes in easily and never comes out.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "Salz",
+          "spellings": [
+            "Kochsalz",
+            "Tafelsalz",
+            "feines Salz"
+          ],
+          "summary": "Das einzige Gewürz, das alles andere auf dem Teller verändert.",
+          "explanation": "Salz macht Speisen nicht nur salzig, es lässt sie mehr nach sich selbst schmecken, und es zieht Wasser aus dem, worauf es liegt. Teigwarenwasser salzen, bis es nach Meer schmeckt. Fleisch vorher salzen, nicht erst in der Pfanne. In Schichten würzen und dabei abschmecken — Salz geht leicht hinein und nie wieder heraus.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "sel",
+          "spellings": [
+            "sel de table",
+            "sel fin"
+          ],
+          "summary": "Le seul assaisonnement qui change tout le reste de l'assiette.",
+          "explanation": "Le sel ne rend pas seulement salé : il fait que chaque aliment a davantage son propre goût, et il tire l'eau de ce sur quoi il repose. Salez l'eau des pâtes jusqu'à ce qu'elle ait le goût de la mer. Salez la viande à l'avance, pas à la poêle. Assaisonnez par couches en goûtant — le sel entre facilement et ne ressort jamais.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "butter",
+      "about": "butter-of-choice",
+      "locales": {
+        "en-GB": {
+          "name": "butter",
+          "spellings": [
+            "unsalted butter",
+            "salted butter"
+          ],
+          "summary": "Churned cream: fat, water and milk solids.",
+          "explanation": "Those three parts explain most of what butter does. The water is why butter foams in a hot pan and why pastry made with it puffs. The milk solids are what brown and smell of nuts, and what burns if the pan gets too hot. Cold butter cut into flour makes pastry flaky; softened butter beaten with sugar makes cake light.",
+          "caution": "Contains milk."
+        },
+        "de-CH": {
+          "name": "Butter",
+          "spellings": [
+            "Süssrahmbutter"
+          ],
+          "summary": "Gerührter Rahm: Fett, Wasser und Milchbestandteile.",
+          "explanation": "Diese drei Anteile erklären fast alles, was Butter tut. Das Wasser lässt sie in der heissen Pfanne schäumen und Blätterteig aufgehen. Die Milchbestandteile bräunen und duften nussig — und verbrennen, wenn die Pfanne zu heiss wird. Kalte Butter in Mehl gerieben gibt mürben Teig, weiche Butter mit Zucker gerührt gibt lockeren Kuchen.",
+          "caution": "Enthält Milch."
+        },
+        "fr-CH": {
+          "name": "beurre",
+          "spellings": [
+            "beurre doux",
+            "beurre salé"
+          ],
+          "summary": "De la crème barattée : matière grasse, eau et matière sèche du lait.",
+          "explanation": "Ces trois parts expliquent presque tout. L'eau est ce qui fait mousser le beurre dans une poêle chaude et gonfler un feuilletage. La matière sèche du lait est ce qui brunit et sent la noisette — et ce qui brûle si la poêle chauffe trop. Le beurre froid sablé dans la farine donne une pâte friable ; le beurre mou battu avec du sucre donne un gâteau léger.",
+          "caution": "Contient du lait."
+        }
+      }
+    },
+    {
+      "slug": "egg",
+      "about": "egg-290",
+      "locales": {
+        "en-GB": {
+          "name": "egg",
+          "spellings": [
+            "eggs",
+            "hen's egg"
+          ],
+          "summary": "Two ingredients in one shell, and they do opposite jobs.",
+          "explanation": "The white is protein and water: it sets firm and traps air, which is what makes meringue and what makes an overcooked egg rubbery. The yolk is fat and emulsifiers: it enriches, thickens and binds oil into water, which is mayonnaise and hollandaise. Recipes that separate them are usually asking for one of those two behaviours.",
+          "caution": "Contains egg."
+        },
+        "de-CH": {
+          "name": "Ei",
+          "spellings": [
+            "Eier",
+            "Hühnerei"
+          ],
+          "summary": "Zwei Zutaten in einer Schale, mit gegensätzlichen Aufgaben.",
+          "explanation": "Das Eiweiss ist Protein und Wasser: es gerinnt fest und schliesst Luft ein — daher Meringue, und daher auch das gummige übergarte Ei. Das Eigelb ist Fett und Emulgator: es macht gehaltvoll, bindet ab und bringt Öl in Wasser, also Mayonnaise und Sauce hollandaise. Rezepte, die trennen, wollen meist genau eine dieser beiden Eigenschaften.",
+          "caution": "Enthält Ei."
+        },
+        "fr-CH": {
+          "name": "œuf",
+          "spellings": [
+            "œufs",
+            "oeuf"
+          ],
+          "summary": "Deux ingrédients dans une coquille, aux rôles opposés.",
+          "explanation": "Le blanc est protéine et eau : il prend fermement et emprisonne l'air — d'où la meringue, et d'où l'œuf trop cuit caoutchouteux. Le jaune est gras et émulsifiant : il enrichit, lie et fait entrer l'huile dans l'eau, donc mayonnaise et hollandaise. Les recettes qui les séparent demandent en général l'un de ces deux comportements.",
+          "caution": "Contient de l'œuf."
+        }
+      }
+    },
+    {
+      "slug": "garlic",
+      "about": "garlic",
+      "locales": {
+        "en-GB": {
+          "name": "garlic",
+          "spellings": [
+            "garlic clove",
+            "cloves of garlic"
+          ],
+          "summary": "A bulb whose flavour depends entirely on how you cut it.",
+          "explanation": "Garlic has almost no smell until it is damaged: cutting it starts a reaction that makes the pungency. So the finer you cut, the stronger it is — a crushed clove is fierce, a halved one is gentle. Heat stops that reaction, which is why slow-cooked garlic turns sweet and mild. It burns quickly and turns bitter, so it usually goes into the pan after the onion.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "Knoblauch",
+          "spellings": [
+            "Knoblauchzehe",
+            "Zehe"
+          ],
+          "summary": "Eine Knolle, deren Geschmack ganz davon abhängt, wie man sie schneidet.",
+          "explanation": "Knoblauch riecht fast nach nichts, solange er heil ist: erst das Schneiden startet die Reaktion, die die Schärfe macht. Je feiner also, desto stärker — eine gepresste Zehe ist heftig, eine halbierte mild. Hitze stoppt die Reaktion, darum wird langsam gegarter Knoblauch süss und mild. Er verbrennt schnell und wird bitter, kommt also meist nach der Zwiebel in die Pfanne.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "ail",
+          "spellings": [
+            "gousse d'ail",
+            "gousses d'ail"
+          ],
+          "summary": "Un bulbe dont le goût dépend entièrement de la découpe.",
+          "explanation": "L'ail ne sent presque rien tant qu'il est intact : c'est la coupe qui déclenche la réaction responsable du piquant. Plus la coupe est fine, plus il est fort — une gousse écrasée est violente, une gousse coupée en deux est douce. La chaleur arrête cette réaction, d'où l'ail confit, sucré et doux. Il brûle vite et devient amer : il passe donc en général après l'oignon.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "onion",
+      "about": "onion-368",
+      "locales": {
+        "en-GB": {
+          "name": "onion",
+          "spellings": [
+            "onions"
+          ],
+          "summary": "The base of more savoury dishes than anything else in the kitchen.",
+          "explanation": "Raw, an onion is sharp; cooked, it turns sweet, and how sweet depends on patience. A few minutes makes it soft and mild — enough for most dishes. Twenty minutes or more over low heat browns the sugars and makes something closer to jam. Rushing that over high heat scorches the edges and leaves the middle raw.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "Zwiebel",
+          "spellings": [
+            "Zwiebeln"
+          ],
+          "summary": "Die Grundlage von mehr herzhaften Gerichten als alles andere in der Küche.",
+          "explanation": "Roh ist die Zwiebel scharf; gegart wird sie süss, und wie süss, hängt von der Geduld ab. Ein paar Minuten machen sie weich und mild — für die meisten Gerichte genug. Zwanzig Minuten und mehr bei kleiner Hitze bräunen den Zucker und ergeben fast eine Konfitüre. Wer das bei grosser Hitze abkürzt, verbrennt die Ränder und lässt die Mitte roh.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "oignon",
+          "spellings": [
+            "oignons"
+          ],
+          "summary": "La base de plus de plats salés que n'importe quoi d'autre.",
+          "explanation": "Cru, l'oignon est piquant ; cuit, il devient sucré, et sa douceur dépend de la patience. Quelques minutes le rendent fondant et doux — assez pour la plupart des plats. Vingt minutes ou plus à feu doux caramélisent les sucres et donnent presque une confiture. Précipiter cela à feu vif brûle les bords et laisse le cœur cru.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "tomato",
+      "about": "tomato",
+      "locales": {
+        "en-GB": {
+          "name": "tomato",
+          "spellings": [
+            "tomatoes"
+          ],
+          "summary": "A fruit used as a vegetable, and a large part of why cooked food tastes savoury.",
+          "explanation": "Tomatoes are unusually full of glutamate, which is the savoury taste itself — it is why a spoon of tomato paste lifts a stew that has nothing to do with tomatoes. Ripeness matters more than variety, and cold kills it: a tomato kept in the fridge loses its aroma and does not get it back. Cooking concentrates the sweetness and the acid together.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "Tomate",
+          "spellings": [
+            "Tomaten"
+          ],
+          "summary": "Eine Frucht, die als Gemüse verwendet wird — und ein grosser Teil davon, warum Gekochtes herzhaft schmeckt.",
+          "explanation": "Tomaten enthalten ungewöhnlich viel Glutamat, also den herzhaften Geschmack selbst — darum hebt ein Löffel Tomatenpüree einen Eintopf, der mit Tomaten nichts zu tun hat. Reife zählt mehr als Sorte, und Kälte zerstört sie: eine Tomate im Kühlschrank verliert ihr Aroma und bekommt es nicht zurück. Garen konzentriert Süsse und Säure zugleich.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "tomate",
+          "spellings": [
+            "tomates"
+          ],
+          "summary": "Un fruit employé comme légume, et une grande part de ce qui rend un plat savoureux.",
+          "explanation": "La tomate est exceptionnellement riche en glutamate, c'est-à-dire le goût savoureux lui-même — d'où la cuillère de concentré qui relève un ragoût sans rapport avec la tomate. La maturité compte plus que la variété, et le froid la détruit : une tomate au réfrigérateur perd son arôme et ne le retrouve pas. La cuisson concentre ensemble le sucre et l'acidité.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "lemon",
+      "about": "lemon-398",
+      "locales": {
+        "en-GB": {
+          "name": "lemon",
+          "spellings": [
+            "lemons"
+          ],
+          "summary": "Acid and perfume, and they live in different parts of the fruit.",
+          "explanation": "The juice is the acid: it brightens anything heavy, and a dish that tastes flat is often short of it rather than short of salt. The perfume is in the zest, in the coloured skin only — the white pith beneath is bitter. Zest before juicing; a squeezed lemon is very hard to zest.",
+          "caution": null
+        },
+        "de-CH": {
+          "name": "Zitrone",
+          "spellings": [
+            "Zitronen"
+          ],
+          "summary": "Säure und Duft — und sie sitzen in verschiedenen Teilen der Frucht.",
+          "explanation": "Der Saft ist die Säure: er hebt alles Schwere, und ein Gericht, das flach schmeckt, hat oft eher zu wenig davon als zu wenig Salz. Der Duft steckt in der Schale, nur in der farbigen Schicht — das Weisse darunter ist bitter. Zuerst abreiben, dann auspressen; eine ausgepresste Zitrone lässt sich kaum noch abreiben.",
+          "caution": null
+        },
+        "fr-CH": {
+          "name": "citron",
+          "spellings": [
+            "citrons"
+          ],
+          "summary": "De l'acidité et du parfum, logés dans deux parties différentes du fruit.",
+          "explanation": "Le jus est l'acidité : il éclaire tout ce qui est lourd, et un plat qui semble plat manque plus souvent de jus que de sel. Le parfum est dans le zeste, uniquement dans la peau colorée — le blanc en dessous est amer. Zestez avant de presser ; un citron pressé ne se zeste presque plus.",
+          "caution": null
+        }
+      }
+    },
+    {
+      "slug": "parmesan",
+      "about": "parmesan-cheese",
+      "locales": {
+        "en-GB": {
+          "name": "parmesan",
+          "spellings": [
+            "parmigiano",
+            "parmigiano reggiano"
+          ],
+          "summary": "A hard aged cheese used more as a seasoning than as a cheese.",
+          "explanation": "Long ageing dries it and concentrates it, which is why a small amount carries a whole dish. Grate it fine and add it off the heat: boiled hard cheese goes stringy and separates. The rind is not waste — dropped into a soup or a sauce it gives up savour for an hour and comes out again.",
+          "caution": "Contains milk."
+        },
+        "de-CH": {
+          "name": "Parmesan",
+          "spellings": [
+            "Parmigiano",
+            "Parmigiano Reggiano"
+          ],
+          "summary": "Ein harter, lang gereifter Käse, mehr Würze als Käse.",
+          "explanation": "Die lange Reifung trocknet und konzentriert ihn, darum trägt eine kleine Menge ein ganzes Gericht. Fein reiben und ausserhalb der Hitze zugeben: gekochter Hartkäse wird fädig und trennt sich. Die Rinde ist kein Abfall — in eine Suppe oder Sauce gelegt gibt sie eine Stunde lang Würze ab und kommt wieder heraus.",
+          "caution": "Enthält Milch."
+        },
+        "fr-CH": {
+          "name": "parmesan",
+          "spellings": [
+            "parmigiano",
+            "parmigiano reggiano"
+          ],
+          "summary": "Un fromage à pâte dure longuement affiné, employé plus comme assaisonnement que comme fromage.",
+          "explanation": "Le long affinage l'assèche et le concentre : une petite quantité porte donc tout un plat. Râpez-le fin et ajoutez-le hors du feu — bouilli, un fromage à pâte dure file et se sépare. La croûte n'est pas un déchet : plongée dans une soupe ou une sauce, elle donne du goût pendant une heure et ressort ensuite.",
+          "caution": "Contient du lait."
+        }
+      }
+    }
+  ]
+}

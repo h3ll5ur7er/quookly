@@ -334,19 +334,29 @@ async def install_starter_recipes(cook_id: int, locale: str = DEFAULT_SEED_LOCAL
 
 
 TECHNIQUES = SEED_DIRECTORY / "techniques.json"
+FOODS = SEED_DIRECTORY / "foods.json"
+#: One file per section of the Academy (ADR-057). Two files rather than one with a `kind`
+#: on every page: the kind is a fact about the file, and repeating it nine hundred times
+#: would be nine hundred chances to say it differently.
+ACADEMY_SEEDS = (TECHNIQUES, FOODS)
 
 
-def read_academy_pages() -> tuple[str, list[dict[str, Any]]]:
-    """The Academy pages this build ships, and which section they belong to.
+def read_academy_pages() -> list[tuple[str, list[dict[str, Any]]]]:
+    """The Academy pages this build ships, by section.
 
-    The kind is stamped from the file rather than repeated on every page: a seed file is
-    one section (ADR-057), and saying so nine hundred times would be nine hundred chances
-    to say it differently.
+    A list because the Academy has more than one section and shipping only the first was
+    how the ingredient section came to be empty on every instance: the schema, the access
+    layer and the write-page screen all supported it, and nothing ever put one there.
     """
-    if not TECHNIQUES.exists():
-        return "technique", []
-    document: dict[str, Any] = json.loads(TECHNIQUES.read_text(encoding="utf-8"))
-    return str(document.get("section", "technique")), list(document.get("pages", []))
+    found = []
+    for path in ACADEMY_SEEDS:
+        if not path.exists():
+            continue
+        document: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+        pages = list(document.get("pages", []))
+        if pages:
+            found.append((str(document.get("section", "technique")), pages))
+    return found
 
 
 async def stock_academy() -> int:
@@ -355,31 +365,33 @@ async def stock_academy() -> int:
     Safe to run repeatedly — every start-up does — and it never touches a page a cook has
     written (ADR-016).
     """
-    section, pages = read_academy_pages()
-    if not pages:
-        return 0
-
-    added = await academy.store_many(
-        [
-            NewPage(
-                slug=page["slug"],
-                kind=PageKind(section),
-                wordings={
-                    locale: Wording(
-                        name=written["name"],
-                        spellings=list(written["spellings"]),
-                        summary=written["summary"],
-                        explanation=written["explanation"],
-                        caution=written["caution"],
-                        name_matches=written.get("name_matches", True),
-                    )
-                    for locale, written in page["locales"].items()
-                },
-            )
-            for page in pages
-        ],
-        origin=Origin.SEED,
-    )
+    added = 0
+    for section, pages in read_academy_pages():
+        added += await academy.store_many(
+            [
+                NewPage(
+                    slug=page["slug"],
+                    kind=PageKind(section),
+                    wordings={
+                        locale: Wording(
+                            name=written["name"],
+                            spellings=list(written["spellings"]),
+                            summary=written["summary"],
+                            explanation=written["explanation"],
+                            caution=written["caution"],
+                            name_matches=written.get("name_matches", True),
+                        )
+                        for locale, written in page["locales"].items()
+                    },
+                )
+                for page in pages
+            ],
+            origin=Origin.SEED,
+            # The registry entry each page is about, by slug (ADR-061). Resolved by the
+            # access layer rather than here: this manager has a slug, and turning a slug
+            # into a row is the registry's job, not the seed's.
+            about={page["slug"]: page["about"] for page in pages if page.get("about")},
+        )
 
     if added:
         log.info("stocked %s academy pages", added, extra={"added": added})

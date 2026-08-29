@@ -44,6 +44,19 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY backend/ ./
 RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev
 
+# The CLI, into the same environment. It is how an operator backs the instance up, and a
+# backup has to run where the data is — inside this container, not on somebody's laptop
+# (ADR-071).
+#
+# With its dependencies: the backend has neither typer nor rich, so a `--no-deps` install
+# would put a command in the image that cannot start. The *generated* API client is not
+# here and is not wanted — nothing in a container needs to reach the API over HTTP from
+# inside the container — and the CLI already guards that import, which is what makes the
+# local-filesystem commands work without it.
+COPY cli/pyproject.toml cli/uv.lock cli/README.md /app/cli/
+COPY cli/src /app/cli/src
+RUN --mount=type=cache,target=/root/.cache/uv uv pip install /app/cli
+
 # --- what actually runs -----------------------------------------------------------------
 FROM python:3.12-slim-bookworm AS runtime
 

@@ -240,17 +240,81 @@ volume first.
 curl -H "Authorization: Bearer $TOKEN" https://your-instance/api/v1/recipes/export > quookly.json
 ```
 
-That file is a complete, portable copy: the recipes and the registry entries they use. Importing it
-into any Quookly instance recreates them, including one that has never seen those ingredients
-([ADR-012](07-decisions.md#adr-012-export-format-is-the-import-format)). It is also a valid backup —
-the export format and the import format are the same one, so the path out is exercised by every
-round trip rather than only by people leaving.
+That file is a portable copy of **your recipes** — the recipes, the registry entries they use, and
+the translations somebody wrote by hand. Importing it into any Quookly instance recreates them,
+including one that has never seen those ingredients
+([ADR-012](07-decisions.md#adr-012-export-format-is-the-import-format)). The export format and the
+import format are the same one, so the path out is exercised by every round trip rather than only by
+people leaving.
+
+> **It is not a backup.** It carries recipes and nothing else. Your accounts, the people you cook
+> for and their allergies, what is in the pantry, your meal plans, your cooking history, the Academy
+> pages anybody here wrote, and every photograph are **not in it**. Restoring this into a fresh
+> instance gives you your recipes back and loses the rest. To back up an instance, copy its data —
+> see [Backing up](#backing-up) below.
 
 Upgrades may replace **seeded** ingredients and recipes and never touch user-created ones
 ([ADR-016](07-decisions.md#adr-016-ship-seed-content-marked-and-upgradable)). Editing a seeded recipe
-produces a user-owned variant, so an improved seed set can ship without discarding a cook's changes. Because export is the same format as import
-([ADR-012](07-decisions.md#adr-012-export-format-is-the-import-format)), a full export is also a
-valid backup and can be restored into a fresh instance.
+produces a user-owned variant, so an improved seed set can ship without discarding a cook's changes.
+
+## Backing up
+
+Two things live in an instance's data directory and **both** have to travel: the database, and the
+pictures beside it. The compose file puts them under one volume for exactly this reason — a backup
+of the `.db` alone restores an instance whose Academy pages have holes in them.
+
+```bash
+quookly-cli data take-backup /backups/quookly-$(date +%F).tar.gz
+```
+
+In a container, run it where the data is:
+
+```bash
+docker compose exec app quookly-cli data take-backup /data/backup.tar.gz
+```
+
+Or against a stopped instance, without starting one — the image runs a command given to it instead
+of serving, and does not migrate on the way:
+
+```bash
+docker run --rm -v quookly-data:/data ghcr.io/h3ll5ur7er/quookly \
+  quookly-cli data take-backup /data/backup.tar.gz
+```
+
+**This is safe to run against a serving instance**, and that is the reason it is a command rather
+than a line of `tar` in this manual. SQLite writes in pages. Copying the file while the instance is
+serving gives some pages from before a transaction and some from after, and in WAL mode it misses
+committed data entirely, because that data is still in the `-wal` file. Either way the result is a
+file that looks like a perfectly good database until the day somebody needs it. `take-backup` asks
+SQLite for a consistent snapshot instead, which is a different operation from copying bytes.
+
+It reads `QUOOKLY_DATABASE_URL` and `QUOOKLY_MEDIA_DIR`, so an instance that is already configured
+needs no arguments. `--database` and `--media` override them.
+
+### Putting one back
+
+**Stop the instance first.**
+
+```bash
+docker compose down
+quookly-cli data restore /backups/quookly-2026-08-29.tar.gz --into /var/lib/quookly
+docker compose up -d
+```
+
+Restore refuses a data directory that already holds a database, because restoring over a serving
+instance is how somebody loses the data they still had. Pass `--force` when you mean it.
+
+### On a schedule
+
+There is no scheduler inside the application, on purpose: a scheduler inside the application is a
+scheduler somebody has to operate. Use the one the machine already has.
+
+```cron
+17 3 * * *  docker compose -f /srv/quookly/compose.yaml exec -T app quookly-cli data take-backup /data/backups/nightly.tar.gz
+```
+
+A backup nobody has restored is a hypothesis. Restore one into a scratch directory occasionally and
+start an instance against it.
 
 ## Troubleshooting
 

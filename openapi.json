@@ -875,7 +875,7 @@
           "recipes"
         ],
         "summary": "Correct Translation",
-        "description": "Record a translation somebody here wrote (UC-2.7, ADR-064).\n\nThe cook whose recipe it is. A translation is prose about *their* words, and the\nregistry-style \"anybody may correct shared reference data\" argument does not apply: a\nrecipe is one household's.",
+        "description": "Record a translation somebody here wrote (UC-2.8, ADR-064).\n\nThe cook whose recipe it is. A translation is prose about *their* words, and the\nregistry-style \"anybody may correct shared reference data\" argument does not apply: a\nrecipe is one household's.",
         "operationId": "correctTranslation",
         "parameters": [
           {

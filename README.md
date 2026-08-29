@@ -160,13 +160,16 @@ read and approve, and nothing leaves the instance because nothing here ever does
 ### Backing it up
 
 Two things live in the volume, not one: the database, and a directory of pictures beside
-it. Copy the volume rather than the `.db` file — a backup of the file alone restores an
-instance whose pages have holes in them.
+it. A backup of the `.db` alone restores an instance whose pages have holes in them.
 
 ```bash
-docker run --rm -v quookly-data:/data -v "$PWD:/out" alpine \
-  tar czf /out/quookly-backup.tar.gz -C /data .
+docker compose exec app quookly-cli data take-backup /data/backup.tar.gz
 ```
+
+Safe against a serving instance — it asks SQLite for a consistent snapshot rather than
+copying the file, which is what makes `tar` of a live database a backup that looks fine
+until the day you need it. `quookly-cli data restore` puts one back, and refuses to
+overwrite an instance that still has data unless you say `--force`.
 
 ### From this working tree
 

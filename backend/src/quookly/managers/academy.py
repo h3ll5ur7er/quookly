@@ -225,11 +225,27 @@ async def explain(term: str, cook_id: int, is_admin: bool = False) -> PageView |
     if await academy.claimants_of(term, locale):
         raise PageAlreadyWritten(term)
 
+    # Which section it belongs in. The Academy has two, and a word the registry knows the
+    # name of is a food rather than something you do (ADR-057). Filing every generated page
+    # as a technique left the ingredient section of a shipped instance permanently empty,
+    # and a page about a food that names no food cannot show that food's facts (ADR-061).
+    #
+    # `resolve` and not `search`: it is exact and refuses an ambiguous name, which is the
+    # conservative direction here. A near-match filed as a page *about* the wrong entry
+    # would show one food's allergens under another food's name, and a technique wrongly
+    # left in the technique section is only a page in the wrong list.
+    food = await ingredient.resolve(term, locale)
+
     wording = await explanation.explain(term, locale)
     slug = _slugged(term)
     await academy.write(
-        NewPage(slug=slug, kind=PageKind.TECHNIQUE, wordings={locale: wording}),
+        NewPage(
+            slug=slug,
+            kind=PageKind.TECHNIQUE if food is None else PageKind.INGREDIENT,
+            wordings={locale: wording},
+        ),
         cook_id=None,
+        ingredient_id=None if food is None else food.id,
         generated=True,
     )
     return await read(slug, Reader(cook_id=cook_id), is_admin)
