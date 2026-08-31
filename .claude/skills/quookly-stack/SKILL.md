@@ -1,11 +1,11 @@
 ---
 name: quookly-stack
-description: Guidelines, tooling and conventions for the quookly fullstack cooking app (uv + FastAPI backend, Typer CLI, nvm + Angular 21 frontend, wired by OpenAPI codegen and justfiles). Load before adding endpoints, CLI commands, or Angular components, before running builds/tests/lint, and whenever touching dependencies or the openapi.json contract.
+description: Guidelines, tooling and conventions for the quookly fullstack cooking app (uv + FastAPI backend, Typer CLI, nvm + Angular 22 frontend, wired by OpenAPI codegen and justfiles). Load before adding endpoints, CLI commands, or Angular components, before running builds/tests/lint, and whenever touching dependencies or the openapi.json contract.
 ---
 
 # Quookly stack
 
-Quookly is a cooking app built as a three-project monorepo: a FastAPI **backend**, a Typer **cli**, and an Angular 21 **frontend**. The three are kept in sync automatically: the backend is the single source of truth for the API, and both clients are **generated** from its OpenAPI schema.
+Quookly is a cooking app built as a three-project monorepo: a FastAPI **backend**, a Typer **cli**, and an Angular 22 **frontend**. The three are kept in sync automatically: the backend is the single source of truth for the API, and both clients are **generated** from its OpenAPI schema.
 
 ```
 quookly/
@@ -13,7 +13,7 @@ quookly/
 ├── openapi.json       # generated contract — backend exports it, cli+frontend consume it
 ├── backend/           # FastAPI, uv, python 3.12 — package `quookly`; also serves the built frontend
 ├── cli/               # Typer + dependency-injector, uv, python 3.12 — package `quookly_cli`
-└── frontend/          # Angular 21, npm via nvm (node v24.15.0)
+└── frontend/          # Angular 22, npm via nvm (node v24.15.0)
 ```
 
 ## Non-negotiable tooling rules
@@ -195,7 +195,7 @@ Same tooling config as the backend, plus `ignore_errors` for the generated `api_
 
 ## Frontend (`frontend/`)
 
-Angular 21, standalone/signals-first, strict TypeScript, SCSS, Vitest.
+Angular 22, standalone/signals-first, strict TypeScript, SCSS, Vitest.
 
 **`frontend/AGENTS.md` is the authoritative Angular style guide.** It is auto-loaded for Claude via `frontend/CLAUDE.md`, which imports it with `@AGENTS.md` — subdirectory CLAUDE.md files load on demand when files in that directory are read. `.github/copilot-instructions.md` is a symlink to the same file, so all three tools read one source. **Edit `AGENTS.md`, never the symlink.**
 
@@ -214,7 +214,7 @@ Its key rules:
 Structural conventions:
 
 - `src/app/core/` for shared/cross-cutting components, `src/app/features/` for routed feature areas. Routes in `app.routes.ts` use `loadComponent` — **lazy-load every feature route**.
-- Providers go in `app.config.ts`. `provideApi(window.location.origin)` points the generated client at the serving origin. `HttpClient` needs no explicit `provideHttpClient()` — Angular 21 provides it in root.
+- Providers go in `app.config.ts`. `provideApi(window.location.origin)` points the generated client at the serving origin. `HttpClient` needs no explicit `provideHttpClient()` — Angular 22 provides it in root.
 - Import generated API services via the **`@api` path alias** (`import { StatusService } from '@api'`), mapped in `tsconfig.json` to `src/api/index.ts`. Don't use deep relative paths into `src/api`.
 - Component selectors are `app-` prefixed kebab-case; directives `app-` camelCase (enforced by eslint).
 - Formatting: prettier, 100 cols, single quotes, angular parser for HTML; `.prettierignore` excludes the generated client. Editor settings in `.editorconfig` (2-space indent).

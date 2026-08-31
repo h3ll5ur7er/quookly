@@ -1,6 +1,6 @@
 # Quookly
 
-A fullstack cooking app: a FastAPI backend, a Typer management CLI and an Angular 21 frontend,
+A fullstack cooking app: a FastAPI backend, a Typer management CLI and an Angular 22 frontend,
 wired together automatically through OpenAPI codegen.
 
 ## General information

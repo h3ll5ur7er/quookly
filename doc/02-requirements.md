@@ -227,7 +227,7 @@ it is not negotiable — see [ADR-017](07-decisions.md#adr-017-test-driven-devel
 
 ## Constraints
 
-- Python 3.12+, FastAPI, uv; Angular 21, npm via nvm; commands encapsulated in justfiles.
+- Python 3.12+, FastAPI, uv; Angular 22, npm via nvm; commands encapsulated in justfiles.
 - The backend is the sole author of the API contract; clients are generated from it.
 - The architecture follows the iDesign Method as stated in the root `README.md`.
 - No paid third-party service may be required to run the product.

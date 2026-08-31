@@ -3,7 +3,6 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "baseUrl": "./src",
     "strict": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
@@ -15,9 +14,12 @@
     "importHelpers": true,
     "target": "ES2022",
     "module": "preserve",
+    // Relative to this file rather than to a `baseUrl`. TypeScript 6 deprecates `baseUrl`
+    // and will drop it in 7; paths resolve against the tsconfig's own directory without it,
+    // which is the same answer with one fewer setting to be wrong.
     "paths": {
-      "@api/*": ["api/*"],
-      "@api": ["api/index.ts"]
+      "@api/*": ["./src/api/*"],
+      "@api": ["./src/api/index.ts"]
     }
   },
   "angularCompilerOptions": {

@@ -375,7 +375,7 @@ quookly/
 │   └── tests/
 ├── cli/                    Typer management CLI
 │   └── src/quookly_cli/
-├── frontend/               Angular 21 SPA
+├── frontend/               Angular 22 SPA
 │   ├── AGENTS.md           Angular style guide (authoritative)
 │   └── src/
 ├── openapi.json            Generated contract
