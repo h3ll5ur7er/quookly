@@ -211,7 +211,7 @@ async def write(
 
 
 async def explain(term: str, cook_id: int, is_admin: bool = False) -> PageView | None:
-    """Ask a model what a word means, and keep the answer as a page (UC-7.5).
+    """Ask a model what a word means, and keep the answer as a page (UC-7.4).
 
     Refused where this instance already explains the term: that is a conflict rather than
     a second opinion, and generating near-copies nobody asked for is how a review queue

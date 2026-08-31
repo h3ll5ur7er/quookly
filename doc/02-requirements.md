@@ -1,10 +1,11 @@
 # Requirements
 
-**Status: Built through [Phase 8b](08-roadmap.md#phase-8b--reading-a-recipe-in-your-own-language) —
-every use case below is satisfied today except UC-1.6 (a recipe from a photograph, waiting on a
-vision model), UC-3.2 (filters, partly — time and dietary suitability work; tag, cuisine and
-difficulty are not yet fields on a recipe), UC-7.1–7.5 (community, Phase 8), and UC-8.1 and UC-8.3
-(self-hosting operations, Phase 9).**
+**Status: Built through [Phase 8c](08-roadmap.md#phase-8c--an-agent-in-the-kitchen) — every use
+case below is satisfied today except UC-1.6 (a recipe from a photograph, waiting on a vision model),
+UC-3.2 (filters, partly — time and dietary suitability work; tag, cuisine and difficulty are not yet
+fields on a recipe), UC-7.1–7.3 and UC-7.5 (community, Phase 8; UC-7.4, contributing Academy
+content, is built), UC-8.1 (self-hosting operations, partly — install, configure and back up work,
+upgrade paths are owed) and UC-8.3 (bulk import and export, Phase 9).**
 
 Requirements are recorded here as *what the system must do*. They are deliberately not a
 decomposition of the system — see [Volatility analysis](03-volatility-analysis.md) for why the

@@ -278,8 +278,9 @@ permanently once any user exists (FR-16).
 
 ### V17 Content translation
 
-**Status: not built.** Recorded because Phase 3 made it unavoidable — see
-[ADR-032](07-decisions.md#adr-032-recipes-are-stored-in-their-own-language-and-read-in-yours).
+**Status: built.** Phase 8b — see
+[ADR-032](07-decisions.md#adr-032-recipes-are-stored-in-their-own-language-and-read-in-yours) and
+[ADR-064](07-decisions.md#adr-064-a-translation-records-what-it-translated-and-a-persons-words-are-not-re-derived).
 
 **Question:** how does a recipe written in one language get read in another?
 **Varies:** which languages, whether a machine or a person does it, which model, whether a
@@ -299,7 +300,8 @@ still needs this, and a recipe nobody translates is still perfectly usable.
 
 ### V18 Explanation
 
-**Status: designed, not built.** Phase 7.
+**Status: built.** Phase 7, and both sections of it — the ingredient section shipped empty until
+[ADR-070](07-decisions.md#adr-070-the-academy-ships-food-pages-and-a-word-the-registry-knows-is-filed-as-a-food).
 
 **Question:** what does a cook do when they meet a word they do not know?
 **Varies:** which *sections* exist — techniques, ingredients, and whatever follows — which terms are

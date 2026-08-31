@@ -214,7 +214,7 @@ class ExplanationInput(BaseModel):
 
 @router.post("/academy/explanations", response_model=PageView, status_code=status.HTTP_201_CREATED)
 async def explain_term(submitted: ExplanationInput, cook: CurrentCook) -> PageView:
-    """Ask a model to explain a word nobody here has explained (UC-7.5).
+    """Ask a model to explain a word nobody here has explained (UC-7.4).
 
     Declared before `/academy/{slug}`-shaped routes for the usual reason.
 

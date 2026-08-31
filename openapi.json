@@ -2028,7 +2028,7 @@
           "academy"
         ],
         "summary": "Explain Term",
-        "description": "Ask a model to explain a word nobody here has explained (UC-7.5).\n\nDeclared before `/academy/{slug}`-shaped routes for the usual reason.\n\nThe answer is kept as a page marked as a model's and read by nobody \u2014 which, being\nunreviewed, means it is **not** matched into anybody's recipe until a person has read\nit (ADR-056, ADR-060). Techniques only: an ingredient page sits beside the registry's\ncomputed facts, and generated prose next to computed facts is the one arrangement\nwhere a reader cannot tell which half was checked (ADR-062).\n\nAn instance with no provider says so. Every other screen works without one, and this\nis an addition to a screen rather than a dependency of it.",
+        "description": "Ask a model to explain a word nobody here has explained (UC-7.4).\n\nDeclared before `/academy/{slug}`-shaped routes for the usual reason.\n\nThe answer is kept as a page marked as a model's and read by nobody \u2014 which, being\nunreviewed, means it is **not** matched into anybody's recipe until a person has read\nit (ADR-056, ADR-060). Techniques only: an ingredient page sits beside the registry's\ncomputed facts, and generated prose next to computed facts is the one arrangement\nwhere a reader cannot tell which half was checked (ADR-062).\n\nAn instance with no provider says so. Every other screen works without one, and this\nis an addition to a screen rather than a dependency of it.",
         "operationId": "explainTerm",
         "requestBody": {
           "content": {

@@ -1,4 +1,4 @@
-"""Asking a model what a word a recipe uses means (UC-7.5, ADR-062).
+"""Asking a model what a word a recipe uses means (UC-7.4, ADR-062).
 
 A capability engine, like `GenerationEngine`: it knows what to ask and what shape an
 answer has to be, and nothing about whether the answer is true. That judgement belongs to

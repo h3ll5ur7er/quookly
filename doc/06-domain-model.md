@@ -1,8 +1,8 @@
 # Domain model
 
-**Status: Built through [Phase 6b](08-roadmap.md#phase-6b--one-product-not-five-screens) — 21
-SQLModel tables behind 20 Alembic migrations. Academy and community concepts are still Planned, and
-the [open questions](#open-questions) below remain open.**
+**Status: Built through [Phase 8c](08-roadmap.md#phase-8c--an-agent-in-the-kitchen) — 29 SQLModel
+tables behind 31 Alembic migrations. Community concepts are still Planned, and the
+[open questions](#open-questions) below remain open.**
 
 This describes *concepts and their relationships*, not tables. The physical schema is an
 implementation detail of the resource access layer (V13) and may differ — that is the point of

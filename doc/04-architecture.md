@@ -1,12 +1,13 @@
 # Architecture
 
-**Status: Built through [Phase 6b](08-roadmap.md#phase-6b--one-product-not-five-screens), plus
-Phase 7's `MatchingEngine`. Every service in the catalogue below exists and the call rules are
-enforced by `import-linter` in `just backend check`. Still Planned: `AcademyManager` and
-`AcademyAccess` and `MediaAccess` — designed in Phase 7, see
-[ADR-054](07-decisions.md#adr-054-academymanager-is-reinstated) and
-[ADR-057](07-decisions.md#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques) — and
-`CommunityAccess`, `ScoringEngine` and `EngagementManager`, which are Phase 8.**
+**Status: Built through [Phase 8c](08-roadmap.md#phase-8c--an-agent-in-the-kitchen). Every service
+in the catalogue below exists and the call rules are enforced by `import-linter` in
+`just backend check`. `AcademyManager`, `AcademyAccess` and `MediaAccess` arrived with Phase 7
+([ADR-054](07-decisions.md#adr-054-academymanager-is-reinstated),
+[ADR-057](07-decisions.md#adr-057-the-academy-is-sections-of-pages-not-a-table-of-techniques)), and
+`quookly.mcp` joined `quookly.routes` as a second Client in Phase 8c
+([ADR-068](07-decisions.md#adr-068-the-mcp-server-is-a-client-in-this-process-not-a-client-of-this-api)).
+Still Planned: `CommunityAccess`, `ScoringEngine` and `EngagementManager`, which are Phase 8.**
 
 This document defines the services, the layers they occupy, the rules governing calls between them,
 and how that maps onto the code. It follows directly from the
